@@ -1,0 +1,59 @@
+name: Bug report
+description: Report a reproducible BLUEVERSE defect.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What went wrong?
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected area
+      options:
+        - API/service
+        - Authentication
+        - React web app
+        - Flutter mobile app
+        - Database
+        - Agentic AI workflow
+        - Infrastructure/deployment
+        - Documentation
+        - Unknown
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Include dev, main, local Docker, browser/device, OS, and relevant version details.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Logs or screenshots
+      description: Paste sanitized logs or add screenshots. Never include passwords, tokens, keys, or private user data.
+      render: shell

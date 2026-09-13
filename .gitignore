@@ -1,0 +1,69 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+secrets/
+credentials/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.iml
+
+# .NET
+**/bin/
+**/obj/
+*.nupkg
+TestResults/
+coverage/
+*.trx
+.dotnet_cache/
+
+# Node
+**/node_modules/
+**/dist/
+**/.vite/
+**/.next/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Flutter / Dart
+**/.dart_tool/
+**/.packages
+**/.pub-cache/
+**/build/
+**/coverage/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/ios/Pods/
+
+# Python
+**/__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Docker
+*.tar
+docker-data/
+*.pid
+
+# Local reports / private AI logs
+private/
+local/
+docs/ai/private/

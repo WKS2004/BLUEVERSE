@@ -1,0 +1,68 @@
+name: Backend CI
+
+on:
+  push:
+    branches: ["main", "dev"]
+    paths:
+      - "services/**"
+      - "global.json"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    branches: ["main", "dev"]
+    paths:
+      - "services/**"
+      - "global.json"
+      - ".github/workflows/backend-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Detect backend projects
+        id: detect
+        shell: bash
+        run: |
+          if find services -name "*.csproj" -print -quit | grep -q .; then
+            echo "backend_present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "backend_present=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Restore
+        if: steps.detect.outputs.backend_present == 'true'
+        run: |
+          find services -name "*.csproj" -print0 | xargs -0 -r -n1 dotnet restore
+
+      - name: Build
+        if: steps.detect.outputs.backend_present == 'true'
+        run: |
+          find services -name "*.csproj" -print0 | xargs -0 -r -n1 dotnet build --configuration Release --no-restore
+
+      - name: Test
+        if: steps.detect.outputs.backend_present == 'true'
+        run: |
+          found_tests=false
+          while IFS= read -r project; do
+            found_tests=true
+            dotnet test "$project" --configuration Release --no-build --verbosity normal
+          done < <(find services -name "*.csproj" \( -path "*/tests/*" -o -name "*.Tests.csproj" \))
+
+          if [ "$found_tests" = false ]; then
+            echo "No backend test project found yet; CI will enforce tests once test projects are added."
+          fi
+
+      - name: Foundation-only status
+        if: steps.detect.outputs.backend_present != 'true'
+        run: echo "Backend projects are not present yet. CI foundation is installed and waiting for IDE-generated services."

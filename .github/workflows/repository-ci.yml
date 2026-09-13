@@ -1,0 +1,46 @@
+name: Repository Checks
+
+on:
+  push:
+    branches: ["main", "dev"]
+  pull_request:
+    branches: ["main", "dev"]
+
+permissions:
+  contents: read
+
+jobs:
+  structure:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Check required foundation files
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(
+            README.md
+            PROJECT_REQUIREMENTS.md
+            AGENTS.md
+            LICENSE.md
+            compose.yaml
+            render.yaml
+            global.json
+            .gitignore
+            .dockerignore
+            .env.example
+          )
+
+          for file in "${required[@]}"; do
+            test -f "$file" || { echo "Missing required file: $file"; exit 1; }
+          done
+
+          test -d .github
+          test -d .agents
+          test -d docs
+          test -d infrastructure/docker
+
+          echo "BLUEVERSE repository foundation check passed."
