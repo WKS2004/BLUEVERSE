@@ -1,0 +1,109 @@
+name: blueverse
+
+services:
+  edge-nginx:
+    image: dhi.io/nginx:1.30-alpine
+    container_name: blueverse-edge-nginx
+    restart: unless-stopped
+    ports:
+      - "${BLUEVERSE_HTTP_PORT:-80}:80"
+    volumes:
+      - ./infrastructure/docker/edge-nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - api
+    networks:
+      - blueverse_edge
+      - blueverse_internal
+
+  frontend:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/frontend/Dockerfile
+    container_name: blueverse-frontend
+    restart: unless-stopped
+    expose:
+      - "80"
+    networks:
+      - blueverse_edge
+
+  api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/api/Dockerfile
+      args:
+        PROJECT_NAME: Blueverse.Api
+    container_name: blueverse-api
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_HTTP_PORTS: ${API_HTTP_PORT:-8080}
+      ReverseProxy__Clusters__auth__Destinations__auth__Address: ${AUTH_SERVICE_URL:-http://auth:8080}
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-blueverse};Username=${POSTGRES_USER:-blueverse};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth:
+        condition: service_started
+    networks:
+      - blueverse_internal
+      - blueverse_database
+
+  auth:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/auth/Dockerfile
+      args:
+        PROJECT_NAME: Blueverse.Auth
+    container_name: blueverse-auth
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_HTTP_PORTS: ${AUTH_HTTP_PORT:-8080}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?Set ADMIN_EMAIL in .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-blueverse};Username=${POSTGRES_USER:-blueverse};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - blueverse_internal
+      - blueverse_database
+
+  postgres:
+    image: dhi.io/postgres:16-alpine
+    container_name: blueverse-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-blueverse}
+      POSTGRES_USER: ${POSTGRES_USER:-blueverse}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    volumes:
+      - blueverse_postgres_data:/var/lib/postgresql
+    networks:
+      - blueverse_database
+
+networks:
+  blueverse_edge:
+    name: blueverse_edge
+  blueverse_internal:
+    name: blueverse_internal
+    internal: true
+  blueverse_database:
+    name: blueverse_database
+
+volumes:
+  blueverse_postgres_data:
+    name: blueverse_postgres_data

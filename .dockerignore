@@ -1,0 +1,16 @@
+.git
+.github
+.agents
+docs
+*.md
+.env
+.env.*
+**/node_modules
+**/bin
+**/obj
+**/.dart_tool
+**/build
+**/__pycache__
+**/.venv
+TestResults
+coverage
