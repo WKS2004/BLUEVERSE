@@ -2,12 +2,12 @@ name: React Web CI
 
 on:
   push:
-    branches: ["main", "dev"]
+    branches: ["main", "dev", "features/**"]
     paths:
       - "apps/web/**"
       - ".github/workflows/web-ci.yml"
   pull_request:
-    branches: ["main", "dev"]
+    branches: ["main", "dev", "features/**"]
     paths:
       - "apps/web/**"
       - ".github/workflows/web-ci.yml"

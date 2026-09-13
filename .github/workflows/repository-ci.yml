@@ -2,9 +2,9 @@ name: Repository Checks
 
 on:
   push:
-    branches: ["main", "dev"]
+    branches: ["main", "dev", "features/**"]
   pull_request:
-    branches: ["main", "dev"]
+    branches: ["main", "dev", "features/**"]
 
 permissions:
   contents: read
