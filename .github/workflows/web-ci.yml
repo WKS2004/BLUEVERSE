@@ -3,35 +3,32 @@ name: React Web CI
 on:
   push:
     branches: ["main", "dev", "features/**"]
-    paths:
-      - "apps/web/**"
-      - ".github/workflows/web-ci.yml"
   pull_request:
     branches: ["main", "dev", "features/**"]
-    paths:
-      - "apps/web/**"
-      - ".github/workflows/web-ci.yml"
 
 permissions:
   contents: read
-
-defaults:
-  run:
-    working-directory: apps/web
 
 jobs:
   web:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: 24
-      - name: Install dependencies
-        run: npm install
-      - name: Lint
-        run: npm run lint
-      - name: Build
-        run: npm run build
+      - uses: actions/checkout@v5
+        with: { fetch-depth: 0 }
+      - name: Determine scope
+        id: scope
+        shell: bash
+        run: |
+          target="${{ github.ref_name }}"; range="${{ github.event.before }}..${{ github.sha }}"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then target="${{ github.base_ref }}"; range="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"; fi
+          if [[ "$target" == "main" || "$target" == "dev" ]] || git diff --name-only "$range" | grep -Eq '^(apps/web/|\.github/workflows/web-ci\.yml$)'; then echo affected=true >> "$GITHUB_OUTPUT"; else echo affected=false >> "$GITHUB_OUTPUT"; fi
+      - name: Not affected
+        if: steps.scope.outputs.affected != 'true'
+        run: echo "Not affected - no React web changes."
+      - uses: actions/setup-node@v5
+        if: steps.scope.outputs.affected == 'true'
+        with: { node-version: 24 }
+      - name: Lint and build
+        if: steps.scope.outputs.affected == 'true'
+        working-directory: apps/web
+        run: npm install && npm run lint && npm run build

@@ -3,36 +3,32 @@ name: Flutter Mobile CI
 on:
   push:
     branches: ["main", "dev", "features/**"]
-    paths:
-      - "apps/mobile/**"
-      - ".github/workflows/mobile-ci.yml"
   pull_request:
     branches: ["main", "dev", "features/**"]
-    paths:
-      - "apps/mobile/**"
-      - ".github/workflows/mobile-ci.yml"
 
 permissions:
   contents: read
-
-defaults:
-  run:
-    working-directory: apps/mobile
 
 jobs:
   mobile:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-      - name: Install dependencies
-        run: flutter pub get
-      - name: Analyze
-        run: flutter analyze
-      - name: Test
-        run: flutter test
+      - uses: actions/checkout@v5
+        with: { fetch-depth: 0 }
+      - name: Determine scope
+        id: scope
+        shell: bash
+        run: |
+          target="${{ github.ref_name }}"; range="${{ github.event.before }}..${{ github.sha }}"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then target="${{ github.base_ref }}"; range="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"; fi
+          if [[ "$target" == "main" || "$target" == "dev" ]] || git diff --name-only "$range" | grep -Eq '^(apps/mobile/|\.github/workflows/mobile-ci\.yml$)'; then echo affected=true >> "$GITHUB_OUTPUT"; else echo affected=false >> "$GITHUB_OUTPUT"; fi
+      - name: Not affected
+        if: steps.scope.outputs.affected != 'true'
+        run: echo "Not affected - no Flutter mobile changes."
+      - uses: subosito/flutter-action@v2
+        if: steps.scope.outputs.affected == 'true'
+        with: { channel: stable, cache: true }
+      - name: Analyze and test
+        if: steps.scope.outputs.affected == 'true'
+        working-directory: apps/mobile
+        run: flutter pub get && flutter analyze && flutter test

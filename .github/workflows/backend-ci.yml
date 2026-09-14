@@ -3,16 +3,8 @@ name: Backend CI
 on:
   push:
     branches: ["main", "dev", "features/**"]
-    paths:
-      - "services/**"
-      - "global.json"
-      - ".github/workflows/backend-ci.yml"
   pull_request:
     branches: ["main", "dev", "features/**"]
-    paths:
-      - "services/**"
-      - "global.json"
-      - ".github/workflows/backend-ci.yml"
 
 permissions:
   contents: read
@@ -20,49 +12,28 @@ permissions:
 jobs:
   backend:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v5
-        with:
-          global-json-file: global.json
-
-      - name: Detect backend projects
-        id: detect
+      - uses: actions/checkout@v5
+        with: { fetch-depth: 0 }
+      - name: Determine scope
+        id: scope
         shell: bash
         run: |
-          if find services -name "*.csproj" -print -quit | grep -q .; then
-            echo "backend_present=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "backend_present=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Restore
-        if: steps.detect.outputs.backend_present == 'true'
+          target="${{ github.ref_name }}"; range="${{ github.event.before }}..${{ github.sha }}"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then target="${{ github.base_ref }}"; range="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"; fi
+          if [[ "$target" == "main" || "$target" == "dev" ]] || git diff --name-only "$range" | grep -Eq '^(services/|global\.json$|\.github/workflows/backend-ci\.yml$)'; then echo affected=true >> "$GITHUB_OUTPUT"; else echo affected=false >> "$GITHUB_OUTPUT"; fi
+      - name: Not affected
+        if: steps.scope.outputs.affected != 'true'
+        run: echo "Not affected - no backend changes."
+      - uses: actions/setup-dotnet@v5
+        if: steps.scope.outputs.affected == 'true'
+        with: { global-json-file: global.json }
+      - name: Restore, build, and test
+        if: steps.scope.outputs.affected == 'true'
+        shell: bash
         run: |
-          find services -name "*.csproj" -print0 | xargs -0 -r -n1 dotnet restore
-
-      - name: Build
-        if: steps.detect.outputs.backend_present == 'true'
-        run: |
-          find services -name "*.csproj" -print0 | xargs -0 -r -n1 dotnet build --configuration Release --no-restore
-
-      - name: Test
-        if: steps.detect.outputs.backend_present == 'true'
-        run: |
-          found_tests=false
-          while IFS= read -r project; do
-            found_tests=true
-            dotnet test "$project" --configuration Release --no-build --verbosity normal
-          done < <(find services -name "*.csproj" \( -path "*/tests/*" -o -name "*.Tests.csproj" \))
-
-          if [ "$found_tests" = false ]; then
-            echo "No backend test project found yet; CI will enforce tests once test projects are added."
-          fi
-
-      - name: Foundation-only status
-        if: steps.detect.outputs.backend_present != 'true'
-        run: echo "Backend projects are not present yet. CI foundation is installed and waiting for IDE-generated services."
+          projects=$(find services -name '*.csproj' -print 2>/dev/null || true)
+          if [ -z "$projects" ]; then echo "No backend projects yet."; exit 0; fi
+          while IFS= read -r project; do dotnet restore "$project"; dotnet build "$project" --configuration Release --no-restore; done <<< "$projects"
+          tests=$(find services -name '*.csproj' \( -path '*/tests/*' -o -name '*.Tests.csproj' \) -print 2>/dev/null || true)
+          while IFS= read -r test; do [ -n "$test" ] && dotnet test "$test" --configuration Release --no-build; done <<< "$tests"

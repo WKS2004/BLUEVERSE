@@ -12,35 +12,24 @@ permissions:
 jobs:
   structure:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
+      - uses: actions/checkout@v5
+        with: { fetch-depth: 0 }
+      - name: Determine scope
+        id: scope
+        shell: bash
+        run: |
+          target="${{ github.ref_name }}"; range="${{ github.event.before }}..${{ github.sha }}"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then target="${{ github.base_ref }}"; range="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"; fi
+          if [[ "$target" == "main" || "$target" == "dev" ]] || git diff --name-only "$range" | grep -Eq '^(\.github/|\.agents/|docs/|[^/]+$)'; then echo affected=true >> "$GITHUB_OUTPUT"; else echo affected=false >> "$GITHUB_OUTPUT"; fi
+      - name: Not affected
+        if: steps.scope.outputs.affected != 'true'
+        run: echo "Not affected - no repository foundation changes."
       - name: Check required foundation files
+        if: steps.scope.outputs.affected == 'true'
         shell: bash
         run: |
           set -euo pipefail
-          required=(
-            README.md
-            PROJECT_REQUIREMENTS.md
-            AGENTS.md
-            LICENSE.md
-            compose.yaml
-            render.yaml
-            global.json
-            .gitignore
-            .dockerignore
-            .env.example
-          )
-
-          for file in "${required[@]}"; do
-            test -f "$file" || { echo "Missing required file: $file"; exit 1; }
-          done
-
-          test -d .github
-          test -d .agents
-          test -d docs
-          test -d infrastructure/docker
-
-          echo "BLUEVERSE repository foundation check passed."
+          required=(README.md PROJECT_REQUIREMENTS.md AGENTS.md LICENSE.md compose.yaml render.yaml global.json .gitignore .dockerignore .env.example)
+          for file in "${required[@]}"; do test -f "$file" || { echo "Missing required file: $file"; exit 1; }; done
+          test -d .github && test -d .agents && test -d docs && test -d infrastructure/docker
