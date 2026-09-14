@@ -1,0 +1,71 @@
+name: Sync GitHub Configuration
+
+on:
+  push:
+    branches-ignore: ["github-sync/**"]
+    paths:
+      - ".github/**"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: github-config-sync
+  cancel-in-progress: false
+
+jobs:
+  create-sync-pull-requests:
+    name: Create configuration sync pull requests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout all branch history
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create focused sync pull requests
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_BRANCH: ${{ github.ref_name }}
+          RUN_ID: ${{ github.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch --all --prune
+
+          while IFS= read -r target; do
+            [ -n "$target" ] || continue
+            [ "$target" = "$SOURCE_BRANCH" ] && continue
+            [ "$target" = "main" ] && continue
+            [ "$target" = "dev-backup" ] && continue
+
+            safe_target=$(printf '%s' "$target" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9._-]/-/g')
+            sync_branch="github-sync/${safe_target}/${RUN_ID}"
+            git switch --create "$sync_branch" "origin/$target"
+
+            git checkout "origin/$SOURCE_BRANCH" -- .github
+            if git diff --quiet -- .github; then
+              git switch --detach "origin/$SOURCE_BRANCH" >/dev/null
+              git branch --delete --force "$sync_branch" >/dev/null
+              continue
+            fi
+
+            git add .github
+            git commit -m "Sync .github from ${SOURCE_BRANCH}"
+            git push origin "HEAD:refs/heads/${sync_branch}"
+
+            pr_url=$(gh pr create \
+              --base "$target" \
+              --head "$sync_branch" \
+              --title "Sync .github from ${SOURCE_BRANCH}" \
+              --body "Automated synchronization of the .github folder from `${SOURCE_BRANCH}`. Application and service files are not changed.")
+
+            gh pr merge "$pr_url" --auto --squash --delete-branch
+
+            git switch --detach "origin/$SOURCE_BRANCH" >/dev/null
+            git branch --delete --force "$sync_branch" >/dev/null
+          done < <(git for-each-ref --format='%(refname:strip=3)' 'refs/remotes/origin/*' | sort -u)
