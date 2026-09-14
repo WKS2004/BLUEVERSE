@@ -1,0 +1,35 @@
+name: Branch Name Policy
+
+on:
+  create:
+
+permissions:
+  contents: write
+
+jobs:
+  validate-branch-name:
+    name: Validate newly created branch
+    if: github.event.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce branch naming policy
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = context.payload.ref;
+            const allowed = branch === 'main' ||
+              branch === 'dev' ||
+              /^features\/.+$/.test(branch);
+
+            if (allowed) {
+              core.info(`Branch '${branch}' follows the repository naming policy.`);
+              return;
+            }
+
+            core.warning(`Branch '${branch}' does not match the allowed patterns: main, dev, features/**.`);
+            await github.rest.git.deleteRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: `heads/${branch}`
+            });
+            core.setFailed(`Deleted branch '${branch}' because its name does not match the repository policy.`);
