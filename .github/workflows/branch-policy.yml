@@ -20,14 +20,15 @@ jobs:
             const allowed = branch === 'main' ||
               branch === 'dev' ||
               branch === 'dev-backup' ||
-              /^features\/.+$/.test(branch);
+              /^features\/.+$/.test(branch) ||
+              /^dev-backup-mistaken-commits\/[^/]+\/.+$/.test(branch);
 
             if (allowed && branch === branch.toLowerCase()) {
               core.info(`Branch '${branch}' follows the repository naming policy.`);
               return;
             }
 
-            core.warning(`Branch '${branch}' is invalid. Branches must be lowercase and match: main, dev, dev-backup, or features/**.`);
+            core.warning(`Branch '${branch}' is invalid. Branches must be lowercase and match: main, dev, dev-backup, features/**, or dev-backup-mistaken-commits/**.`);
             await github.rest.git.deleteRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
