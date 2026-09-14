@@ -1,0 +1,51 @@
+# BLUEVERSE Render Blueprint
+# The React frontend is intentionally not defined here because the planned
+# deployment target for the frontend is Vercel.
+#
+# DHI registry credentials must be configured in Render if the selected
+# Docker Hardened Images require authenticated registry access.
+
+services:
+  - type: web
+    name: blueverse-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./infrastructure/docker/api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: ASPNETCORE_HTTP_PORTS
+        value: "10000"
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ReverseProxy__Clusters__auth__Destinations__auth__Address
+        value: http://blueverse-auth:10000
+      - key: ConnectionStrings__DefaultConnection
+        fromDatabase:
+          name: blueverse-postgres
+          property: connectionString
+      - key: JWT_SIGNING_KEY
+        sync: false
+
+  - type: pserv
+    name: blueverse-auth
+    runtime: docker
+    plan: free
+    dockerfilePath: ./infrastructure/docker/auth/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/auth/health
+    envVars:
+      - key: ASPNETCORE_HTTP_PORTS
+        value: "10000"
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ConnectionStrings__DefaultConnection
+        fromDatabase:
+          name: blueverse-postgres
+          property: connectionString
+      - key: JWT_SIGNING_KEY
+        sync: false
+
+databases:
+  - name: blueverse-postgres
+    plan: free
