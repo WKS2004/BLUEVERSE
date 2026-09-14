@@ -48,19 +48,27 @@ jobs:
 
           mistaken_commits=$(git rev-list --reverse "origin/dev..origin/dev-backup")
           if [ -n "$mistaken_commits" ]; then
-            first_commit=$(printf '%s\n' "$mistaken_commits" | head -n 1)
-            timestamp=$(git show -s --format='%cI' "$first_commit" | sed -E 's/:/-/g; s/\.[0-9]+//; s/\+.*//; s/T/-/')
+            timestamp=$(date -u '+%Y-%m-%d-%H-%M-%S-%3N')
             actor=$(printf '%s' "$ACTOR" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9._-]/-/g')
             rescue_branch="dev-backup-mistaken-commits/${actor}/${timestamp}"
 
             git switch --create "$rescue_branch" "origin/dev"
+
             while IFS= read -r commit; do
               [ -n "$commit" ] || continue
               parent_count=$(git rev-list --parents -n 1 "$commit" | wc -w)
+              cherry_pick_status=0
               if [ "$parent_count" -gt 2 ]; then
-                git cherry-pick -m 1 "$commit"
+                git cherry-pick -m 1 "$commit" || cherry_pick_status=$?
               else
-                git cherry-pick "$commit"
+                git cherry-pick "$commit" || cherry_pick_status=$?
+              fi
+              if [ "$cherry_pick_status" -ne 0 ]; then
+                if git diff --name-only --diff-filter=U | grep -q .; then
+                  echo "Cherry-pick conflict while preserving ${commit}; stopping before synchronization."
+                  exit "$cherry_pick_status"
+                fi
+                git cherry-pick --skip
               fi
             done <<< "$mistaken_commits"
             git push origin "HEAD:refs/heads/${rescue_branch}"
