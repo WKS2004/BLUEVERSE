@@ -27,6 +27,27 @@ services:
     networks:
       - blueverse_edge
 
+  postgres:
+    image: dhi.io/postgres:16-alpine
+    container_name: blueverse-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-blueverse}
+      POSTGRES_USER: ${POSTGRES_USER:-blueverse}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    volumes:
+      - blueverse_postgres_data:/var/lib/postgresql
+    networks:
+      - blueverse_database
+
   api:
     build:
       context: .
@@ -72,27 +93,6 @@ services:
         condition: service_healthy
     networks:
       - blueverse_internal
-      - blueverse_database
-
-  postgres:
-    image: dhi.io/postgres:16-alpine
-    container_name: blueverse-postgres
-    restart: unless-stopped
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-blueverse}
-      POSTGRES_USER: ${POSTGRES_USER:-blueverse}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 5s
-      timeout: 5s
-      retries: 12
-      start_period: 10s
-    volumes:
-      - blueverse_postgres_data:/var/lib/postgresql
-    networks:
       - blueverse_database
 
 networks:
