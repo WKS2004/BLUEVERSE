@@ -1,7 +1,8 @@
 # CI Workflows
 
-BLUEVERSE uses repository/source validation workflows plus three workflows for
-the Dockerized web application and backend services.
+BLUEVERSE uses repository/source validation workflows, dedicated client,
+backend and Agentic AI test workflows, and three workflows for the Dockerized
+web application and backend services.
 
 ## DHI registry credentials
 
@@ -26,13 +27,33 @@ images.
 | Workflow | Scope | Current behavior |
 |---|---|---|
 | `repository-ci.yml` | Repository foundation | Checks required root files and top-level directories. |
-| `backend-ci.yml` | `services/**` | Restores/builds/tests discovered ASP.NET projects when present. |
+| `backend-ci.yml` | `services/**` | Restores/builds discovered ASP.NET projects when present. Backend tests run in the dedicated backend test workflow. |
 | `web-ci.yml` | `apps/web/**` | Runs `npm install`, ESLint and the Vite build. |
-| `mobile-ci.yml` | `apps/mobile/**` | Runs Flutter dependency resolution, analysis and tests. |
+| `mobile-ci.yml` | `apps/mobile/**` | Runs Flutter dependency resolution and analysis. Mobile tests run in the dedicated mobile test workflow. |
+| `web-tests.yml` | React and `test/app/web/**` | Runs all React web test cases and reports overall metrics. |
+| `mobile-tests.yml` | Flutter and `test/app/mobile/**` | Runs all Flutter mobile test cases and reports test metrics. |
+| `backend-tests.yml` | `services/**` and `test/services/**` | Runs every discovered backend microservice test project in one workflow, with overall and per-service metrics. |
+| `agentic-ai-tests.yml` | `test/ai/**` | Runs every discovered Agentic AI test suite in one workflow, with overall and per-service metrics. |
 
 These workflows also run for `features/**` branches when their existing path
-filters match. The backend workflow has no backend project to build in the
-current checkout; that is a pending foundation item.
+filters match. The backend and Agentic AI test workflows report zero tests and
+exit successfully while their service implementations are not yet present;
+once test projects/suites exist, a failed suite fails the workflow after all
+services have been attempted.
+
+### Test metrics and result artifacts
+
+Each dedicated test workflow prints a metrics block in the job log and appends
+a table to the GitHub Actions step summary. The table includes total,
+completed, passed, failed, skipped, errors, not-run and duration values. The
+backend and Agentic AI workflows additionally print and summarize one row per
+service while retaining an overall aggregate row. JUnit, TRX, Flutter machine
+logs and console output are uploaded as workflow artifacts for failed or
+successful runs. A test is counted as passed or failed according to the test
+runner’s complete assertion result; the metrics do not infer correctness from
+an HTTP status code alone. Test completeness remains a test-authoring and
+review responsibility: new behavior must bring its scenario, boundary and
+extreme-condition tests in the same change.
 
 ## Docker workflows
 

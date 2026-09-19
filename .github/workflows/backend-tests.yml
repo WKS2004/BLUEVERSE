@@ -1,0 +1,86 @@
+name: Backend Microservices Tests
+
+on:
+  push:
+    branches: ["main", "dev", "features/**"]
+  pull_request:
+    branches: ["main", "dev", "features/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Run all backend microservice test projects
+        id: tests
+        shell: bash
+        run: |
+          set +e
+          mkdir -p test-results/backend
+          echo "Test pass/fail is determined by the complete test assertions, not by one response field or HTTP status alone."
+          overall_status=0
+          test_projects=()
+
+          while IFS= read -r -d '' project; do
+            test_projects+=("$project")
+          done < <(find test/services services -type f -name '*.csproj' \( -name '*Tests.csproj' -o -name '*Test.csproj' -o -path '*/tests/*' \) -print0 2>/dev/null | sort -z -u)
+
+          if [[ ${#test_projects[@]} -eq 0 ]]; then
+            echo "No backend test projects found under test/services or services."
+            echo "This workflow currently reports zero tests until backend services and their tests are added."
+            python .github/scripts/report_test_metrics.py --results-root test-results/backend --scope "Backend Microservices"
+            exit 0
+          fi
+
+          for project in "${test_projects[@]}"; do
+            case "$project" in
+              test/services/*) service="${project#test/services/}"; service="${service%%/*}" ;;
+              services/*) service="${project#services/}"; service="${service%%/*}" ;;
+              *) service="unknown" ;;
+            esac
+
+            project_name=$(basename "$project" .csproj)
+            result_dir="test-results/backend/$service"
+            mkdir -p "$result_dir"
+            result_file="$result_dir/${project_name}.trx"
+            echo "============================================================"
+            echo "BACKEND SERVICE: $service"
+            echo "TEST PROJECT: $project"
+            echo "============================================================"
+
+            dotnet test "$project" --configuration Release --logger "trx;LogFileName=$(basename "$result_file")" --results-directory "$result_dir" 2>&1 | tee "$result_dir/console.log"
+            project_status=${PIPESTATUS[0]}
+            if [[ "$project_status" -ne 0 ]]; then
+              overall_status=1
+              echo "Backend service '$service' failed with exit code $project_status."
+            else
+              echo "Backend service '$service' completed successfully."
+            fi
+          done
+
+          python .github/scripts/report_test_metrics.py --results-root test-results/backend --scope "Backend Microservices"
+          exit "$overall_status"
+
+      - name: Upload backend test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-microservices-test-results
+          path: test-results/backend
+          if-no-files-found: ignore
+
+      - name: Final failed backend test case list
+        if: always()
+        shell: bash
+        run: python .github/scripts/report_test_metrics.py --results-root test-results/backend --scope "Backend Microservices" --failures-only

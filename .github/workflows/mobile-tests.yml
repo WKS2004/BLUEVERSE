@@ -1,0 +1,81 @@
+name: Flutter Mobile Tests
+
+on:
+  push:
+    branches: ["main", "dev", "features/**"]
+  pull_request:
+    branches: ["main", "dev", "features/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  flutter-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Analyze Flutter application
+        working-directory: apps/mobile
+        run: flutter pub get && flutter analyze
+
+      - name: Run all Flutter mobile test cases
+        id: tests
+        shell: bash
+        run: |
+          set +e
+          mkdir -p test-results/mobile
+          echo "Test pass/fail is determined by the complete test assertions, not by one response field or HTTP status alone."
+
+          centralized_tests=$(find test/app/mobile -type f \( -name '*_test.dart' -o -name '*_test.g.dart' \) -print 2>/dev/null)
+          package_tests=$(find apps/mobile/test -type f -name '*_test.dart' -print 2>/dev/null)
+
+          if [[ -f test/app/mobile/pubspec.yaml ]]; then
+            echo "Running centralized Flutter test package: test/app/mobile"
+            (cd test/app/mobile && flutter pub get && flutter test --machine) > test-results/mobile/flutter-machine.json 2>&1
+            test_status=$?
+          elif [[ -n "$centralized_tests" ]]; then
+            echo "Centralized Flutter test files exist but no test/app/mobile/pubspec.yaml was found."
+            echo "Add the documented centralized test package or package-local runner before merging these tests."
+            printf '0\n' > test-results/mobile/no-tests.marker
+            test_status=1
+          elif [[ -n "$package_tests" ]]; then
+            echo "Running current Flutter package tests from apps/mobile/test"
+            (cd apps/mobile && flutter test --machine test) > test-results/mobile/flutter-machine.json 2>&1
+            test_status=$?
+          else
+            echo "No Flutter test cases found under test/app/mobile or apps/mobile/test."
+            printf '0\n' > test-results/mobile/no-tests.marker
+            test_status=0
+          fi
+
+          if [[ -f test-results/mobile/flutter-machine.json ]]; then
+            python .github/scripts/report_test_metrics.py --input test-results/mobile/flutter-machine.json --format flutter --scope "Flutter Mobile"
+          else
+            python .github/scripts/report_test_metrics.py --results-root test-results/mobile --scope "Flutter Mobile"
+          fi
+          exit "$test_status"
+
+      - name: Upload Flutter test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-mobile-test-results
+          path: test-results/mobile
+          if-no-files-found: ignore
+
+      - name: Final failed Flutter test case list
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f test-results/mobile/flutter-machine.json ]]; then
+            python .github/scripts/report_test_metrics.py --input test-results/mobile/flutter-machine.json --format flutter --scope "Flutter Mobile" --failures-only
+          else
+            python .github/scripts/report_test_metrics.py --results-root test-results/mobile --scope "Flutter Mobile" --failures-only
+          fi

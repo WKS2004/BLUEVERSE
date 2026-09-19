@@ -167,9 +167,15 @@ GitHub Actions contains source build/test workflows and independent Docker
 build/integration workflows:
 
 - `repository-ci.yml` checks required repository structure.
-- `backend-ci.yml` restores/builds/tests discovered ASP.NET projects when present.
+- `backend-ci.yml` restores/builds discovered ASP.NET projects when present.
 - `web-ci.yml` lints/builds the React project when relevant.
-- `mobile-ci.yml` analyzes/tests the Flutter project when relevant.
+- `mobile-ci.yml` analyzes the Flutter project when relevant.
+- `web-tests.yml` runs all React Web test cases and reports test metrics.
+- `mobile-tests.yml` runs all Flutter Mobile test cases and reports test metrics.
+- `backend-tests.yml` runs all backend microservice test cases in one workflow,
+  with overall and per-service metrics.
+- `agentic-ai-tests.yml` runs all Agentic AI test cases in one workflow, with
+  overall and per-service metrics.
 
 - `docker-web-build.yml` synchronizes the React lockfile with the DHI Node 24 image, then builds the React web image.
 - `docker-backend-build.yml` builds the public API and discovered ASP.NET services one by one.

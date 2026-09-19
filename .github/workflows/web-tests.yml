@@ -1,0 +1,71 @@
+name: React Web Tests
+
+on:
+  push:
+    branches: ["main", "dev", "features/**"]
+  pull_request:
+    branches: ["main", "dev", "features/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  react-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Install web dependencies
+        working-directory: apps/web
+        run: npm install
+
+      - name: Discover and run all React test cases
+        id: tests
+        shell: bash
+        run: |
+          set +e
+          mkdir -p test-results/web
+          echo "Test pass/fail is determined by the complete test assertions, not by one response field or HTTP status alone."
+          test_files=$(find test/app/web -type f \( -name '*.test.ts' -o -name '*.test.tsx' -o -name '*.spec.ts' -o -name '*.spec.tsx' -o -name '*.test.js' -o -name '*.test.jsx' -o -name '*.spec.js' -o -name '*.spec.jsx' \) -print 2>/dev/null)
+          if [[ -z "$test_files" ]]; then
+            echo "No centralized React test cases found under test/app/web."
+            echo "This workflow currently reports zero tests until the web test suite is added."
+            printf '0\n' > test-results/web/no-tests.marker
+            exit 0
+          fi
+
+          if ! node -e "const p=require('./apps/web/package.json'); process.exit(p.scripts && p.scripts['test:ci'] ? 0 : 1)"; then
+            echo "React test files exist, but apps/web/package.json has no test:ci script."
+            exit 1
+          fi
+
+          npm --prefix apps/web run test:ci -- --reporter=junit --outputFile="$PWD/test-results/web/junit.xml" 2>&1 | tee test-results/web/console.log
+          test_status=${PIPESTATUS[0]}
+          python .github/scripts/report_test_metrics.py --results-root test-results/web --scope "React Web"
+          exit "$test_status"
+
+      - name: Report zero-test metrics
+        if: steps.tests.outcome == 'success'
+        shell: bash
+        run: |
+          if [[ -f test-results/web/no-tests.marker ]]; then
+            python .github/scripts/report_test_metrics.py --results-root test-results/web --scope "React Web"
+          fi
+
+      - name: Upload React test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: react-web-test-results
+          path: test-results/web
+          if-no-files-found: ignore
+
+      - name: Final failed React test case list
+        if: always()
+        shell: bash
+        run: python .github/scripts/report_test_metrics.py --results-root test-results/web --scope "React Web" --failures-only

@@ -92,6 +92,31 @@ Every meaningful change should include or update appropriate tests.
 
 Do not claim an implementation is complete merely because it compiles.
 
+Implement the relevant test cases in the same change as the implementation.
+For each behavior, cover the normal passing path plus applicable invalid,
+boundary, extreme, empty/missing, malformed, duplicate, timeout/retry,
+concurrency, dependency-failure and authorization conditions. Derive expected
+behavior from the requirements or contract independently of the implementation
+so a wrong implementation and a copied-wrong test can be detected.
+Newly authored tests may initially fail against an incorrect implementation;
+keep the requirement-based expectation and use the failure as defect evidence
+instead of changing the expected result to match current behavior.
+
+Test outcomes must be determined by the complete test logic. For HTTP tests,
+an expected status code is only one assertion; the body/schema, headers,
+authorization semantics, persistence, audit records, state transitions and
+side effects must also match. A matching status alone does not make a test
+pass, and an expected non-2xx status is not an error when the complete test
+logic intentionally requires it. Do not weaken or rewrite failing tests merely
+to make CI pass; fix the implementation or configuration under test.
+
+Agents must ask the user for permission before changing, deleting, skipping or
+relaxing an existing test. This includes the case where both implementation
+and test were created incorrectly—for example, a requirement says a range is
+1–10 but both code and tests use 100–1000. After approval, correct the test and
+implementation together, record why the original test was wrong, and add the
+boundary cases that prevent the error from returning.
+
 ## Git
 
 Prefer focused commits with descriptive messages.
