@@ -1,8 +1,9 @@
 # Deployment Architecture
 
-The deployment files describe the target topology. No cloud deployment or
-backend runtime is currently evidenced in this checkout, and the API/Auth
-source projects required by the Docker images are still missing.
+The deployment files describe the target topology. No cloud deployment is
+currently evidenced in this checkout. The .NET 10 public API source is present
+at `services/api`; the internal Auth source required for the complete backend
+deployment is still pending.
 
 ## Planned cloud direction
 

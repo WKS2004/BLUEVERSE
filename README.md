@@ -4,7 +4,7 @@
 
 BLUEVERSE is an integrated coastal ecosystem platform combining coastal tourism, marine intelligence, environmental resilience, safety, sustainability and future coastal-livelihood capabilities.
 
-This repository is the **v0 foundation** for the SE3090 integrated full-stack and Agentic AI project. The React and Flutter starter projects are checked in. The ASP.NET service directories are reserved by the architecture and Docker configuration, but are not present in the current checkout; backend generation/implementation is the next foundation step. Major domain workflows and the final Agentic AI workflow remain intentionally deferred to later phases.
+This repository is the **v0 foundation** for the SE3090 integrated full-stack and Agentic AI project. The React and Flutter starter projects and the ASP.NET Core public API foundation are checked in. The internal Auth service and major domain workflows remain implementation work, while the final Agentic AI workflow is intentionally deferred to later phases.
 
 ## Project identity
 
@@ -48,9 +48,9 @@ BLUEVERSE/
 │       ├── edge-nginx/
 │       ├── frontend/
 │       └── auth/
-├── services/                # expected ASP.NET Core services (not yet checked in)
-│   ├── api/                  # public API
-│   └── auth/                 # internal Auth service
+├── services/                # ASP.NET Core services
+│   ├── api/                  # checked-in public API foundation
+│   └── auth/                 # internal Auth service (pending)
 ├── AGENTS.md
 ├── compose.yaml
 ├── global.json
@@ -88,10 +88,10 @@ apps/web/          # React
 apps/mobile/       # Flutter
 ```
 
-`services/api/` and `services/auth/` are expected locations referenced by
-Compose, the Dockerfiles, Render and CI, but those directories are not present
-in this checkout yet. Consequently, the backend image builds and full Compose
-stack cannot succeed until the ASP.NET projects are added. Do not move the
+`services/api/` and `services/auth/` are the service locations referenced by
+Compose, the Dockerfiles, Render and CI. The public API foundation is checked
+in; the Auth project is still pending, so the complete backend image build and
+full Compose stack cannot succeed until Auth is added. Do not move the
 Dockerfiles into generated projects; keep them under `infrastructure/docker/`.
 
 ## Local infrastructure
@@ -114,7 +114,7 @@ Local PostgreSQL is published on host port `5432` for pgAdmin4 inspection and ma
 
 Copy `.env.example` to `.env` before starting the stack.
 
-After the ASP.NET projects have been added:
+After the Auth project has been added:
 
 ```bash
 bash scripts/Unix/bash/sync-web-lockfile.sh
@@ -126,10 +126,11 @@ docker compose ps
 On Windows without WSL2, use the PowerShell lockfile script described in
 `docs/development/setup.md`.
 
-The current checkout can be structurally reviewed without Docker, but it cannot
-start the complete stack because the API and Auth source directories are still
-missing. `docker compose build` is therefore a pending foundation check, not a
-passing command in the current state.
+The current checkout can run the API directly with `dotnet run --project
+services/api --launch-profile http`, but it cannot start the complete Compose
+stack because the Auth source directory is still missing. `docker compose
+build` is therefore a pending full-stack check, not an API implementation
+check, in the current state.
 
 ### Windows PowerShell scripts
 
@@ -177,10 +178,9 @@ build/integration workflows:
 
 The web and backend build workflows run on `main` and `dev` pushes and pull requests. `main` always builds. On `dev`, they build only when their relevant application, service, Docker infrastructure, lockfile synchronization, workflow or build-context paths change. The stack-health workflow waits for both builds for the same commit, synchronizes the web lockfile again on its separate runner, and then runs the Compose health checks. Backend build failures are collected across all services so later services are still checked before the workflow fails.
 
-The Docker backend workflow intentionally reports the missing `services/api`
-directory in the current checkout. This is expected until the generated
-backend projects are committed; it is not evidence that the backend is already
-implemented.
+The Docker backend workflow builds `services/api` first and reports any other
+service directory that is still missing. The current expected gap is the
+internal Auth service; this does not mean the public API foundation is absent.
 
 See [Docker CI Workflows](docs/development/ci.md) for the complete workflow behavior and service conventions.
 

@@ -1,8 +1,8 @@
 # Local Deployment
 
-The local Compose topology is defined, but the current checkout does not yet
-contain the API and Auth source projects required by the Compose build. The
-steps below become runnable after those projects are added.
+The local Compose topology is defined. The public API source is checked in at
+`services/api`; the complete Compose build remains blocked until the internal
+Auth source is added.
 
 ## Prerequisites
 
@@ -25,7 +25,7 @@ PostgreSQL is available to host tools such as pgAdmin4 at `127.0.0.1:5432` using
 
 ## Build
 
-After `services/api` and `services/auth` are present:
+After `services/auth` is present:
 
 ```bash
 bash scripts/Unix/bash/sync-web-lockfile.sh

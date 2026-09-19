@@ -32,10 +32,10 @@ apps/web
 apps/mobile
 ```
 
-Both clients are still generated starter implementations. The expected
-`services/api` and `services/auth` directories are currently absent, so add the
-ASP.NET projects before attempting the full Compose build. Do not add business
-rules to the clients that contradict the API contract.
+Both clients are still generated starter implementations. The public API is
+implemented in `services/api`; the internal `services/auth` project is still a
+pending dependency for the complete Compose stack. Do not add business rules
+to the clients that contradict the API contract.
 
 ## Backend SDK
 
@@ -135,13 +135,22 @@ After execution completes, restore the restricted policy:
 Set-ExecutionPolicy Restricted
 ```
 
-Once the backend projects are present and the stack is running, verify:
+The API can be smoke-tested independently of the full stack:
+
+```bash
+dotnet run --project services/api --launch-profile http
+```
+
+Then verify `http://localhost:5169/api/health` and
+`http://localhost:5169/api/swagger`. For gateway verification, add the Auth
+project, start the complete Compose stack, and verify:
 
 ```text
 GET http://localhost/health
 GET http://localhost/api/health
 GET http://localhost/api/auth/health
 GET http://localhost/api/swagger/v1.json
+GET http://localhost/api/swagger/v1/swagger.json
 GET http://localhost/api/auth/swagger/v1/swagger.json
 ```
 
@@ -151,7 +160,8 @@ Open the unified Swagger UI at:
 http://localhost/api/swagger
 ```
 
-There is no public `/auth/...` or `/health` backend route. Auth requests must use `/api/auth/...` and are forwarded by the API service.
+There is no public `/auth/...` or bare `/health` backend route. Auth requests
+must use `/api/auth/...` and are forwarded by the API service.
 
 Additional ASP.NET services follow the public gateway convention:
 

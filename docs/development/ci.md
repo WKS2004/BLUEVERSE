@@ -31,8 +31,9 @@ images.
 | `mobile-ci.yml` | `apps/mobile/**` | Runs Flutter dependency resolution, analysis and tests. |
 
 These workflows also run for `features/**` branches when their existing path
-filters match. The backend workflow has no backend project to build in the
-current checkout; that is a pending foundation item.
+filters match. The backend workflow builds the checked-in API project and
+discovers additional ASP.NET projects when they are added. It also runs any
+matching test projects; no API test project is checked in yet.
 
 ## Docker workflows
 
@@ -84,9 +85,11 @@ services/<service-name>/              # ASP.NET service source and .csproj
 infrastructure/docker/<service-name>/Dockerfile
 ```
 
-Because `services/api` is currently absent, the backend Docker workflow is
-expected to fail with a clear missing-service error until the ASP.NET projects
-are added. This is intentional validation of the repository contract.
+The checked-in `services/api` directory is required and is built first. The
+workflow also validates every Dockerfile under `infrastructure/docker` against
+its matching service directory. Since the Auth Dockerfile exists while
+`services/auth` is still pending, the full backend image workflow continues to
+report that missing Auth service until it is added.
 
 ## Compose stack health workflow
 
@@ -102,7 +105,9 @@ http://127.0.0.1:8080/api/health
 http://127.0.0.1:8080/api/<service-name>/health
 ```
 
-The first endpoint checks the frontend. The second checks the public API. Additional endpoints are discovered from ASP.NET services under `services`, excluding `api`.
+The first endpoint checks the frontend. The second checks the public API.
+Additional endpoints are discovered from ASP.NET services under `services`,
+excluding `api`.
 
 When a health check fails, the workflow prints Compose status and recent service logs. Compose is always torn down with volumes and orphan containers removed, including after a failed build or health check.
 

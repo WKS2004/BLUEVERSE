@@ -1,8 +1,8 @@
 # Service Boundaries
 
-The following are intended boundaries. Only the edge/frontend Docker
-configuration and client starter projects are currently checked in; the API
-and Auth source directories remain to be generated.
+The following are the intended boundaries. The edge/frontend configuration,
+client starter projects and public API foundation are checked in. The Auth and
+future domain services remain separate implementation work.
 
 ## edge-nginx
 
@@ -25,7 +25,7 @@ Responsibilities:
 
 Not authoritative for permissions or business rules.
 
-## api (expected at `services/api`)
+## api (`services/api`)
 
 Responsibilities:
 
@@ -38,7 +38,12 @@ Responsibilities:
 - workflow initiation
 - approval enforcement
 
-## auth (expected at `services/auth`)
+Current foundation behavior includes `GET /api/health`, OpenAPI/Swagger
+publication, CORS, forwarded headers, RFC 7807-style gateway errors and YARP
+forwarding for `/api/auth/*`. The domain responsibilities above are the target
+boundary for subsequent API work.
+
+## auth (pending at `services/auth`)
 
 Responsibilities:
 

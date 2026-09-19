@@ -19,9 +19,11 @@ Testing will cover the current foundation and the later business workflows:
   runner is checked in yet.
 - Flutter: the generated counter widget test and static-analysis workflow are
   present.
-- ASP.NET/API: no service source or tests are checked in yet.
-- Docker: web/backend image and Compose health workflows are configured, but
-  the backend workflows remain blocked by the missing ASP.NET service projects.
+- ASP.NET/API: `services/api` is checked in and builds, but no API test project
+  is checked in yet. The Auth service and its tests remain pending.
+- Docker: web/backend image and Compose health workflows are configured. The
+  API image can be built, while the complete backend/Compose workflow remains
+  blocked by the missing Auth service.
 
 Critical business rules should have deterministic tests.
 
