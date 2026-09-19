@@ -76,6 +76,13 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
+      - name: Log in to Docker Hardened Images registry
+        uses: docker/login-action@v3
+        with:
+          registry: dhi.io
+          username: ${{ secrets.DHI_USERNAME }}
+          password: ${{ secrets.DHI_TOKEN }}
+
       - name: Validate and start Docker Compose
         shell: bash
         run: |

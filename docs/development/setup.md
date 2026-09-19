@@ -51,6 +51,16 @@ as defined by `global.json`.
 
 Build from the repository root so Dockerfiles can access their expected project paths.
 
+The selected Docker Hardened Images require a registry login before the first
+pull. Authenticate locally with a Docker PAT or organization access token:
+
+```bash
+docker login dhi.io
+```
+
+Use a read-only token where possible. Do not put the token in `.env`, a script,
+or a committed configuration file.
+
 ```bash
 docker compose --env-file .env config --quiet
 docker compose build

@@ -11,6 +11,11 @@ Custom Dockerfiles remain here so application codebases can stay close to their 
 
 PostgreSQL is consumed directly from its selected DHI image in `compose.yaml`; a custom PostgreSQL Dockerfile is intentionally not created.
 
+The selected DHI images require authentication to `dhi.io`. Local developers
+should run `docker login dhi.io` with a Docker PAT or organization access token.
+CI uses the `DHI_USERNAME` and `DHI_TOKEN` GitHub Secrets documented in
+`docs/development/ci.md`.
+
 Auth is an internal backend service. It is not attached to the edge network and must be reached through the API's `/api/auth/...` reverse-proxy route.
 
 Every ASP.NET backend service should keep its Dockerfile in a matching directory under `infrastructure/docker/<service-name>/Dockerfile`. The Docker backend workflow discovers first-level ASP.NET services under `services`, builds the public `api` service first, and then builds the remaining services one by one.

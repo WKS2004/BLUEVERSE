@@ -68,6 +68,14 @@ jobs:
         if: steps.scope.outputs.build != 'true'
         run: echo "Skipping web image build because no relevant dev-branch changes were detected."
 
+      - name: Log in to Docker Hardened Images registry
+        if: steps.scope.outputs.build == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: dhi.io
+          username: ${{ secrets.DHI_USERNAME }}
+          password: ${{ secrets.DHI_TOKEN }}
+
       - name: Synchronize web lockfile and build React image
         if: steps.scope.outputs.build == 'true'
         shell: bash

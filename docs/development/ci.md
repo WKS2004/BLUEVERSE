@@ -3,6 +3,24 @@
 BLUEVERSE uses repository/source validation workflows plus three workflows for
 the Dockerized web application and backend services.
 
+## DHI registry credentials
+
+The selected Docker Hardened Images are pulled from `dhi.io`, which requires
+registry authentication. Configure these GitHub repository secrets before
+expecting Docker workflows to pass:
+
+| Secret | Value |
+|---|---|
+| `DHI_USERNAME` | Docker ID for a PAT, or the Docker organization name for an OAT. |
+| `DHI_TOKEN` | A Docker personal access token or organization access token with read/pull access to the required DHI repositories. |
+
+The web, backend and Compose health workflows log in to `dhi.io` immediately
+before any DHI image is pulled. Tokens are supplied only through GitHub Secrets
+and are never written to repository files or workflow logs. Pull requests from
+forks do not receive repository secrets; their Docker jobs therefore require a
+trusted branch or an approved credential strategy before they can pull DHI
+images.
+
 ## Source and repository workflows
 
 | Workflow | Scope | Current behavior |
