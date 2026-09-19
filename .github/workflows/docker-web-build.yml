@@ -1,0 +1,117 @@
+name: Docker Web Build
+
+on:
+  push:
+    branches: ["main", "dev"]
+  pull_request:
+    branches: ["main", "dev"]
+
+permissions:
+  contents: read
+
+jobs:
+  docker-web-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Determine whether the web image should build
+        id: scope
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE_SHA: ${{ github.event.before }}
+          CURRENT_SHA: ${{ github.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -Eeuo pipefail
+
+          build=false
+          target="$REF_NAME"
+
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            target="$BASE_REF"
+            diff_range="${BASE_SHA}..${HEAD_SHA}"
+          else
+            diff_range="${BEFORE_SHA}..${CURRENT_SHA}"
+          fi
+
+          if [[ "$target" == "main" ]]; then
+            build=true
+          elif [[ "$target" == "dev" ]]; then
+            if [[ "$EVENT_NAME" == "push" && "$BEFORE_SHA" =~ ^0+$ ]]; then
+              build=true
+            else
+              changed_files="$(git diff --name-only "$diff_range")"
+              while IFS= read -r changed_file; do
+                case "$changed_file" in
+                  apps/web/*|infrastructure/docker/frontend/*|scripts/Unix/bash/sync-web-lockfile.sh|scripts/Windows/powershell/sync-web-lockfile.ps1|.dockerignore|.github/workflows/docker-web-build.yml)
+                    build=true
+                    break
+                    ;;
+                esac
+              done <<< "$changed_files"
+            fi
+          fi
+
+          echo "Web image build required: $build"
+          echo "build=$build" >> "$GITHUB_OUTPUT"
+
+      - name: Skip web image build
+        if: steps.scope.outputs.build != 'true'
+        run: echo "Skipping web image build because no relevant dev-branch changes were detected."
+
+      - name: Synchronize web lockfile and build React image
+        if: steps.scope.outputs.build == 'true'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          sync_script="scripts/Unix/bash/sync-web-lockfile.sh"
+          if [[ ! -f "$sync_script" ]]; then
+            echo "::error::Web lockfile synchronization script not found: $sync_script"
+            exit 1
+          fi
+
+          if bash "$sync_script"; then
+            :
+          else
+            status=$?
+            echo "::error::Web dependency lockfile synchronization failed using $sync_script (exit code $status)."
+            exit "$status"
+          fi
+
+          if [[ ! -d apps/web ]]; then
+            echo "::error::React web application directory not found: apps/web"
+            exit 1
+          fi
+
+          dockerfile="infrastructure/docker/frontend/Dockerfile"
+          if [[ ! -f "$dockerfile" ]]; then
+            echo "::error::React web Dockerfile not found: $dockerfile"
+            exit 1
+          fi
+
+          nginx_config="infrastructure/docker/frontend/nginx.conf"
+          if [[ ! -f "$nginx_config" ]]; then
+            echo "::error::React web Nginx configuration not found: $nginx_config"
+            exit 1
+          fi
+
+          if docker build \
+            --file "$dockerfile" \
+            --tag blueverse-frontend:ci \
+            .; then
+            :
+          else
+            status=$?
+            echo "::error::React web Docker build failed using $dockerfile (exit code $status)."
+            exit "$status"
+          fi

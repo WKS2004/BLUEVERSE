@@ -1,6 +1,8 @@
 # Render Deployment
 
-`render.yaml` is the initial Render Blueprint.
+`render.yaml` is the initial Render Blueprint. It is deployment configuration,
+not deployment evidence; it cannot produce a working backend until the API and
+Auth projects referenced by its Dockerfiles are committed.
 
 It defines:
 

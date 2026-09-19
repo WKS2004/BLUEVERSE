@@ -7,7 +7,7 @@
     Generates or updates apps/web/package-lock.json from apps/web/package.json
     without installing node_modules on the host machine.
 
-This script is the PowerShell equivalent of scripts/bash/sync-web-lockfile.sh
+This script is the PowerShell equivalent of scripts/Unix/bash/sync-web-lockfile.sh
     and can be run on Windows machines that do not have a Linux WSL2
     distribution installed.
 
@@ -15,13 +15,13 @@ This script is the PowerShell equivalent of scripts/bash/sync-web-lockfile.sh
     DHI Node 24 container so the host needs no local Node.js installation.
 
 .EXAMPLE
-    pwsh -File scripts\powershell\sync-web-lockfile.ps1
+    pwsh -File scripts\Windows\powershell\sync-web-lockfile.ps1
     # or from within PowerShell:
-    .\scripts\powershell\sync-web-lockfile.ps1
+    .\scripts\Windows\powershell\sync-web-lockfile.ps1
 
     Run from an elevated Administrator PowerShell session:
         Set-ExecutionPolicy RemoteSigned
-        pwsh -File scripts\powershell\sync-web-lockfile.ps1
+        pwsh -File scripts\Windows\powershell\sync-web-lockfile.ps1
         Set-ExecutionPolicy Restricted
 #>
 
@@ -36,7 +36,7 @@ if (-not $Principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
 # ---------------------------------------------------------------------------
 # Resolve paths
 # ---------------------------------------------------------------------------
-$RepoRoot    = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+$RepoRoot    = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
 $WebDir      = Join-Path $RepoRoot 'apps\web'
 $PackageJson = Join-Path $WebDir 'package.json'
 $PackageLock = Join-Path $WebDir 'package-lock.json'

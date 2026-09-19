@@ -1,0 +1,242 @@
+name: Docker Backend Builds
+
+on:
+  push:
+    branches: ["main", "dev"]
+  pull_request:
+    branches: ["main", "dev"]
+
+permissions:
+  contents: read
+
+jobs:
+  docker-backend-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Determine whether backend images should build
+        id: scope
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE_SHA: ${{ github.event.before }}
+          CURRENT_SHA: ${{ github.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -Eeuo pipefail
+
+          build=false
+          target="$REF_NAME"
+
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            target="$BASE_REF"
+            diff_range="${BASE_SHA}..${HEAD_SHA}"
+          else
+            diff_range="${BEFORE_SHA}..${CURRENT_SHA}"
+          fi
+
+          if [[ "$target" == "main" ]]; then
+            build=true
+          elif [[ "$target" == "dev" ]]; then
+            if [[ "$EVENT_NAME" == "push" && "$BEFORE_SHA" =~ ^0+$ ]]; then
+              build=true
+            else
+              changed_files="$(git diff --name-only "$diff_range")"
+              while IFS= read -r changed_file; do
+                case "$changed_file" in
+                  services/*|infrastructure/docker/api/*|.dockerignore|global.json|.github/workflows/docker-backend-build.yml)
+                    build=true
+                    break
+                    ;;
+                  infrastructure/docker/*/*)
+                    docker_service="${changed_file#infrastructure/docker/}"
+                    docker_service="${docker_service%%/*}"
+                    # Any backend Dockerfile directory change is relevant, even
+                    # when its service directory is missing and validation must
+                    # report that mismatch.
+                    if [[ "$docker_service" != "frontend" && "$docker_service" != "edge-nginx" ]]; then
+                      build=true
+                      break
+                    fi
+                    ;;
+                esac
+              done <<< "$changed_files"
+            fi
+          fi
+
+          echo "Backend image build required: $build"
+          echo "build=$build" >> "$GITHUB_OUTPUT"
+
+      - name: Skip backend image builds
+        if: steps.scope.outputs.build != 'true'
+        run: echo "Skipping backend image builds because no relevant dev-branch changes were detected."
+
+      - name: Build backend service images sequentially
+        if: steps.scope.outputs.build == 'true'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          services_root="services"
+          docker_root="infrastructure/docker"
+          errors=()
+
+          record_error() {
+            errors+=("$1")
+          }
+
+          if [[ ! -d "$services_root" ]]; then
+            echo "::error::Backend services directory not found: $services_root"
+            record_error "Backend services directory not found: $services_root"
+          fi
+
+          is_aspnet_service() {
+            local service_dir="$1"
+            local has_program=false
+            local aspnet_program=false
+
+            while IFS= read -r -d '' program_file; do
+              has_program=true
+
+              if grep -Eiq 'WebApplication|Microsoft\.AspNetCore|ConfigureWebHostDefaults|UseKestrel|Map(Get|Post|Put|Patch|Delete)\s*\(' "$program_file"; then
+                aspnet_program=true
+                break
+              fi
+
+              while IFS= read -r -d '' project_file; do
+                if grep -Eiq 'Microsoft\.NET\.Sdk\.Web|Microsoft\.AspNetCore\.App|Microsoft\.AspNetCore\.' "$project_file"; then
+                  aspnet_program=true
+                  break
+                fi
+              done < <(find "$service_dir" -type f -name '*.csproj' -print0)
+
+              [[ "$aspnet_program" == true ]] && break
+            done < <(find "$service_dir" -type f -name 'Program.cs' -print0)
+
+            if [[ "$has_program" != true ]]; then
+              return 2
+            fi
+
+            [[ "$aspnet_program" == true ]]
+          }
+
+          build_backend_service() {
+            local service_dir="$1"
+            local service_name="$2"
+            local dockerfile="$docker_root/$service_name/Dockerfile"
+            local project_file
+            local project_name
+            local image_name
+            build_error=""
+
+            if [[ ! -f "$dockerfile" ]]; then
+              build_error="${service_name}: Dockerfile not found: $dockerfile"
+              echo "::error::$build_error"
+              return 1
+            fi
+
+            project_file="$(find "$service_dir" -maxdepth 1 -type f -name '*.csproj' -print | sort | head -n 1)"
+            if [[ -z "$project_file" ]]; then
+              build_error="${service_name}: no .csproj file found directly inside $service_dir"
+              echo "::error::$build_error"
+              return 1
+            fi
+
+            project_name="$(basename "$project_file" .csproj)"
+            image_name="blueverse-${service_name,,}:ci"
+            echo "Building backend service '$service_name' as $image_name using $dockerfile"
+
+            if docker build \
+              --file "$dockerfile" \
+              --tag "$image_name" \
+              --build-arg "PROJECT_NAME=$project_name" \
+              .; then
+              :
+            else
+              status=$?
+              build_error="${service_name}: Docker build failed using $dockerfile (exit code $status)"
+              echo "::error::$build_error"
+              return "$status"
+            fi
+          }
+
+          if [[ ! -d "$docker_root" ]]; then
+            echo "::error::Backend Docker infrastructure directory not found: $docker_root"
+            record_error "Backend Docker infrastructure directory not found: $docker_root"
+          else
+            while IFS= read -r -d '' docker_service_dir; do
+              docker_service_name="${docker_service_dir#${docker_root}/}"
+              case "$docker_service_name" in
+                api|frontend|edge-nginx)
+                  continue
+                  ;;
+              esac
+
+              if [[ -f "$docker_service_dir/Dockerfile" && ! -d "$services_root/$docker_service_name" ]]; then
+                error_message="${docker_service_name}: Dockerfile exists at $docker_service_dir/Dockerfile but matching service directory is missing: $services_root/$docker_service_name"
+                echo "::error::$error_message"
+                record_error "$error_message"
+              fi
+            done < <(find "$docker_root" -mindepth 1 -maxdepth 1 -type d -print0 | sort -z)
+          fi
+
+          api_dir="$services_root/api"
+          if [[ -d "$services_root" ]]; then
+            if [[ ! -d "$api_dir" ]]; then
+              echo "::error::Required public API service directory not found: $api_dir"
+              record_error "Required public API service directory not found: $api_dir"
+            elif is_aspnet_service "$api_dir"; then
+              if build_backend_service "$api_dir" api; then
+                :
+              else
+                status=$?
+                record_error "${build_error:-api: Docker build failed or a required build file was missing (exit code $status)}"
+              fi
+            else
+              status=$?
+              if [[ "$status" -eq 2 ]]; then
+                echo "::error::The public API service has no Program.cs: $api_dir"
+                record_error "api: no Program.cs found in $api_dir"
+              else
+                echo "::error::The public API service is not identified as an ASP.NET service: $api_dir"
+                record_error "api: service is not identified as an ASP.NET service"
+              fi
+            fi
+
+            while IFS= read -r -d '' service_dir; do
+              service_name="${service_dir#${services_root}/}"
+              [[ "$service_name" == "api" ]] && continue
+
+              if is_aspnet_service "$service_dir"; then
+                if build_backend_service "$service_dir" "$service_name"; then
+                  :
+                else
+                  status=$?
+                  record_error "${build_error:-$service_name: Docker build failed or a required build file was missing (exit code $status)}"
+                fi
+              else
+                status=$?
+                if [[ "$status" -eq 2 ]]; then
+                  echo "Skipping $service_name: no Program.cs found."
+                else
+                  echo "Skipping $service_name: Program.cs is not identified as an ASP.NET service."
+                fi
+              fi
+            done < <(find "$services_root" -mindepth 1 -maxdepth 1 -type d -print0 | sort -z)
+          fi
+
+          if ((${#errors[@]} > 0)); then
+            echo "::group::Backend build errors"
+            printf '%s\n' "${errors[@]}"
+            echo "::endgroup::"
+            echo "::error::Backend Docker builds completed with ${#errors[@]} error(s)."
+            exit 1
+          fi

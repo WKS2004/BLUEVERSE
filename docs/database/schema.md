@@ -1,6 +1,8 @@
 # Schema Design Status
 
 The v0 repository foundation does not define the final business schema yet.
+PostgreSQL is configured in Compose, but the backend projects, EF Core model
+and migrations are not present in the current checkout.
 
 The initial auth/authorization schema will be designed after the generated ASP.NET services are established.
 

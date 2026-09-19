@@ -1,5 +1,9 @@
 # Service Boundaries
 
+The following are intended boundaries. Only the edge/frontend Docker
+configuration and client starter projects are currently checked in; the API
+and Auth source directories remain to be generated.
+
 ## edge-nginx
 
 Responsibilities:
@@ -21,7 +25,7 @@ Responsibilities:
 
 Not authoritative for permissions or business rules.
 
-## api
+## api (expected at `services/api`)
 
 Responsibilities:
 
@@ -34,7 +38,7 @@ Responsibilities:
 - workflow initiation
 - approval enforcement
 
-## auth
+## auth (expected at `services/auth`)
 
 Responsibilities:
 

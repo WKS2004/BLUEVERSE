@@ -1,5 +1,8 @@
 # Database Foundation
 
+PostgreSQL infrastructure is present in Compose, but no EF Core model,
+migrations or application persistence code is checked in yet.
+
 PostgreSQL is the authoritative relational database.
 
 ## Local service

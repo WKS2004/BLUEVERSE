@@ -14,22 +14,28 @@ cp .env.example .env
 
 Never commit `.env`.
 
-For local Compose, `.env` also defines the internal API-to-Auth destination. Keep it as `http://auth:8080`; clients must continue using the public gateway at `/api/...`.
+For local Compose, `.env` also defines the internal API-to-Auth destination.
+Keep it as `http://auth:8080`; clients must continue using the public gateway
+at `/api/...`. Replace the example database/admin passwords before using the
+stack, even for local shared environments.
 
-The configured `ADMIN_EMAIL` and `ADMIN_PASSWORD` seed one administrator account. Normal registration creates users without automatically granting Admin privileges.
+When the Auth implementation is present, the configured `ADMIN_EMAIL` and
+`ADMIN_PASSWORD` seed one administrator account. Normal registration must not
+automatically grant Admin privileges.
 
 ## Applications
 
-The generated application projects are already located at:
+The checked-in client projects are located at:
 
 ```text
 apps/web
 apps/mobile
-services/api
-services/auth
 ```
 
-They are intentionally still starter implementations: replace the template screens incrementally as v1 business components are implemented. Do not add business rules to the clients that contradict the API contract.
+Both clients are still generated starter implementations. The expected
+`services/api` and `services/auth` directories are currently absent, so add the
+ASP.NET projects before attempting the full Compose build. Do not add business
+rules to the clients that contradict the API contract.
 
 ## Backend SDK
 
@@ -46,18 +52,25 @@ as defined by `global.json`.
 Build from the repository root so Dockerfiles can access their expected project paths.
 
 ```bash
+docker compose --env-file .env config --quiet
 docker compose build
 ```
+
+The automated Docker workflows are documented in [Docker CI Workflows](ci.md). They use the same repository-root build context as local builds.
 
 ### Web lockfile (no local Node required)
 
 The `package-lock.json` is generated inside the DHI Node 24 container so the
 host needs no local Node.js installation.
 
+The Docker Web Build workflow runs the same Unix synchronization script before
+building the image. This ensures `npm ci` receives a lockfile generated from
+the current `package.json`, even when the lockfile is missing or stale.
+
 **Linux / macOS / WSL2:**
 
 ```bash
-bash scripts/bash/sync-web-lockfile.sh
+bash scripts/Unix/bash/sync-web-lockfile.sh
 ```
 
 **Windows (PowerShell, no WSL2 required):**
@@ -72,7 +85,7 @@ Set-ExecutionPolicy RemoteSigned
 Run the script:
 
 ```powershell
-pwsh -File scripts\powershell\sync-web-lockfile.ps1
+pwsh -File scripts\Windows\powershell\sync-web-lockfile.ps1
 ```
 
 When it finishes, restore the restricted execution policy:
@@ -88,7 +101,7 @@ Run the structural verification script before committing infrastructure changes.
 **Linux / macOS / WSL2:**
 
 ```bash
-bash scripts/bash/verify-foundation.sh
+bash scripts/Unix/bash/verify-foundation.sh
 ```
 
 **Windows (PowerShell, no WSL2 required):**
@@ -103,7 +116,7 @@ Set-ExecutionPolicy RemoteSigned
 Run the verifier:
 
 ```powershell
-pwsh -File scripts\powershell\verify-foundation.ps1
+pwsh -File scripts\Windows\powershell\verify-foundation.ps1
 ```
 
 After execution completes, restore the restricted policy:
@@ -112,9 +125,10 @@ After execution completes, restore the restricted policy:
 Set-ExecutionPolicy Restricted
 ```
 
-With the stack running, verify:
+Once the backend projects are present and the stack is running, verify:
 
 ```text
+GET http://localhost/health
 GET http://localhost/api/health
 GET http://localhost/api/auth/health
 GET http://localhost/api/swagger/v1.json
@@ -128,3 +142,9 @@ http://localhost/api/swagger
 ```
 
 There is no public `/auth/...` or `/health` backend route. Auth requests must use `/api/auth/...` and are forwarded by the API service.
+
+Additional ASP.NET services follow the public gateway convention:
+
+```text
+GET http://localhost/api/<service-name>/health
+```

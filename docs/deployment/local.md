@@ -1,5 +1,9 @@
 # Local Deployment
 
+The local Compose topology is defined, but the current checkout does not yet
+contain the API and Auth source projects required by the Compose build. The
+steps below become runnable after those projects are added.
+
 ## Prerequisites
 
 - Docker Desktop with WSL2 backend
@@ -14,15 +18,17 @@
 cp .env.example .env
 ```
 
-Set a local PostgreSQL password and confirm `AUTH_SERVICE_URL=http://auth:8080` in `.env`.
+Set local PostgreSQL and administrator passwords and confirm
+`AUTH_SERVICE_URL=http://auth:8080` in `.env`.
 
-PostgreSQL is available to host tools such as pgAdmin4 at `127.0.0.1:5432` using the database credentials from `.env`.
+PostgreSQL is available to host tools such as pgAdmin4 at `127.0.0.1:5432` using the database credentials from `.env`. The administrator seed behavior depends on the Auth implementation, which is not present yet.
 
 ## Build
 
-After the IDE-generated projects are present:
+After `services/api` and `services/auth` are present:
 
 ```bash
+bash scripts/Unix/bash/sync-web-lockfile.sh
 docker compose build
 ```
 
@@ -56,12 +62,21 @@ http://localhost
 Health:
 
 ```text
+http://localhost/health
 http://localhost/api/health
 http://localhost/api/auth/health
+```
+
+Additional ASP.NET services are checked through the API gateway at:
+
+```text
+http://localhost/api/<service-name>/health
+```
 
 Swagger UI:
 
 ```text
 http://localhost/api/swagger
 ```
-```
+
+The local gateway uses host port `80` by default. The CI health workflow uses `http://127.0.0.1:8080` to avoid relying on the default host port.

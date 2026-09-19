@@ -1,6 +1,7 @@
 # Vercel Deployment
 
-The React frontend is planned for Vercel.
+The React frontend is planned for Vercel. The checked-in app is still the
+generated Vite starter and has not been deployed from this repository.
 
 The frontend must receive the deployed ASP.NET Core API base URL through environment configuration.
 

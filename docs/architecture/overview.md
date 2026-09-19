@@ -1,6 +1,6 @@
 # Architecture Overview
 
-## Logical architecture
+## Target logical architecture
 
 ```text
                      Internet / Local Network
@@ -16,15 +16,17 @@
                                                 PostgreSQL
 ```
 
-Flutter is a client application and communicates with the ASP.NET Core API. It is not a backend microservice.
+Flutter is a client application and communicates with the ASP.NET Core API. It
+is not a backend microservice. In the current checkout the ASP.NET service
+source is not present yet; the diagram is the intended v0/v1 boundary.
 
-## Local Docker architecture
+## Local Docker architecture (when backend projects are present)
 
 ```text
 Client
   |
   v
-edge-nginx :8080
+  edge-nginx :80 (or BLUEVERSE_HTTP_PORT)
   |
   +--> frontend :80
   |
@@ -38,11 +40,14 @@ edge-nginx :8080
 Docker networks:
 
 - `blueverse_edge`
-- `blueverse_internal`
+- `blueverse_internal` — API and Auth only; Docker marks it internal
+- `blueverse_database` — API, Auth and PostgreSQL
 
-The internal network is not published directly to the host, except for the explicitly configured local PostgreSQL port `5432` used by pgAdmin4.
+The edge gateway is the only application entry point. PostgreSQL is explicitly
+published on host port `5432` for local pgAdmin4 access; the application
+services use the database network rather than that host port.
 
-## Public application boundary
+## Intended public application boundary
 
 ASP.NET Core is authoritative for:
 

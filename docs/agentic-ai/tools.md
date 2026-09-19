@@ -1,6 +1,7 @@
 # Agentic AI Tools
 
-Tool definitions will be documented here once the assessed workflow is selected.
+Tool definitions will be documented here once the assessed workflow is
+selected. There are no executable Agentic AI tools in the current checkout.
 
 For every tool document:
 

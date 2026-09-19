@@ -8,7 +8,7 @@
     files are present, and that key configuration patterns exist in
     appsettings.json and nginx.conf.
 
-    This script is the PowerShell equivalent of scripts/bash/verify-foundation.sh
+    This script is the PowerShell equivalent of scripts/Unix/bash/verify-foundation.sh
     and produces identical output / exit codes so it can be used on Windows
     machines that do not have a Linux WSL2 distribution installed.
 
@@ -16,13 +16,13 @@
     no dependency on Docker, bash, or WSL2.
 
 .EXAMPLE
-    pwsh -File scripts\powershell\verify-foundation.ps1
+    pwsh -File scripts\Windows\powershell\verify-foundation.ps1
     # or from within PowerShell:
-    .\scripts\powershell\verify-foundation.ps1
+    .\scripts\Windows\powershell\verify-foundation.ps1
 
     Run from an elevated Administrator PowerShell session:
         Set-ExecutionPolicy RemoteSigned
-        pwsh -File scripts\powershell\verify-foundation.ps1
+        pwsh -File scripts\Windows\powershell\verify-foundation.ps1
         Set-ExecutionPolicy Restricted
 #>
 
@@ -37,7 +37,7 @@ if (-not $Principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
 # ---------------------------------------------------------------------------
 # Resolve repository root (parent of the scripts\ folder)
 # ---------------------------------------------------------------------------
-$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..'))
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..'))
 Push-Location $RepoRoot
 
 $Failed = $false

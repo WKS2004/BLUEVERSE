@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Windows users without a WSL2 Linux distro: use the PowerShell equivalent.
-#   pwsh -File scripts\powershell\sync-web-lockfile.ps1
+#   pwsh -File scripts\Windows\powershell\sync-web-lockfile.ps1
 set -euo pipefail
 
 # BLUEVERSE Web Dependency Lockfile Synchronization
@@ -10,9 +10,9 @@ set -euo pipefail
 #   without installing node_modules on the host.
 #
 # Usage:
-#   ./scripts/bash/sync-web-lockfile.sh
+#   ./scripts/Unix/bash/sync-web-lockfile.sh
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 WEB_DIR="$ROOT_DIR/apps/web"
 PACKAGE_JSON="$WEB_DIR/package.json"
 PACKAGE_LOCK="$WEB_DIR/package-lock.json"

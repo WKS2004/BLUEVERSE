@@ -10,10 +10,16 @@ blueverse_edge
 blueverse_internal (internal=true)
   api
   auth
+
+blueverse_database
+  api
+  auth
   postgres
 ```
 
-The edge gateway is connected to both networks so it can receive host traffic and proxy to internal services.
+The edge gateway is connected to the edge and internal networks so it can
+receive host traffic and proxy to internal services. API/Auth/PostgreSQL use
+the separate database network.
 
 ## Routing
 
@@ -27,7 +33,7 @@ No `/api/v1` style path versioning is planned.
 
 ## Host access
 
-The gateway is published on:
+The gateway is published on host port `80` by default (`BLUEVERSE_HTTP_PORT`):
 
 ```text
 http://localhost

@@ -8,17 +8,17 @@ This review compares the checked-in repository with the implementation plan from
 |---|---|---|
 | React web project | Foundation present | `apps/web` is a Vite/React starter. Replace the starter screen with the administrative/staff surface during v1. |
 | Flutter mobile project | Foundation present | `apps/mobile` is a generated Flutter starter. Add mobile workflows, routing, validation and API integration during v1. |
-| ASP.NET Core API | Foundation present | `services/api` targets .NET 10 and exposes `/api/health` plus OpenAPI. EF Core, DTOs, application services, authentication and domain endpoints remain to be implemented. |
-| Auth service | Foundation present | `services/auth` exposes `/api/auth/health` and `/api/auth/swagger/v1/swagger.json` only through the API boundary. Authentication, password hashing, JWT issuance and user/role persistence remain to be implemented. |
+| ASP.NET Core API | Expected, not checked in | `infrastructure/docker/api/Dockerfile`, Compose and the API documentation define the intended .NET 10 public service, but `services/api` is absent. No API route or OpenAPI document is currently runnable. |
+| Auth service | Expected, not checked in | `infrastructure/docker/auth/Dockerfile`, Compose and the API documentation define the intended internal service, but `services/auth` is absent. Authentication, password hashing, JWT issuance and user/role persistence remain unimplemented. |
 | PostgreSQL | Local infrastructure present | Compose provides DHI PostgreSQL 16 and publishes host port `5432` for pgAdmin4. EF Core provider, migrations, schema constraints and audit fields are not yet present. |
 | Edge gateway | Present | `edge-nginx` routes frontend and `/api/*` traffic only. The API forwards `/api/auth/*` to the internal Auth service. |
 | Permission authorization | Design documented only | The role -> permission model is documented in requirements and ADRs, but no policy/permission implementation exists yet. |
 | Agentic AI | Architecture documented only | Safety, tools, workflow state and evaluation guidance exist under `docs/agentic-ai`; no executable agent workflow is present yet. |
 | ML biodiversity capability | Planned | The requirements describe the OBIS/Bio-ORACLE direction, but correctly defer model implementation until the data-dependent workstream is ready. |
-| Testing | Foundation only | Flutter has the generated widget test; backend and React test projects are not present. Add unit, integration and end-to-end coverage with each component. |
-| CI/CD | CI foundation present | Backend/repository workflows exist. Add frontend, Flutter, security, integration and deployment checks as implementations mature. |
+| Testing | Foundation only | Flutter has the generated counter widget test. React has lint/build scripts but no test project; backend tests cannot run because services are absent. Add unit, integration and end-to-end coverage with each component. |
+| CI/CD | Docker CI foundation present | `docker-web-build.yml` synchronizes the React lockfile and builds the React image, `docker-backend-build.yml` discovers and builds ASP.NET services sequentially while aggregating errors, and `docker-stack-health.yml` synchronizes the lockfile again and validates the Compose stack after both builds. Flutter, security, broader integration and deployment checks remain to be expanded. |
 | Deployment | Configuration present, evidence pending | Render API/Auth/PostgreSQL and Vercel documentation exist; live URLs, migrations and deployment evidence must be recorded before submission. |
-| Git/GitHub | Local checkout issue | The reviewed directory currently has no `.git` metadata, so commit history and individual contribution evidence cannot be verified here. Initialize/restore the repository before collaborative development. |
+| Git/GitHub | Repository present | Git metadata and branch history are present in the reviewed checkout. Continue using focused commits, pull requests and contribution evidence. |
 
 ## Guideline-critical work still required
 
@@ -28,9 +28,11 @@ The final submission also needs four distinct business components for a standard
 
 ## Foundation acceptance checks
 
-After copying `.env.example` to `.env` and starting Compose, verify:
+After the missing ASP.NET projects are added, copying `.env.example` to `.env`,
+setting local passwords and starting Compose, verify:
 
 ```text
+GET http://localhost/health
 GET http://localhost/api/health
 GET http://localhost/api/auth/health
 GET http://localhost/api/swagger/v1.json

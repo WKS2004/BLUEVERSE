@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Windows users without a WSL2 Linux distro: use the PowerShell equivalent.
-#   pwsh -File scripts\powershell\verify-foundation.ps1
+#   pwsh -File scripts\Windows\powershell\verify-foundation.ps1
 set -euo pipefail
 
 required=(

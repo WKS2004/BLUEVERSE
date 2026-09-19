@@ -1,6 +1,8 @@
 # Agentic AI Architecture
 
-The final Agentic AI workflow is intentionally not implemented in v0.
+The final Agentic AI workflow is intentionally not implemented in v0. No agent
+service or tool implementation is checked in; this page is the target boundary
+and workflow contract.
 
 The architecture target is:
 

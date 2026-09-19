@@ -1,0 +1,269 @@
+name: Docker Stack Health
+
+on:
+  workflow_run:
+    workflows:
+      - Docker Web Build
+      - Docker Backend Builds
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: docker-stack-health-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: true
+
+jobs:
+  docker-stack-health:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BLUEVERSE_HTTP_PORT: 8080
+      POSTGRES_PASSWORD: blueverse-ci-postgres-password
+      ADMIN_EMAIL: ci-admin@example.com
+      ADMIN_PASSWORD: blueverse-ci-admin-password
+    steps:
+      - name: Wait for both Docker build workflows
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -Eeuo pipefail
+
+          workflows=(docker-web-build.yml docker-backend-build.yml)
+
+          for attempt in {1..90}; do
+            all_succeeded=true
+            waiting_for_workflow=""
+
+            for workflow in "${workflows[@]}"; do
+              state="$(gh api \
+                "repos/${REPOSITORY}/actions/workflows/${workflow}/runs?head_sha=${HEAD_SHA}&per_page=10" \
+                --jq '.workflow_runs[0] | [.status // "missing", .conclusion // ""] | @tsv')"
+              IFS=$'\t' read -r status conclusion <<< "$state"
+
+              if [[ "$status" == "completed" && "$conclusion" == "success" ]]; then
+                echo "$workflow completed successfully for $HEAD_SHA."
+              elif [[ "$status" == "completed" ]]; then
+                echo "::error::$workflow completed with conclusion '$conclusion' for $HEAD_SHA."
+                exit 1
+              else
+                all_succeeded=false
+                waiting_for_workflow="$workflow"
+                echo "Waiting for $workflow for $HEAD_SHA (status: $status)."
+              fi
+            done
+
+            if [[ "$all_succeeded" == true ]]; then
+              exit 0
+            fi
+
+            if [[ "$attempt" -lt 90 ]]; then
+              sleep 10
+            fi
+          done
+
+          echo "::error::Timed out waiting for $waiting_for_workflow to complete for $HEAD_SHA."
+          exit 1
+
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Validate and start Docker Compose
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          compose_file=""
+          for candidate in compose.yaml docker-compose.yml; do
+            if [[ -f "$candidate" ]]; then
+              compose_file="$candidate"
+              break
+            fi
+          done
+
+          if [[ -z "$compose_file" ]]; then
+            echo "::error::Docker Compose file not found in the repository root. Expected compose.yaml or docker-compose.yml."
+            exit 1
+          fi
+
+          sync_script="scripts/Unix/bash/sync-web-lockfile.sh"
+          if [[ ! -f "$sync_script" ]]; then
+            echo "::error::Web lockfile synchronization script not found: $sync_script"
+            exit 1
+          fi
+
+          if bash "$sync_script"; then
+            :
+          else
+            status=$?
+            echo "::error::Web dependency lockfile synchronization failed using $sync_script (exit code $status)."
+            exit "$status"
+          fi
+
+          echo "Using Docker Compose file: $compose_file"
+
+          if ! docker compose version; then
+            echo "::error::Docker Compose is unavailable on the GitHub Actions runner."
+            exit 1
+          fi
+
+          if docker compose --file "$compose_file" config --quiet; then
+            :
+          else
+            status=$?
+            echo "::error::Docker Compose configuration validation failed for $compose_file (exit code $status)."
+            exit "$status"
+          fi
+
+          if docker compose --file "$compose_file" up --build --detach --wait; then
+            :
+          else
+            status=$?
+            echo "::error::Docker Compose failed while building or starting $compose_file (exit code $status)."
+            exit "$status"
+          fi
+
+      - name: Check application health endpoints
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          compose_file=""
+          for candidate in compose.yaml docker-compose.yml; do
+            if [[ -f "$candidate" ]]; then
+              compose_file="$candidate"
+              break
+            fi
+          done
+
+          if [[ -z "$compose_file" ]]; then
+            echo "::error::Docker Compose file disappeared before health checks could run."
+            exit 1
+          fi
+
+          base_url="http://127.0.0.1:${BLUEVERSE_HTTP_PORT}"
+
+          check_endpoint() {
+            local endpoint="$1"
+            echo "Checking $endpoint"
+            curl \
+              --fail-with-body \
+              --silent \
+              --show-error \
+              --retry 15 \
+              --retry-delay 2 \
+              --retry-connrefused \
+              --max-time 10 \
+              "$endpoint"
+            echo
+          }
+
+          show_compose_diagnostics() {
+            local status="$1"
+            echo "::group::Docker Compose service status"
+            docker compose --file "$compose_file" ps || true
+            echo "::endgroup::"
+            echo "::group::Docker Compose service logs"
+            docker compose --file "$compose_file" logs --no-color --tail=200 || true
+            echo "::endgroup::"
+            exit "$status"
+          }
+
+          if check_endpoint "$base_url/health"; then
+            :
+          else
+            status=$?
+            echo "::error::Frontend health endpoint failed: $base_url/health (curl exit code $status)."
+            show_compose_diagnostics "$status"
+          fi
+
+          if check_endpoint "$base_url/api/health"; then
+            :
+          else
+            status=$?
+            echo "::error::Backend API health endpoint failed: $base_url/api/health (curl exit code $status)."
+            show_compose_diagnostics "$status"
+          fi
+
+          if [[ -d services ]]; then
+            while IFS= read -r -d '' service_dir; do
+              service_name="${service_dir#services/}"
+              [[ "$service_name" == "api" ]] && continue
+
+              aspnet_program=false
+              has_program=false
+
+              while IFS= read -r -d '' program_file; do
+                has_program=true
+                if grep -Eiq 'WebApplication|Microsoft\.AspNetCore|ConfigureWebHostDefaults|UseKestrel|Map(Get|Post|Put|Patch|Delete)\s*\(' "$program_file"; then
+                  aspnet_program=true
+                  break
+                fi
+
+                while IFS= read -r -d '' project_file; do
+                  if grep -Eiq 'Microsoft\.NET\.Sdk\.Web|Microsoft\.AspNetCore\.App|Microsoft\.AspNetCore\.' "$project_file"; then
+                    aspnet_program=true
+                    break
+                  fi
+                done < <(find "$(dirname "$program_file")" -maxdepth 1 -type f -name '*.csproj' -print0)
+
+                [[ "$aspnet_program" == true ]] && break
+              done < <(find "$service_dir" -type f -name 'Program.cs' -print0)
+
+              if [[ "$has_program" != true ]]; then
+                echo "Skipping $service_name: no Program.cs found."
+                continue
+              fi
+
+              if [[ "$aspnet_program" != true ]]; then
+                echo "Skipping $service_name: Program.cs is not identified as an ASP.NET service."
+                continue
+              fi
+
+              endpoint="$base_url/api/${service_name}/health"
+              if check_endpoint "$endpoint"; then
+                :
+              else
+                status=$?
+                echo "::error::Backend service health endpoint failed for $service_name: $endpoint (curl exit code $status)."
+                show_compose_diagnostics "$status"
+              fi
+            done < <(find services -mindepth 1 -maxdepth 1 -type d -print0 | sort -z)
+          else
+            echo "No services directory found; no additional backend service health endpoints to check."
+          fi
+
+      - name: Tear down Docker Compose
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          compose_file=""
+          for candidate in compose.yaml docker-compose.yml; do
+            if [[ -f "$candidate" ]]; then
+              compose_file="$candidate"
+              break
+            fi
+          done
+
+          if [[ -z "$compose_file" ]]; then
+            echo "Docker Compose cleanup skipped because no compose.yaml or docker-compose.yml was found."
+            exit 0
+          fi
+
+          if docker compose --file "$compose_file" down --volumes --remove-orphans; then
+            :
+          else
+            status=$?
+            echo "::error::Docker Compose cleanup failed for $compose_file (exit code $status)."
+            exit "$status"
+          fi

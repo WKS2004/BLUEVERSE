@@ -1,5 +1,8 @@
 # Security Checklist
 
+Use this checklist as implementation evidence. An unchecked item is not
+implemented or has not yet been verified in the current repository.
+
 ## Repository
 
 - [ ] `.env` ignored

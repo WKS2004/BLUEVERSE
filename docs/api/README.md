@@ -1,10 +1,14 @@
 # API Foundation
 
+The routes in this page are the intended public contract. The API and Auth
+source projects are not present in the current checkout, so these endpoints
+cannot be served locally until `services/api` and `services/auth` are added.
+
 ## Gateway routes
 
 | Route | Destination |
 |---|---|
-| `/api/*` | ASP.NET Core API |
+| `/api/*` | ASP.NET Core API (expected at `services/api`) |
 | `/` | React frontend |
 
 ## API conventions
@@ -19,13 +23,14 @@
 
 ## Health
 
-The initial public API health route is:
+The frontend health route is served by the frontend Nginx container and exposed
+by the gateway at:
 
 ```text
-GET /api/health
+GET /health
 ```
 
-API health route:
+The intended public API health route is:
 
 ```text
 GET /api/health
@@ -35,6 +40,12 @@ Auth health route through the public API boundary:
 
 ```text
 GET /api/auth/health
+```
+
+Additional ASP.NET services expose health routes through the same gateway convention:
+
+```text
+GET /api/<service-name>/health
 ```
 
 Swagger/OpenAPI is exposed through the API gateway at:

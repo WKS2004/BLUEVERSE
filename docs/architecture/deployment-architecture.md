@@ -1,5 +1,9 @@
 # Deployment Architecture
 
+The deployment files describe the target topology. No cloud deployment or
+backend runtime is currently evidenced in this checkout, and the API/Auth
+source projects required by the Docker images are still missing.
+
 ## Planned cloud direction
 
 - React frontend: Vercel

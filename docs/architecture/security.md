@@ -1,5 +1,9 @@
 # Architecture Security Baseline
 
+This is the intended security baseline. The API/Auth implementation is not
+checked in yet, so JWT, permission policies, password hashing and audit
+behavior remain acceptance criteria rather than currently verifiable behavior.
+
 - TLS terminates at the appropriate deployed edge/platform boundary.
 - JWT authentication protects secured API endpoints.
 - Authorization is permission-based.
