@@ -9,6 +9,7 @@
 - `deployment/` — local/cloud deployment
 - `development/` — developer setup, Git workflow and CI workflows
 - `project/` — roadmap, contribution and AI-use documentation
+- `ai-contribution/` — one AI usage record per participating GitHub account
 - `security/` — security practices
 - `testing/` — test strategy and acceptance evidence
 - `api/` — public API conventions

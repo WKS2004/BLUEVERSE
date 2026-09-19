@@ -13,4 +13,11 @@ SE3090 requires each student to have primary ownership of a substantial business
 
 Do not create project-manager-only, testing-only or documentation-only roles.
 
-Individual evidence should remain traceable through commits, pull requests, issues, tests and implementation ownership.
+Individual evidence should remain traceable through commits, pull requests, issues, tests, implementation ownership and the member's AI usage log at
+[`docs/ai-contribution/<GitHub-Username>-ai-usage.md`](../ai-contribution/).
+
+AI-assisted work must follow the required fields and identity checks in
+[`ai-usage-log-template.md`](ai-usage-log-template.md). Use the actual team
+member name from [`ai-team-members.md`](ai-team-members.md), preserve earlier
+entries, and do not log requests whose sole purpose is rewriting historical
+AI-usage records.

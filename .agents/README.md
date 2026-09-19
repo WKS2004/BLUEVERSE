@@ -34,6 +34,7 @@ directory or tool actually exists before modifying or reporting on it.
     ├── docker.md              # Images, Dockerfiles and network behavior
     ├── documentation.md       # Setup, architecture and ADR documentation
     ├── git.md                 # Commit, pull-request and contribution hygiene
+    ├── ai-usage.md            # AI contribution logging and identity checks
     ├── security.md            # Input, secrets, authorization and AI safety
     └── testing.md             # Mandatory test-case implementation rules
 ```
@@ -75,6 +76,14 @@ an ADR for a significant architectural decision.
 Documentation changes should remain synchronized with the actual repository;
 do not document a future service or workflow as if it were already
 implemented.
+
+### `rules/ai-usage.md`
+
+Use this whenever an agent contributes to the repository. It defines the
+required per-member log path, fields, account verification process and rules
+for preserving historical records. The account mapping is maintained in
+[`docs/project/ai-team-members.md`](../docs/project/ai-team-members.md), and
+individual records belong under `docs/ai-contribution/`.
 
 ### `rules/git.md`
 
@@ -163,9 +172,10 @@ For a normal implementation task:
 4. implement the smallest focused change in the correct repository location;
 5. add or update the required tests and case IDs;
 6. update setup, architecture, testing or ADR documentation when needed;
-7. run proportionate validation, including lint/build/test or structural
+7. update the acting member's AI usage log when the task is AI-assisted;
+8. run proportionate validation, including lint/build/test or structural
    checks;
-8. report changed files, checks run, results and any known blockers.
+9. report changed files, checks run, results and any known blockers.
 
 For changes that affect multiple boundaries, consult all relevant rules. For
 example, a new backend endpoint may require `architecture.md`, `security.md`,

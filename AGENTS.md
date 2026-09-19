@@ -128,3 +128,26 @@ Never commit generated secrets, `.env`, local IDE state, build artifacts or mach
 Architecture changes require an ADR when they materially affect a documented architectural decision.
 
 Keep setup and operational documentation synchronized with the actual repository.
+
+## AI Usage Contributions
+
+Every agent-assisted contribution must be recorded in the acting team member's
+`docs/ai-contribution/<GitHub-Username>-ai-usage.md` file. Follow
+[`docs/project/ai-usage-log-template.md`](docs/project/ai-usage-log-template.md)
+and the account mapping in
+[`docs/project/ai-team-members.md`](docs/project/ai-team-members.md).
+
+Before writing a record, identify the acting team member by GitHub username and
+actual name. If either value is unknown, does not match the repository mapping,
+or is otherwise ambiguous, ask the user to confirm it before changing the log.
+Do not guess a team member's identity.
+
+Each record must include the date/time or time range, GitHub username, actual
+team member name, agent name, tool/app, AI model, user-request summary,
+agent-action summary, and verification/evidence. Never record secrets, tokens,
+hidden model reasoning or confidential personal data.
+
+Do not edit earlier contribution records unless the user explicitly requests
+that historical change. A request whose sole purpose is correcting, rewriting
+or deleting an earlier AI-usage record must not itself be added as a new usage
+record.
