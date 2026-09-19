@@ -34,3 +34,7 @@ Never record secrets, credentials, tokens, hidden model reasoning or
 confidential personal data. Summarize the request and agent work factually, and
 record meaningful verification such as tests, review, structural checks or
 changed files.
+
+Add the entry only after validation so the evidence is accurate. Do not infer
+the acting account from a repository owner, display name or email alone; the
+username and actual name must match `docs/project/ai-team-members.md`.

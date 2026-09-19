@@ -33,3 +33,6 @@ jobs:
           required=(README.md PROJECT_REQUIREMENTS.md AGENTS.md LICENSE.md compose.yaml render.yaml global.json .gitignore .dockerignore .env.example)
           for file in "${required[@]}"; do test -f "$file" || { echo "Missing required file: $file"; exit 1; }; done
           test -d .github && test -d .agents && test -d docs && test -d infrastructure/docker
+      - name: Validate repository agent resources
+        if: steps.scope.outputs.affected == 'true'
+        run: python .agents/scripts/validate_agent_resources.py

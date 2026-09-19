@@ -4,6 +4,11 @@
 
 These instructions apply to the entire BLUEVERSE repository.
 
+For task routing and focused validation, read
+[`.agents/routing.md`](.agents/routing.md), then only the applicable rules or
+repository skills. Read [`.agents/README.md`](.agents/README.md) when changing
+the agent configuration itself.
+
 ## Non-negotiable architecture
 
 - React and Flutter communicate only with the ASP.NET Core public API.
