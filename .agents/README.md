@@ -1,7 +1,8 @@
 # BLUEVERSE Agent Resources
 
 This directory contains focused, repository-specific guidance for coding
-agents working in BLUEVERSE. It supplements the root
+agents working in BLUEVERSE. Use [`routing.md`](routing.md) to load only the
+rules relevant to the touched paths. It supplements the root
 [`AGENTS.md`](../AGENTS.md), which remains the primary instruction file for
 architecture, security, Docker, API, database, client, testing and Git
 decisions.
@@ -20,6 +21,12 @@ Before changing a part of the repository, an agent must:
 6. report applicable checks, test results and any environment or foundation
    limitation before claiming completion.
 
+For every task also read [`rules/change-safety.md`](rules/change-safety.md),
+then [`rules/validation.md`](rules/validation.md) before handoff. Use
+[`repository-map.md`](repository-map.md) for current paths and known
+foundation gaps. This routing keeps context small without weakening any
+architecture, security or testing requirement.
+
 These resources are instructions, not a replacement for inspecting the
 current source. Agents must verify that a referenced service, workflow,
 directory or tool actually exists before modifying or reporting on it.
@@ -28,15 +35,53 @@ directory or tool actually exists before modifying or reporting on it.
 
 ```text
 .agents/
-├── README.md                 # This guide
-└── rules/
+├── README.md                 # This guide and completion standard
+├── routing.md                # Task-to-rule and validation routing
+├── repository-map.md         # Current paths and foundation facts
+├── rules/
     ├── architecture.md       # Boundaries and architectural discipline
+    ├── change-safety.md       # Scope, permissions and context discipline
     ├── docker.md              # Images, Dockerfiles and network behavior
     ├── documentation.md       # Setup, architecture and ADR documentation
     ├── git.md                 # Commit, pull-request and contribution hygiene
     ├── ai-usage.md            # AI contribution logging and identity checks
     ├── security.md            # Input, secrets, authorization and AI safety
-    └── testing.md             # Mandatory test-case implementation rules
+    ├── testing.md             # Mandatory test-case implementation rules
+    └── validation.md          # Changed-path validation and evidence
+├── scripts/
+│   └── validate_agent_resources.py
+│                               # Deterministic rules/skills/link validation
+└── skills/                    # On-demand repository workflows
+    ├── blueverse-agentic-ai-workflow/
+    ├── blueverse-backend-service/
+    ├── blueverse-ci-validation/
+    ├── blueverse-client-contract/
+    ├── blueverse-docker-gateway/
+    ├── blueverse-foundation-audit/
+    └── blueverse-test-design/
+```
+
+## Repository skills
+
+Codex discovers skills under `.agents/skills` automatically. Only skill names
+and descriptions are loaded for discovery; the full `SKILL.md` is read when a
+matching workflow is selected. Keep each skill narrow and reuse rules/docs
+instead of copying them.
+
+| Skill | Use for |
+|---|---|
+| `blueverse-foundation-audit` | Repository-wide readiness and gap analysis |
+| `blueverse-backend-service` | ASP.NET API/Auth/internal service work |
+| `blueverse-client-contract` | React/Flutter public-contract work |
+| `blueverse-test-design` | Test cases, IDs, matrices, fixtures and runners |
+| `blueverse-agentic-ai-workflow` | AI orchestration, tools, approvals and evaluation |
+| `blueverse-docker-gateway` | DHI, Compose, edge-nginx, networks and health |
+| `blueverse-ci-validation` | GitHub Actions, discovery, metrics and artifacts |
+
+Validate this directory with:
+
+```text
+python .agents/scripts/validate_agent_resources.py
 ```
 
 ### `rules/architecture.md`
