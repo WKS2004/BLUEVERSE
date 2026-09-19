@@ -15,4 +15,11 @@ The acceptance workflow should provide evidence for:
 - failure recovery
 - safe failure
 
+Each evaluation case passes only when all of its assertions pass. Matching one
+field, status, tool result or structured-output property is not sufficient if
+the case also requires authorization, deterministic validation, persisted
+state, approval, audit information, recovery behavior or side-effect limits.
+Evaluation metrics must come from the complete test/evaluation result rather
+than a superficial status check.
+
 LLM-as-judge may be supplementary but must not be the sole evaluator.

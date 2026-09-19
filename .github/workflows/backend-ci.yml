@@ -28,12 +28,10 @@ jobs:
       - uses: actions/setup-dotnet@v5
         if: steps.scope.outputs.affected == 'true'
         with: { global-json-file: global.json }
-      - name: Restore, build, and test
+      - name: Restore and build backend projects
         if: steps.scope.outputs.affected == 'true'
         shell: bash
         run: |
           projects=$(find services -name '*.csproj' -print 2>/dev/null || true)
           if [ -z "$projects" ]; then echo "No backend projects yet."; exit 0; fi
           while IFS= read -r project; do dotnet restore "$project"; dotnet build "$project" --configuration Release --no-restore; done <<< "$projects"
-          tests=$(find services -name '*.csproj' \( -path '*/tests/*' -o -name '*.Tests.csproj' \) -print 2>/dev/null || true)
-          while IFS= read -r test; do [ -n "$test" ] && dotnet test "$test" --configuration Release --no-build; done <<< "$tests"

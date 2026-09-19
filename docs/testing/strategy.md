@@ -1,5 +1,9 @@
 # Testing Strategy
 
+The concrete implementation sequence, centralized test layout, case-ID rules,
+service-specific coverage and CI changes are defined in
+[`implementation-plan.md`](implementation-plan.md).
+
 Testing will cover the current foundation and the later business workflows:
 
 - ASP.NET Core unit tests
@@ -26,5 +30,24 @@ Testing will cover the current foundation and the later business workflows:
   blocked by the missing Auth service.
 
 Critical business rules should have deterministic tests.
+
+Test implementation is part of the same change as the behavior implementation.
+Each relevant situation should be exercised with nominal passing, invalid,
+boundary, just-inside/just-outside, empty/missing, malformed and extreme
+conditions, plus duplicate, concurrency, timeout/retry and dependency-failure
+conditions where applicable. Expected outcomes must be derived independently
+from requirements or contracts so a wrong implementation cannot make its own
+tests pass by copying the same wrong rule.
+
+Test results are determined by the complete test logic. For API tests, the
+expected HTTP status is only one assertion; matching it does not pass the case
+if the response body/schema, headers, authorization behavior, persistence,
+audit data, state transition or side effects are incorrect. This same rule
+applies to every client, service and Agentic AI test.
+
+Existing tests are protected specifications. Agents must ask the user for
+explicit permission before changing, deleting, skipping or relaxing one. If
+both the implementation and test are wrong, correct them together only after
+approval and add the missing boundary/regression cases.
 
 Agentic AI evaluation must include the complete assessed workflow and should not depend solely on an LLM judge.
