@@ -13,7 +13,7 @@ the current files before use.
 | `test/ai/**` or Agentic AI code | deterministic suite, safety/evaluation checks and metrics reporter | safety cases, failed-case list, fixture mode |
 | `compose.yaml`, `infrastructure/docker/**` | foundation verifier; `docker compose --env-file .env config --quiet`; affected image/health checks when available | image, network, route, health and cleanup evidence |
 | `.github/**` | YAML/script syntax review; affected workflow logic and local helper checks | trigger/path/discovery/metric behavior |
-| `.agents/**`, `AGENTS.md` | `python .agents/scripts/validate_agent_resources.py`; `git diff --check` | skill metadata, links, routing and file integrity |
+| `.agents/**`, `AGENTS.md` | `python .agents/scripts/validate_agent_resources.py`; `git diff --check` | skill metadata, links, routing, provenance, overlays, evaluations and file integrity |
 
 Repository helpers:
 
@@ -22,6 +22,12 @@ Repository helpers:
 - Web lockfile: `scripts/Windows/powershell/sync-web-lockfile.ps1` or
   `scripts/Unix/bash/sync-web-lockfile.sh`
 - Agent resources: `python .agents/scripts/validate_agent_resources.py`
+
+The agent-resource validator is dependency-free and is the repository's
+required gate. It validates direct skills, the external-skill registry,
+repository overlays, evaluation fixtures, relative links and generated-path
+exclusions. The optional upstream skill validator may be run in an environment
+with its YAML dependency, but it is not a CI prerequisite.
 
 The current foundation verifier intentionally expects backend project files
 that may not yet exist. If it fails for that known gap, report the exact

@@ -37,6 +37,24 @@ Both clients are still generated starter implementations. The expected
 ASP.NET projects before attempting the full Compose build. Do not add business
 rules to the clients that contradict the API contract.
 
+## Agent resources
+
+Before making a repository change, read the root [`AGENTS.md`](../../AGENTS.md),
+the [`agent-resources.md`](agent-resources.md) overview and
+[`.agents/routing.md`](../../.agents/routing.md). Then load only the routed
+rules and one matching BLUEVERSE skill. Imported framework skills are optional
+supplements; repository rules and owned skills take precedence.
+
+Validate the agent resources from the repository root:
+
+```bash
+python .agents/scripts/validate_agent_resources.py
+```
+
+This dependency-free check validates skill metadata, registry provenance,
+overlays, routing fixtures, relative links and generated-path exclusions. It
+is also enforced by `repository-ci.yml` for repository-foundation changes.
+
 ## Backend SDK
 
 The repository uses:

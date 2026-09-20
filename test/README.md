@@ -5,6 +5,16 @@ Use the matching subdirectory from
 [`docs/testing/implementation-plan.md`](../docs/testing/implementation-plan.md)
 for each application, backend service, Agentic AI service or integration.
 
+## Current checkout
+
+The centralized application and service test packages are not implemented yet.
+The checked-in Flutter counter test remains under `apps/mobile/test` as
+generated package-local starter content; it is not the project’s final quality
+evidence. React currently has lint/build scripts but no test runner, and the
+backend and Agentic AI test trees remain reserved until their implementations
+are added. New authoritative cases belong under the paths in the testing
+implementation plan and must be discovered by the matching workflow.
+
 ## Authoring checklist
 
 For every relevant situation, add more than one condition as applicable:

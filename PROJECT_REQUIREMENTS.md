@@ -231,6 +231,9 @@ The final project must demonstrate:
 - no secrets in Git
 - ADRs for important architecture decisions
 - documentation updated with architectural changes
+- repository agent instructions, routed rules, skills and validation kept
+  under `.agents/`; imported guidance must remain source-pinned and
+  supplementary to BLUEVERSE rules
 - individual contribution must remain visible in Git history
 
 ## 11. Versioning
@@ -259,4 +262,5 @@ v0 is considered structurally ready when:
 - PostgreSQL migrations can be introduced
 - Flutter can reach the gateway from a real device/emulator configuration
 - CI builds and tests generated backend projects
+- `.agents` resources pass the dependency-free repository validator
 - documentation explains setup and architecture

@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "purpose": "Small deterministic cases for checking BLUEVERSE skill/rule routing without loading the repository.",
+  "cases": [
+    {
+      "id": "web-contract-performance",
+      "task": "Optimize a React 19 Vite component that fetches public API data.",
+      "expectedSkills": ["blueverse-client-contract", "vercel-react-best-practices"],
+      "expectedRules": ["architecture", "security", "validation"],
+      "mustExclude": ["Next.js server-only guidance", "direct Auth or PostgreSQL access"]
+    },
+    {
+      "id": "mobile-json-boundary",
+      "task": "Add a typed Flutter model for a public API response.",
+      "expectedSkills": ["blueverse-client-contract", "flutter-implement-json-serialization"],
+      "expectedRules": ["architecture", "security", "validation"],
+      "mustExclude": ["direct internal-service calls", "client-side authorization replacement"]
+    },
+    {
+      "id": "api-endpoint",
+      "task": "Implement an ASP.NET Core endpoint with validation and OpenAPI metadata.",
+      "expectedSkills": ["blueverse-backend-service", "dotnet-webapi"],
+      "expectedRules": ["architecture", "security", "testing", "validation"],
+      "mustExclude": ["sample service generation when the project is absent", "/api/v1"]
+    },
+    {
+      "id": "test-quality",
+      "task": "Review whether existing tests would catch a caller-visible production mutation.",
+      "expectedSkills": ["blueverse-test-design", "test-gap-analysis"],
+      "expectedRules": ["testing", "validation"],
+      "mustExclude": ["weakening existing expectations", "status-code-only HTTP assertions"]
+    },
+    {
+      "id": "agentic-safety",
+      "task": "Design an Agentic AI approval and tool-validation workflow.",
+      "expectedSkills": ["blueverse-agentic-ai-workflow"],
+      "expectedRules": ["architecture", "security", "testing", "validation"],
+      "mustExclude": ["direct client access", "hidden reasoning persistence", "LLM-only authorization"]
+    },
+    {
+      "id": "resource-audit",
+      "task": "Audit repository readiness and report missing foundation components.",
+      "expectedSkills": ["blueverse-foundation-audit"],
+      "expectedRules": ["change-safety", "documentation", "validation"],
+      "mustExclude": ["counting bin/obj output as implementation"]
+    }
+  ]
+}

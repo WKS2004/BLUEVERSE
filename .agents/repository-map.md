@@ -17,6 +17,9 @@ Verify paths and implementation state before relying on any entry.
 | `docs/architecture`, `docs/adr` | architectural source of truth | update for material boundary decisions |
 | `docs/security`, `docs/agentic-ai` | threat and safety source of truth | deterministic validation and approval controls |
 | `.agents/skills` | on-demand repository workflows | concise discovery metadata; rules remain authoritative |
+| `.agents/registry` | provenance and compatibility metadata for vendored skills | every imported external skill is source-pinned and licensed |
+| `.agents/skill-overlays` | repository-specific bindings for portable skills | overlays extend skills without overriding project rules |
+| `.agents/evals` | deterministic routing and resource-quality fixtures | no secrets, hidden reasoning or generated output |
 | `.agents/scripts` | deterministic agent-resource checks | standard-library validation usable locally and in CI |
 
 ## Current foundation facts
@@ -26,7 +29,9 @@ Verify paths and implementation state before relying on any entry.
 - The gateway's public convention is `/api/...`; there is no client-facing
   direct `/auth/...` or bare backend `/health` route.
 - Backend and Agentic AI implementations may be absent even when Docker,
-  Compose, docs or CI refer to them. A reserved path is not an implementation.
+  Compose, docs or CI refer to them. A reserved path, empty source folder or
+  directory containing only ignored `bin/`/`obj/` output is not an
+  implementation.
 - Test workflows may intentionally report zero tests for not-yet-created suites;
   new behavior must add its authoritative tests and workflow discovery together.
 
