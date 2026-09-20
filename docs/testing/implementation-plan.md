@@ -429,9 +429,10 @@ The existing workflows must be extended as follows:
   `backend-tests.yml`, which discovers service-local test projects under
   `services/**/tests` and supported `*.Tests.csproj` layouts, maps them to
   services, runs all projects and reports aggregate/per-service metrics.
-- `agentic-ai-tests.yml`: run all discovered Agentic AI suites in one workflow,
-  with fast deterministic tests on pull requests and the full evaluation suite
-  on the protected branch/release workflow as the AI implementation matures.
+- `agentic-ai-tests.yml`: run all discovered Agentic AI suites in one workflow
+  for `main`, `dev` and `agentic-ai/**` pushes or pull requests, with fast
+  deterministic tests on pull requests and the full evaluation suite on the
+  protected branch as the AI implementation matures.
 - Extend `docker-stack-health.yml` or add an integration workflow to run the
   owning service/API integration smoke tests after Compose starts, including gateway routing,
   health, internal-network isolation and teardown.
