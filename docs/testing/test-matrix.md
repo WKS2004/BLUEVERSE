@@ -6,7 +6,7 @@ the minimum evidence expected as each component is introduced.
 
 | Area | Minimum evidence |
 |---|---|
-| API | Unit, HTTP integration, validation, authorization, persistence, migration, security and health tests once `services/api` exists |
+| API | `services/api/tests` covers current foundation behavior with stable cases `API-HEALTH-*`, `API-CONTRACT-*`, `API-CORS-*`, `API-EDGE-*`, `API-ERROR-*` and `API-PROXY-*`: unit/HTTP health, non-versioned routing, OpenAPI/Swagger, CORS allow/deny/preflight, forwarded headers, safe gateway errors and YARP forwarding/failure isolation. JWT/permission, DTO validation, persistence, migration, audit and domain-workflow tests remain blocked until those API contracts are implemented. |
 | Authentication | Login/token/protected endpoint, password-hashing, claims, expiry and permission tests once `services/auth` exists |
 | Authorization | Permission allow/deny tests |
 | PostgreSQL | Migration/schema/integration verification |

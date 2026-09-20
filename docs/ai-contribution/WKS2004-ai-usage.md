@@ -236,6 +236,45 @@ runtime lacks PyYAML.
   evidence remains absent. Therefore static contract readiness is confirmed,
   but live API/gateway and full client execution remain unverified.
 
+## 2026-09-20 — Add API foundation test suite
+
+- Date/time or time range: 2026-09-20 15:12 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-5
+- Summary of the user's request: Analyze the API service on `features/api` and
+  generate its tests to the repository's required standard and quality, then
+  update the AI usage log.
+- Summary of what the AI Agent did: Audited the API foundation, its gateway,
+  OpenAPI, CORS, forwarded-header, exception and YARP behavior; added a
+  package-local xUnit/WebApplicationFactory suite with 16 stable case IDs and
+  deterministic proxy fixtures; fixed the RFC 7807 response content type;
+  excluded test sources from production API compilation; and synchronized API,
+  security and test documentation.
+- Verification/evidence: Release API build passed with 0 warnings and 0
+  errors; API tests passed with `Passed: 16, Failed: 0, Skipped: 0`; the UI/API
+  integration validator passed; its 12 Python validation tests passed; and
+  `git diff --check` passed. No existing test or historical contribution
+  record was modified, and no secrets were recorded.
+
+## 2026-09-20 — Re-evaluate API tests
+
+- Date/time or time range: 2026-09-20 15:14–15:25 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-5
+- Summary of the user's request: Re-evaluate the generated API tests on the
+  `features/api` branch.
+- Summary of what the AI Agent did: Re-ran the API suite, reviewed all 16 test
+  cases and 70 assertions against the API source and test requirements, checked
+  assertion depth and behavioral gaps, and collected a one-off coverage report
+  without changing existing tests.
+- Verification/evidence: `dotnet test services/api/tests/Blueverse.Api.Tests/Blueverse.Api.Tests.csproj --configuration Release --no-build --no-restore` passed with 16 passed, 0 failed and 0 skipped; authored API classes reported 100% line coverage, with the CORS default-configuration branch remaining unexercised; and the review identified only contract-coverage follow-ups plus documented unimplemented API areas. No existing test or historical contribution record was modified.
+
 ## 2026-09-20 — Restrict Agentic AI test workflow branches
 
 - Date/time or time range: 2026-09-20 16:07 (Asia/Colombo)

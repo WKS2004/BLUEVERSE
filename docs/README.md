@@ -21,10 +21,10 @@
 
 The repository is a v0 foundation and the documentation deliberately separates
 the checked-in state from the target contract. The current clients are starter
-projects; `services/api` and `services/auth` are expected service locations but
-are not present in this checkout yet. Pages that describe routes, persistence,
-authorization or Agentic AI workflows therefore describe the implementation
-target unless they explicitly say that the behavior is currently available.
+projects, and the public API foundation is checked in at `services/api`.
+`services/auth`, persistence, authorization, domain workflows and Agentic AI
+workflows remain implementation targets unless a page explicitly says the
+behavior is currently available.
 
 For a current-state summary, see
 [`project/foundation-gap-analysis.md`](project/foundation-gap-analysis.md).

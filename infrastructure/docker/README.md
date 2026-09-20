@@ -24,9 +24,8 @@ The frontend Nginx file is a `server`-context configuration because the Dockerfi
 
 ## Important
 
-The React application directory is checked in. The ASP.NET application
-directories referenced by the API/Auth Dockerfiles are intentionally absent
-from the current foundation checkout and must be generated/added separately:
+The React application directory and public API application are checked in. The
+Auth application directory referenced by its Dockerfile is still pending:
 
 ```text
 apps/web

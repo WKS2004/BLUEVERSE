@@ -17,10 +17,11 @@
 ```
 
 Flutter is a client application and communicates with the ASP.NET Core API. It
-is not a backend microservice. In the current checkout the ASP.NET service
-source is not present yet; the diagram is the intended v0/v1 boundary.
+is not a backend microservice. The public API source is checked in at
+`services/api`; the Auth, domain and Agentic AI services in the diagram are
+separate dependencies that will be added incrementally.
 
-## Local Docker architecture (when backend projects are present)
+## Local Docker architecture (when the Auth service is present)
 
 ```text
 Client

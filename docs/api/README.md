@@ -1,8 +1,8 @@
 # API Foundation
 
-The routes in this page are the intended public contract. The API and Auth
-source projects are not present in the current checkout, so these endpoints
-cannot be served locally until `services/api` and `services/auth` are added.
+The routes in this page are the intended public contract. The public API
+foundation is implemented at `services/api`; the Auth service remains a
+separate dependency and is not yet present in this checkout.
 
 ## Gateway routes
 
