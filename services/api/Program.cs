@@ -71,7 +71,7 @@ app.UseExceptionHandler(exceptionApp =>
             title = "API Gateway Error",
             status = StatusCodes.Status500InternalServerError,
             detail = "An unexpected error occurred at the API gateway."
-        });
+        }, options: null, contentType: "application/problem+json", cancellationToken: context.RequestAborted);
     });
 });
 
