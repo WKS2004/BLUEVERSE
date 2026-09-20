@@ -2,7 +2,7 @@ name: UI Integration Contract
 
 on:
   push:
-    branches: ["main", "dev", "features/**"]
+    branches: ["main", "dev", "features/**", "agentic-ai/**"]
     paths:
       - "apps/web/**"
       - "apps/mobile/**"
@@ -16,7 +16,7 @@ on:
       - "compose.yaml"
       - ".github/workflows/**"
   pull_request:
-    branches: ["main", "dev", "features/**"]
+    branches: ["main", "dev", "features/**", "agentic-ai/**"]
     paths:
       - "apps/web/**"
       - "apps/mobile/**"

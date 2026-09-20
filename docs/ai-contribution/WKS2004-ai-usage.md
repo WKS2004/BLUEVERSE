@@ -235,3 +235,41 @@ runtime lacks PyYAML.
   installed dependencies, and tracked `services/api`/Compose implementation
   evidence remains absent. Therefore static contract readiness is confirmed,
   but live API/gateway and full client execution remain unverified.
+
+## 2026-09-20 — Restrict Agentic AI test workflow branches
+
+- Date/time or time range: 2026-09-20 16:07 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-5
+- Summary of the user's request: Allow the Agentic AI test workflow to run
+  only for `main`, `dev` and `agentic-ai/**` branches.
+- Summary of what the AI Agent did: Changed both push and pull-request branch
+  filters in `agentic-ai-tests.yml` to `main`, `dev` and `agentic-ai/**`, removed
+  unrestricted manual dispatch, and updated CI and Git workflow documentation
+  to describe the exception from the general `features/**` policy.
+- Verification/evidence: The branch-trigger contract passed; the workflow has
+  no `workflow_dispatch`; embedded Bash syntax validation passed; and
+  `git diff --check` passed.
+
+## 2026-09-20 — Allow Agentic AI branches across CI policy
+
+- Date/time or time range: 2026-09-20 16:14 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-5
+- Summary of the user's request: Allow `agentic-ai/**` branches in the branch
+  policy, update other workflows as necessary, and finalize the documentation.
+- Summary of what the AI Agent did: Added the `agentic-ai/**` branch family to
+  the branch-policy validation and general repository/source/test workflows;
+  preserved the Agentic AI workflow’s restricted branch scope; kept Docker
+  workflows limited to `main` and `dev`; and synchronized CI, Git workflow and
+  test implementation-plan documentation.
+- Verification/evidence: Branch-policy and workflow trigger contract checks
+  passed; embedded Bash syntax checks passed for 10 workflows; branch-policy
+  JavaScript syntax passed; `git diff --check` passed; and the final diff was
+  reviewed for stale branch-policy documentation.

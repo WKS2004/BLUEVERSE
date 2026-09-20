@@ -34,7 +34,7 @@ images.
 | `web-tests.yml` | `apps/web/src/**`, optional `apps/web/e2e/**` | Runs all React web test cases and reports overall metrics. |
 | `mobile-tests.yml` | `apps/mobile/test/**`, optional `apps/mobile/integration_test/**` | Runs all Flutter mobile test cases and reports test metrics. |
 | `backend-tests.yml` | `services/**` | Runs every discovered backend microservice test project from service-local test directories in one workflow, with overall and per-service metrics. |
-| `agentic-ai-tests.yml` | `services/ai/**`, `services/ai-agents/**`, `services/agents/**` | Runs every discovered Agentic AI test suite from each agent’s local `tests/` directory in one workflow, with overall and per-service metrics. |
+| `agentic-ai-tests.yml` | `services/ai/**`, `services/ai-agents/**`, `services/agents/**` | Runs only for pushes and pull requests targeting `main`, `dev` or `agentic-ai/**`; runs every discovered Agentic AI test suite from each agent’s local `tests/` directory in one workflow, with overall and per-service metrics. |
 
 ### UI integration contract
 
@@ -69,11 +69,14 @@ python scripts/validation/validate_ui_integrations.py
 python -m unittest discover -s scripts/validation/tests -p "test_*.py"
 ```
 
-These workflows also run for `features/**` branches when their existing path
-filters match. The backend and Agentic AI test workflows report zero tests and
-exit successfully while their service implementations are not yet present;
-once test projects/suites exist, a failed suite fails the workflow after all
-services have been attempted.
+The general source and repository workflows also run for `features/**` and
+`agentic-ai/**` branches when their existing path filters match. The Agentic
+AI test workflow is restricted to `main`, `dev` and `agentic-ai/**` pushes or
+pull requests. Docker image workflows remain limited to `main` and `dev`. The
+backend and Agentic AI test workflows report zero tests and exit successfully
+while their service implementations are not yet present; once test
+projects/suites exist, a failed suite fails the workflow after all services
+have been attempted.
 
 ### Agent-resource validation
 
