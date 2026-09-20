@@ -184,12 +184,16 @@ def parse_flutter(path: Path) -> Metrics:
                 elif result in {"failure", "failed"}:
                     metrics.failed += 1
                     name = str(params.get("name", params.get("id", "unknown-test")))
-                    detail = str(params.get("error", "")).splitlines()[0][:240]
+                    error_text = str(params.get("error") or "")
+                    detail_lines = error_text.splitlines()
+                    detail = detail_lines[0][:240] if detail_lines else ""
                     metrics.failed_cases.append(f"{name} — {detail}" if detail else name)
                 else:
                     metrics.errors += 1
                     name = str(params.get("name", params.get("id", "unknown-test")))
-                    detail = str(params.get("error", "")).splitlines()[0][:240]
+                    error_text = str(params.get("error") or "")
+                    detail_lines = error_text.splitlines()
+                    detail = detail_lines[0][:240] if detail_lines else ""
                     metrics.failed_cases.append(f"{name} — {detail}" if detail else name)
     metrics.total = max(metrics.total, len(started))
     return metrics
