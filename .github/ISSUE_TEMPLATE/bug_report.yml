@@ -52,6 +52,11 @@ body:
     validations:
       required: true
   - type: textarea
+    id: route_api
+    attributes:
+      label: Route/API connection
+      description: If applicable, include the React or Flutter route, shared workflow ID, public /api/... endpoint, owning service and whether the failure is a wrong route, wrong endpoint or gateway/service failure.
+  - type: textarea
     id: diagnostics
     attributes:
       label: Logs or screenshots

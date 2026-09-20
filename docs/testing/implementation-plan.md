@@ -17,96 +17,83 @@ foundation:
   are not present yet.
 - No executable Agentic AI service is present yet; the AI documentation defines
   the target boundary and safety contract only.
-- Backend CI currently discovers tests below `services/`, so a centralized
-  `test/services/` tree requires a CI discovery update.
+- Test workflows use each framework’s normal package/service test locations;
+  no repository-root `test/` directory is used for authoritative cases.
 
 This plan must not be interpreted as evidence that the missing services or
 their tests already exist.
 
-## 2. Test repository layout
+## 2. Default framework test locations
 
-All automated test cases will be stored under the repository-level `test/`
-directory. The test location identifies the system under test, while the test
-file and test name identify the layer and behavior.
+Authoritative test cases stay with the application or service that owns them.
+The test location identifies the system under test, while the test file and
+test name identify the layer and behavior. Do not create a repository-root
+`test/` directory for these cases.
 
 ```text
-test/
-├── README.md
-├── app/
-│   ├── web/
-│   │   ├── unit/
-│   │   ├── components/
-│   │   ├── workflows/
-│   │   ├── contract/
-│   │   ├── fixtures/
-│   │   └── e2e/
-│   └── mobile/
-│       ├── unit/
-│       ├── widgets/
-│       ├── workflows/
-│       ├── contract/
-│       ├── fixtures/
-│       └── integration/
-├── services/
-│   ├── api/
-│   │   ├── unit/
-│   │   ├── integration/
-│   │   ├── contract/
-│   │   ├── security/
-│   │   ├── fixtures/
-│   │   └── migrations/
-│   ├── auth/
-│   │   ├── unit/
-│   │   ├── integration/
-│   │   ├── security/
-│   │   └── fixtures/
-│   └── <service-name>/
-│       ├── unit/
-│       ├── integration/
-│       ├── contract/
-│       ├── security/
-│       └── fixtures/
-├── ai/
-│   ├── orchestrator/
-│   ├── planner/
-│   ├── marine-climate/
-│   ├── marine-biodiversity/
-│   ├── safety-sustainability/
-│   ├── tools/
+apps/web/
+├── src/
+│   ├── **/*.test.ts(x)       unit/component/request-boundary tests
+│   └── **/__tests__/         colocated React test suites
+└── e2e/                      browser workflows when adopted
+
+apps/mobile/
+├── test/                     unit, widget and package-level Flutter tests
+├── integration_test/         device/application integration workflows
+└── test/fixtures/             mobile-only fixtures and builders
+
+services/<service-name>/
+└── tests/                    .NET test project and cases for that service
+    ├── <service>.Tests.csproj
+    ├── unit/
+    ├── integration/
+    ├── contract/
+    ├── security/
+    ├── migrations/
+    └── fixtures/
+
+services/ai/<agent-service>/
+├── tests/                    pytest/unit/contract/safety/evaluation tests
+│   ├── unit/
+│   ├── integration/
 │   ├── safety/
 │   ├── evaluation/
 │   └── fixtures/
-├── integration/
-│   ├── api-client/
-│   ├── cross-platform/
-│   ├── agent-workflows/
-│   └── docker/
-└── shared/
-    ├── contracts/
-    ├── factories/
-    ├── builders/
-    └── test-data-policy.md
+└── pyproject.toml or requirements*.txt
 ```
 
-`<service-name>` is replaced by the exact directory name under `services/`.
-The AI directory names are placeholders until the assessed AI services are
-selected; each implemented AI service gets a matching directory under
-`test/ai/`.
+A backend service may keep its `*.Tests.csproj` directly beside the service
+source when that is its package convention, but it must remain inside the
+owning `services/<service-name>` directory.
 
-The test tree is organizationally centralized, but source-specific test
-configuration remains close to the code:
+`services/ai-agents/<agent-service>/tests` and
+`services/agents/<agent-service>/tests` are also supported if the selected AI
+architecture uses either of those service roots. The test workflow discovers
+all three approved AI roots. Backend integration tests belong in the owning
+service’s `tests/integration` project; cross-platform client workflows belong
+in the relevant client’s integration suite or the API service’s integration
+project. Shared fixtures should be kept in the owning package and reused only
+through explicit test helpers, not through a new root test tree.
+
+Runner configuration and dependencies remain beside the code:
 
 - React runner configuration and test dependencies remain in `apps/web`.
-- Flutter test-package configuration remains in `apps/mobile` or a dedicated
-  test package, while test files remain in `test/app/mobile`.
-- .NET test project files are placed under `test/services/<service-name>` and
-  reference only their corresponding source project plus approved test
-  infrastructure.
-- Python AI test projects are placed under `test/ai/<specific-ai-service>` and
-  reference only the AI service contract and implementation under test.
+- Flutter uses `apps/mobile/test` and `apps/mobile/integration_test` with the
+  existing app `pubspec.yaml`.
+- .NET test projects reference only their owning service and approved test
+  infrastructure under `services/<service-name>/tests`.
+- Python AI tests reference the actual AI service package from its local
+  `tests/` directory.
 
 No client test may call an internal Auth or Agentic AI endpoint directly. Client
 integration tests call the public API/gateway only.
+
+Every new, generated or updated UI also updates
+`docs/contracts/ui-integration.json`. The registry must connect the relevant
+React and Flutter routes through one workflow ID and list each public API
+endpoint used by that workflow. Run
+`scripts/validation/validate_ui_integrations.py` before client tests; an
+undeclared route or request target is a contract failure, not a test omission.
 
 ## 3. Test case identification and evidence
 
@@ -172,7 +159,7 @@ thought.
 
 ## 4. Coverage by product area
 
-### 4.1 React web (`test/app/web`)
+### 4.1 React web (`apps/web/src` and optional `apps/web/e2e`)
 
 Use Vitest and React Testing Library for deterministic unit, component and
 workflow tests. Use MSW or an equivalent request boundary for API responses;
@@ -196,7 +183,7 @@ The initial starter counter test should be replaced with product behavior once
 the first BLUEVERSE screen is implemented. Do not preserve generated demo tests
 as the project’s quality evidence.
 
-### 4.2 Flutter mobile (`test/app/mobile`)
+### 4.2 Flutter mobile (`apps/mobile/test` and `apps/mobile/integration_test`)
 
 Use `flutter_test` for widget tests and Dart unit tests. Add `integration_test`
 only for workflows that need the real application shell, navigation, platform
@@ -216,19 +203,12 @@ Implement cases for:
 - responsive layouts and accessibility semantics for supported device sizes;
 - prevention of direct calls to Auth or AI service URLs.
 
-Because Flutter’s standard runner expects tests inside a Dart package, the
-implementation phase must choose one of these explicit approaches before the
-first mobile test is added:
+Use Flutter’s package-default `apps/mobile/test` location for unit/widget tests
+and `apps/mobile/integration_test` for application/device workflows. Run both
+locations when they contain tests; do not create a second test-only package or
+an authoritative repository-root test tree.
 
-- make `test/app/mobile` a small test-only package with a path dependency on
-  `apps/mobile`; or
-- keep a thin package-local runner under `apps/mobile/test` that imports the
-  centralized cases.
-
-The chosen approach must keep the authoritative cases in `test/app/mobile`,
-be runnable in CI, and be documented in `test/README.md`.
-
-### 4.3 Public API (`test/services/api`)
+### 4.3 Public API (`services/api/tests`)
 
 Use xUnit (or the repository-approved .NET test framework), WebApplicationFactory
 for HTTP integration tests, and a controlled PostgreSQL integration fixture.
@@ -259,7 +239,7 @@ Implement cases for:
 - API calls to Agentic AI services only through the internal service boundary,
   never from the client.
 
-### 4.4 Auth service (`test/services/auth`)
+### 4.4 Auth service (`services/auth/tests`)
 
 Implement cases for:
 
@@ -274,7 +254,7 @@ Implement cases for:
 - rate limiting/lockout if selected for the final design;
 - health, database failure and migration failure behavior.
 
-### 4.5 Every additional backend service (`test/services/<service-name>`)
+### 4.5 Every additional backend service (`services/<service-name>/tests`)
 
 When a service is added under `services/`, create its test project and matching
 directory in the same change. The service test set must include:
@@ -296,7 +276,7 @@ A service is not complete when only its happy path is tested. Every endpoint
 must have at least one valid, invalid, unauthenticated and unauthorized case,
 unless the endpoint is explicitly public and the exception is documented.
 
-### 4.6 Agentic AI services (`test/ai`)
+### 4.6 Agentic AI services (`services/ai/<agent-service>/tests`)
 
 AI tests must validate observable behavior, structured outputs and safety
 properties. They must not assert hidden model reasoning or rely only on an
@@ -323,21 +303,22 @@ The initial AI service test directories should follow the actual selected
 service boundaries. The planned names are examples only:
 
 ```text
-test/ai/orchestrator/
-test/ai/planner/
-test/ai/marine-climate/
-test/ai/marine-biodiversity/
-test/ai/safety-sustainability/
+services/ai/orchestrator/tests/
+services/ai/planner/tests/
+services/ai/marine-climate/tests/
+services/ai/marine-biodiversity/tests/
+services/ai/safety-sustainability/tests/
 ```
 
 If an AI capability is implemented inside the API rather than as a separate
-service, its tests remain in `test/services/api` for API orchestration behavior
-and `test/ai/<capability>` for AI-specific evaluation behavior.
+service, its tests remain in `services/api/tests` for API orchestration behavior
+and in the capability’s package-local `tests/` directory for AI-specific
+evaluation behavior.
 
 ### 4.7 Shared integration and operational tests
 
-Implement tests in `test/integration` for behavior that cannot be proven by one
-component alone:
+Implement integration tests in the owning package/service’s default test
+location for behavior that cannot be proven by one component alone:
 
 - React and Flutter call the same public API contract;
 - gateway routing exposes `/api/...` without introducing `/api/v1`;
@@ -360,7 +341,7 @@ repeatable and safe.
 
 Deliver:
 
-- `test/README.md` with commands, naming rules and ownership rules;
+- package-local READMEs with commands, naming rules and ownership rules;
 - the first version of this plan’s matrix with case IDs;
 - approved test-data policy and reusable factories/builders;
 - runner/configuration decisions for React, Flutter, .NET and AI;
@@ -382,9 +363,9 @@ case IDs and coverage artifacts.
 
 ### Phase 2 — Flutter test harness and foundation cases
 
-Choose and document the centralized test-package approach. Add unit/widget
-fixtures, API boundary mocks and the first startup/auth/workflow cases. Keep
-`flutter analyze` mandatory.
+Use the default Flutter test locations. Add unit/widget fixtures, API boundary
+mocks and the first startup/auth/workflow cases. Keep `flutter analyze`
+mandatory.
 
 Exit criteria: analyzer, unit/widget tests and any selected integration tests
 run in CI on a supported Flutter channel.
@@ -433,23 +414,29 @@ final state and audit evidence.
 The existing workflows must be extended as follows:
 
 - `web-ci.yml`: keep lint/build validation separate from `web-tests.yml`, which
-  runs the React test cases and publishes metrics; include `test/app/web/**` in
-  the relevant test workflow scope when path filters are introduced.
+  runs the React test cases from `apps/web/src` and optional `apps/web/e2e` and
+  publishes metrics; include those paths when path filters are introduced.
 - `mobile-ci.yml`: keep Flutter dependency resolution and analysis separate
-  from `mobile-tests.yml`, which runs the centralized mobile test command and
-  reports metrics.
+  from `mobile-tests.yml`, which runs `apps/mobile/test` and
+  `apps/mobile/integration_test` and reports metrics.
+- `ui-integration.yml`: run the shared route/API contract validator and its
+  deterministic validator tests for React, Flutter, service, gateway and
+  contract changes.
+- `web-ci.yml` and `mobile-ci.yml`: run the same shared validator whenever
+  their client source changes, so a screen cannot pass its local build while
+  using an undeclared route or backend endpoint.
 - `backend-ci.yml`: keep source restore/build validation separate from
-  `backend-tests.yml`, which discovers `test/services/**/*.csproj` and any
-  service-local test projects, maps them to services, runs all projects and
-  reports aggregate/per-service metrics.
+  `backend-tests.yml`, which discovers service-local test projects under
+  `services/**/tests` and supported `*.Tests.csproj` layouts, maps them to
+  services, runs all projects and reports aggregate/per-service metrics.
 - `agentic-ai-tests.yml`: run all discovered Agentic AI suites in one workflow,
   with fast deterministic tests on pull requests and the full evaluation suite
   on the protected branch/release workflow as the AI implementation matures.
-- Extend `docker-stack-health.yml` or add an integration workflow to run
-  `test/integration/docker` after Compose starts, including gateway routing,
+- Extend `docker-stack-health.yml` or add an integration workflow to run the
+  owning service/API integration smoke tests after Compose starts, including gateway routing,
   health, internal-network isolation and teardown.
-- Update workflow path filters for `test/**`, shared fixtures, test configs and
-  relevant documentation.
+- Update workflow path filters for package-local test directories, shared test
+  configs and relevant documentation.
 - Retain artifacts: test results, coverage, evaluation summaries and smoke-test
   logs. Do not upload secrets or private fixture data.
 
@@ -485,7 +472,7 @@ Coverage is a signal, not a substitute for meaningful cases. The gates are:
 A case is complete only when:
 
 1. the case has a stable ID and requirement reference;
-2. it is stored in the correct `test/` subdirectory;
+2. it is stored in the owning package/service’s default test directory;
 3. it has deterministic fixtures and no secrets;
 4. it asserts the externally observable result and relevant side effects;
 5. it runs in the local command documented for its component;
@@ -499,7 +486,7 @@ The recommended order for the repository is:
 
 1. create the test registry, IDs, fixture policy and runner documentation;
 2. add the React runner and starter application cases;
-3. formalize the Flutter centralized test runner and replace the generated
+3. formalize the default Flutter test runner and replace the generated
    counter-only evidence;
 4. implement API/Auth tests alongside the missing service projects;
 5. apply the same test template to every additional backend service;

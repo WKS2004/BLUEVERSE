@@ -14,11 +14,12 @@ universal rule. Skills provide the workflow; rules remain authoritative.
 
 | Changed paths or task | Rules to read | Source of truth / focused checks |
 |---|---|---|
-| `apps/web/**`, `test/app/web/**` | architecture, security, testing, validation | `apps/web/README.md`; web lint/build/test workflow |
-| `apps/mobile/**`, `test/app/mobile/**` | architecture, security, testing, validation | `apps/mobile/README.md`; Flutter analyze/test workflow |
+| `apps/web/**` | architecture, security, testing, validation | `apps/web/README.md`; web lint/build/test workflow |
+| `apps/mobile/**` | architecture, security, testing, validation | `apps/mobile/README.md`; Flutter analyze/test workflow |
+| `docs/contracts/**`, `scripts/validation/**`, UI route/API integration | architecture, security, testing, documentation, validation | `docs/development/ui-integration.md`; shared UI/API contract validator and client workflows |
 | `services/api/**`, `services/auth/**`, `services/*/**` | architecture, security, testing, validation, docker if containerized | `docs/api/`, architecture/security docs; matching backend workflow |
-| `test/services/**`, `test/integration/**` | architecture, security, testing, validation | `docs/testing/`; backend/integration workflow discovery |
-| `test/ai/**`, AI orchestration/tools/workflows | architecture, security, testing, validation | `docs/agentic-ai/`; deterministic safety/evaluation workflow |
+| `services/**` | architecture, security, testing, validation, docker if containerized | `docs/testing/`; backend workflow discovery |
+| `services/ai/**`, `services/ai-agents/**`, `services/agents/**`, AI orchestration/tools/workflows | architecture, security, testing, validation | `docs/agentic-ai/`; deterministic safety/evaluation workflow |
 | `compose.yaml`, `infrastructure/docker/**` | architecture, security, docker, validation | `docs/deployment/`, `infrastructure/docker/README.md`; config/health checks |
 | `.github/workflows/**`, `.github/scripts/**` | testing, documentation, validation, git | `docs/development/ci.md`; YAML/script and discovery review |
 | `docs/**`, `README.md`, `PROJECT_REQUIREMENTS.md` | documentation, architecture/security/testing as applicable, validation | affected source/workflows; link and command review |

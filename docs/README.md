@@ -8,12 +8,14 @@
 - `database/` — database design and migration guidance
 - `deployment/` — local/cloud deployment
 - `development/` — developer setup, Git workflow and CI workflows
+- `development/ui-integration.md` — cross-client route/API contract and CI gate
 - `development/agent-resources.md` — agent routing, skills, provenance and validation
 - `project/` — roadmap, contribution and AI-use documentation
 - `ai-contribution/` — one AI usage record per participating GitHub account
 - `security/` — security practices
 - `testing/` — test strategy and acceptance evidence
 - `api/` — public API conventions
+- `contracts/` — machine-readable cross-client workflow and endpoint registries
 
 ## Reading the documentation
 

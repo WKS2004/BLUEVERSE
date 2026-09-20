@@ -77,3 +77,12 @@ Internal Agentic AI service
 ```
 
 The clients never call the AI service directly.
+
+## Cross-client UI integration
+
+React and Flutter do not connect to one another. A shared workflow ID in
+`docs/contracts/ui-integration.json` links the relevant frontend routes and
+the public `/api/...` endpoint references used by both clients. The registry
+and its CI validator must be updated whenever a UI is created, generated or
+changed. This preserves one public API/permission contract while allowing
+platform-specific presentation and route syntax.

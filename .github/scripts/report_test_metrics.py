@@ -202,7 +202,7 @@ def format_row(scope: str, metrics: Metrics) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--results-root", type=Path)
-    parser.add_argument("--input", type=Path)
+    parser.add_argument("--input", type=Path, action="append")
     parser.add_argument("--format", choices=("auto", "junit", "flutter"), default="auto")
     parser.add_argument("--scope", required=True)
     parser.add_argument("--failures-only", action="store_true")
@@ -210,10 +210,11 @@ def main() -> int:
 
     grouped: dict[str, Metrics] = defaultdict(Metrics)
     if args.input:
-        if args.format == "flutter":
-            grouped[args.scope].add(parse_flutter(args.input))
-        else:
-            grouped[args.scope].add(parse_xml(args.input))
+        for input_path in args.input:
+            if args.format == "flutter":
+                grouped[args.scope].add(parse_flutter(input_path))
+            else:
+                grouped[args.scope].add(parse_xml(input_path))
     else:
         files = sorted(args.results_root.rglob("*.xml")) if args.results_root and args.results_root.exists() else []
         for path in files:

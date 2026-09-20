@@ -22,6 +22,24 @@ be added only when that target is part of the delivery scope.
 ## API boundary
 
 When API integration is added, the app must call the public ASP.NET Core
-gateway using the host/LAN address appropriate for the device or emulator. It
-must not call internal Auth or Agentic AI services directly. The mobile client
-and React client must use the same backend authorization model and contract.
+gateway using the host/LAN address appropriate for the device or emulator and
+an endpoint registered in
+[`docs/contracts/ui-integration.json`](../../docs/contracts/ui-integration.json).
+It must not call internal Auth, Agentic AI, PostgreSQL or other service
+hostnames directly. Prefer literal relative `/api/...` paths when the gateway
+is same-origin; otherwise the absolute host must be allowlisted by the
+contract. Dynamic request targets fail validation. A screen's Flutter route
+must be registered under the same workflow ID as its React counterpart, even
+when the platform-specific path or presentation differs.
+
+Before handing off any new, generated or updated UI, run from the repository
+root:
+
+```bash
+python scripts/validation/validate_ui_integrations.py
+```
+
+Then run `flutter analyze`, the unit/widget tests and applicable
+`integration_test` workflows. The integration registry is empty of domain API
+calls while this starter has no backend workflow; add the public API contract
+and both client surfaces together when the first real screen is introduced.

@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "status": "foundation",
+  "description": "Canonical cross-client registry for shared UI workflows, frontend routes and public API endpoint references.",
+  "publicApi": {
+    "gatewayPath": "/api",
+    "entryService": "api",
+    "forbiddenClientTargets": [
+      "auth",
+      "agentic-ai",
+      "postgres",
+      "database"
+    ],
+    "allowedAbsoluteHosts": [
+      "localhost",
+      "127.0.0.1",
+      "::1"
+    ]
+  },
+  "workflows": [
+    {
+      "id": "foundation-home",
+      "status": "starter",
+      "description": "Generated starter entry surface. It has no domain API dependency yet.",
+      "web": {
+        "route": "/",
+        "source": "apps/web/src/App.tsx"
+      },
+      "mobile": {
+        "route": "/",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": []
+    }
+  ],
+  "endpoints": []
+}

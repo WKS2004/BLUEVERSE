@@ -1,6 +1,6 @@
 # Testing Strategy
 
-The concrete implementation sequence, centralized test layout, case-ID rules,
+The concrete implementation sequence, framework-default test layout, case-ID rules,
 service-specific coverage and CI changes are defined in
 [`implementation-plan.md`](implementation-plan.md).
 
@@ -14,7 +14,9 @@ Testing will cover the current foundation and the later business workflows:
 - Flutter tests and static analysis
 - database/migration verification
 - cross-platform API integration
-- Agentic AI workflow evaluation
+- cross-client route/API contract validation through
+  `docs/contracts/ui-integration.json`
+- Agentic AI workflow evaluation in each AI service’s local `tests/` directory
 - deployment smoke tests
 
 ## Current evidence
@@ -31,7 +33,8 @@ Testing will cover the current foundation and the later business workflows:
 
 Critical business rules should have deterministic tests.
 
-Test implementation is part of the same change as the behavior implementation.
+Test implementation is part of the same change as the behavior implementation,
+and tests stay in the default test directory of the owning package/service.
 Each relevant situation should be exercised with nominal passing, invalid,
 boundary, just-inside/just-outside, empty/missing, malformed and extreme
 conditions, plus duplicate, concurrency, timeout/retry and dependency-failure
@@ -51,3 +54,13 @@ both the implementation and test are wrong, correct them together only after
 approval and add the missing boundary/regression cases.
 
 Agentic AI evaluation must include the complete assessed workflow and should not depend solely on an LLM judge.
+
+## UI integration evidence
+
+The UI integration registry is the first deterministic check for every new,
+generated or updated client surface. It links one workflow ID to the React
+route, Flutter route and public API endpoint references. The validator rejects
+undeclared routes, undeclared API paths, direct internal-service targets and
+`/api/v1`-style paths. This structural check is followed by request-boundary,
+permission and workflow tests in the owning client locations; it does not
+replace live API or gateway integration tests.

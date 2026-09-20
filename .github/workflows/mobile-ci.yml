@@ -21,13 +21,19 @@ jobs:
         run: |
           target="${{ github.ref_name }}"; range="${{ github.event.before }}..${{ github.sha }}"
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then target="${{ github.base_ref }}"; range="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"; fi
-          if [[ "$target" == "main" || "$target" == "dev" ]] || git diff --name-only "$range" | grep -Eq '^(apps/mobile/|\.github/workflows/mobile-ci\.yml$)'; then echo affected=true >> "$GITHUB_OUTPUT"; else echo affected=false >> "$GITHUB_OUTPUT"; fi
+          if [[ "$target" == "main" || "$target" == "dev" ]] || git diff --name-only "$range" | grep -Eq '^(apps/mobile/|docs/contracts/ui-integration\.json$|docs/development/ui-integration\.md$|scripts/validation/|\.github/workflows/(mobile-ci|ui-integration)\.yml$)'; then echo affected=true >> "$GITHUB_OUTPUT"; else echo affected=false >> "$GITHUB_OUTPUT"; fi
       - name: Not affected
         if: steps.scope.outputs.affected != 'true'
         run: echo "Not affected - no Flutter mobile changes."
       - uses: subosito/flutter-action@v2
         if: steps.scope.outputs.affected == 'true'
         with: { channel: stable, cache: true }
+      - uses: actions/setup-python@v6
+        if: steps.scope.outputs.affected == 'true'
+        with: { python-version: "3.12" }
+      - name: Validate shared UI/API integration contract
+        if: steps.scope.outputs.affected == 'true'
+        run: python scripts/validation/validate_ui_integrations.py
       - name: Analyze mobile application
         if: steps.scope.outputs.affected == 'true'
         working-directory: apps/mobile

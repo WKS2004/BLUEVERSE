@@ -34,10 +34,10 @@ jobs:
 
           while IFS= read -r -d '' project; do
             test_projects+=("$project")
-          done < <(find test/services services -type f -name '*.csproj' \( -name '*Tests.csproj' -o -name '*Test.csproj' -o -path '*/tests/*' \) -print0 2>/dev/null | sort -z -u)
+          done < <(find services -type f -name '*.csproj' \( -name '*Tests.csproj' -o -name '*Test.csproj' -o -path '*/tests/*' \) -print0 2>/dev/null | sort -z -u)
 
           if [[ ${#test_projects[@]} -eq 0 ]]; then
-            echo "No backend test projects found under test/services or services."
+            echo "No backend test projects found in the default service test locations under services/."
             echo "This workflow currently reports zero tests until backend services and their tests are added."
             python .github/scripts/report_test_metrics.py --results-root test-results/backend --scope "Backend Microservices"
             exit 0
@@ -45,7 +45,6 @@ jobs:
 
           for project in "${test_projects[@]}"; do
             case "$project" in
-              test/services/*) service="${project#test/services/}"; service="${service%%/*}" ;;
               services/*) service="${project#services/}"; service="${service%%/*}" ;;
               *) service="unknown" ;;
             esac

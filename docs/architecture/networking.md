@@ -31,6 +31,11 @@ Auth is not connected to the edge network and has no public gateway route. Clien
 
 No `/api/v1` style path versioning is planned.
 
+Client route/API integration is recorded in
+[`../contracts/ui-integration.json`](../contracts/ui-integration.json). React
+and Flutter use shared workflow IDs and public `/api/...` paths; they never
+call each other, Auth, Agentic AI, PostgreSQL or an internal Docker hostname.
+
 ## Host access
 
 The gateway is published on host port `80` by default (`BLUEVERSE_HTTP_PORT`):

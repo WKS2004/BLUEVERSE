@@ -10,12 +10,17 @@ Verify paths and implementation state before relying on any entry.
 | `services/api` | public ASP.NET Core API | REST, DTO/application layers, validation, auth proxy, OpenAPI |
 | `services/auth` | internal authentication service | private behind API/gateway |
 | `services/<name>` | future/internal backend services | own data/service contract and matching tests |
-| `test/` | authoritative centralized test cases | stable IDs and CI discovery |
+| `apps/web/src`, `apps/web/e2e` | React test cases colocated with the web package | stable IDs and web CI discovery |
+| `apps/mobile/test`, `apps/mobile/integration_test` | Flutter unit/widget and integration test cases | stable IDs and mobile CI discovery |
+| `services/*/tests` | service-owned backend test projects | stable IDs and backend CI discovery |
+| `services/ai/*/tests`, `services/ai-agents/*/tests`, `services/agents/*/tests` | Agentic AI service test/evaluation cases | stable IDs and AI CI discovery |
 | `infrastructure/docker` | service Dockerfiles and gateway config | selected DHI images, minimal runtime assumptions |
 | `compose.yaml` | local multi-service entry point | gateway routing, networks, health and secret indirection |
 | `.github/workflows` | CI/build/test policy | path filters, complete metrics and failure evidence |
 | `docs/architecture`, `docs/adr` | architectural source of truth | update for material boundary decisions |
 | `docs/security`, `docs/agentic-ai` | threat and safety source of truth | deterministic validation and approval controls |
+| `docs/contracts/ui-integration.json` | shared React/Flutter workflow, route and public API registry | one workflow ID, both relevant client routes and declared `/api/...` references |
+| `scripts/validation` | dependency-free repository and UI integration validators | fail-closed route/API checks and validator tests |
 | `.agents/skills` | on-demand repository workflows | concise discovery metadata; rules remain authoritative |
 | `.agents/registry` | provenance and compatibility metadata for vendored skills | every imported external skill is source-pinned and licensed |
 | `.agents/skill-overlays` | repository-specific bindings for portable skills | overlays extend skills without overriding project rules |
@@ -28,6 +33,8 @@ Verify paths and implementation state before relying on any entry.
 - Selected base images are listed in `AGENTS.md` and `rules/docker.md`.
 - The gateway's public convention is `/api/...`; there is no client-facing
   direct `/auth/...` or bare backend `/health` route.
+- The current UI registry contains only the generated shared home surface and
+  no domain API endpoints; the starter clients must not add unregistered calls.
 - Backend and Agentic AI implementations may be absent even when Docker,
   Compose, docs or CI refer to them. A reserved path, empty source folder or
   directory containing only ignored `bin/`/`obj/` output is not an
@@ -38,6 +45,8 @@ Verify paths and implementation state before relying on any entry.
 ## Source-of-truth lookup
 
 - Setup/commands: `docs/development/setup.md`, `docs/development/ci.md`
+- UI integration: `docs/development/ui-integration.md`,
+  `docs/contracts/ui-integration.json`
 - Architecture/networking: `docs/architecture/`, `docs/adr/`
 - Security/AI safety: `docs/security/`, `docs/agentic-ai/`
 - Test matrix/order: `docs/testing/`

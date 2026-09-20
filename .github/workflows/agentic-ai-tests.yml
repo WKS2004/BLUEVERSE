@@ -31,24 +31,34 @@ jobs:
           set +e
           mkdir -p test-results/ai
           echo "Test pass/fail is determined by the complete test assertions, not by one response field or HTTP status alone."
+          export PYTHONPATH="$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/services:${PYTHONPATH:-}"
           overall_status=0
           service_dirs=()
+          ai_roots=(services/ai services/ai-agents services/agents)
 
-          while IFS= read -r -d '' service_dir; do
-            if find "$service_dir" -maxdepth 2 -type f \( -name 'pyproject.toml' -o -name 'requirements*.txt' -o -name 'test_*.py' -o -name '*_test.py' \) -print -quit | grep -q .; then
-              service_dirs+=("$service_dir")
-            fi
-          done < <(find test/ai -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null | sort -z)
+          for ai_root in "${ai_roots[@]}"; do
+            while IFS= read -r -d '' test_dir; do
+              if find "$test_dir" -type f \( -name 'test_*.py' -o -name '*_test.py' \) -print -quit | grep -q .; then
+                service_dirs+=("$test_dir")
+              fi
+            done < <(find "$ai_root" -type d -name tests -print0 2>/dev/null | sort -z)
+          done
 
           if [[ ${#service_dirs[@]} -eq 0 ]]; then
-            echo "No Agentic AI test service directories found under test/ai."
+            echo "No Agentic AI test suites found under services/ai, services/ai-agents, or services/agents."
             echo "This workflow currently reports zero tests until AI service tests are added."
             python .github/scripts/report_test_metrics.py --results-root test-results/ai --scope "Agentic AI"
             exit 0
           fi
 
           for service_dir in "${service_dirs[@]}"; do
-            service="${service_dir#test/ai/}"
+            service_root="${service_dir%/tests}"
+            service="${service_root#services/}"
+            case "$service" in
+              ai/*) service="${service#ai/}" ;;
+              ai-agents/*) service="${service#ai-agents/}" ;;
+              agents/*) service="${service#agents/}" ;;
+            esac
             result_dir="test-results/ai/$service"
             mkdir -p "$result_dir"
             echo "============================================================"
@@ -56,12 +66,22 @@ jobs:
             echo "TEST DIRECTORY: $service_dir"
             echo "============================================================"
 
-            requirements=$(find "$service_dir" -maxdepth 1 -type f -name 'requirements*.txt' -print -quit)
+            requirements=$(find "$service_root" -maxdepth 1 -type f -name 'requirements*.txt' -print -quit)
             if [[ -n "$requirements" ]]; then
               python -m pip install -r "$requirements"
               if [[ $? -ne 0 ]]; then
                 overall_status=1
                 echo "Dependency installation failed for Agentic AI service '$service'."
+                continue
+              fi
+            fi
+
+            pyproject=$(find "$service_root" -maxdepth 1 -type f -name 'pyproject.toml' -print -quit)
+            if [[ -n "$pyproject" ]]; then
+              python -m pip install -e "$service_root"
+              if [[ $? -ne 0 ]]; then
+                overall_status=1
+                echo "Package installation failed for Agentic AI service '$service'."
                 continue
               fi
             fi

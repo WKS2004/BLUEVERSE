@@ -13,9 +13,9 @@ Apply this skill only to `apps/mobile` and its authoritative test paths. Read
 `blueverse-test-design` first, preserve stable case IDs and keep client tests
 behind the public `/api/...` boundary. Do not weaken or replace existing tests
 without the permission required by the root instructions.
-BLUEVERSE acceptance cases belong under `test/app/mobile`; the generated
-`apps/mobile/test` directory is package-local starter/runner space unless the
-centralized-test approach explicitly selects it.
+BLUEVERSE acceptance cases belong under the package-default
+`apps/mobile/test` directory. There is no repository-root centralized test
+tree.
 
 ## Contents
 - [Setup & Configuration](#setup--configuration)
@@ -29,7 +29,8 @@ centralized-test approach explicitly selects it.
 Ensure the testing environment is properly configured before authoring widget tests.
 
 1. Add the `flutter_test` dependency to the `dev_dependencies` section of `pubspec.yaml`.
-2. Place all test files in the `test/` directory at the root of the project.
+2. Place all test files in `apps/mobile/test` (the `test/` directory at the
+   Flutter package root).
 3. Suffix all test file names with `_test.dart` (e.g., `widget_test.dart`).
 
 ## Core Components
@@ -52,7 +53,8 @@ Copy the following checklist to track progress when implementing a new widget te
 - [ ] **Step 5: Simulate interactions.** Execute gestures or inputs (e.g., `await tester.tap(buttonFinder)`).
 - [ ] **Step 6: Rebuild the tree.** Call `await tester.pump()` or `await tester.pumpAndSettle()` to process state changes.
 - [ ] **Step 7: Verify updated state.** Use `expect()` to validate the UI after the interaction.
-- [ ] **Step 8: Run and validate.** Execute `flutter test test/your_test_file_test.dart`.
+- [ ] **Step 8: Run and validate.** From `apps/mobile`, execute
+  `flutter test test/your_test_file_test.dart`.
 - [ ] **Step 9: Feedback Loop.** Review test output -> identify failing matchers -> adjust widget logic or test assertions -> re-run until passing.
 
 ## Interaction & State Management
@@ -125,7 +127,7 @@ class _TodoListState extends State<TodoList> {
 }
 ```
 
-**Test Implementation (`test/todo_list_test.dart`):**
+**Test Implementation (`apps/mobile/test/todo_list_test.dart`):**
 ```dart
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

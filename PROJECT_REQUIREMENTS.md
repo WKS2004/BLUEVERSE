@@ -22,6 +22,16 @@ The final system must integrate:
 
 React and Flutter use the same API, database, auth, permissions and business rules.
 
+Every new, generated or updated UI must be integrated as a cross-platform
+workflow: register its React route, Flutter route and public `/api/...`
+endpoint references in `docs/contracts/ui-integration.json`, then pass the
+shared UI integration validator and the relevant client/API tests. The clients
+must not call one another, internal microservice hostnames, Auth, Agentic AI or
+PostgreSQL directly. Prefer literal relative `/api/...` paths; absolute API
+hosts must be allowlisted by the contract and dynamic request targets that CI
+cannot verify are invalid. A shared workflow ID is the connection between the
+relevant UI surfaces.
+
 If Agentic AI is implemented as an internal Python service, clients must never call it directly. ASP.NET Core is the public application boundary and invokes internal AI services.
 
 ## 3. v0 Foundation
@@ -219,6 +229,7 @@ The final project must demonstrate:
 - React tests
 - Flutter analysis/tests
 - integration tests where appropriate
+- cross-client route/API contract validation for every UI change
 - Agentic AI evaluation
 - CI evidence
 - deployment evidence
@@ -235,6 +246,8 @@ The final project must demonstrate:
   under `.agents/`; imported guidance must remain source-pinned and
   supplementary to BLUEVERSE rules
 - individual contribution must remain visible in Git history
+- UI route/API integration registry and CI evidence remain synchronized with
+  React, Flutter, gateway and backend changes
 
 ## 11. Versioning
 

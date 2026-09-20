@@ -1,0 +1,51 @@
+name: UI Integration Contract
+
+on:
+  push:
+    branches: ["main", "dev", "features/**"]
+    paths:
+      - "apps/web/**"
+      - "apps/mobile/**"
+      - "services/**"
+      - "docs/contracts/**"
+      - "docs/api/**"
+      - "docs/architecture/**"
+      - "docs/development/ui-integration.md"
+      - "scripts/validation/**"
+      - "infrastructure/docker/**"
+      - "compose.yaml"
+      - ".github/workflows/**"
+  pull_request:
+    branches: ["main", "dev", "features/**"]
+    paths:
+      - "apps/web/**"
+      - "apps/mobile/**"
+      - "services/**"
+      - "docs/contracts/**"
+      - "docs/api/**"
+      - "docs/architecture/**"
+      - "docs/development/ui-integration.md"
+      - "scripts/validation/**"
+      - "infrastructure/docker/**"
+      - "compose.yaml"
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Validate React and Flutter route/API contract
+        run: python scripts/validation/validate_ui_integrations.py
+
+      - name: Test the UI integration validator
+        run: python -m unittest discover -s scripts/validation/tests -p "test_*.py"

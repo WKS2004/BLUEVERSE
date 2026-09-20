@@ -16,9 +16,9 @@ authorization contract; never call Auth, Agentic AI or PostgreSQL directly.
 Prefer Flutter's current `integration_test` package and existing project
 tooling; do not add a replacement app or deprecated driver setup without
 checking the installed Flutter channel and project requirement.
-Keep authoritative acceptance cases under `test/app/mobile`. Use a package-
-local `apps/mobile/integration_test` suite only when the documented centralized
-test strategy explicitly chooses that runner arrangement.
+Keep authoritative mobile integration acceptance cases under the package-
+default `apps/mobile/integration_test` directory. There is no repository-root
+centralized test tree.
 
 ## Contents
 - [Project Setup and Dependencies](#project-setup-and-dependencies)
@@ -57,7 +57,8 @@ Use the Dart/Flutter MCP server tools to interactively explore and manipulate th
 
 Structure integration tests using the `flutter_test` API paradigm.
 
-- Create a dedicated `integration_test/` directory at the project root.
+- Create the package-local `apps/mobile/integration_test/` directory (the
+  `integration_test/` directory at the Flutter package root).
 - Name all test files using the `<name>_test.dart` convention.
 - Initialize the binding by calling `IntegrationTestWidgetsFlutterBinding.ensureInitialized();` at the start of `main()`.
 - Load the application UI using `await tester.pumpWidget(MyApp());`.

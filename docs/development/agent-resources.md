@@ -90,11 +90,19 @@ The current React application is React 19 + Vite. Next.js, React Server
 Components, server actions, route handlers and server-only caching guidance
 must be ignored unless the repository explicitly adopts those technologies.
 React and Flutter must use only the public `/api/...` boundary.
+For every new, generated or updated UI, also update
+[`docs/contracts/ui-integration.json`](../contracts/ui-integration.json) and
+run the route/API contract validator described in
+[`ui-integration.md`](ui-integration.md). Shared workflow IDs connect the
+relevant React and Flutter surfaces; the clients never call each other or
+internal service hostnames.
 
-Flutter acceptance cases belong under the authoritative repository test paths
-defined by `blueverse-test-design` and `docs/testing/implementation-plan.md`.
-The generated `apps/mobile/test` directory is package-local starter/runner
-space unless the documented centralized-test approach explicitly selects it.
+Test cases belong in the framework-default directories defined by
+`blueverse-test-design` and `docs/testing/implementation-plan.md`: React tests
+are colocated under `apps/web/src` (with optional `apps/web/e2e`), Flutter tests
+under `apps/mobile/test` and `apps/mobile/integration_test`, backend tests under
+`services/<service>/tests`, and AI-agent tests under each agent package’s local
+`tests/` directory. Do not create a repository-root centralized `test/` tree.
 
 ## Registry and maintenance
 

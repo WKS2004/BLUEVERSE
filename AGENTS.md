@@ -12,6 +12,11 @@ the agent configuration itself.
 ## Non-negotiable architecture
 
 - React and Flutter communicate only with the ASP.NET Core public API.
+- Every new, generated or updated UI must be registered in
+  `docs/contracts/ui-integration.json` with its React route, Flutter route and
+  public API endpoint references before it can pass CI.
+- The two clients connect through shared workflow IDs and the public API; they
+  must not call one another or use internal service hostnames.
 - Do not expose internal Agentic AI services directly to clients.
 - PostgreSQL is accessed through the backend/service layer.
 - `edge-nginx` is the local Docker entry point.
@@ -90,6 +95,14 @@ Persist only the data required for the application and Agentic AI workflow. Use 
 React and Flutter must use the same backend contract and authorization model.
 
 Do not create client-side business rules that contradict the API.
+
+For every UI change, re-check frontend route declarations and every request
+target with `scripts/validation/validate_ui_integrations.py`. A route or
+`/api/...` call that is not registered in the shared contract, a direct Auth,
+Agentic AI, PostgreSQL/internal-service target, an unapproved absolute API
+host, a dynamic/unverifiable network target, and `/api/v1`-style path are
+invalid. Prefer literal relative `/api/...` paths; the check applies even when
+a UI is generated from a template.
 
 ## Testing
 
