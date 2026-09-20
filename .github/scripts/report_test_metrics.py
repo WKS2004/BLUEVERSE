@@ -153,39 +153,44 @@ def parse_flutter(path: Path) -> Metrics:
     completed: set[str] = set()
     for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
         try:
-            event = json.loads(line)
+            decoded = json.loads(line)
         except json.JSONDecodeError:
             continue
-        if event.get("type") == "testStart":
-            params = event.get("testStart", {})
-            if params.get("hidden"):
+
+        events = decoded if isinstance(decoded, list) else [decoded]
+        for event in events:
+            if not isinstance(event, dict):
                 continue
-            test_id = str(params.get("id", params.get("name", len(started))))
-            started.add(test_id)
-        elif event.get("type") == "testDone":
-            params = event.get("testDone", {})
-            if params.get("hidden"):
-                continue
-            test_id = str(params.get("id", len(completed)))
-            if test_id in completed:
-                continue
-            completed.add(test_id)
-            result = str(params.get("result", "error")).lower()
-            metrics.total += 1
-            if result == "success":
-                metrics.passed += 1
-            elif result in {"skipped", "pending"}:
-                metrics.skipped += 1
-            elif result in {"failure", "failed"}:
-                metrics.failed += 1
-                name = str(params.get("name", params.get("id", "unknown-test")))
-                detail = str(params.get("error", "")).splitlines()[0][:240]
-                metrics.failed_cases.append(f"{name} — {detail}" if detail else name)
-            else:
-                metrics.errors += 1
-                name = str(params.get("name", params.get("id", "unknown-test")))
-                detail = str(params.get("error", "")).splitlines()[0][:240]
-                metrics.failed_cases.append(f"{name} — {detail}" if detail else name)
+            if event.get("type") == "testStart":
+                params = event.get("testStart", {})
+                if params.get("hidden"):
+                    continue
+                test_id = str(params.get("id", params.get("name", len(started))))
+                started.add(test_id)
+            elif event.get("type") == "testDone":
+                params = event.get("testDone", {})
+                if params.get("hidden"):
+                    continue
+                test_id = str(params.get("id", len(completed)))
+                if test_id in completed:
+                    continue
+                completed.add(test_id)
+                result = str(params.get("result", "error")).lower()
+                metrics.total += 1
+                if result == "success":
+                    metrics.passed += 1
+                elif result in {"skipped", "pending"}:
+                    metrics.skipped += 1
+                elif result in {"failure", "failed"}:
+                    metrics.failed += 1
+                    name = str(params.get("name", params.get("id", "unknown-test")))
+                    detail = str(params.get("error", "")).splitlines()[0][:240]
+                    metrics.failed_cases.append(f"{name} — {detail}" if detail else name)
+                else:
+                    metrics.errors += 1
+                    name = str(params.get("name", params.get("id", "unknown-test")))
+                    detail = str(params.get("error", "")).splitlines()[0][:240]
+                    metrics.failed_cases.append(f"{name} — {detail}" if detail else name)
     metrics.total = max(metrics.total, len(started))
     return metrics
 
