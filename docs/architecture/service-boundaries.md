@@ -15,6 +15,10 @@ Responsibilities:
 
 Not responsible for business rules.
 
+The frontend's client routes and public API references are linked through the
+shared UI integration registry. Frontend route changes must pass its validator
+alongside the normal web/mobile checks.
+
 ## frontend
 
 Responsibilities:

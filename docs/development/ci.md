@@ -27,13 +27,47 @@ images.
 | Workflow | Scope | Current behavior |
 |---|---|---|
 | `repository-ci.yml` | Repository foundation | Checks required root files/directories and validates `.agents` resources, registry metadata, overlays, routing fixtures and links. |
+| `ui-integration.yml` | `apps/web/**`, `apps/mobile/**`, `services/**`, API/architecture contract docs, `infrastructure/docker/**`, `compose.yaml`, all workflows and the UI contract | Validates the shared React/Flutter workflow registry, rejects wrong frontend routes and unregistered/direct backend targets, and tests the validator. |
 | `backend-ci.yml` | `services/**` | Restores/builds discovered ASP.NET projects when present. Backend tests run in the dedicated backend test workflow. |
 | `web-ci.yml` | `apps/web/**` | Runs `npm install`, ESLint and the Vite build. |
 | `mobile-ci.yml` | `apps/mobile/**` | Runs Flutter dependency resolution and analysis. Mobile tests run in the dedicated mobile test workflow. |
-| `web-tests.yml` | React and `test/app/web/**` | Runs all React web test cases and reports overall metrics. |
-| `mobile-tests.yml` | Flutter and `test/app/mobile/**` | Runs all Flutter mobile test cases and reports test metrics. |
-| `backend-tests.yml` | `services/**` and `test/services/**` | Runs every discovered backend microservice test project in one workflow, with overall and per-service metrics. |
-| `agentic-ai-tests.yml` | `test/ai/**` | Runs every discovered Agentic AI test suite in one workflow, with overall and per-service metrics. |
+| `web-tests.yml` | `apps/web/src/**`, optional `apps/web/e2e/**` | Runs all React web test cases and reports overall metrics. |
+| `mobile-tests.yml` | `apps/mobile/test/**`, optional `apps/mobile/integration_test/**` | Runs all Flutter mobile test cases and reports test metrics. |
+| `backend-tests.yml` | `services/**` | Runs every discovered backend microservice test project from service-local test directories in one workflow, with overall and per-service metrics. |
+| `agentic-ai-tests.yml` | `services/ai/**`, `services/ai-agents/**`, `services/agents/**` | Runs every discovered Agentic AI test suite from each agent’s local `tests/` directory in one workflow, with overall and per-service metrics. |
+
+### UI integration contract
+
+The source of truth for cross-client UI integration is
+`docs/contracts/ui-integration.json`. It maps one workflow ID to its React
+route, Flutter route and public `/api/...` endpoint references. The clients do
+not call one another or internal service hostnames; the shared workflow ID is
+the cross-platform connection and the public API is the only backend boundary.
+
+`ui-integration.yml` runs for client, service, gateway, registry and validator
+changes. `web-ci.yml` and `mobile-ci.yml` also run the validator whenever their
+client changes. The gate rejects:
+
+- a frontend route used by React or Flutter but absent from the registry;
+- a literal `/api/...` call that is not a registered endpoint reference;
+- a dynamic or otherwise unverifiable network target;
+- a call to Auth, Agentic AI, PostgreSQL, another internal service or a Docker
+  hostname or an absolute host not allowlisted by the public API contract; and
+- `/api/v1`-style versioned paths.
+
+The current foundation registry contains only the generated shared home
+surface and no API endpoints because the tracked ASP.NET API/OpenAPI source is
+not present yet. An empty endpoint list is an intentional zero-integration
+state; the first real UI screen must add its public API contract, both client
+surfaces and tests in the same change. The static gate complements runtime API,
+gateway and end-to-end tests once the backend exists.
+
+Run the same checks locally from the repository root:
+
+```bash
+python scripts/validation/validate_ui_integrations.py
+python -m unittest discover -s scripts/validation/tests -p "test_*.py"
+```
 
 These workflows also run for `features/**` branches when their existing path
 filters match. The backend and Agentic AI test workflows report zero tests and

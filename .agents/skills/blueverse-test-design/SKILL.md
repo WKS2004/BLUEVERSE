@@ -10,8 +10,14 @@ Read the root `AGENTS.md`, `.agents/rules/testing.md`,
 
 1. Derive expected behavior from the requirement or contract independently of
    the implementation.
-2. Place the case under the authoritative `test/` path and assign a stable ID
-   with requirement traceability.
+   For cross-client UI work, use
+   `docs/contracts/ui-integration.json` as the route/API traceability
+   contract and run `scripts/validation/validate_ui_integrations.py`.
+2. Place the case under the owning package or service's framework-default test
+   path and assign a stable ID with requirement traceability. Use
+   `apps/web/src` (and optional `apps/web/e2e`), `apps/mobile/test` or
+   `apps/mobile/integration_test`, `services/<service-name>/tests`, or the
+   relevant AI service's local `tests/` directory.
 3. Cover normal, invalid, missing, malformed, boundary, extreme, duplicate,
    authorization, timeout/retry, concurrency, cancellation, dependency-failure,
    persistence and platform variations where applicable.
@@ -20,6 +26,8 @@ Read the root `AGENTS.md`, `.agents/rules/testing.md`,
    audit/state transitions and allowed side effects.
 5. Use deterministic synthetic fixtures and ensure the matching workflow
    discovers tests and reports complete failures and metrics.
+   UI request-boundary tests must call only the registered public gateway
+   endpoint and route/workflow tests must cover both relevant clients.
 6. For .NET test execution, read `.agents/skill-overlays/dotnet-test/run-tests.md`
    before using the portable `run-tests` skill. Use the other imported test
    quality skills only for their narrow stated purpose.

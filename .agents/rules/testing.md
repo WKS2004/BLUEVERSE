@@ -7,14 +7,17 @@ file is the fast mandatory checklist.
 
 ## Placement and traceability
 
-- Keep authoritative tests under `test/`: `app/web`, `app/mobile`,
-  `services/api`, `services/auth`, `services/<service>`, `ai/<ai-service>` and
-  `integration` as applicable. Do not scatter service tests or create sample
-  applications.
+- Keep authoritative tests in the owning package’s default test location:
+  React under `apps/web/src` (and optional `apps/web/e2e`), Flutter under
+  `apps/mobile/test` and `apps/mobile/integration_test`, backend services under
+  `services/<service>/tests`, and AI agents under their package-local
+  `tests/` directory, normally `services/ai/<agent>/tests`. Do not create a
+  repository-root `test/` tree, scatter tests outside their owner or create
+  sample applications.
 - Give every case a stable ID and requirement/acceptance reference. A case
   records preconditions, action, expected observable result and failure path.
 - Add/update tests in the same change as the behavior. New services bring their
-  test runner, minimum suite and CI discovery in the same change.
+  package-local test runner, minimum suite and CI discovery in the same change.
 
 ## Required quality
 
@@ -33,6 +36,10 @@ file is the fast mandatory checklist.
 - Clients test only the public API/gateway. React covers component states,
   request boundaries, permissions, accessibility and workflows; Flutter covers
   analysis, unit/widget, API-boundary and mobile workflow behavior.
+- Every client workflow test must trace to the shared UI integration registry:
+  React and Flutter surfaces use the same workflow ID and endpoint references.
+  Route/API contract validation runs even while the current starter has zero
+  domain endpoints.
 - Agentic AI tests use deterministic fixtures for schemas, tool authorization,
   output validation, approvals, prompt injection, recovery and safe failure;
   never assert or persist hidden reasoning and never rely only on an LLM judge.
@@ -45,3 +52,6 @@ file is the fast mandatory checklist.
   assertion outcomes plus a `FAILED TEST CASES` list. Backend and Agentic AI
   workflows must retain aggregate and per-service evidence.
 - A compile/lint pass or happy-path smoke test is not sufficient evidence.
+- Run `scripts/validation/validate_ui_integrations.py` for every UI, API,
+  gateway or integration-contract change. It must reject undeclared frontend
+  routes, undeclared public `/api/...` calls and direct internal targets.

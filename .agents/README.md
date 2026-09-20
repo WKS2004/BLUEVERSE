@@ -181,9 +181,9 @@ security-sensitive changes.
 ### `rules/testing.md`
 
 This is the mandatory agent checklist for test-case work. It defines the
-centralized test layout, stable test IDs, minimum coverage for React, Flutter,
-the public API, Auth, every backend service and Agentic AI, plus deterministic
-fixtures, safety evaluation and CI discovery requirements.
+framework-default test locations, stable test IDs, minimum coverage for React,
+Flutter, the public API, Auth, every backend service and Agentic AI, plus
+deterministic fixtures, safety evaluation and CI discovery requirements.
 
 The complete implementation sequence and test matrix are in
 [`docs/testing/implementation-plan.md`](../docs/testing/implementation-plan.md).
@@ -198,9 +198,14 @@ apps/web       React client
 apps/mobile    Flutter client
 services/api   Public ASP.NET Core API
 services/auth  Internal authentication service
-services/*     Additional internal backend services
-test/          Centralized automated test cases
+services/*     Additional internal backend services and their local tests
+services/ai/*,
+services/ai-agents/*,
+services/agents/*
+               Agentic AI services and their local `tests/` suites
 docs/          Architecture, security, setup and evidence
+scripts/validation/
+               Dependency-free UI route/API contract checks and tests
 infrastructure/docker/
                Docker and gateway configuration
 ```
@@ -217,6 +222,13 @@ must not introduce API version path segments such as `/api/v1`, replace the
 role-to-permission model with hard-coded role checks, expose database access to
 clients, or move the edge gateway out of its intended role.
 
+For UI work, `docs/contracts/ui-integration.json` is the canonical mapping
+from a shared workflow ID to the React route, Flutter route and public API
+endpoint references. Run
+`scripts/validation/validate_ui_integrations.py` for every new, generated or
+updated client surface. The two clients connect through shared workflow IDs
+and the public API; they never call each other or internal service hostnames.
+
 ## Current foundation status
 
 This repository is a v0 foundation. At the time these resources were written:
@@ -232,7 +244,8 @@ This repository is a v0 foundation. At the time these resources were written:
   projects are intentionally added.
 
 Agents must distinguish current implementation from target architecture. Do
-not create replacement sample applications to fill a foundation gap, and do
+not create replacement sample applications or a repository-root centralized
+`test/` tree to fill a foundation gap, and do
 not claim a workflow, service, test suite or deployment is complete merely
 because its documentation or Docker configuration exists.
 

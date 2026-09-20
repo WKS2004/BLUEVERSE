@@ -7,12 +7,13 @@ the current files before use.
 | Changed area | Minimum useful checks | Evidence to report |
 |---|---|---|
 | `.agents`, docs, root config | `git diff --check`; link/path review; foundation verifier if applicable | files, structural result, known gaps |
-| `apps/web` or `test/app/web` | `npm install && npm run lint && npm run build` in `apps/web`; `npm run test:ci` when configured | lint/build/test result and test IDs |
-| `apps/mobile` or `test/app/mobile` | `flutter pub get && flutter analyze`; `flutter test` or centralized runner | analysis/test result and platform limits |
-| `services/**`, `test/services/**` | matching `dotnet restore`, build and test; API contract/authorization checks | service, migration, auth and test evidence |
-| `test/ai/**` or Agentic AI code | deterministic suite, safety/evaluation checks and metrics reporter | safety cases, failed-case list, fixture mode |
+| `apps/web` | `npm install && npm run lint && npm run build` in `apps/web`; `npm run test:ci` when configured | lint/build/test result and test IDs |
+| `apps/mobile` | `flutter pub get && flutter analyze`; `flutter test test` and `flutter test integration_test` when present | analysis/test result and platform limits |
+| `services/**` | matching service-local `dotnet restore`, build and test; API contract/authorization checks | service, migration, auth and test evidence |
+| `services/ai/**`, `services/ai-agents/**`, `services/agents/**` | deterministic local `tests/` suite, safety/evaluation checks and metrics reporter | safety cases, failed-case list, fixture mode |
 | `compose.yaml`, `infrastructure/docker/**` | foundation verifier; `docker compose --env-file .env config --quiet`; affected image/health checks when available | image, network, route, health and cleanup evidence |
 | `.github/**` | YAML/script syntax review; affected workflow logic and local helper checks | trigger/path/discovery/metric behavior |
+| `docs/contracts/**`, `scripts/validation/**`, UI route/API integration | `python scripts/validation/validate_ui_integrations.py`; `python -m unittest discover -s scripts/validation/tests -p "test_*.py"` | shared workflow routes, public API references, direct-target rejection and validator results |
 | `.agents/**`, `AGENTS.md` | `python .agents/scripts/validate_agent_resources.py`; `git diff --check` | skill metadata, links, routing, provenance, overlays, evaluations and file integrity |
 
 Repository helpers:

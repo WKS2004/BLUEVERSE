@@ -89,8 +89,8 @@
         "revision": "e89522a8b0c23d282e0acc9538dd0b2cd164358b",
         "license": "BSD-3-Clause"
       },
-      "scope": ["apps/mobile", "test/app/mobile"],
-      "compatibility": "Follow BLUEVERSE stable IDs and protected-test rules; authoritative cases belong under test/app/mobile unless the centralized runner explicitly selects package-local tests."
+      "scope": ["apps/mobile", "apps/mobile/test"],
+      "compatibility": "Follow BLUEVERSE stable IDs and protected-test rules; authoritative widget cases belong under the package-default apps/mobile/test path."
     },
     {
       "id": "flutter-add-integration-test",
@@ -102,8 +102,8 @@
         "revision": "e89522a8b0c23d282e0acc9538dd0b2cd164358b",
         "license": "BSD-3-Clause"
       },
-      "scope": ["apps/mobile", "test/app/mobile"],
-      "compatibility": "Prefer the current integration_test package; authoritative cases belong under test/app/mobile unless the centralized runner explicitly selects package-local tests."
+      "scope": ["apps/mobile", "apps/mobile/integration_test"],
+      "compatibility": "Prefer the current integration_test package; authoritative integration cases belong under the package-default apps/mobile/integration_test path."
     },
     {
       "id": "dotnet-webapi",
@@ -141,7 +141,7 @@
         "revision": "8bbfe7a4d1c5c0cd42cd04e38031779c75f2dda3",
         "license": "MIT"
       },
-      "scope": ["services/*", "test/services/*"],
+      "scope": ["services/*"],
       "overlay": ".agents/skill-overlays/dotnet-test/run-tests.md",
       "compatibility": "Read the repository overlay and use the pinned SDK and actual project paths."
     },
@@ -155,7 +155,7 @@
         "revision": "8bbfe7a4d1c5c0cd42cd04e38031779c75f2dda3",
         "license": "MIT"
       },
-      "scope": ["test/**"],
+      "scope": ["apps/web/**", "apps/mobile/**", "services/**"],
       "compatibility": "Use for assertion analysis only; do not change protected tests."
     },
     {
@@ -168,7 +168,7 @@
         "revision": "8bbfe7a4d1c5c0cd42cd04e38031779c75f2dda3",
         "license": "MIT"
       },
-      "scope": ["test/**"],
+      "scope": ["apps/web/**", "apps/mobile/**", "services/**"],
       "compatibility": "Use for diagnosis before any protected-test change."
     },
     {
@@ -181,7 +181,7 @@
         "revision": "8bbfe7a4d1c5c0cd42cd04e38031779c75f2dda3",
         "license": "MIT"
       },
-      "scope": ["test/**"],
+      "scope": ["apps/web/**", "apps/mobile/**", "services/**"],
       "compatibility": "Use for caller-visible behavioral gaps, not generic coverage claims."
     },
     {
@@ -194,7 +194,7 @@
         "revision": "8bbfe7a4d1c5c0cd42cd04e38031779c75f2dda3",
         "license": "MIT"
       },
-      "scope": ["test/**"],
+      "scope": ["apps/web/**", "apps/mobile/**", "services/**"],
       "compatibility": "Grade only supplied tests using BLUEVERSE observable-behavior expectations."
     }
   ],

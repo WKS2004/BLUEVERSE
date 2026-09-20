@@ -32,6 +32,12 @@ Flutter Mobile ──┘             │
 
 React and Flutter must not call Agentic AI services directly. The ASP.NET Core API remains the authoritative public application layer.
 
+Every new, generated or updated UI is a cross-layer change. Register its
+shared workflow ID, React route, Flutter route and public `/api/...` endpoint
+references in [`docs/contracts/ui-integration.json`](docs/contracts/ui-integration.json)
+and pass the UI integration contract gate before merging. The clients do not
+call one another or internal backend service hostnames.
+
 ## Repository layout
 
 ```text
@@ -167,6 +173,9 @@ GitHub Actions contains source build/test workflows and independent Docker
 build/integration workflows:
 
 - `repository-ci.yml` checks required repository structure.
+- `ui-integration.yml` validates the shared React/Flutter route and public
+  API contract whenever clients, services, gateway routing or the registry
+  change.
 - `backend-ci.yml` restores/builds discovered ASP.NET projects when present.
 - `web-ci.yml` lints/builds the React project when relevant.
 - `mobile-ci.yml` analyzes the Flutter project when relevant.
@@ -176,6 +185,13 @@ build/integration workflows:
   with overall and per-service metrics.
 - `agentic-ai-tests.yml` runs all Agentic AI test cases in one workflow, with
   overall and per-service metrics.
+
+Test cases stay in their owning package's default locations: React under
+`apps/web/src` (and optional `apps/web/e2e`), Flutter under `apps/mobile/test`
+and `apps/mobile/integration_test`, backend services under
+`services/<service>/tests`, and each Agentic AI service under its local
+`tests/` directory. The repository does not use a centralized root `test/`
+tree for authoritative cases.
 
 - `docker-web-build.yml` synchronizes the React lockfile with the DHI Node 24 image, then builds the React web image.
 - `docker-backend-build.yml` builds the public API and discovered ASP.NET services one by one.
@@ -200,6 +216,8 @@ Start with:
 - `docs/architecture/overview.md`
 - `docs/development/setup.md`
 - `docs/development/ci.md`
+- `docs/development/ui-integration.md`
+- `docs/contracts/ui-integration.json`
 - `docs/adr/README.md`
 - `docs/agentic-ai/architecture.md`
 

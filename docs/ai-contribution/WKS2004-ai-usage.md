@@ -137,3 +137,101 @@ runtime lacks PyYAML.
   Markdown link review found zero broken links; JSON resources parsed; and
   `git diff --check` passed. No existing test or historical contribution
   record was changed.
+
+## 2026-09-20 — Migrate tests to framework-default locations
+
+- Date/time or time range: 2026-09-20 12:48 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-5
+- Summary of the user's request: Move authoritative test cases from the
+  repository-root `test/` layout to each framework or service's default test
+  location, and update the implementation, workflows, documentation and agent
+  guidance accordingly.
+- Summary of what the AI Agent did: Updated React, Flutter, backend and
+  Agentic AI test discovery to package-local paths; updated metrics input
+  handling for both Flutter test locations; removed the obsolete root test
+  README and empty directory; and synchronized README files, testing plans,
+  CI documentation, `.agents` rules, routing, skills, overlays and registry
+  metadata with the new convention. No existing test case was changed.
+- Verification/evidence: `git diff --check` passed; `.agents/registry/skills.json`
+  parsed as valid JSON; repository-wide scans found no obsolete centralized
+  test paths; the root `test/` directory is absent; the existing Flutter test
+  was located under `apps/mobile/test` but the local Flutter command remained
+  silent and was stopped; and the agent-resource validator could not run
+  because Python is not installed/on PATH.
+
+## 2026-09-20 — Final audit of test workflow migration
+
+- Date/time or time range: 2026-09-20 12:54 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-5
+- Summary of the user's request: Re-evaluate the completed test-location and
+  workflow work and finalize it only if the requested behavior was actually
+  satisfied.
+- Summary of what the AI Agent did: Audited repository state, default-path
+  references, all four test workflows, the metrics reporter, `.agents`
+  guidance, documentation and the contribution log. Confirmed the migration
+  and reporting contracts without changing any existing test case or weakening
+  any assertion.
+- Verification/evidence: The four workflow contract checks passed; the metrics
+  reporter multi-input, per-service and failed-case checks passed; embedded
+  Bash syntax checks passed for all four workflows; `git diff --check` passed;
+  the skills registry parsed as valid JSON; obsolete centralized paths were
+  absent; and the root `test/` directory was absent. Python-based agent
+  validation and local Flutter execution remain unavailable in this
+  environment.
+
+## 2026-09-20 — Enforce cross-client UI/API integration
+
+- Date/time or time range: 2026-09-20 13:57 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-5
+- Summary of the user's request: Recreate and update the BLUEVERSE UI,
+  integration, CI and agent guidance so every new, generated or updated React
+  or Flutter UI is checked against the correct frontend routes and public
+  backend microservice API connections.
+- Summary of what the AI Agent did: Audited the current starter clients,
+  gateway boundary, missing tracked backend source, existing CI and guidance;
+  added the canonical cross-client workflow/API registry, a dependency-free
+  validator and validator tests; added the UI integration GitHub Actions gate;
+  wired the validator into both client CI paths; and synchronized architecture,
+  testing, setup, app, requirements, ADR, PR/issue and agent documentation.
+- Verification/evidence: UI integration validation passed; seven validator tests
+  passed; `.agents/scripts/validate_agent_resources.py` passed with 21 skills;
+  repository Markdown local-link review passed for 183 files; `git diff
+  --check` passed. The tracked ASP.NET API/OpenAPI projects are still absent,
+  so live gateway/API and full Compose validation remain unavailable.
+
+## 2026-09-20 — Re-evaluate cross-client UI/API integration controls
+
+- Date/time or time range: 2026-09-20 14:28 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-5
+- Summary of the user's request: Re-evaluate whether the cross-client React,
+  Flutter, frontend-routing, backend-endpoint and CI requirements were
+  actually completed successfully.
+- Summary of what the AI Agent did: Re-audited the registry, validator, client
+  source trees, CI workflows, gateway/API evidence and documentation; expanded
+  the contract workflow scope to include API/architecture docs, Docker/Compose
+  routing and all workflow changes; made absolute API hosts explicit and
+  allowlisted; made dynamic network targets fail closed; broadened route
+  discovery; and added regression coverage for these controls.
+- Verification/evidence: The UI contract passed; 12 validator tests passed;
+  `.agents/scripts/validate_agent_resources.py` passed with 21 skills;
+  Python compilation and `git diff --check` passed. Flutter analyze/test
+  processes stalled and were stopped, npm is unavailable and the web has no
+  installed dependencies, and tracked `services/api`/Compose implementation
+  evidence remains absent. Therefore static contract readiness is confirmed,
+  but live API/gateway and full client execution remain unverified.

@@ -11,3 +11,7 @@
   reserved service, future workflow or planned test suite as available.
 - Prefer links to detailed source-of-truth docs over copying long matrices into
   agent rules; verify links and commands during validation.
+- UI/API integration behavior is documented in
+  [`docs/development/ui-integration.md`](../../docs/development/ui-integration.md)
+  and its machine-readable registry. Keep both synchronized with actual React,
+  Flutter, gateway and public API routes.

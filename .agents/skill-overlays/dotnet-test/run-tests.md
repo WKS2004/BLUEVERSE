@@ -16,8 +16,9 @@ mode: extend
 - Prefer the smallest relevant project/filter. Do not restore, build or execute
   a nonexistent suite, and do not add test packages merely to make a command
   work.
-- Authoritative test paths are under `test/`; preserve stable IDs, complete
-  observable assertions, failure evidence and the permission requirement for
-  changing existing tests.
+- Authoritative backend test paths are package-local under
+  `services/<service-name>/tests` (or an equivalent service-local
+  `*Tests.csproj` layout); preserve stable IDs, complete observable assertions,
+  failure evidence and the permission requirement for changing existing tests.
 - Report missing SDKs, projects, services, credentials or platform support as
   blockers rather than substituting another runner.

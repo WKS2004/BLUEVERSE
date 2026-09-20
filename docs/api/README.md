@@ -21,6 +21,14 @@ cannot be served locally until `services/api` and `services/auth` are added.
 - authorization policies/permissions
 - Swagger/OpenAPI
 
+## Client integration contract
+
+React and Flutter endpoint usage is registered in
+[`../contracts/ui-integration.json`](../contracts/ui-integration.json). A
+client may use only a public `/api/...` path listed there and referenced by
+its shared workflow. The registry is validated in CI; it does not authorize
+direct calls to Auth, Agentic AI, PostgreSQL or other internal services.
+
 ## Health
 
 The frontend health route is served by the frontend Nginx container and exposed

@@ -2,7 +2,10 @@
 
 ## v0 — Foundation
 
-Authentication, authorization, permissions, API/Auth, PostgreSQL, React/Flutter foundations, Docker, gateway, CI and documentation.
+Authentication, authorization, permissions, API/Auth, PostgreSQL, React/Flutter
+foundations, the shared UI route/API integration contract, Docker, gateway, CI
+and documentation. The starter contract remains zero-domain-endpoint until
+the public API source is checked in.
 
 ## v1 — Coastal Tourism & Operations
 

@@ -35,7 +35,10 @@ apps/mobile
 Both clients are still generated starter implementations. The expected
 `services/api` and `services/auth` directories are currently absent, so add the
 ASP.NET projects before attempting the full Compose build. Do not add business
-rules to the clients that contradict the API contract.
+rules to the clients that contradict the API contract. For every UI change,
+also update and validate the shared [UI integration contract](ui-integration.md)
+so React and Flutter use the same workflow ID and public `/api/...` endpoint
+references.
 
 ## Agent resources
 
@@ -54,6 +57,13 @@ python .agents/scripts/validate_agent_resources.py
 This dependency-free check validates skill metadata, registry provenance,
 overlays, routing fixtures, relative links and generated-path exclusions. It
 is also enforced by `repository-ci.yml` for repository-foundation changes.
+
+Validate the client route/API contract as well:
+
+```bash
+python scripts/validation/validate_ui_integrations.py
+python -m unittest discover -s scripts/validation/tests -p "test_*.py"
+```
 
 ## Backend SDK
 

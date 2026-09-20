@@ -28,6 +28,13 @@ body:
       description: List the observable conditions that must be true for this feature to be complete.
     validations:
       required: true
+  - type: textarea
+    id: ui_integration
+    attributes:
+      label: UI and API integration impact
+      description: If React or Flutter is affected, provide the shared workflow ID, each client route, public /api/... endpoint references, owning service and expected CI/test evidence. Write Not applicable when no UI boundary changes.
+    validations:
+      required: true
   - type: dropdown
     id: priority
     attributes:

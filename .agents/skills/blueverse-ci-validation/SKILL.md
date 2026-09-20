@@ -11,6 +11,11 @@ called scripts as one unit.
 
 - Keep triggers and path filters aligned with source, tests, fixtures, scripts,
   Docker configuration and behavior-changing documentation.
+- Treat `docs/contracts/ui-integration.json` and
+  `scripts/validation/validate_ui_integrations.py` as a cross-client CI
+  boundary. UI workflows must run the validator for React and Flutter changes;
+  service, API/architecture documentation, Compose/Docker gateway or workflow
+  changes must also trigger the shared UI contract workflow.
 - Prefer repository helpers and reproducible dependencies over duplicated YAML.
   Never expose secrets to forks, logs, artifacts or summaries.
 - Preserve complete runner outcomes, result artifacts and a final

@@ -13,5 +13,6 @@ ADRs capture significant architectural decisions and their rationale.
 7. `ADR-0007-agentic-ai-framework.md`
 8. `ADR-0008-agent-workflow-state.md`
 9. `ADR-0009-cloud-deployment.md`
+10. `ADR-0010-cross-client-ui-integration-contract.md`
 
 Some decisions remain **Proposed / Pending implementation choice** because the foundation does not invent decisions that have not yet been made.
