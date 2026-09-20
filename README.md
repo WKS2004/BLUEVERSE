@@ -196,6 +196,7 @@ Start with:
 
 - `PROJECT_REQUIREMENTS.md`
 - `AGENTS.md`
+- `docs/development/agent-resources.md`
 - `docs/architecture/overview.md`
 - `docs/development/setup.md`
 - `docs/development/ci.md`

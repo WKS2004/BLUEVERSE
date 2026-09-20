@@ -6,20 +6,22 @@ description: Create, change, or diagnose BLUEVERSE GitHub Actions workflows, pat
 # BLUEVERSE CI validation
 
 Read the root `AGENTS.md`, `.agents/routing.md`, and the testing, Docker,
-documentation, Git, and validation rules. Inspect the affected workflow and
-its called scripts as one unit.
+documentation, Git and validation rules. Inspect an affected workflow and its
+called scripts as one unit.
 
-- Keep triggers and path filters aligned with source, tests, shared fixtures,
-  scripts, Docker configuration, and documentation that changes behavior.
-- Use reproducible dependencies and repository helpers instead of duplicating
-  commands in YAML. Never expose secrets to forks, logs, artifacts, or summaries.
-- Dedicated test workflows must use complete runner outcomes, preserve result
-  artifacts, and end with a `FAILED TEST CASES` list. Backend and Agentic AI
-  runs retain aggregate and per-service evidence and attempt every service.
-- Preserve the selected DHI authentication/build behavior and exact-commit
-  coordination for Docker stack health checks.
-- Distinguish an intentional zero-test foundation state from broken discovery;
-  once implementation exists, missing suites or undiscovered tests must fail.
+- Keep triggers and path filters aligned with source, tests, fixtures, scripts,
+  Docker configuration and behavior-changing documentation.
+- Prefer repository helpers and reproducible dependencies over duplicated YAML.
+  Never expose secrets to forks, logs, artifacts or summaries.
+- Preserve complete runner outcomes, result artifacts and a final
+  `FAILED TEST CASES` list. Backend and Agentic AI workflows retain aggregate
+  and per-service evidence and attempt every discovered service.
+- Preserve selected DHI authentication/build behavior and exact-commit Docker
+  health coordination.
+- Distinguish intentional zero-test foundation state from broken discovery;
+  missing suites must fail once the corresponding implementation exists.
+- For `.agents` changes, keep `repository-ci.yml` as the single CI gate and
+  extend `validate_agent_resources.py` rather than adding a duplicate workflow.
 
 Validate YAML/script syntax, trigger scope, called paths, failure propagation,
-summary behavior, and local helper execution where the environment permits.
+summary behavior and local helpers where the environment permits.

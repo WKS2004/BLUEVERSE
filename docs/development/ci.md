@@ -26,7 +26,7 @@ images.
 
 | Workflow | Scope | Current behavior |
 |---|---|---|
-| `repository-ci.yml` | Repository foundation | Checks required root files and top-level directories. |
+| `repository-ci.yml` | Repository foundation | Checks required root files/directories and validates `.agents` resources, registry metadata, overlays, routing fixtures and links. |
 | `backend-ci.yml` | `services/**` | Restores/builds discovered ASP.NET projects when present. Backend tests run in the dedicated backend test workflow. |
 | `web-ci.yml` | `apps/web/**` | Runs `npm install`, ESLint and the Vite build. |
 | `mobile-ci.yml` | `apps/mobile/**` | Runs Flutter dependency resolution and analysis. Mobile tests run in the dedicated mobile test workflow. |
@@ -40,6 +40,31 @@ filters match. The backend and Agentic AI test workflows report zero tests and
 exit successfully while their service implementations are not yet present;
 once test projects/suites exist, a failed suite fails the workflow after all
 services have been attempted.
+
+### Agent-resource validation
+
+`repository-ci.yml` treats `.agents/`, `docs/`, root configuration and other
+foundation paths as repository changes. It runs the dependency-free
+`.agents/scripts/validate_agent_resources.py` validator, which checks:
+
+- required root and `.agents` files;
+- skill names, descriptions, frontmatter and placeholders;
+- registry status, local paths, pinned imported revisions and compatibility
+  metadata;
+- third-party notices, portable-skill overlays and routing evaluation cases;
+- relative Markdown links, secret-like assignments and generated/cache paths.
+
+Run the same gate locally from the repository root:
+
+```bash
+python .agents/scripts/validate_agent_resources.py
+git diff --check
+```
+
+The optional upstream skill validator requires a YAML dependency and is not a
+CI prerequisite. The foundation verifier is a separate infrastructure check;
+its expected backend-project failure must remain visible while `services/api`
+and `services/auth` are not checked in.
 
 ### Test metrics and result artifacts
 

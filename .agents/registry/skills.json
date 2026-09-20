@@ -1,0 +1,233 @@
+{
+  "schema": 1,
+  "policy": {
+    "projectRulesWin": true,
+    "externalSkillsAreSupplementary": true,
+    "updatesRequirePinnedRevision": true,
+    "pluginsAreOptional": true
+  },
+  "skills": [
+    { "id": "blueverse-agentic-ai-workflow", "status": "project", "localPath": ".agents/skills/blueverse-agentic-ai-workflow" },
+    { "id": "blueverse-backend-service", "status": "project", "localPath": ".agents/skills/blueverse-backend-service" },
+    { "id": "blueverse-ci-validation", "status": "project", "localPath": ".agents/skills/blueverse-ci-validation" },
+    { "id": "blueverse-client-contract", "status": "project", "localPath": ".agents/skills/blueverse-client-contract" },
+    { "id": "blueverse-docker-gateway", "status": "project", "localPath": ".agents/skills/blueverse-docker-gateway" },
+    { "id": "blueverse-foundation-audit", "status": "project", "localPath": ".agents/skills/blueverse-foundation-audit" },
+    { "id": "blueverse-test-design", "status": "project", "localPath": ".agents/skills/blueverse-test-design" },
+    {
+      "id": "vercel-react-best-practices",
+      "status": "imported",
+      "localPath": ".agents/skills/vercel-react-best-practices",
+      "source": {
+        "repository": "https://github.com/vercel-labs/agent-skills",
+        "path": "skills/react-best-practices",
+        "revision": "063bee94c3f4df8453406c830b0a7df0f2860278",
+        "license": "MIT (declared by the upstream skill metadata and README)"
+      },
+      "scope": ["apps/web"],
+      "compatibility": "Use browser-compatible React 19 + Vite guidance; ignore Next.js and server-only rules."
+    },
+    {
+      "id": "flutter-apply-architecture-best-practices",
+      "status": "imported",
+      "localPath": ".agents/skills/flutter-apply-architecture-best-practices",
+      "source": {
+        "repository": "https://github.com/flutter/agent-plugins",
+        "path": "skills/flutter-apply-architecture-best-practices",
+        "revision": "e89522a8b0c23d282e0acc9538dd0b2cd164358b",
+        "license": "BSD-3-Clause"
+      },
+      "scope": ["apps/mobile"],
+      "compatibility": "Use the public API boundary and preserve BLUEVERSE client conventions."
+    },
+    {
+      "id": "flutter-use-http-package",
+      "status": "imported",
+      "localPath": ".agents/skills/flutter-use-http-package",
+      "source": {
+        "repository": "https://github.com/flutter/agent-plugins",
+        "path": "skills/flutter-use-http-package",
+        "revision": "e89522a8b0c23d282e0acc9538dd0b2cd164358b",
+        "license": "BSD-3-Clause"
+      },
+      "scope": ["apps/mobile"],
+      "compatibility": "Use the public /api/... gateway; never hard-code secrets or internal service URLs."
+    },
+    {
+      "id": "flutter-implement-json-serialization",
+      "status": "imported",
+      "localPath": ".agents/skills/flutter-implement-json-serialization",
+      "source": {
+        "repository": "https://github.com/flutter/agent-plugins",
+        "path": "skills/flutter-implement-json-serialization",
+        "revision": "e89522a8b0c23d282e0acc9538dd0b2cd164358b",
+        "license": "BSD-3-Clause"
+      },
+      "scope": ["apps/mobile"],
+      "compatibility": "Keep serialization aligned with the shared public API contract."
+    },
+    {
+      "id": "flutter-setup-declarative-routing",
+      "status": "imported",
+      "localPath": ".agents/skills/flutter-setup-declarative-routing",
+      "source": {
+        "repository": "https://github.com/flutter/agent-plugins",
+        "path": "skills/flutter-setup-declarative-routing",
+        "revision": "e89522a8b0c23d282e0acc9538dd0b2cd164358b",
+        "license": "BSD-3-Clause"
+      },
+      "scope": ["apps/mobile"],
+      "compatibility": "Routing improves UX only; backend permissions remain authoritative."
+    },
+    {
+      "id": "flutter-add-widget-test",
+      "status": "imported",
+      "localPath": ".agents/skills/flutter-add-widget-test",
+      "source": {
+        "repository": "https://github.com/flutter/agent-plugins",
+        "path": "skills/flutter-add-widget-test",
+        "revision": "e89522a8b0c23d282e0acc9538dd0b2cd164358b",
+        "license": "BSD-3-Clause"
+      },
+      "scope": ["apps/mobile", "test/app/mobile"],
+      "compatibility": "Follow BLUEVERSE stable IDs and protected-test rules; authoritative cases belong under test/app/mobile unless the centralized runner explicitly selects package-local tests."
+    },
+    {
+      "id": "flutter-add-integration-test",
+      "status": "imported",
+      "localPath": ".agents/skills/flutter-add-integration-test",
+      "source": {
+        "repository": "https://github.com/flutter/agent-plugins",
+        "path": "skills/flutter-add-integration-test",
+        "revision": "e89522a8b0c23d282e0acc9538dd0b2cd164358b",
+        "license": "BSD-3-Clause"
+      },
+      "scope": ["apps/mobile", "test/app/mobile"],
+      "compatibility": "Prefer the current integration_test package; authoritative cases belong under test/app/mobile unless the centralized runner explicitly selects package-local tests."
+    },
+    {
+      "id": "dotnet-webapi",
+      "status": "imported",
+      "localPath": ".agents/skills/dotnet-webapi",
+      "source": {
+        "repository": "https://github.com/dotnet/skills",
+        "path": "plugins/dotnet-aspnetcore/skills/dotnet-webapi",
+        "revision": "8bbfe7a4d1c5c0cd42cd04e38031779c75f2dda3",
+        "license": "MIT"
+      },
+      "scope": ["services/api", "services/auth", "services/*"],
+      "compatibility": "BLUEVERSE backend skill, API route and DHI rules are authoritative."
+    },
+    {
+      "id": "optimizing-ef-core-queries",
+      "status": "imported",
+      "localPath": ".agents/skills/optimizing-ef-core-queries",
+      "source": {
+        "repository": "https://github.com/dotnet/skills",
+        "path": "plugins/dotnet-data/skills/optimizing-ef-core-queries",
+        "revision": "8bbfe7a4d1c5c0cd42cd04e38031779c75f2dda3",
+        "license": "MIT"
+      },
+      "scope": ["services/*"],
+      "compatibility": "Use only with an implemented EF Core service and preserve PostgreSQL/service-layer boundaries."
+    },
+    {
+      "id": "run-tests",
+      "status": "imported",
+      "localPath": ".agents/skills/run-tests",
+      "source": {
+        "repository": "https://github.com/dotnet/skills",
+        "path": "plugins/dotnet-test/skills/run-tests",
+        "revision": "8bbfe7a4d1c5c0cd42cd04e38031779c75f2dda3",
+        "license": "MIT"
+      },
+      "scope": ["services/*", "test/services/*"],
+      "overlay": ".agents/skill-overlays/dotnet-test/run-tests.md",
+      "compatibility": "Read the repository overlay and use the pinned SDK and actual project paths."
+    },
+    {
+      "id": "assertion-quality",
+      "status": "imported",
+      "localPath": ".agents/skills/assertion-quality",
+      "source": {
+        "repository": "https://github.com/dotnet/skills",
+        "path": "plugins/dotnet-test/skills/assertion-quality",
+        "revision": "8bbfe7a4d1c5c0cd42cd04e38031779c75f2dda3",
+        "license": "MIT"
+      },
+      "scope": ["test/**"],
+      "compatibility": "Use for assertion analysis only; do not change protected tests."
+    },
+    {
+      "id": "test-anti-patterns",
+      "status": "imported",
+      "localPath": ".agents/skills/test-anti-patterns",
+      "source": {
+        "repository": "https://github.com/dotnet/skills",
+        "path": "plugins/dotnet-test/skills/test-anti-patterns",
+        "revision": "8bbfe7a4d1c5c0cd42cd04e38031779c75f2dda3",
+        "license": "MIT"
+      },
+      "scope": ["test/**"],
+      "compatibility": "Use for diagnosis before any protected-test change."
+    },
+    {
+      "id": "test-gap-analysis",
+      "status": "imported",
+      "localPath": ".agents/skills/test-gap-analysis",
+      "source": {
+        "repository": "https://github.com/dotnet/skills",
+        "path": "plugins/dotnet-test/skills/test-gap-analysis",
+        "revision": "8bbfe7a4d1c5c0cd42cd04e38031779c75f2dda3",
+        "license": "MIT"
+      },
+      "scope": ["test/**"],
+      "compatibility": "Use for caller-visible behavioral gaps, not generic coverage claims."
+    },
+    {
+      "id": "grade-tests",
+      "status": "imported",
+      "localPath": ".agents/skills/grade-tests",
+      "source": {
+        "repository": "https://github.com/dotnet/skills",
+        "path": "plugins/dotnet-test/skills/grade-tests",
+        "revision": "8bbfe7a4d1c5c0cd42cd04e38031779c75f2dda3",
+        "license": "MIT"
+      },
+      "scope": ["test/**"],
+      "compatibility": "Grade only supplied tests using BLUEVERSE observable-behavior expectations."
+    }
+  ],
+  "deferred": [
+    {
+      "id": "agent-governance",
+      "source": {
+        "repository": "https://github.com/github/awesome-copilot",
+        "path": "skills/agent-governance",
+        "revision": "4f4796f0bf30e105700f97ed8408c12b6aa95e06",
+        "license": "MIT"
+      },
+      "reason": "No executable Agentic AI service exists in the current checkout; BLUEVERSE-owned safety guidance is sufficient for v0."
+    },
+    {
+      "id": "agent-owasp-compliance",
+      "source": {
+        "repository": "https://github.com/github/awesome-copilot",
+        "path": "skills/agent-owasp-compliance",
+        "revision": "4f4796f0bf30e105700f97ed8408c12b6aa95e06",
+        "license": "MIT"
+      },
+      "reason": "Activate after an executable AI workflow and concrete tool/approval surface exist."
+    },
+    {
+      "id": "vercel-composition-patterns",
+      "source": {
+        "repository": "https://github.com/vercel-labs/agent-skills",
+        "path": "skills/composition-patterns",
+        "revision": "063bee94c3f4df8453406c830b0a7df0f2860278",
+        "license": "MIT (declared by upstream repository)"
+      },
+      "reason": "Consider after the starter web client has real feature components and state boundaries to review."
+    }
+  ]
+}

@@ -7,6 +7,9 @@ rules relevant to the touched paths. It supplements the root
 architecture, security, Docker, API, database, client, testing and Git
 decisions.
 
+For the repository-facing explanation of the finalized resource set, see
+[`docs/development/agent-resources.md`](../docs/development/agent-resources.md).
+
 ## How agents must use these resources
 
 Before changing a part of the repository, an agent must:
@@ -51,6 +54,10 @@ directory or tool actually exists before modifying or reporting on it.
 ├── scripts/
 │   └── validate_agent_resources.py
 │                               # Deterministic rules/skills/link validation
+├── registry/
+│   └── skills.json            # Pinned source and compatibility metadata
+├── skill-overlays/            # Repository bindings for portable skills
+├── evals/                     # Deterministic resource/routing fixtures
 └── skills/                    # On-demand repository workflows
     ├── blueverse-agentic-ai-workflow/
     ├── blueverse-backend-service/
@@ -58,7 +65,10 @@ directory or tool actually exists before modifying or reporting on it.
     ├── blueverse-client-contract/
     ├── blueverse-docker-gateway/
     ├── blueverse-foundation-audit/
-    └── blueverse-test-design/
+    ├── blueverse-test-design/
+    ├── vercel-react-best-practices/
+    ├── flutter-*/
+    └── selected dotnet-* and test-quality skills/
 ```
 
 ## Repository skills
@@ -77,6 +87,24 @@ instead of copying them.
 | `blueverse-agentic-ai-workflow` | AI orchestration, tools, approvals and evaluation |
 | `blueverse-docker-gateway` | DHI, Compose, edge-nginx, networks and health |
 | `blueverse-ci-validation` | GitHub Actions, discovery, metrics and artifacts |
+
+### Portable framework skills
+
+The repository vendors only selected, source-pinned skills that materially
+match the current stack. They are optional supplements; BLUEVERSE rules and
+owned skills remain authoritative.
+
+| Skill family | Current use |
+|---|---|
+| `vercel-react-best-practices` | React 19 + Vite performance and rendering guidance; Next.js-only rules are excluded by the BLUEVERSE compatibility section |
+| `flutter-*` | Official Flutter architecture, networking, JSON, routing and test guidance |
+| `dotnet-webapi`, `optimizing-ef-core-queries` | ASP.NET Core and EF Core guidance for the future backend source |
+| `run-tests`, `assertion-quality`, `test-anti-patterns`, `test-gap-analysis`, `grade-tests` | Narrow .NET/polyglot test execution and quality analysis; BLUEVERSE testing rules remain binding |
+
+Provenance, upstream revisions, licenses, local paths and deferred candidates
+are recorded in [`registry/skills.json`](registry/skills.json). Do not update
+an imported skill in place without updating its registry revision and reviewing
+its compatibility notes.
 
 Validate this directory with:
 
@@ -195,8 +223,9 @@ This repository is a v0 foundation. At the time these resources were written:
 
 - the React and Flutter starter clients are present;
 - the Flutter project contains generated starter tests;
-- `services/api` and `services/auth` are reserved locations but may not yet
-  contain source projects;
+- `services/api` contains reserved folders and ignored build output but no
+  tracked service source project; `services/auth` is a reserved location with
+  no source project;
 - Agentic AI service implementations are described by target architecture and
   safety documentation but are not assumed to exist;
 - Docker and CI workflows may report missing service projects until those

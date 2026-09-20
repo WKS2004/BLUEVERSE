@@ -6,18 +6,22 @@ description: Audit BLUEVERSE repository readiness, architecture alignment, agent
 # BLUEVERSE foundation audit
 
 Read the root `AGENTS.md`, `.agents/repository-map.md`,
-`.agents/rules/change-safety.md`, and `.agents/rules/validation.md`.
+`.agents/rules/change-safety.md` and `.agents/rules/validation.md`.
 
-1. Inspect `git status --short` and inventory actual files with `rg --files`.
+1. Inspect `git status --short` and inventory tracked/source files with
+   targeted `rg --files` exclusions; do not use generated output as evidence.
 2. Compare implementation against `PROJECT_REQUIREMENTS.md`, architecture/ADR
-   documents, CI workflows, tests, Docker configuration, and agent resources.
-3. Distinguish implemented behavior, reserved paths, target architecture, and
-   environment-blocked checks. Never count documentation or Docker stubs as a
-   working service.
-4. Report each finding with severity, evidence path, impact, and the smallest
+   documents, CI workflows, tests, Docker configuration and `.agents` registry,
+   overlays and skills.
+3. Distinguish implemented behavior, reserved paths, ignored build output,
+   target architecture and environment-blocked checks. Documentation or Docker
+   stubs never count as a working service.
+4. Report each finding with severity, evidence path, impact and the smallest
    corrective action. Separate confirmed defects from risks and planned gaps.
-5. If implementation is requested, route each change through
-   `.agents/routing.md`, preserve existing tests, and validate the final diff.
+5. If implementation is requested, route each change through `.agents/routing.md`,
+   preserve existing tests, update the AI usage log after validation and review
+   the final diff.
 
 Run `python .agents/scripts/validate_agent_resources.py` for agent-resource
-audits and report any unavailable foundation, application, or Docker checks.
+audits and report unavailable foundation, application, Docker or platform
+checks exactly.
