@@ -36,11 +36,40 @@ jobs:
             test_projects+=("$project")
           done < <(find services -type f -name '*.csproj' \( -name '*Tests.csproj' -o -name '*Test.csproj' -o -path '*/tests/*' \) -print0 2>/dev/null | sort -z -u)
 
+          missing_test_services=()
+          while IFS= read -r -d '' service_dir; do
+            service_projects=()
+            while IFS= read -r -d '' project; do
+              service_projects+=("$project")
+            done < <(find "$service_dir" -maxdepth 1 -type f -name '*.csproj' -print0 2>/dev/null)
+
+            if [[ ${#service_projects[@]} -eq 0 ]]; then
+              continue
+            fi
+
+            has_test_project=false
+            for test_project in "${test_projects[@]}"; do
+              if [[ "$test_project" == "$service_dir/"* ]]; then
+                has_test_project=true
+                break
+              fi
+            done
+
+            if [[ "$has_test_project" != true ]]; then
+              missing_test_services+=("${service_dir#services/}")
+            fi
+          done < <(find services -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null | sort -z)
+
+          if [[ ${#missing_test_services[@]} -gt 0 ]]; then
+            echo "Backend services with source projects but no discovered test project:"
+            printf ' - %s\n' "${missing_test_services[@]}"
+            overall_status=1
+          fi
+
           if [[ ${#test_projects[@]} -eq 0 ]]; then
             echo "No backend test projects found in the default service test locations under services/."
-            echo "This workflow currently reports zero tests until backend services and their tests are added."
             python .github/scripts/report_test_metrics.py --results-root test-results/backend --scope "Backend Microservices"
-            exit 0
+            exit "$overall_status"
           fi
 
           for project in "${test_projects[@]}"; do

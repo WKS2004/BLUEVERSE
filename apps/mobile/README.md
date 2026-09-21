@@ -1,8 +1,11 @@
 # BLUEVERSE Mobile
 
-The mobile client is a Flutter/Dart starter project. The checked-in app is the
-generated counter sample; field workflows, location/evidence capture and API
-integration are deferred to the v1 implementation work.
+The mobile client is a Flutter/Dart application. The checked-in app includes
+the shared `/login` Auth session-management workflow: server-issued device
+installation credentials, secure-storage-backed login and refresh,
+current-device/everywhere logout and active-session display. Field workflows,
+location/evidence capture and other domain features remain deferred to the v1
+implementation work.
 
 ## Commands
 
@@ -21,9 +24,50 @@ be added only when that target is part of the delivery scope.
 
 ## API boundary
 
-When API integration is added, the app must call the public ASP.NET Core
-gateway using the host/LAN address appropriate for the device or emulator and
-an endpoint registered in
+The Auth workflow calls the public ASP.NET Core gateway using the host address
+appropriate for the device or emulator and port `80`. Android `localhost`
+means the phone/emulator itself, not the laptop running Docker. The app uses
+`10.0.2.2` for an Android emulator. A physical device must receive the
+laptop's current LAN address through Flutter's compile-time define; no
+laptop-specific IP is checked into the app.
+
+Set the address explicitly for both `flutter run` and `flutter build`:
+
+```bash
+# Android emulator
+flutter run --dart-define=BLUEVERSE_API_BASE_URL=http://10.0.2.2:80
+
+# Physical Android device: replace 192.168.1.42 with the laptop's IPv4 address
+flutter run --dart-define=BLUEVERSE_API_BASE_URL=http://192.168.1.42:80
+flutter build apk --debug --dart-define=BLUEVERSE_API_BASE_URL=http://192.168.1.42:80
+```
+
+The configured URL must use plain HTTP on port `80` for this local Docker
+workflow. Start the stack with `docker compose up -d`, then verify the laptop
+address from the device browser at `http://192.168.1.42/health`. Replace that
+example with the current Wi-Fi IPv4 address from `ipconfig`. Debug/profile
+Android builds permit this local HTTP connection; production transport should
+use HTTPS.
+
+Some managed or campus Wi-Fi networks isolate clients even when both devices
+show addresses in the same subnet. If the phone cannot reach the laptop's LAN
+address, use the attached USB device with an ADB reverse tunnel:
+
+```bash
+adb reverse tcp:80 tcp:80
+flutter run
+```
+
+The client tries `127.0.0.1:80` only as this final USB-reverse fallback when no
+explicit `BLUEVERSE_API_BASE_URL` was embedded. It does not make Android
+`localhost` the normal network target.
+
+The Auth adapter stores the server-issued device ID, device proof key,
+short-lived access token and rotating refresh token in platform secure storage.
+It calls the public `/api/auth/...` gateway routes only; the mobile app never
+calls the internal Auth service, PostgreSQL or another Docker hostname.
+
+Every request remains an endpoint registered in
 [`docs/contracts/ui-integration.json`](../../docs/contracts/ui-integration.json).
 It must not call internal Auth, Agentic AI, PostgreSQL or other service
 hostnames directly. Prefer literal relative `/api/...` paths when the gateway
@@ -40,6 +84,6 @@ python scripts/validation/validate_ui_integrations.py
 ```
 
 Then run `flutter analyze`, the unit/widget tests and applicable
-`integration_test` workflows. The integration registry is empty of domain API
-calls while this starter has no backend workflow; add the public API contract
-and both client surfaces together when the first real screen is introduced.
+`integration_test` workflows. The registry currently contains the shared Auth
+workflow and the starter home surface; add the public API contract and both
+client surfaces together when the next real screen is introduced.

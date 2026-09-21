@@ -1,7 +1,8 @@
 # Database Foundation
 
-PostgreSQL infrastructure is present in Compose, but no EF Core model,
-migrations or application persistence code is checked in yet.
+PostgreSQL infrastructure is present in Compose. The Auth EF Core model,
+migrations and application persistence code are checked in under
+`services/auth`.
 
 PostgreSQL is the authoritative relational database.
 
@@ -31,6 +32,18 @@ Password: the POSTGRES_PASSWORD value from .env
 - use constraints and indexes
 - maintain `CreatedAt` / `UpdatedAt` where appropriate
 - use transactions for multi-step operations that require atomicity
+- Auth device installations use server-issued opaque IDs and hashed device
+  keys; legacy client IDs are marked explicitly while they migrate
+- Auth sessions use the `ActiveSessions` table with a unique `(UserId, DeviceId)`
+  key and indexed active-device lookups; ended sessions move to the indexed
+  `UserSessionLogs` archive with an end timestamp and reason
+- Auth refresh-token rows store only hashes and support rotation/reuse audit;
+  each token references exactly one active session or archived session log; no
+  bearer token or device key is stored in plaintext
 - seed only deliberate development/reference data
+- Auth applies `services/auth/Data/Migrations` at startup before bootstrap
+  administrator seeding
+- Use the repository-pinned `dotnet-ef` tool manifest when creating or
+  inspecting migrations
 - do not store passwords or tokens in domain tables
 - do not store hidden Agentic AI reasoning

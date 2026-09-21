@@ -1,9 +1,8 @@
 # Deployment Architecture
 
 The deployment files describe the target topology. No cloud deployment is
-currently evidenced in this checkout. The .NET 10 public API source is present
-at `services/api`; the internal Auth source required for the complete backend
-deployment is still pending.
+currently evidenced in this checkout. The .NET 10 public API and internal Auth
+sources are present at `services/api` and `services/auth`.
 
 ## Planned cloud direction
 

@@ -21,15 +21,23 @@ Testing will cover the current foundation and the later business workflows:
 
 ## Current evidence
 
-- React: lint and production build scripts are configured; no component test
-  runner is checked in yet.
-- Flutter: the generated counter widget test and static-analysis workflow are
-  present.
-- ASP.NET/API: `services/api` is checked in and builds, but no API test project
-  is checked in yet. The Auth service and its tests remain pending.
-- Docker: web/backend image and Compose health workflows are configured. The
-  API image can be built, while the complete backend/Compose workflow remains
-  blocked by the missing Auth service.
+- React: lint and production build scripts validate the implemented cookie-based
+  Auth surface; no component test runner is checked in yet.
+- Flutter: Auth API-boundary/configuration tests, the Auth session UI and the
+  static-analysis workflow are present alongside the starter widget test.
+- ASP.NET/API: `services/api` and its foundation test project are checked in;
+  the API suite currently passes its 17 cases, including gateway JWT allow/deny
+  behavior.
+- Auth: `services/auth` has a package-local test project with 23 passing
+  default test cases covering endpoint behavior, authorization, validation,
+  escalation, server-issued installations, five-account device capacity,
+  five-session account eviction, account/device/everywhere logout,
+  active-session archival and refresh-token relinking, rotating refresh-token
+  replay protection, logout/password token revocation, profile-only updates,
+  catalog reads, password hashing and signing-key configuration. The
+  PostgreSQL session/concurrency smoke test is opt-in.
+- Docker: web/backend image and Compose health workflows are configured. Full
+  runtime evidence still depends on Docker Desktop/DHI access and PostgreSQL.
 
 Critical business rules should have deterministic tests.
 

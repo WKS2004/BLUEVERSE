@@ -1,8 +1,9 @@
 # Service Boundaries
 
-The following are the intended boundaries. The edge/frontend configuration,
-client starter projects and public API foundation are checked in. The Auth and
-future domain services remain separate implementation work.
+The following boundaries are implemented for the current foundation. The edge,
+client starter projects with the shared Auth workflow, public API gateway and
+internal Auth service are checked in; future domain services remain separate
+implementation work.
 
 ## edge-nginx
 
@@ -43,18 +44,24 @@ Responsibilities:
 - approval enforcement
 
 Current foundation behavior includes `GET /api/health`, OpenAPI/Swagger
-publication, CORS, forwarded headers, RFC 7807-style gateway errors and YARP
-forwarding for `/api/auth/*`. The domain responsibilities above are the target
-boundary for subsequent API work.
+publication, CORS, forwarded headers, JWT validation, RFC 7807-style gateway
+errors and YARP forwarding for `/api/auth/*`. Domain workflow responsibilities
+above remain the target boundary for subsequent API work.
 
-## auth (pending at `services/auth`)
+## auth (`services/auth`)
 
 Responsibilities:
 
-- auth/authentication foundation
-- credentials and auth-related operations
+- credential registration, login, password changes and multi-account device
+  session/logout management
+- active-session state and ended-session lifecycle logging
+- JWT issuance and token-version revocation
+- user, role and permission administration
+- role-derived permission policies and system-role protections
+- PostgreSQL persistence, migrations and bootstrap administrator seeding
 
-Its exact boundary must be kept explicit as implementation evolves.
+Auth is internal-only. Clients use the public API gateway and never call the
+Auth container, database or internal hostname directly.
 
 ## postgres
 

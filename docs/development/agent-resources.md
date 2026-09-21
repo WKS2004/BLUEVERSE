@@ -149,9 +149,9 @@ unavailable. Report those conditions; never call a blocked check successful.
 
 ## Current repository boundary
 
-The current checkout contains React and Flutter starter projects. The
-`services/api` and `services/auth` locations are reserved by the architecture
-but do not contain tracked source projects, and executable Agentic AI services
-are not present. Ignored `bin/` and `obj/` output is not implementation
-evidence. See the [foundation gap analysis](../project/foundation-gap-analysis.md)
+The current checkout contains React and Flutter starter projects with the
+implemented shared Auth workflow, plus the tracked `services/api` and
+`services/auth` ASP.NET projects. Executable
+Agentic AI services are not present. Ignored `bin/` and `obj/` output is not
+implementation evidence. See the [foundation gap analysis](../project/foundation-gap-analysis.md)
 for the current repository status and the next implementation gates.

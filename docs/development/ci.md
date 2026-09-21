@@ -55,12 +55,13 @@ client changes. The gate rejects:
   hostname or an absolute host not allowlisted by the public API contract; and
 - `/api/v1`-style versioned paths.
 
-The current foundation registry contains only the generated shared home
-surface and no API endpoints because the tracked ASP.NET API/OpenAPI source is
-not present yet. An empty endpoint list is an intentional zero-integration
-state; the first real UI screen must add its public API contract, both client
-surfaces and tests in the same change. The static gate complements runtime API,
-gateway and end-to-end tests once the backend exists.
+The current foundation registry contains the generated shared home surface and
+the implemented `auth-session-management` workflow. The Auth workflow maps
+both client `/login` routes to the public `/api/auth/login`, `/api/auth/refresh`,
+`/api/auth/me`, `/api/auth/sessions`, `/api/auth/logout` and
+`/api/auth/logout-all-devices` references. Future client workflows must add
+their public API contract, both client surfaces and tests in the same change.
+The static gate complements the runtime API/Auth gateway and service tests.
 
 Run the same checks locally from the repository root:
 
@@ -73,10 +74,10 @@ The general source and repository workflows also run for `features/**` and
 `agentic-ai/**` branches when their existing path filters match. The Agentic
 AI test workflow is restricted to `main`, `dev` and `agentic-ai/**` pushes or
 pull requests. Docker image workflows remain limited to `main` and `dev`. The
-backend and Agentic AI test workflows report zero tests and exit successfully
-while their service implementations are not yet present; once test
-projects/suites exist, a failed suite fails the workflow after all services
-have been attempted.
+Agentic AI test workflow reports zero tests while its service
+implementations are not yet present. The backend test workflow runs every
+discovered service-local test project and fails when a service source project
+has no matching test project or when any discovered suite fails.
 
 ### Agent-resource validation
 
@@ -100,8 +101,8 @@ git diff --check
 
 The optional upstream skill validator requires a YAML dependency and is not a
 CI prerequisite. The foundation verifier is a separate infrastructure check;
-its expected backend-project failure must remain visible while `services/api`
-and `services/auth` are not checked in.
+its Docker/runtime results remain environment-dependent even though the API
+and Auth source projects are now checked in.
 
 ### Test metrics and result artifacts
 
@@ -167,9 +168,9 @@ services/<service-name>/              # ASP.NET service source and .csproj
 infrastructure/docker/<service-name>/Dockerfile
 ```
 
-Because `services/api` is currently absent, the backend Docker workflow is
-expected to fail with a clear missing-service error until the ASP.NET projects
-are added. This is intentional validation of the repository contract.
+The backend Docker workflow builds the checked-in `services/api` first and then
+the discovered `services/auth` service. Missing directories, Dockerfiles,
+project files or failed builds are still collected and reported as errors.
 
 ## Compose stack health workflow
 

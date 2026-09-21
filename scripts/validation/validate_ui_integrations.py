@@ -87,7 +87,8 @@ ROUTE_PATTERNS = {
 
 API_LITERAL_PATTERN = re.compile(r"(?P<quote>['\"`])(?P<value>/api/[^'\"`?\s\\]+)(?P=quote)")
 INTERNAL_HOST_PATTERN = re.compile(
-    r"(?i)\b(?:https?://)?(?:auth|postgres|agentic-ai|agentic|database)(?::\d+)?(?:[/\\:]|\b)"
+    r"(?i)(?:\bhttps?://|//)(?:auth|postgres|agentic-ai|agentic|database)(?::\d+)?(?:[/\\:]|\b)"
+    r"|(?<![A-Za-z0-9_.-])(?:auth|postgres|agentic-ai|agentic|database):\d+(?:[/\\:]|\b)"
 )
 VERSIONED_API_PATTERN = re.compile(r"^/api/v\d+(?:/|$)", re.IGNORECASE)
 ASSET_SUFFIX_PATTERN = re.compile(r"\.(?:avif|css|gif|ico|jpeg|jpg|js|json|png|svg|webp|woff2?)(?:$|[?#])", re.IGNORECASE)
@@ -177,8 +178,10 @@ def _internal_target_pattern(manifest: dict) -> re.Pattern[str]:
     names = [re.escape(target) for target in targets if isinstance(target, str) and target.strip()]
     if not names:
         return INTERNAL_HOST_PATTERN
+    target_names = "|".join(names)
     return re.compile(
-        rf"(?i)\b(?:https?://)?(?:{'|'.join(names)})(?::\d+)?(?:[/\\:]|\b)"
+        rf"(?i)(?:\bhttps?://|//)(?:{target_names})(?::\d+)?(?:[/\\:]|\b)"
+        rf"|(?<![A-Za-z0-9_.-])(?:{target_names}):\d+(?:[/\\:]|\b)"
     )
 
 

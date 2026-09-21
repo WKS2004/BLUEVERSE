@@ -77,11 +77,10 @@ internal target, versioned API path or missing shared surface must be fixed in
 the change that introduced it. A client may not hide its API host or path in
 an unresolved variable and rely on CI to infer the intended service.
 
-The current v0 starter clients have one shared `foundation-home` entry and no
-API references because the tracked API/OpenAPI source is not present yet. The
-empty endpoint list is intentional; it is not permission to add unregistered
-client calls. The first real screen must add its backend contract and tests in
-the same change.
+The current v0 clients retain the `foundation-home` entry and also implement
+the shared `auth-session-management` workflow. Its public Auth endpoint
+references are registered in the same manifest; future screens must follow the
+same pattern rather than adding unregistered calls.
 
 Run locally from the repository root:
 

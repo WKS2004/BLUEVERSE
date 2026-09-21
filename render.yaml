@@ -45,6 +45,16 @@ services:
           property: connectionString
       - key: JWT_SIGNING_KEY
         sync: false
+      - key: Jwt__AccessTokenMinutes
+        value: "15"
+      - key: AuthSession__DefaultLifetimeDays
+        value: "1"
+      - key: AuthSession__RememberMeLifetimeDays
+        value: "30"
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
 
 databases:
   - name: blueverse-postgres

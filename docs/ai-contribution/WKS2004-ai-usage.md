@@ -312,3 +312,260 @@ runtime lacks PyYAML.
   passed; embedded Bash syntax checks passed for 10 workflows; branch-policy
   JavaScript syntax passed; `git diff --check` passed; and the final diff was
   reviewed for stale branch-policy documentation.
+
+## 2026-09-20 — Implement and validate Auth service recommendations
+
+- Date/time or time range: 2026-09-20 17:00–17:57 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-5
+- Summary of the user's request: Revalidate the repository-wide Auth-service
+  findings and implement the resulting recommendations.
+- Summary of what the AI Agent did: Hardened required JWT and database
+  configuration; added public-API JWT validation and Auth token-version
+  revocation; protected system roles and rejected unknown role/permission
+  assignments; added EF Core design-time support and an initial migration;
+  bounded startup/readiness behavior; added API/Auth security tests and CI
+  test-project enforcement; synchronized Compose, Render, environment,
+  architecture, security, database and testing documentation; and added the
+  repository-pinned EF Core tool manifest.
+- Verification/evidence: API build passed with 0 warnings and 0 errors; Auth
+  build passed with 0 warnings and 0 errors; API tests passed 17/17 and Auth
+  tests passed 9/9; the pinned EF Core tool listed
+  `20260920114913_InitialAuthSchema`; runtime smoke returned Auth health `503`
+  with `status: unhealthy` for an unavailable database and `401` for an
+  unauthenticated protected request; agent-resource and UI-integration
+  validators passed; 12 repository validation tests passed; and no committed
+  secrets were introduced.
+
+## 2026-09-20 — Complete the Auth endpoint gap audit
+
+- Date/time or time range: 2026-09-20 21:20–21:38 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-5
+- Summary of the user's request: Re-audit the Auth service for missing
+  endpoints and implement the logout endpoint plus other justified gaps.
+- Summary of what the AI Agent did: Revalidated the existing Auth routes and
+  repository contracts; added authenticated logout, explicit password change,
+  individual role reads and individual permission reads; applied token-version
+  revocation to logout/password changes; added structured endpoint tests and
+  synchronized the API, security and test documentation. Also disabled the
+  Windows EventLog sink in the public API process so non-administrator test
+  hosts cannot turn safe error handling into a logging failure. Refresh-token,
+  password-recovery, email-verification and session endpoints were not added
+  because the repository has no corresponding persistence or delivery
+  contract.
+- Verification/evidence: Auth build passed with 0 warnings and 0 errors;
+  Auth tests passed 12/12, including logout revocation, password-change
+  revocation, re-login, authorization and not-found response assertions.
+
+## 2026-09-20 — Implement multi-account device sessions and scoped logout
+
+- Date/time or time range: 2026-09-20 21:40–22:20 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-5
+- Summary of the user's request: Remove password fields from `PUT /api/auth/me`,
+  support up to five logged-in accounts per device, add device-scoped,
+  account-scoped and every-device logout behavior, and update the repository
+  documentation.
+- Summary of what the AI Agent did: Added persisted user-device sessions with
+  session-version JWT claims; enforced the five active-account device limit;
+  added `POST /api/auth/logout`, `POST /api/auth/logout/{id}` and
+  `POST /api/auth/logout-all-devices`; separated profile updates from password
+  changes; added the EF Core migration, integration tests, ADR and synchronized
+  API, security, database and testing documentation.
+- Verification/evidence: API build passed with 0 warnings and 0 errors; Auth
+  build passed with 0 warnings and 0 errors; API tests passed 17/17 and Auth
+  tests passed 16/16; OpenAPI smoke verified the logout routes, password-change
+  route and profile-only update schema; UI-integration, agent-resource and
+  repository validation tests passed; `git diff --check` passed; the new EF
+  migration was listed successfully, while applied-state verification was
+  unavailable because PostgreSQL was not running; no secrets were introduced.
+
+## 2026-09-21 — Fix PostgreSQL session-transaction login failure
+
+- Date/time or time range: 2026-09-21 04:15–04:50 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-5
+- Summary of the user's request: Diagnose and fix the HTTP 500 returned by
+  valid Auth login requests after the multi-device session update while the
+  Docker Compose stack and PostgreSQL database were running.
+- Summary of what the AI Agent did: Reproduced the failure through the public
+  gateway and inspected the Auth container logs; identified that
+  `NpgsqlRetryingExecutionStrategy` rejected the manually opened serializable
+  session transaction; wrapped the complete session mutation in EF Core's
+  execution strategy; rebuilt and recreated the Auth container.
+- Verification/evidence: Auth build passed with 0 warnings and 0 errors; Auth
+  tests passed 16/16; live Docker health returned 200 with PostgreSQL
+  connected; valid login returned 200 and its token authorized `/api/auth/me`
+  with 200; invalid credentials returned 401; the rebuilt Auth logs showed no
+  remaining transaction exception; Compose configuration and Auth image build
+  passed; no secrets were recorded.
+
+## 2026-09-21 — Create Auth session lifecycle implementation plan
+
+- Date/time or time range: 2026-09-21 04:55–05:06 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-5
+- Summary of the user's request: Create an implementation plan before
+  implementing server-issued device installations, five-account-per-device
+  and five-session-per-account limits, expiration, remember-me durations and
+  access/refresh token lifecycle behavior.
+- Summary of what the AI Agent did: Added
+  `docs/project/auth-session-management-implementation-plan.md` covering the
+  proposed data model, secure web/mobile storage, 1-day/30-day session policy,
+  JWT and refresh-token rotation, capacity eviction, PostgreSQL concurrency,
+  endpoints, client integration, testing, Docker validation, migration and
+  rollout phases. No implementation code was changed for this planning step.
+- Verification/evidence: The plan file exists with 433 lines, contains no
+  trailing whitespace, and its ADR/API links resolve; the repository's
+  existing `git diff --check` completed without content errors; no secrets or
+  tokens were recorded.
+
+## 2026-09-21 — Execute Auth session and token lifecycle implementation plan
+
+- Date/time or time range: 2026-09-21 05:06–10:44 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, .NET/EF Core, Docker Compose, Flutter
+  and npm tooling
+- AI Model: GPT-5
+- Summary of the user's request: Re-revise and execute the Auth session
+  implementation plan, including server-issued device credentials, five
+  account sessions per installation, five active sessions per account,
+  expiration and remember-me lifetimes, access/refresh token lifecycle,
+  logout scopes, client integration, documentation and final plan cleanup.
+- Summary of what the AI Agent did: Implemented server-issued installation
+  identifiers and hashed device proofs; added one-day/30-day absolute session
+  policy, short-lived access JWTs, rotating hashed refresh tokens and replay
+  revocation; added cookie and native response transport, session listing and
+  revocation, capacity eviction, PostgreSQL transaction/advisory locking and
+  expiration cleanup; synchronized the API gateway, React, Flutter, Compose,
+  migration, ADR, security, database, testing and UI-contract documentation;
+  added an opt-in real-PostgreSQL concurrency test and removed the completed
+  implementation-plan file after validation.
+- Verification/evidence: Auth default tests passed 21/21; the opt-in
+  PostgreSQL test `AUTH-POSTGRES-SESSION-001` passed 1/1 against the running
+  database and cleaned up its temporary user; API tests passed 17/17; React
+  build/lint and Flutter analyze/test passed; UI-contract validation and its
+  tests passed 12/12; EF migrations were listed/applied successfully; the
+  rebuilt Docker Compose Auth image and live gateway smoke checks passed with
+  health 200, valid login 200, invalid login 401, refresh 200, protected
+  `/me` 200, logout 204, revoked `/me` 401 and successful cookie transport;
+  recent Auth/API logs contained no error lines or configured-secret values.
+
+## 2026-09-21 — Fix Flutter Android local gateway connectivity
+
+- Date/time or time range: 2026-09-21 10:44–15:08 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Flutter/Dart, Docker Compose and ADB
+- AI Model: GPT-5
+- Summary of the user's request: Diagnose and fix the Android client's
+  failure to reach the laptop's local BLUEVERSE gateway, determine the correct
+  local network address and ensure the client uses port 80 instead of changing
+  socket ports.
+- Summary of what the AI Agent did: Replaced mobile `localhost` targets with
+  a port-80 gateway resolver supporting the Android emulator host,
+  laptop-LAN override and USB ADB reverse fallback; added stable connectivity
+  errors, Android debug/profile cleartext permission, network configuration
+  tests and setup documentation; validated the laptop Wi-Fi address and
+  Compose port mapping; rebuilt and installed the debug APK.
+- Verification/evidence: Laptop Wi-Fi was `172.28.20.242` and the attached
+  Android device was `172.28.24.80` on the same subnet; Compose published
+  edge-nginx on `0.0.0.0:80` and gateway health returned 200; direct device
+  LAN access was blocked with a failed ARP neighbor, consistent with managed
+  Wi-Fi client isolation; `adb reverse tcp:80 tcp:80` reached port 80 from the
+  device; Dart analysis reported no issues, Flutter tests passed 4/4, the
+  debug APK build and install succeeded, UI-contract validation passed and
+  validator tests passed 12/12. No secrets or tokens were recorded.
+
+## 2026-09-21 — Make the Flutter gateway override authoritative
+
+- Date/time or time range: 2026-09-21 16:35–17:03 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Flutter/Dart, Gradle, ADB and the
+  repository validation scripts
+- AI Model: GPT-5
+- Summary of the user's request: Fix the Flutter `BLUEVERSE_API_BASE_URL`
+  configuration because `flutter run` and `flutter build` continued to use
+  checked-in IP fallbacks instead of the requested laptop address.
+- Summary of what the AI Agent did: Removed the environment-specific laptop
+  IP from the mobile runtime defaults; made a supplied
+  `--dart-define=BLUEVERSE_API_BASE_URL=...` value authoritative; clarified
+  the build/run commands and port-80 behavior in the mobile, root, networking
+  and local-deployment documentation; and added a compile-time override
+  regression test.
+- Verification/evidence: The override test passed with a synthetic LAN URL;
+  the complete Flutter suite passed 5/5; Flutter analysis reported no issues;
+  the debug APK built successfully with the override; `flutter run` installed
+  and launched the Android app using an explicit port-80 USB-reverse URL; UI
+  integration validation passed and its 12 validator tests passed. No secrets,
+  tokens or personal data were recorded.
+
+## 2026-09-21 — Separate active Auth sessions from lifecycle logs
+
+- Date/time or time range: 2026-09-21 17:05–19:16 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, .NET/EF Core, Docker Compose,
+  PostgreSQL and HTTP smoke checks
+- AI Model: GPT-5
+- Summary of the user's request: Replace the single `UserSessions` table model
+  with a table containing only active sessions and a separate log table that
+  retains revoked, expired and otherwise stale session records.
+- Summary of what the AI Agent did: Added `ActiveSessions` and
+  `UserSessionLogs` persistence models; moved ended sessions and their hashed
+  refresh-token associations into the archive; updated JWT validation, login,
+  refresh, logout, capacity eviction, expiry cleanup and security invalidation
+  paths; added a data-preserving EF migration; added archive behavior tests;
+  and updated the Auth schema, security, testing and ADR documentation.
+- Verification/evidence: Auth build succeeded with no warnings; default Auth
+  tests passed 23/23; active/archive tests passed 2/2; the opt-in PostgreSQL
+  session/concurrency test passed 1/1; the live migration applied successfully
+  to the local database; live login returned 200 and logout returned 204; the
+  resulting database contained separate `ActiveSessions` and
+  `UserSessionLogs` tables with refresh-token links preserved; API tests passed
+  17/17; gateway, API and Auth health checks returned 200; EF reported no
+  pending model changes. No secrets or tokens were recorded.
+
+## 2026-09-21 — Synchronize repository documentation with Auth implementation
+
+- Date/time or time range: 2026-09-21 20:00–20:20 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and repository validation scripts
+- AI Model: GPT-5
+- Summary of the user's request: Update the repository documentation to reflect
+  the current Auth, client, session, database, testing and deployment state.
+- Summary of what the AI Agent did: Audited current documentation against the
+  checked-in Auth implementation and synchronized the root, client, API,
+  architecture, security, database, setup, CI, testing, ADR and foundation-gap
+  documentation. Corrected stale starter/empty-registry wording and test
+  counts, documented `ActiveSessions` versus `UserSessionLogs`, and clarified
+  server-issued device credentials and client storage behavior.
+- Verification/evidence: `git diff --check` completed without content errors;
+  agent-resource validation passed with 21 skills; UI integration contract
+  validation passed; endpoint, session, database and migration documentation
+  was reviewed against the current source. No secrets, tokens or personal data
+  were recorded.

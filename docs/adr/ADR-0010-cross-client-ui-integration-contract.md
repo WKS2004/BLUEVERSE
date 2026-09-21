@@ -10,8 +10,9 @@ React and Flutter represent different user experiences, but they must use the
 same server-owned authorization and API contract. A screen can compile while
 still navigating to an undeclared route, calling the wrong service, bypassing
 the public gateway or using an API shape that the other client does not share.
-The starter clients and backend source are not yet complete, so the repository
-needs a contract that is useful now without claiming future endpoints exist.
+The starter clients and future domain backend source are not yet complete, so
+the repository needs a contract that is useful now without claiming future
+endpoints exist.
 
 ## Decision
 
@@ -37,7 +38,8 @@ connection between their corresponding surfaces.
   endpoints.
 - Platform-specific workflows remain possible, but their scope must be
   explicit rather than inferred from a missing client surface.
-- The current foundation registry has no domain API endpoints until the
+- The current foundation registry contains the implemented Auth
+  session-management endpoints but no domain API endpoints until the
   corresponding ASP.NET Core source and OpenAPI contract are checked in.
 - The static validator complements, but does not replace, API HTTP integration,
   gateway and end-to-end tests once executable services are available.

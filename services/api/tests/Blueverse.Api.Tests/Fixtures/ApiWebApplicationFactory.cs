@@ -17,13 +17,26 @@ public sealed class ApiWebApplicationFactory : WebApplicationFactory<Program>
     internal ApiWebApplicationFactory(
         IReadOnlyDictionary<string, string?>? configurationOverrides = null)
     {
-        _configurationOverrides = configurationOverrides
-            ?? new Dictionary<string, string?>();
+        var defaults = new Dictionary<string, string?>
+        {
+            ["JWT_SIGNING_KEY"] = "api-test-only-signing-key-with-at-least-32-bytes"
+        };
+
+        if (configurationOverrides is not null)
+        {
+            foreach (var pair in configurationOverrides)
+            {
+                defaults[pair.Key] = pair.Value;
+            }
+        }
+
+        _configurationOverrides = defaults;
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        builder.UseSetting("JWT_SIGNING_KEY", _configurationOverrides["JWT_SIGNING_KEY"]!);
         builder.ConfigureAppConfiguration((_, configuration) =>
         {
             configuration.AddInMemoryCollection(_configurationOverrides);

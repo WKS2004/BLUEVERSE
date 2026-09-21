@@ -1,15 +1,93 @@
 # API Foundation
 
-The routes in this page are the intended public contract. The public API
-foundation is implemented at `services/api`; the Auth service remains a
-separate dependency and is not yet present in this checkout.
+The routes in this page are the public gateway contract. The gateway is
+implemented at `services/api` and forwards the internal Auth service at
+`services/auth` without exposing its container directly.
 
 ## Gateway routes
 
 | Route | Destination |
 |---|---|
-| `/api/*` | ASP.NET Core API (expected at `services/api`) |
+| `/api/*` | ASP.NET Core public API and gateway (`services/api`) |
+| `/api/auth/*` | API gateway → internal Auth service (`services/auth`) |
 | `/` | React frontend |
+
+## Auth endpoint inventory
+
+These are the public gateway paths backed by the internal Auth service:
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/api/auth/register` | Register a user and issue an access token for a device session |
+| `POST` | `/api/auth/login` | Authenticate a user and issue an access token for a device session |
+| `POST` | `/api/auth/refresh` | Rotate a refresh token and issue a new short-lived access token |
+| `POST` | `/api/auth/logout` | Log out every signed-in account on the current device |
+| `POST` | `/api/auth/logout/{id}` | Log out one account on the current device; `{id}` is the account user ID |
+| `POST` | `/api/auth/logout-all-devices` | Log out the authenticated account from every device |
+| `GET` | `/api/auth/sessions` | List the authenticated account’s active sessions without secrets |
+| `DELETE` | `/api/auth/sessions/{sessionId}` | Revoke one active session for the authenticated account |
+| `POST` | `/api/auth/change-password` | Change the authenticated user’s password and revoke existing tokens |
+| `GET` | `/api/auth/me` | Read the authenticated user |
+| `PUT` | `/api/auth/me` | Update the authenticated user’s profile |
+| `DELETE` | `/api/auth/me` | Delete the authenticated user’s account when permitted |
+| `GET` | `/api/auth/users` | List users with `auth.user.read` |
+| `GET` | `/api/auth/users/{id}` | Read one user with `auth.user.read` |
+| `POST` | `/api/auth/users` | Create a user with `auth.user.manage` |
+| `PUT` | `/api/auth/users/{id}` | Update a user with `auth.user.manage` |
+| `DELETE` | `/api/auth/users/{id}` | Delete a user with `auth.user.manage` |
+| `POST` | `/api/auth/users/{id}/roles` | Replace a user’s roles with `auth.user.manage` |
+| `GET` | `/api/auth/roles` | List roles with `auth.role.read` |
+| `GET` | `/api/auth/roles/{id}` | Read one role with `auth.role.read` |
+| `POST` | `/api/auth/roles` | Create a role with `auth.role.manage` |
+| `PUT` | `/api/auth/roles/{id}` | Update a role with `auth.role.manage` |
+| `DELETE` | `/api/auth/roles/{id}` | Delete a role with `auth.role.manage` |
+| `POST` | `/api/auth/roles/{id}/permissions` | Replace role permissions with `auth.role.manage` |
+| `GET` | `/api/auth/permissions` | List permissions with `auth.permission.read` |
+| `GET` | `/api/auth/permissions/{id}` | Read one permission with `auth.permission.read` |
+| `GET` | `/api/auth/health` | Auth service readiness/health |
+
+Login and registration may omit `deviceId`. In that case Auth creates a
+server-generated opaque installation ID and a high-entropy device key. Browser
+clients should send `useCookies: true`; Auth stores the access token, refresh
+token, device ID and device key in protected `HttpOnly` cookies and omits the
+secret values from the JSON response. Native clients should send
+`useCookies: false` and store `deviceId`, `deviceKey`, the access token and the
+refresh token in platform secure storage. A server-issued installation ID must
+be paired with its device key on later native requests. Older client-supplied
+opaque IDs remain accepted as legacy installations during migration; they are
+not hardware identifiers or MAC addresses.
+
+Each installation can hold at most five active account sessions. Each account
+can hold at most five simultaneous active sessions across installations. A
+sixth account on one installation returns `409 Conflict`; a sixth session for
+one account automatically revokes the oldest active session. Repeated login on
+the same account/installation reuses its session row.
+
+The default session and refresh-token lifetime is one day. `rememberMe: true`
+selects an absolute 30-day lifetime. Refresh rotation never extends the
+session beyond its original expiration. Access JWTs expire after 15 minutes.
+Refresh tokens are stored only as hashes and are rotated on every successful
+refresh; replay of a consumed token revokes its session.
+
+Device-scoped logout archives the active sessions for the current device and
+revokes their refresh tokens. The account-specific route archives only the
+selected account on that device, while `logout-all-devices` archives every
+session for the authenticated account and increments its token version.
+Password, role, permission and account-state changes continue to use
+account-wide token-version revocation and session archival.
+
+Active authentication state is stored in `ActiveSessions`. When a session ends
+through logout, expiry, capacity eviction, security invalidation or refresh
+token replay, Auth moves its lifecycle record to `UserSessionLogs` with an end
+timestamp and reason. The log is retained for audit/support queries but is
+never an authentication source; the public session endpoint returns active
+sessions only.
+
+`PUT /api/auth/me` accepts profile fields only. Password changes use
+`POST /api/auth/change-password`.
+
+Password recovery and email verification are not exposed because this
+repository has no corresponding delivery contract.
 
 ## API conventions
 
@@ -65,4 +143,7 @@ GET /api/swagger/v1/swagger.json
 
 The Swagger UI is configured only in the API service and provides both the public API and Auth API documents in one interface. The Auth OpenAPI document is available through the API boundary at `/api/auth/swagger/v1/swagger.json`; Auth's container is internal-only.
 
-Use the `Authorize` button in the unified UI to enter a JWT as `Bearer {token}`. The bearer security definition is registered by the API service and is applied to operations that require authentication or permission policies.
+Use the `Authorize` button in the unified UI to enter a native-client JWT as
+`Bearer {token}`. Browser clients use the protected access-token cookie. The
+bearer security definition is registered by the API service and is applied to
+operations that require authentication or permission policies.

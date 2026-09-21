@@ -14,5 +14,9 @@ ADRs capture significant architectural decisions and their rationale.
 8. `ADR-0008-agent-workflow-state.md`
 9. `ADR-0009-cloud-deployment.md`
 10. `ADR-0010-cross-client-ui-integration-contract.md`
+11. `ADR-0011-authentication-service-boundary.md`
+12. `ADR-0012-multi-account-device-sessions.md`
+13. `ADR-0013-auth-token-lifecycle.md`
+14. `ADR-0014-active-session-archive.md`
 
 Some decisions remain **Proposed / Pending implementation choice** because the foundation does not invent decisions that have not yet been made.

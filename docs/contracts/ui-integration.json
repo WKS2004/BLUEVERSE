@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "status": "foundation",
+  "status": "active",
   "description": "Canonical cross-client registry for shared UI workflows, frontend routes and public API endpoint references.",
   "publicApi": {
     "gatewayPath": "/api",
@@ -14,7 +14,8 @@
     "allowedAbsoluteHosts": [
       "localhost",
       "127.0.0.1",
-      "::1"
+      "::1",
+      "10.0.2.2"
     ]
   },
   "workflows": [
@@ -31,7 +32,77 @@
         "source": "apps/mobile/lib/main.dart"
       },
       "apiRefs": []
+    },
+    {
+      "id": "auth-session-management",
+      "status": "implemented",
+      "description": "Shared sign-in and session-management workflow using protected browser cookies or Flutter secure storage.",
+      "web": {
+        "route": "/login",
+        "source": "apps/web/src/App.tsx"
+      },
+      "mobile": {
+        "route": "/login",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": [
+        "auth-login",
+        "auth-refresh",
+        "auth-me",
+        "auth-sessions",
+        "auth-logout",
+        "auth-logout-all-devices"
+      ]
     }
   ],
-  "endpoints": []
+  "endpoints": [
+    {
+      "id": "auth-login",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "publicBoundary": "api",
+      "ownerService": "auth",
+      "operationId": "Login"
+    },
+    {
+      "id": "auth-refresh",
+      "method": "POST",
+      "path": "/api/auth/refresh",
+      "publicBoundary": "api",
+      "ownerService": "auth",
+      "operationId": "Refresh"
+    },
+    {
+      "id": "auth-me",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "publicBoundary": "api",
+      "ownerService": "auth",
+      "operationId": "GetCurrentUser"
+    },
+    {
+      "id": "auth-sessions",
+      "method": "GET",
+      "path": "/api/auth/sessions",
+      "publicBoundary": "api",
+      "ownerService": "auth",
+      "operationId": "GetSessions"
+    },
+    {
+      "id": "auth-logout",
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "publicBoundary": "api",
+      "ownerService": "auth",
+      "operationId": "Logout"
+    },
+    {
+      "id": "auth-logout-all-devices",
+      "method": "POST",
+      "path": "/api/auth/logout-all-devices",
+      "publicBoundary": "api",
+      "ownerService": "auth",
+      "operationId": "LogoutAllDevices"
+    }
+  ]
 }
