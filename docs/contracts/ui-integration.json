@@ -2,6 +2,7 @@
   "schema": 1,
   "status": "active",
   "description": "Canonical cross-client registry for shared UI workflows, frontend routes and public API endpoint references.",
+  "endpointCatalog": "docs/api/endpoint-catalog.json",
   "publicApi": {
     "gatewayPath": "/api",
     "entryService": "api",

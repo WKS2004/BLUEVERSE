@@ -47,6 +47,9 @@ claiming implementation or test completion.
 | `.agents/repository-map.md` | Current paths, boundaries and foundation facts |
 | `.agents/routing.md` | Minimal rule/skill routing matrix |
 | `.agents/rules/` | Focused repository constraints |
+| `.agents/rules/endpoint-catalog.md` | Fast endpoint lookup and source-escalation rule |
+| `docs/api/endpoint-catalog.md` | Fast, readable endpoint and route lookup |
+| `docs/api/endpoint-catalog.json` | Machine-checked source for the readable catalog |
 | `.agents/skills/` | On-demand project and supplementary workflows |
 | `.agents/registry/skills.json` | Skill status, scope, provenance, revisions and compatibility notes |
 | `.agents/registry/THIRD-PARTY-NOTICES.md` | Imported-skill license notices |
@@ -65,9 +68,14 @@ For every implementation or review task:
 5. Read one matching BLUEVERSE-owned skill.
 6. Read an imported skill only when the task needs its framework-specific
    guidance.
-7. Inspect the actual source, tests, workflow and detailed documentation
+7. For any route, endpoint, client API call, gateway mapping or AI API task,
+   read `.agents/rules/endpoint-catalog.md` and
+   `docs/api/endpoint-catalog.md` before scanning the full source tree. Use the
+   catalog as the default answer source; inspect implementation only when the
+   lookup rule's escalation conditions apply.
+8. Inspect the targeted source, tests, workflow and detailed documentation
    named by the routing row.
-8. Run the narrowest useful validation first and report missing tools,
+9. Run the narrowest useful validation first and report missing tools,
    services, credentials or foundation projects exactly.
 
 Skill discovery should remain lightweight: descriptions are used for routing,
@@ -96,6 +104,13 @@ run the route/API contract validator described in
 [`ui-integration.md`](ui-integration.md). Shared workflow IDs connect the
 relevant React and Flutter surfaces; the clients never call each other or
 internal service hostnames.
+For every frontend route, client API target, gateway/YARP/Nginx mapping,
+backend or internal service endpoint, health/OpenAPI route, test-only fixture
+endpoint or Agentic AI endpoint addition, update, rename, move or removal,
+update `docs/api/endpoint-catalog.json` in the same change with its exact
+method/path, source, owner, boundary, authorization, purpose and usage;
+regenerate its Markdown view and run the catalog validator before completion.
+Ordinary endpoint work does not require editing `.agents` instructions.
 
 Test cases belong in the framework-default directories defined by
 `blueverse-test-design` and `docs/testing/implementation-plan.md`: React tests
@@ -131,16 +146,30 @@ missing backend/AI projects with sample applications.
 Run from the repository root:
 
 ```bash
+python .agents/scripts/validate_endpoint_catalog.py --write-markdown
+python .agents/scripts/validate_endpoint_catalog.py
 python .agents/scripts/validate_agent_resources.py
 git diff --check
 ```
 
-The dependency-free validator checks required resource files, skill
+The dependency-free validators check required resource files, skill
 frontmatter and names, registry/provenance metadata, overlays, routing
-fixtures, relative Markdown links, secret-like assignments and generated-path
-exclusions. The same validator runs in
+fixtures, relative Markdown links, secret-like assignments, generated-path
+exclusions, route declarations, gateway mappings, client API literals and
+UI-catalog parity. The resource validator runs in
 `.github/workflows/repository-ci.yml` whenever repository-foundation paths,
-including `.agents/`, are affected.
+including `.agents/`, are affected. The endpoint validator runs in the UI
+integration workflow whenever route, service, gateway, client or
+endpoint-catalog paths are affected.
+
+The endpoint source check supports literal C# controller routes and literal
+`app.MapGet/Post/Put/Patch/Delete/Head/Options` endpoints, Swagger mappings,
+and the current Nginx/YARP configuration. It checks route source identity,
+production/test/AI separation, service ownership and declared authorization.
+Grouped or dynamic endpoint forms and complex authorization policies require
+an approved validator extension before adoption. These static checks do not
+prove runtime authorization or the accuracy of prose usage descriptions;
+review those against implementation and the application contract tests.
 
 The Windows foundation verifier and application/Docker checks are separate
 from agent-resource validation. They may remain blocked while the expected

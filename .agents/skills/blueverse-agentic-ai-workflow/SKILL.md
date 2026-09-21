@@ -5,6 +5,14 @@ description: Design, implement, or review BLUEVERSE Agentic AI orchestration, to
 
 # BLUEVERSE Agentic AI workflow
 
+Read `docs/api/endpoint-catalog.md` for AI route questions. The current
+catalog status is `none-implemented`; do not invent an AI endpoint from
+target architecture. For every AI endpoint addition, update, rename or
+removal, **MUST** update the catalog JSON in the same change with its exact
+method/path, usage, owner, public boundary and safety boundary, regenerate
+Markdown, then run the endpoint and applicable UI validators. An executable AI
+route is not complete while the catalog is stale or validation fails.
+
 Read the root `AGENTS.md`, `.agents/routing.md`, the architecture, security,
 testing and validation rules, and only the relevant `docs/agentic-ai/` pages or
 ADRs. First classify the task as target design, resource review or checked-in

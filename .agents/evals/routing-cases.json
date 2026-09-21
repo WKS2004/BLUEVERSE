@@ -24,6 +24,13 @@
       "mustExclude": ["sample service generation when the project is absent", "/api/v1"]
     },
     {
+      "id": "endpoint-catalog-maintenance",
+      "task": "Add, update or remove an ASP.NET API controller route and synchronize the endpoint catalog JSON and generated Markdown before completion.",
+      "expectedSkills": ["blueverse-backend-service"],
+      "expectedRules": ["architecture", "security", "documentation", "testing", "validation"],
+      "mustExclude": ["inventing absent AI endpoints", "treating test-only routes as production", "skipping catalog JSON/Markdown synchronization", "skipping source/catalog validation"]
+    },
+    {
       "id": "test-quality",
       "task": "Review whether existing tests would catch a caller-visible production mutation.",
       "expectedSkills": ["blueverse-test-design", "test-gap-analysis"],

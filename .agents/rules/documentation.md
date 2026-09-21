@@ -13,5 +13,22 @@
   agent rules; verify links and commands during validation.
 - UI/API integration behavior is documented in
   [`docs/development/ui-integration.md`](../../docs/development/ui-integration.md)
-  and its machine-readable registry. Keep both synchronized with actual React,
-  Flutter, gateway and public API routes.
+  and its machine-readable registry. Keep both synchronized with the UI
+  workflow subset of actual React, Flutter, gateway and public API routes.
+- The complete quick-reference inventory is
+  [`docs/api/endpoint-catalog.md`](../../docs/api/endpoint-catalog.md). Update
+  its [JSON source](../../docs/api/endpoint-catalog.json) and regenerate the
+  Markdown view in the same change whenever any frontend route, client API
+  target, backend or internal service route, health route, Swagger/OpenAPI
+  mapping, gateway route, test-only fixture route or Agentic AI endpoint is
+  added, updated, renamed, moved or removed. Record the exact method/path,
+  source, owner, boundary, authorization, purpose and usage. Do not present
+  reserved or absent services as implemented. Run the endpoint-catalog
+  validator before claiming completion; ordinary route work changes the docs
+  catalog, not `.agents` guidance. The universal blocking procedure is in
+  [`rules/change-safety.md`](change-safety.md).
+
+For lookup-only endpoint questions, follow
+[`rules/endpoint-catalog.md`](endpoint-catalog.md): use the readable catalog
+first and inspect implementation source only when the lookup rule's
+escalation conditions apply.

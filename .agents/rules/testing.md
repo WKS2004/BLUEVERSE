@@ -55,3 +55,9 @@ file is the fast mandatory checklist.
 - Run `scripts/validation/validate_ui_integrations.py` for every UI, API,
   gateway or integration-contract change. It must reject undeclared frontend
   routes, undeclared public `/api/...` calls and direct internal targets.
+- For every route or endpoint addition, update, rename, move or removal, update
+  `docs/api/endpoint-catalog.json`, regenerate its Markdown view and run
+  `.agents/scripts/validate_endpoint_catalog.py` in the same change. It
+  verifies source/catalog parity, gateway mappings, client API literals, UI
+  references and the separation of test-only routes from production routes.
+  A route change is not complete while this validator fails.

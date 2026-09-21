@@ -18,6 +18,14 @@ code before changing either client.
   and update `docs/contracts/ui-integration.json` with one shared workflow
   ID, both relevant client routes and every public API endpoint reference.
   Clients connect through the workflow contract, not by calling each other.
+- Also read `docs/api/endpoint-catalog.md`. **MUST** update its JSON source
+  and generated Markdown view in the same change for every client route,
+  literal `/api/...` request addition/update/removal or route rename; the UI
+  registry is only the workflow-facing subset. Run
+  `.agents/scripts/validate_endpoint_catalog.py` before the UI validator and
+  its tests. A client route or request change is incomplete while either
+  catalog is stale or validation fails. Ordinary client route changes do not
+  edit `.agents` guidance.
 - Keep server rules authoritative. Permission-aware UI improves the experience
   but never replaces backend authorization or the role-to-permission model.
 - Preserve one API contract and authorization model across clients. Assess both

@@ -16,5 +16,11 @@
 - Defend against prompt injection, indirect instructions, privilege escalation,
   replay, over-broad data access and unsafe retries. Persist only observable
   workflow state, audit data and execution summaries required by the design.
+- When adding, updating, renaming, moving or removing any endpoint, record the
+  exact method/path, owner, public boundary, authorization, purpose, usage and
+  source in `docs/api/endpoint-catalog.json` in the same change, regenerate its
+  Markdown view and run the endpoint validator. Keep internal Auth, Agentic AI
+  and database targets out of the client-facing inventory, and do not treat a
+  documented route as permission to bypass server authorization.
 
 Read `docs/security/` and `docs/agentic-ai/` for detailed controls and tests.

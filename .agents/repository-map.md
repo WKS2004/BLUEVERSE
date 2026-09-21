@@ -21,6 +21,8 @@ Verify paths and implementation state before relying on any entry.
 | `docs/security`, `docs/agentic-ai` | threat and safety source of truth | deterministic validation and approval controls |
 | `docs/contracts/ui-integration.json` | shared React/Flutter workflow, route and public API registry | one workflow ID, both relevant client routes and declared `/api/...` references |
 | `scripts/validation` | dependency-free repository and UI integration validators | fail-closed route/API checks and validator tests |
+| `docs/api/endpoint-catalog.md` | readable frontend, gateway, public API, test-only and AI endpoint inventory | start here for route lookup |
+| `docs/api/endpoint-catalog.json` | machine-checked catalog source | update with route changes and regenerate Markdown |
 | `.agents/skills` | on-demand repository workflows | concise discovery metadata; rules remain authoritative |
 | `.agents/registry` | provenance and compatibility metadata for vendored skills | every imported external skill is source-pinned and licensed |
 | `.agents/skill-overlays` | repository-specific bindings for portable skills | overlays extend skills without overriding project rules |
@@ -34,12 +36,13 @@ Verify paths and implementation state before relying on any entry.
 - The gateway's public convention is `/api/...`; there is no client-facing
   direct `/auth/...` or bare backend `/health` route.
 - The current UI registry contains the generated shared home surface and the
-  implemented Auth session-management workflow. No non-Auth domain endpoints
-  are registered yet; new client calls must still be added to the registry.
-- Backend and Agentic AI implementations may be absent even when Docker,
-  Compose, docs or CI refer to them. A reserved path, empty source folder or
-  directory containing only ignored `bin/`/`obj/` output is not an
-  implementation.
+  implemented Auth session-management workflow. The full route inventory is
+  maintained in `docs/api/endpoint-catalog.md`; new client calls must be
+  added to both the catalog and the UI registry.
+- `services/api` and `services/auth` are implemented ASP.NET Core projects.
+  Agentic AI implementations may still be absent even when Docker, Compose,
+  docs or CI refer to them. A reserved path, empty source folder or directory
+  containing only ignored `bin/`/`obj/` output is not an implementation.
 - Test workflows may intentionally report zero tests for not-yet-created suites;
   new behavior must add its authoritative tests and workflow discovery together.
 
@@ -48,6 +51,8 @@ Verify paths and implementation state before relying on any entry.
 - Setup/commands: `docs/development/setup.md`, `docs/development/ci.md`
 - UI integration: `docs/development/ui-integration.md`,
   `docs/contracts/ui-integration.json`
+- Complete endpoint/routing inventory: `docs/api/endpoint-catalog.md`,
+  `docs/api/endpoint-catalog.json`
 - Architecture/networking: `docs/architecture/`, `docs/adr/`
 - Security/AI safety: `docs/security/`, `docs/agentic-ai/`
 - Test matrix/order: `docs/testing/`

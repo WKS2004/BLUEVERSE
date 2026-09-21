@@ -713,3 +713,75 @@ runtime lacks PyYAML.
   integration validation passed; its 12 tests passed; and `git diff --check`
   completed without content errors. No secrets, tokens or personal data were
   recorded.
+
+## 2026-09-21 — Add validated endpoint and route catalog
+
+- Date/time or time range: 2026-09-21 23:53–2026-09-22 00:07 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Python and repository workflow review
+- AI Model: GPT-5
+- Summary of the user's request: Create a fast, consistent `.agents` reference for all frontend routes, gateway routes, public API/Auth endpoints and Agentic AI endpoint status, and require agents to keep it synchronized whenever routes change.
+- Summary of what the AI Agent did: Added `.agents/api/README.md` and a machine-readable catalog covering current React, Flutter, gateway, API, Auth, Swagger, health and test-only routes; documented that no executable Agentic AI API exists; added source/UI/client drift validation; integrated the validator into agent-resource validation and CI; updated root instructions, routing, rules, skills, UI-contract documentation and endpoint-registry linkage; and added a routing evaluation case.
+- Verification/evidence: Endpoint catalog validation passed with 32 public endpoints, 4 frontend routes and no implemented AI endpoints; agent-resource validation passed with 21 skills; UI integration validation passed; its 14 tests passed, including endpoint-catalog regression coverage; and `git diff --check` completed without content errors. No secrets, tokens or personal data were recorded.
+
+## 2026-09-22 — Separate endpoint documentation from agent guidance
+
+- Date/time or time range: 2026-09-22 00:35 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Python and repository workflow review
+- AI Model: GPT-5
+- Summary of the user's request: Re-evaluate the endpoint catalog location so routine API changes do not rewrite agent guidance, and provide a readable Markdown inventory under docs.
+- Summary of what the AI Agent did: Moved the catalog data to `docs/api/endpoint-catalog.json`, generated `docs/api/endpoint-catalog.md`, changed agent rules and skills to point to the readable docs and protect guidance from routine endpoint edits, made the validator compare the Markdown view with JSON and discover gateway and Swagger routes from source, and updated CI and UI-contract references.
+- Verification/evidence: Endpoint catalog validation passed with 32 public endpoints and 4 frontend routes; agent-resource and UI-contract validation passed; 14 validation tests passed; and `git diff --check` found no whitespace errors. The optional upstream skill validator could not run because PyYAML is unavailable in the bundled Python runtime; the repository agent-resource validator passed for all 21 skills.
+
+## 2026-09-22 — Fix endpoint catalog review findings
+
+- Date/time or time range: 2026-09-22 00:56 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and Python
+- AI Model: GPT-6
+- Summary of the user's request: Fix the validator, catalog accuracy, guidance conflicts and test gaps identified in the review.
+- Summary of what the AI Agent did: Added source-specific endpoint discovery and checks for declared authorization, ownership and production/test/AI classification; detected literal minimal APIs and rejected unsupported mappings; added rejection regression tests; corrected device-wide logout documentation; reconciled guidance-edit authorization; removed stale foundation wording; narrowed skill routing; and documented the static validator's limits.
+- Verification/evidence: All 32 validation tests passed, including the four previously accepted invalid scenarios; endpoint, agent-resource and UI-contract validators passed; Markdown matches the JSON catalog; and `git diff --check` found no whitespace errors. Source checks cover supported C# declarations and do not replace runtime authorization tests.
+
+## 2026-09-22 — Final endpoint and agent-resource hygiene review
+
+- Date/time or time range: 2026-09-22 01:24 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and Python
+- AI Model: GPT-5
+- Summary of the user's request: Verify that the endpoint-catalog and `.agents` improvements were complete without disturbing the project structure or reducing repository hygiene.
+- Summary of what the AI Agent did: Re-ran the endpoint-catalog, agent-resource and UI-contract validators; ran the complete validation regression suite and syntax checks; confirmed source/application directories were not changed; verified that `.agents` contains no generated artifacts; and removed the verified-empty stale `.agents/api` directory left by the catalog relocation.
+- Verification/evidence: Endpoint catalog passed with 32 public endpoints, 4 frontend routes and no implemented AI endpoints; all 21 repository skills validated; the UI contract passed; all 32 validation tests passed; AST syntax checks passed; no `.agents/api` or generated/cache/build artifacts remain under `.agents`; and `git diff --check` completed without content errors. No historical contribution records were edited, and no secrets, tokens or personal data were recorded.
+
+## 2026-09-22 — Make endpoint documentation synchronization mandatory
+
+- Date/time or time range: 2026-09-22 01:38 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and Python
+- AI Model: GPT-5
+- Summary of the user's request: Ensure agents are required to update the API/route documentation every time they add, update, rename, move or remove any kind of endpoint.
+- Summary of what the AI Agent did: Added a blocking endpoint-documentation gate to the universal `.agents` safety, documentation, architecture, security, testing and validation rules; expanded the routing matrix and agent README to cover frontend, client, gateway, backend, internal, health, OpenAPI, test-only and Agentic AI routes; strengthened all endpoint-relevant BLUEVERSE skills; expanded the routing evaluation case; removed a duplicated repository-map line; and synchronized the developer-facing resource documentation.
+- Verification/evidence: Agent-resource validation passed for all 21 skills; endpoint-catalog validation passed with 32 public endpoints, 4 frontend routes and no implemented AI endpoints; UI integration validation passed; all 32 validation tests passed; and `git diff --check` completed without content errors. No secrets, tokens or personal data were recorded.
+
+## 2026-09-22 — Add token-efficient endpoint lookup guidance
+
+- Date/time or time range: 2026-09-22 01:48 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and Python
+- AI Model: GPT-5
+- Summary of the user's request: Make agents use the endpoint catalog as the default fast source and inspect the repository only when the catalog is insufficient, uncertain or explicitly requested.
+- Summary of what the AI Agent did: Added `.agents/rules/endpoint-catalog.md` with the fast-path lookup and source-escalation policy; added an endpoint lookup routing row; linked the rule from the `.agents` README, documentation rule and developer resource guide; and preserved the mandatory same-change catalog synchronization workflow for endpoint modifications.
+- Verification/evidence: Agent-resource validation passed for all 21 skills; endpoint-catalog validation passed with 32 public endpoints, 4 frontend routes and no implemented AI endpoints; UI integration validation passed; all 32 validation tests passed; and `git diff --check` completed without content errors. No secrets, tokens or personal data were recorded.

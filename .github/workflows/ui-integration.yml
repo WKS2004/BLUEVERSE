@@ -12,6 +12,7 @@ on:
       - "docs/architecture/**"
       - "docs/development/ui-integration.md"
       - "scripts/validation/**"
+      - ".agents/scripts/validate_endpoint_catalog.py"
       - "infrastructure/docker/**"
       - "compose.yaml"
       - ".github/workflows/**"
@@ -26,6 +27,7 @@ on:
       - "docs/architecture/**"
       - "docs/development/ui-integration.md"
       - "scripts/validation/**"
+      - ".agents/scripts/validate_endpoint_catalog.py"
       - "infrastructure/docker/**"
       - "compose.yaml"
       - ".github/workflows/**"
@@ -43,6 +45,9 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+
+      - name: Validate complete endpoint catalog
+        run: python .agents/scripts/validate_endpoint_catalog.py
 
       - name: Validate React and Flutter route/API contract
         run: python scripts/validation/validate_ui_integrations.py

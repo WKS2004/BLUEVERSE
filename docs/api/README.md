@@ -4,6 +4,13 @@ The routes in this page are the public gateway contract. The gateway is
 implemented at `services/api` and forwards the internal Auth service at
 `services/auth` without exposing its container directly.
 
+For the fastest complete inventory of frontend routes, gateway mappings,
+public API/Auth endpoints, test-only routes and Agentic AI endpoint status,
+see the [readable endpoint catalog](endpoint-catalog.md). Its
+[JSON source](endpoint-catalog.json) is checked against route declarations and
+the UI contract. This page provides the longer API behavior and session
+semantics reference; update the catalog with each route change.
+
 ## Gateway routes
 
 | Route | Destination |

@@ -8,6 +8,14 @@ description: Design, add, or review BLUEVERSE automated tests, stable test IDs, 
 Read the root `AGENTS.md`, `.agents/rules/testing.md`,
 `docs/testing/implementation-plan.md` and `docs/testing/test-matrix.md`.
 
+For route and endpoint tests, also read `docs/api/endpoint-catalog.md`.
+**MUST** update `docs/api/endpoint-catalog.json` and regenerate its Markdown
+view in the same change for production, internal, test-host-only or AI route
+additions, updates, renames or removals. Keep production endpoints and
+test-host-only fixture endpoints separated in the catalog, and run
+`.agents/scripts/validate_endpoint_catalog.py` before completion whenever
+route declarations or client API literals change.
+
 1. Derive expected behavior from the requirement or contract independently of
    the implementation.
    For cross-client UI work, use

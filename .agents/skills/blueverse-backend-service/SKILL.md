@@ -5,6 +5,18 @@ description: Create or change a BLUEVERSE ASP.NET Core API, Auth, or internal ba
 
 # BLUEVERSE backend service
 
+Before changing any API, Auth or internal service endpoint—including a
+controller/minimal route, health or OpenAPI route, test-only fixture, route
+rename or route removal—read `docs/api/endpoint-catalog.md`. **MUST** update
+`docs/api/endpoint-catalog.json` in the same change with the exact method/path,
+public boundary, authorization, owner, operation, purpose, usage and source
+path. Remove stale entries when routes are removed. Regenerate the Markdown
+view with `python .agents/scripts/validate_endpoint_catalog.py --write-markdown`,
+then run `.agents/scripts/validate_endpoint_catalog.py` and
+the affected API, OpenAPI, authorization and service tests. A route change is
+not complete while the catalog validator fails. Routine route work leaves
+`.agents` guidance unchanged.
+
 Read the root `AGENTS.md`, `.agents/routing.md`, and the architecture,
 security, testing, Docker and validation rules. Verify the target service and
 requirement before generating code. A reserved directory or ignored `bin/` and
