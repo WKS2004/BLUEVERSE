@@ -33,10 +33,13 @@ public class JwtTokenService : IJwtTokenService
 
         _issuer = _configuration["Jwt:Issuer"] ?? "Blueverse.Auth";
         _audience = _configuration["Jwt:Audience"] ?? "Blueverse.Client";
-        _accessTokenMinutes = int.TryParse(_configuration["Jwt:AccessTokenMinutes"], out var minutes)
-            ? minutes
-            : 15;
-        if (_accessTokenMinutes is < 1 or > 60)
+        var configuredAccessTokenMinutes = _configuration["Jwt:AccessTokenMinutes"];
+        if (string.IsNullOrWhiteSpace(configuredAccessTokenMinutes))
+        {
+            _accessTokenMinutes = 15;
+        }
+        else if (!int.TryParse(configuredAccessTokenMinutes, out _accessTokenMinutes) ||
+                 _accessTokenMinutes is < 1 or > 60)
         {
             throw new InvalidOperationException("Jwt:AccessTokenMinutes must be between 1 and 60.");
         }

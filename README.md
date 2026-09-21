@@ -228,6 +228,10 @@ Start with:
 - `docs/development/ui-integration.md`
 - `docs/api/README.md`
 - `docs/database/schema.md`
+- `docs/project/foundation-gap-analysis.md`
+- `docs/security/security.md`
+- `docs/testing/strategy.md`
+- `docs/deployment/local.md`
 - `docs/contracts/ui-integration.json`
 - `docs/adr/README.md`
 - `docs/agentic-ai/architecture.md`

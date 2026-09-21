@@ -243,7 +243,7 @@ Implement cases for:
 
 ### 4.4 Auth service (`services/auth/tests`)
 
-The current default suite passes 23 deterministic cases and implements these
+The current default suite passes 67 deterministic cases and implements these
 behaviors:
 
 - valid and invalid registration/login;
@@ -260,10 +260,17 @@ behaviors:
 - separation of `ActiveSessions` from `UserSessionLogs`, including refresh-token
   relinking when a session is archived;
 - protected endpoint behavior;
+- malformed JSON and field-level validation problem details;
+- administrative mutation authorization and creation-payload validation;
 - role and permission assignment/revocation;
 - admin bootstrap validation using environment-provided configuration;
 - rate limiting/lockout if selected for the final design;
 - health, database failure and migration failure behavior.
+
+The API foundation suite currently passes 21 cases. It covers health, public and
+Auth OpenAPI routing, CORS allow/deny/preflight, forwarded headers, safe gateway
+errors, YARP forwarding/failure isolation and JWT issuer/audience/lifetime,
+algorithm and protected-cookie boundaries.
 
 The PostgreSQL-backed capacity/refresh/archive smoke test is opt-in. The
 remaining health/database-failure and deployment-specific migration cases are

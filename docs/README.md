@@ -30,6 +30,13 @@ unless a page explicitly says the behavior is currently available.
 For a current-state summary, see
 [`project/foundation-gap-analysis.md`](project/foundation-gap-analysis.md).
 
+For the public Auth route inventory, transport/session contract and error
+behavior, see [`api/README.md`](api/README.md). For current automated-test
+evidence, see [`testing/test-matrix.md`](testing/test-matrix.md) and
+[`testing/strategy.md`](testing/strategy.md). These pages describe the
+checked-in v0 foundation; deferred domain and Agentic AI work remains clearly
+marked as planned.
+
 For the finalized coding-agent workflow, read
 [`development/agent-resources.md`](development/agent-resources.md), then
 [`.agents/README.md`](../.agents/README.md) and the routing matrix at

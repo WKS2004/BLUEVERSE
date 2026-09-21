@@ -38,8 +38,10 @@ call each other, Auth, Agentic AI, PostgreSQL or an internal Docker hostname.
 
 ## Host access
 
-The gateway is published on host port `80` for local development (the
-repository `.env` sets `BLUEVERSE_HTTP_PORT=80`):
+The gateway is published on host port `80` for local development by the
+Compose default. Set `BLUEVERSE_HTTP_PORT` when a different host port is
+required; the client contract still targets the gateway that is configured for
+the environment:
 
 ```text
 http://localhost

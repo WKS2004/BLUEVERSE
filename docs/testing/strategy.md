@@ -26,16 +26,21 @@ Testing will cover the current foundation and the later business workflows:
 - Flutter: Auth API-boundary/configuration tests, the Auth session UI and the
   static-analysis workflow are present alongside the starter widget test.
 - ASP.NET/API: `services/api` and its foundation test project are checked in;
-  the API suite currently passes its 17 cases, including gateway JWT allow/deny
-  behavior.
-- Auth: `services/auth` has a package-local test project with 23 passing
-  default test cases covering endpoint behavior, authorization, validation,
-  escalation, server-issued installations, five-account device capacity,
-  five-session account eviction, account/device/everywhere logout,
+  the API suite currently passes 21 cases covering health, OpenAPI/Swagger,
+  CORS, forwarded headers, safe gateway errors, YARP forwarding/failure
+  isolation and JWT issuer/audience/lifetime/algorithm/cookie boundaries.
+- Auth: `services/auth` has a package-local test project with 67 passing
+  default test cases covering endpoint behavior, Auth OpenAPI/health and safe
+  exception contracts, malformed-input validation, administration and
+  administrative mutation authorization, escalation, server-issued
+  installations and proof failures, five-account device capacity, five-session
+  account eviction, account/device/everywhere logout including cookie cleanup,
   active-session archival and refresh-token relinking, rotating refresh-token
-  replay protection, logout/password token revocation, profile-only updates,
-  catalog reads, password hashing and signing-key configuration. The
-  PostgreSQL session/concurrency smoke test is opt-in.
+  replay/expiry protection, logout/password token revocation, profile-only
+  updates, session metadata isolation, bootstrap seeding, password hashing,
+  JWT claims/configuration boundaries, opaque-secret properties and
+  persistence-model constraints. The PostgreSQL session/concurrency smoke test
+  is opt-in.
 - Docker: web/backend image and Compose health workflows are configured. Full
   runtime evidence still depends on Docker Desktop/DHI access and PostgreSQL.
 

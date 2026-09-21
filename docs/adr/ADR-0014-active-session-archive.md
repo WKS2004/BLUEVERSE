@@ -7,7 +7,7 @@
 The Auth service must support bounded multi-account sessions while retaining
 security and support evidence for logout, expiry, capacity eviction, password
 changes, role changes and refresh-token replay. Keeping every revoked or
-expired row in the operational `UserSessions` table makes active-session
+expired row in the operational active-session table makes active-session
 queries larger and makes the table's meaning ambiguous.
 
 ## Decision

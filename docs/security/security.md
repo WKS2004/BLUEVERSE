@@ -14,8 +14,10 @@ implemented or has not yet been verified in the current repository.
 
 - [x] JWT authentication with required 32-byte minimum signing key
 - [x] permission-based authorization with system-role escalation protection
-- [x] persisted device sessions with a five-account-per-device limit and scoped logout
+- [x] persisted device sessions with five-account-per-device and five-session-per-account limits, scoped logout and logout-all-devices support
 - [x] active sessions separated from ended-session lifecycle logs; archived rows cannot authenticate
+- [x] malformed JWT lifetime configuration fails closed instead of silently selecting a default
+- [x] unexpected API/Auth failures use sanitized RFC 7807 responses without exception or credential disclosure
 - [x] server-issued device credentials with hashed keys and secure web/native transport
 - [x] rotating hashed refresh tokens with replay revocation and one/30-day absolute expiry
 - [x] password changes isolated to `POST /api/auth/change-password`; profile updates do not accept password fields

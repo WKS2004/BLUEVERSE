@@ -5,8 +5,8 @@ Verify paths and implementation state before relying on any entry.
 
 | Path | Responsibility | Contract to preserve |
 |---|---|---|
-| `apps/web` | React 19 + TypeScript + Vite client | public API only; current code is starter UI |
-| `apps/mobile` | Flutter/Dart client and platform shells | public API only; current code is starter app |
+| `apps/web` | React 19 + TypeScript + Vite client | public API only; shared Auth workflow plus starter UI |
+| `apps/mobile` | Flutter/Dart client and platform shells | public API only; shared Auth workflow plus starter app |
 | `services/api` | public ASP.NET Core API | REST, DTO/application layers, validation, auth proxy, OpenAPI |
 | `services/auth` | internal authentication service | private behind API/gateway |
 | `services/<name>` | future/internal backend services | own data/service contract and matching tests |
@@ -33,8 +33,9 @@ Verify paths and implementation state before relying on any entry.
 - Selected base images are listed in `AGENTS.md` and `rules/docker.md`.
 - The gateway's public convention is `/api/...`; there is no client-facing
   direct `/auth/...` or bare backend `/health` route.
-- The current UI registry contains only the generated shared home surface and
-  no domain API endpoints; the starter clients must not add unregistered calls.
+- The current UI registry contains the generated shared home surface and the
+  implemented Auth session-management workflow. No non-Auth domain endpoints
+  are registered yet; new client calls must still be added to the registry.
 - Backend and Agentic AI implementations may be absent even when Docker,
   Compose, docs or CI refer to them. A reserved path, empty source folder or
   directory containing only ignored `bin/`/`obj/` output is not an

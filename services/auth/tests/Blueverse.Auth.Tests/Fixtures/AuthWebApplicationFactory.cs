@@ -29,6 +29,9 @@ public sealed class AuthWebApplicationFactory : WebApplicationFactory<Program>
 
         builder.ConfigureServices(services =>
         {
+            services
+                .AddControllers()
+                .AddApplicationPart(typeof(TestOnlyAuthErrorController).Assembly);
             services.RemoveAll<DbContextOptions<AuthDbContext>>();
             services.RemoveAll<DbContextOptions>();
             services.RemoveAll<IDbContextOptions>();

@@ -569,3 +569,77 @@ runtime lacks PyYAML.
   validation passed; endpoint, session, database and migration documentation
   was reviewed against the current source. No secrets, tokens or personal data
   were recorded.
+
+## 2026-09-21 — Complete API and Auth test coverage
+
+- Date/time or time range: 2026-09-21 20:20–20:45 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and .NET test tooling
+- AI Model: GPT-5
+- Summary of the user's request: Analyze the repository API and Auth surfaces,
+  implement missing and necessary tests, and update the documentation.
+- Summary of what the AI Agent did: Added API JWT boundary and Auth Swagger
+  routing tests; added Auth endpoint, validation, cookie, device-proof,
+  session, logout, administration, error, seeding, authorization, JWT,
+  refresh-secret, password-hashing and EF model-contract tests. Fixed malformed
+  access-token lifetime configuration handling and labeled Auth exception
+  responses with the RFC 7807 media type.
+- Verification/evidence: API tests passed 21/21; default Auth tests passed
+  60/60; `git diff --check` completed without content errors; agent-resource
+  validation passed with 21 skills; UI integration contract validation passed.
+  The opt-in PostgreSQL test was not rerun because
+  `BLUEVERSE_AUTH_POSTGRES_TEST_CONNECTION` was not configured in this shell.
+  No secrets, tokens or personal data were recorded.
+
+## 2026-09-21 — Finalize and re-evaluate repository tests
+
+- Date/time or time range: 2026-09-21 20:45–21:05 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, .NET, Flutter, Node and Python test tooling
+- AI Model: GPT-5
+- Summary of the user's request: Re-evaluate all implemented tests, finalize their
+  assertions and coverage, and update the documentation.
+- Summary of what the AI Agent did: Audited the API/Auth test methods for false
+  confidence and missing boundary behavior; replaced a weak refresh-token
+  assertion with exact persisted-token and revocation checks; strengthened session
+  response schema and validation assertions; added malformed-JSON, administrative
+  authorization/validation, cookie session-revocation/everywhere-logout and JWT
+  configuration-boundary coverage; removed an unused test-helper field; and
+  synchronized the test matrix, strategy, implementation plan, API, foundation
+  and Auth test-suite documentation to 67 Auth cases.
+- Verification/evidence: API tests passed 21/21; default Auth tests passed 67/67;
+  repository Python validation tests passed 12/12; Flutter tests passed 5/5 with
+  `--no-pub`; Flutter analysis reported no issues; local web ESLint, TypeScript
+  build and Vite production build passed; agent-resource and UI-integration
+  validators passed; and `git diff --check` completed without content errors.
+  The opt-in PostgreSQL test was not run because
+  `BLUEVERSE_AUTH_POSTGRES_TEST_CONNECTION` was not configured. The machine-wide
+  npm wrapper was unavailable, so the equivalent repository-local Node binaries
+  were used for web validation. No secrets, tokens or personal data were recorded.
+
+## 2026-09-21 — Finalize repository documentation
+
+- Date/time or time range: 2026-09-21 21:05–21:12 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and bundled repository validators
+- AI Model: GPT-5
+- Summary of the user's request: Finalize all documentation across the
+  repository after the completed Auth, session, client and test work.
+- Summary of what the AI Agent did: Audited the repository documentation against
+  the checked-in source and contracts; corrected stale Auth-pending and empty
+  UI-registry statements; clarified configurable gateway port behavior; aligned
+  the roadmap, repository map, Docker documentation, security checklist and
+  session-archive ADR; and improved the root/documentation indexes. Historical
+  contribution entries were preserved.
+- Verification/evidence: Agent-resource validation passed with 21 skills; UI
+  integration validation passed; tracked Markdown relative-link validation and
+  Markdown fence parity checks passed; `git diff --check` completed without
+  content errors; and the documented API/Auth/session state was reviewed against
+  the current source and contract registry. No secrets, tokens or personal data
+  were recorded.

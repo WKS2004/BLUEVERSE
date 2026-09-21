@@ -128,6 +128,28 @@ Auth health route through the public API boundary:
 GET /api/auth/health
 ```
 
+## Error and validation contract
+
+Auth validation and expected business failures return structured RFC 7807
+responses with the relevant `4xx` status. Unexpected Auth failures are
+sanitized to `500 Internal Server Error` with the media type
+`application/problem+json`; exception text, signing material, password data and
+database details are never returned to clients. The gateway applies the same
+safe problem-details boundary to errors raised before a request reaches a
+backend service.
+
+The API and Auth contract suites are maintained with their owning services:
+
+```powershell
+dotnet test services/api/tests/Blueverse.Api.Tests/Blueverse.Api.Tests.csproj --configuration Release
+dotnet test services/auth/tests/Blueverse.Auth.Tests/Blueverse.Auth.Tests.csproj --configuration Release
+```
+
+The current default evidence is 21 API cases and 67 Auth cases. The
+PostgreSQL-backed Auth concurrency test is opt-in and must receive its
+connection string through the environment; it is never committed to the
+repository.
+
 Additional ASP.NET services expose health routes through the same gateway convention:
 
 ```text

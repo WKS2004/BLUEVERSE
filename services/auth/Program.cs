@@ -206,13 +206,16 @@ app.UseExceptionHandler(exceptionApp =>
 
         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
         context.Response.ContentType = "application/problem+json";
-        await context.Response.WriteAsJsonAsync(new
-        {
-            type = "https://tools.ietf.org/html/rfc7807",
-            title = "An internal error occurred",
-            status = StatusCodes.Status500InternalServerError,
-            detail = "An unexpected error occurred processing your request."
-        });
+        await context.Response.WriteAsJsonAsync(
+            new
+            {
+                type = "https://tools.ietf.org/html/rfc7807",
+                title = "An internal error occurred",
+                status = StatusCodes.Status500InternalServerError,
+                detail = "An unexpected error occurred processing your request."
+            },
+            options: null,
+            contentType: "application/problem+json");
     });
 });
 

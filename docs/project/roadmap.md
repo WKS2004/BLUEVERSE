@@ -4,8 +4,8 @@
 
 Authentication, authorization, permissions, API/Auth, PostgreSQL, React/Flutter
 foundations, the shared UI route/API integration contract, Docker, gateway, CI
-and documentation. The starter contract remains zero-domain-endpoint until
-the public API source is checked in.
+and documentation. The public API/Auth foundation and shared Auth workflow are
+checked in; the starter contract has no non-Auth domain endpoints yet.
 
 ## v1 — Coastal Tourism & Operations
 
