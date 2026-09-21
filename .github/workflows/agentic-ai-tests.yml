@@ -100,7 +100,7 @@ jobs:
 
       - name: Upload Agentic AI test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: agentic-ai-test-results
           path: test-results/ai

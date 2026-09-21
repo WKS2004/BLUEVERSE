@@ -666,3 +666,25 @@ runtime lacks PyYAML.
   per-service rows; agent-resource and UI-integration validators passed; and
   `git diff --check` completed without content errors. No secrets, tokens or
   personal data were recorded.
+
+## 2026-09-21 — Resolve GitHub Actions artifact-runtime warning
+
+- Date/time or time range: 2026-09-21 21:23–21:29 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and official GitHub Actions release review
+- AI Model: GPT-5
+- Summary of the user's request: Re-check the backend workflow log after the
+  metrics fix because the workflow still appeared to show an error.
+- Summary of what the AI Agent did: Confirmed the supplied run completed API
+  and Auth tests successfully with 88/88 aggregate results and zero skips;
+  distinguished the unconditional failed-case heading from an actual failure;
+  identified the remaining Node.js 20 deprecation warning from
+  `actions/upload-artifact@v4`; and upgraded all test artifact upload steps to
+  the official Node.js 24-compatible `actions/upload-artifact@v6` release.
+- Verification/evidence: The supplied log contains no failed test, failed case
+  or non-zero exit code; it reports API 21/21, Auth 67/67 and aggregate 88/88.
+  Workflow references were updated consistently across backend, web, mobile
+  and Agentic AI test workflows. No secrets, tokens or personal data were
+  recorded.
