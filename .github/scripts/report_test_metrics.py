@@ -63,6 +63,18 @@ def parse_seconds(value: str | None) -> float:
     try:
         return float(value)
     except ValueError:
+        clock_match = re.fullmatch(
+            r"(?:(\d+):)?(\d{1,2}):(\d{2})(?:\.(\d+))?", value
+        )
+        if clock_match:
+            hours, minutes, seconds, fraction = clock_match.groups()
+            fractional_seconds = float(f"0.{fraction}") if fraction else 0.0
+            return (
+                int(hours or 0) * 3600
+                + int(minutes) * 60
+                + int(seconds)
+                + fractional_seconds
+            )
         match = re.fullmatch(
             r"P(?:\d+D)?T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?",
             value,
@@ -215,18 +227,32 @@ def main() -> int:
     parser.add_argument("--format", choices=("auto", "junit", "flutter"), default="auto")
     parser.add_argument("--scope", required=True)
     parser.add_argument("--failures-only", action="store_true")
+    parser.add_argument(
+        "--require-results",
+        action="store_true",
+        help="fail when no parseable test cases are discovered",
+    )
     args = parser.parse_args()
 
     grouped: dict[str, Metrics] = defaultdict(Metrics)
+    result_files: list[Path] = []
     if args.input:
         for input_path in args.input:
+            result_files.append(input_path)
             if args.format == "flutter":
                 grouped[args.scope].add(parse_flutter(input_path))
             else:
                 grouped[args.scope].add(parse_xml(input_path))
     else:
-        files = sorted(args.results_root.rglob("*.xml")) if args.results_root and args.results_root.exists() else []
-        for path in files:
+        if args.results_root and args.results_root.exists():
+            result_files = sorted(
+                {
+                    path
+                    for pattern in ("*.xml", "*.trx")
+                    for path in args.results_root.rglob(pattern)
+                }
+            )
+        for path in result_files:
             relative = path.relative_to(args.results_root)
             service = relative.parts[0] if len(relative.parts) > 1 else path.parent.name
             try:
@@ -278,6 +304,13 @@ def main() -> int:
             lines.append("- None detected.")
         existing_summary = summary_path.read_text(encoding="utf-8") if summary_path.exists() else ""
         summary_path.write_text(existing_summary + "\n".join(lines) + "\n", encoding="utf-8")
+
+    if args.require_results and (not result_files or overall.total == 0):
+        print(
+            f"ERROR: {args.scope} expected parseable test results, but no test cases were discovered.",
+            file=sys.stderr,
+        )
+        return 2
     return 0
 
 

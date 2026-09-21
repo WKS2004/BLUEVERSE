@@ -36,3 +36,6 @@ jobs:
       - name: Validate repository agent resources
         if: steps.scope.outputs.affected == 'true'
         run: python .agents/scripts/validate_agent_resources.py
+      - name: Validate CI helper scripts
+        if: steps.scope.outputs.affected == 'true'
+        run: python -m unittest discover -s .github/scripts/tests -p "test_*.py"

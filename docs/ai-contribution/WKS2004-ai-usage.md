@@ -643,3 +643,26 @@ runtime lacks PyYAML.
   content errors; and the documented API/Auth/session state was reviewed against
   the current source and contract registry. No secrets, tokens or personal data
   were recorded.
+
+## 2026-09-21 — Correct backend workflow test metrics discovery
+
+- Date/time or time range: 2026-09-21 21:12–21:23 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Python, GitHub Actions workflow review
+  and .NET test tooling
+- AI Model: GPT-5
+- Summary of the user's request: Investigate why backend tests appeared to be
+  skipped or reported as zero in the GitHub Actions backend workflow.
+- Summary of what the AI Agent did: Traced the workflow's VSTest output and
+  metrics helper; fixed result discovery to include `.trx` files as well as
+  JUnit `.xml`; added a fail-closed `--require-results` guard for discovered
+  backend suites; added CI-helper regression tests; ran those tests in the
+  repository foundation workflow; and synchronized the CI documentation.
+- Verification/evidence: The helper tests passed 2/2; API tests passed 21/21;
+  Auth tests passed 67/67; the corrected reporter aggregated the generated TRX
+  files as 88 total, 88 completed, 88 passed, 0 failed and 0 skipped with
+  per-service rows; agent-resource and UI-integration validators passed; and
+  `git diff --check` completed without content errors. No secrets, tokens or
+  personal data were recorded.

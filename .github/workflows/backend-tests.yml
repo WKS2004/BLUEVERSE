@@ -97,7 +97,12 @@ jobs:
             fi
           done
 
-          python .github/scripts/report_test_metrics.py --results-root test-results/backend --scope "Backend Microservices"
+          python .github/scripts/report_test_metrics.py --results-root test-results/backend --scope "Backend Microservices" --require-results
+          metrics_status=$?
+          if [[ "$metrics_status" -ne 0 ]]; then
+            overall_status=1
+            echo "Backend test metrics did not contain parseable test results."
+          fi
           exit "$overall_status"
 
       - name: Upload backend test results

@@ -26,7 +26,7 @@ images.
 
 | Workflow | Scope | Current behavior |
 |---|---|---|
-| `repository-ci.yml` | Repository foundation | Checks required root files/directories and validates `.agents` resources, registry metadata, overlays, routing fixtures and links. |
+| `repository-ci.yml` | Repository foundation | Checks required root files/directories, validates `.agents` resources and CI helper scripts, and checks registry metadata, overlays, routing fixtures and links. |
 | `ui-integration.yml` | `apps/web/**`, `apps/mobile/**`, `services/**`, API/architecture contract docs, `infrastructure/docker/**`, `compose.yaml`, all workflows and the UI contract | Validates the shared React/Flutter workflow registry, rejects wrong frontend routes and unregistered/direct backend targets, and tests the validator. |
 | `backend-ci.yml` | `services/**` | Restores/builds discovered ASP.NET projects when present. Backend tests run in the dedicated backend test workflow. |
 | `web-ci.yml` | `apps/web/**` | Runs `npm install`, ESLint and the Vite build. |
@@ -112,11 +112,18 @@ completed, passed, failed, skipped, errors, not-run and duration values. The
 backend and Agentic AI workflows additionally print and summarize one row per
 service while retaining an overall aggregate row. JUnit, TRX, Flutter machine
 logs and console output are uploaded as workflow artifacts for failed or
-successful runs. A test is counted as passed or failed according to the test
-runner’s complete assertion result; the metrics do not infer correctness from
-an HTTP status code alone. Test completeness remains a test-authoring and
-review responsibility: new behavior must bring its scenario, boundary and
-extreme-condition tests in the same change.
+successful runs. Backend VSTest output is written as `.trx`; the metrics helper
+parses both `.trx` and JUnit `.xml` files. When backend test projects are
+discovered, missing or empty parseable result files fail the workflow instead
+of silently reporting zero tests. A test is counted as passed or failed
+according to the test runner’s complete assertion result; the metrics do not
+infer correctness from an HTTP status code alone. Test completeness remains a
+test-authoring and review responsibility: new behavior must bring its scenario,
+boundary and extreme-condition tests in the same change.
+
+The repository foundation workflow also runs the dependency-free unit tests for
+`.github/scripts/report_test_metrics.py` so result-file discovery and the
+fail-closed metrics guard remain covered when CI helper code changes.
 
 ## Docker workflows
 
