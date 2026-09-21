@@ -31,22 +31,31 @@ jobs:
           set +e
           mkdir -p test-results/web
           echo "Test pass/fail is determined by the complete test assertions, not by one response field or HTTP status alone."
-          test_files=$(find apps/web/src apps/web/e2e -type f \( -name '*.test.ts' -o -name '*.test.tsx' -o -name '*.spec.ts' -o -name '*.spec.tsx' -o -name '*.test.js' -o -name '*.test.jsx' -o -name '*.spec.js' -o -name '*.spec.jsx' \) -print 2>/dev/null)
-          if [[ -z "$test_files" ]]; then
+          mapfile -t test_files < <(find apps/web/src apps/web/e2e -type f \( -name '*.test.ts' -o -name '*.test.tsx' -o -name '*.spec.ts' -o -name '*.spec.tsx' -o -name '*.test.js' -o -name '*.test.jsx' -o -name '*.spec.js' -o -name '*.spec.jsx' \) -print 2>/dev/null | sort)
+          if [[ ${#test_files[@]} -eq 0 ]]; then
             echo "No React test cases found in the default web test locations: apps/web/src or apps/web/e2e."
             echo "This workflow currently reports zero tests until the web test suite is added."
             printf '0\n' > test-results/web/no-tests.marker
             exit 0
           fi
 
+          relative_test_files=()
+          for test_file in "${test_files[@]}"; do
+            relative_test_files+=("${test_file#apps/web/}")
+          done
+
           if ! node -e "const p=require('./apps/web/package.json'); process.exit(p.scripts && p.scripts['test:ci'] ? 0 : 1)"; then
             echo "React test files exist, but apps/web/package.json has no test:ci script."
             exit 1
           fi
 
-          npm --prefix apps/web run test:ci -- --reporter=junit --outputFile="$PWD/test-results/web/junit.xml" 2>&1 | tee test-results/web/console.log
+          npm --prefix apps/web run test:ci -- --test-reporter=junit --test-reporter-destination="$PWD/test-results/web/junit.xml" "${relative_test_files[@]}" 2>&1 | tee test-results/web/console.log
           test_status=${PIPESTATUS[0]}
-          python .github/scripts/report_test_metrics.py --results-root test-results/web --scope "React Web"
+          python .github/scripts/report_test_metrics.py --results-root test-results/web --scope "React Web" --require-results
+          metrics_status=$?
+          if [[ "$test_status" -eq 0 && "$metrics_status" -ne 0 ]]; then
+            test_status=$metrics_status
+          fi
           exit "$test_status"
 
       - name: Report zero-test metrics

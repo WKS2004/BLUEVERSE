@@ -161,7 +161,7 @@ def parse_xml(path: Path) -> Metrics:
 
 def parse_flutter(path: Path) -> Metrics:
     metrics = Metrics()
-    started: set[str] = set()
+    started: dict[str, str] = {}
     completed: set[str] = set()
     for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
         try:
@@ -174,35 +174,50 @@ def parse_flutter(path: Path) -> Metrics:
             if not isinstance(event, dict):
                 continue
             if event.get("type") == "testStart":
-                params = event.get("testStart", {})
+                # Flutter has emitted both the current nested payload shape and
+                # the older package:test machine protocol shape. The latter
+                # stores the test definition under `test` and keeps the test
+                # completion fields at the event root.
+                params = event.get("testStart") or event.get("test") or {}
+                if not isinstance(params, dict):
+                    params = {}
                 if params.get("hidden"):
                     continue
-                test_id = str(params.get("id", params.get("name", len(started))))
-                started.add(test_id)
+                raw_id = params.get("id", params.get("testID", event.get("testID")))
+                test_id = str(raw_id if raw_id is not None else len(started))
+                started[test_id] = str(params.get("name") or test_id)
             elif event.get("type") == "testDone":
-                params = event.get("testDone", {})
+                params = event.get("testDone") or event
+                if not isinstance(params, dict):
+                    params = event
                 if params.get("hidden"):
                     continue
-                test_id = str(params.get("id", len(completed)))
+                raw_id = params.get("id", params.get("testID", event.get("testID")))
+                test_id = str(raw_id if raw_id is not None else len(completed))
                 if test_id in completed:
                     continue
                 completed.add(test_id)
+                time_value = params.get("time", event.get("time"))
+                if isinstance(time_value, (int, float)):
+                    metrics.duration_seconds += float(time_value) / 1000
+                elif time_value is not None:
+                    metrics.duration_seconds += parse_seconds(str(time_value))
                 result = str(params.get("result", "error")).lower()
                 metrics.total += 1
-                if result == "success":
-                    metrics.passed += 1
-                elif result in {"skipped", "pending"}:
+                if params.get("skipped") is True or result in {"skipped", "pending"}:
                     metrics.skipped += 1
+                elif result in {"success", "passed", "pass"}:
+                    metrics.passed += 1
                 elif result in {"failure", "failed"}:
                     metrics.failed += 1
-                    name = str(params.get("name", params.get("id", "unknown-test")))
+                    name = str(params.get("name") or started.get(test_id) or test_id)
                     error_text = str(params.get("error") or "")
                     detail_lines = error_text.splitlines()
                     detail = detail_lines[0][:240] if detail_lines else ""
                     metrics.failed_cases.append(f"{name} — {detail}" if detail else name)
                 else:
                     metrics.errors += 1
-                    name = str(params.get("name", params.get("id", "unknown-test")))
+                    name = str(params.get("name") or started.get(test_id) or test_id)
                     error_text = str(params.get("error") or "")
                     detail_lines = error_text.splitlines()
                     detail = detail_lines[0][:240] if detail_lines else ""

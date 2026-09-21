@@ -28,6 +28,14 @@ TRX_CONTENT = """<?xml version="1.0" encoding="utf-8"?>
 """
 
 
+FLUTTER_MACHINE_CONTENT = """
+{"type":"testStart","test":{"id":1,"name":"AUTH_LOGIN_001","hidden":false},"time":1}
+{"testID":1,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":125}
+{"type":"testStart","testStart":{"id":2,"name":"AUTH_LOGIN_002","hidden":false}}
+{"type":"testDone","testDone":{"id":2,"result":"success","skipped":true,"hidden":false,"time":125}}
+""".strip()
+
+
 class ReportTestMetricsTests(unittest.TestCase):
     def run_report(self, *arguments: str) -> tuple[int, str, str]:
         stdout = io.StringIO()
@@ -74,6 +82,30 @@ class ReportTestMetricsTests(unittest.TestCase):
         self.assertEqual(2, exit_code)
         self.assertIn("overall: total=0 completed=0", output)
         self.assertIn("expected parseable test results", error)
+
+    def test_flutter_parser_supports_legacy_and_nested_machine_protocol_events(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            result_file = Path(temporary_directory) / "flutter-machine.json"
+            result_file.write_text(FLUTTER_MACHINE_CONTENT, encoding="utf-8")
+
+            exit_code, output, error = self.run_report(
+                "--input",
+                str(result_file),
+                "--format",
+                "flutter",
+                "--scope",
+                "Flutter Mobile",
+                "--require-results",
+            )
+
+        self.assertEqual(0, exit_code)
+        self.assertEqual("", error)
+        self.assertIn(
+            "overall: total=2 completed=2 passed=1 failed=0 skipped=1 errors=0",
+            output,
+        )
+        self.assertIn("duration=0.25s", output)
+        self.assertNotIn("unknown-test", output)
 
 
 if __name__ == "__main__":

@@ -10,7 +10,8 @@ The plan is intentionally staged because the current checkout is a v0
 foundation:
 
 - `apps/web` is a Vite React client with an implemented cookie-based Auth
-  session workflow, lint/build scripts and no web component test runner yet.
+  session workflow, lint/build scripts and a dependency-free Node 24
+  request-boundary test runner; no web component test runner exists yet.
 - `apps/mobile` is a Flutter client with the Auth session workflow, secure
   storage/API-boundary tests and the original starter widget test.
 - `services/api` and `services/auth` are checked-in ASP.NET services with
@@ -161,9 +162,11 @@ thought.
 
 ### 4.1 React web (`apps/web/src` and optional `apps/web/e2e`)
 
-Use Vitest and React Testing Library for deterministic unit, component and
-workflow tests. Use MSW or an equivalent request boundary for API responses;
-do not make unit tests depend on a live backend.
+The current dependency-free Auth request-boundary suite uses Node 24's built-in
+test runner and mocks `fetch`; it does not depend on a live backend. When UI
+component and browser workflow coverage is introduced, use Vitest and React
+Testing Library (with MSW or an equivalent request boundary) for deterministic
+tests.
 
 The current `/login` surface is the first product workflow. Implement cases
 for it and later workflows covering:
@@ -180,9 +183,11 @@ for it and later workflows covering:
 - browser-level smoke flows for login, one representative business workflow,
   approval and logout after the public API exists.
 
-The existing Auth surface must become the first web product-test target when a
-React test runner is introduced. The generated home surface remains a starter
-screen and is not sufficient quality evidence for future domain workflows.
+The existing Auth surface is the first web product-test target and currently
+has request-boundary cases for login, RFC 7807 error mapping and
+everywhere-logout. Extend it with component and browser workflow cases before
+using the generated home surface as quality evidence for future domain
+workflows.
 
 ### 4.2 Flutter mobile (`apps/mobile/test` and `apps/mobile/integration_test`)
 
@@ -376,13 +381,15 @@ case ID, and can run each available suite locally.
 
 ### Phase 1 — React test harness and foundation cases
 
-Add Vitest, React Testing Library, request mocking, coverage reporting and
-scripts for unit/component/workflow tests. Add the first product-level cases
-for the implemented Auth workflow and do not rely on the generated home
-surface as quality evidence.
+The first product-level Auth request-boundary cases now run through Node 24's
+built-in test runner with JUnit output and complete assertion checks. Extend
+this foundation with Vitest, React Testing Library, request mocking and
+coverage reporting when component/workflow tests are introduced; do not rely
+on the generated home surface as quality evidence.
 
 Exit criteria: `lint`, build and web tests run in CI; failures produce readable
-case IDs and coverage artifacts.
+case IDs and JUnit artifacts. Coverage reporting remains part of the future
+component/workflow harness.
 
 ### Phase 2 — Flutter test harness and foundation cases
 
@@ -509,7 +516,7 @@ A case is complete only when:
 The recommended order for the repository is:
 
 1. create the test registry, IDs, fixture policy and runner documentation;
-2. add the React runner and Auth session-workflow cases;
+2. maintain the React runner and extend the Auth session-workflow cases;
 3. extend the Flutter test runner with Auth persistence/device workflow cases
    and retire reliance on the generated counter-only evidence;
 4. expand API/Auth tests alongside new service behavior and domain workflows;

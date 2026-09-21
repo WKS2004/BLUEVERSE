@@ -112,10 +112,14 @@ completed, passed, failed, skipped, errors, not-run and duration values. The
 backend and Agentic AI workflows additionally print and summarize one row per
 service while retaining an overall aggregate row. JUnit, TRX, Flutter machine
 logs and console output are uploaded as workflow artifacts for failed or
-successful runs. Backend VSTest output is written as `.trx`; the metrics helper
-parses both `.trx` and JUnit `.xml` files. When backend test projects are
-discovered, missing or empty parseable result files fail the workflow instead
-of silently reporting zero tests. A test is counted as passed or failed
+successful runs. The React workflow uses Node 24's built-in test runner and
+publishes JUnit XML for its colocated request-boundary cases. Backend VSTest
+output is written as `.trx`; the metrics helper parses both `.trx` and JUnit
+`.xml` files. Flutter machine output may use either the nested current payload
+shape or the legacy top-level `test`/`testID` shape; both are normalized before
+metrics are reported. When backend test projects are discovered, missing or
+empty parseable result files fail the workflow instead of silently reporting
+zero tests. A test is counted as passed or failed
 according to the test runner’s complete assertion result; the metrics do not
 infer correctness from an HTTP status code alone. Test completeness remains a
 test-authoring and review responsibility: new behavior must bring its scenario,

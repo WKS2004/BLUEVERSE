@@ -15,6 +15,7 @@ npm install
 npm run dev
 npm run lint
 npm run build
+npm run test:ci -- src/auth.request.test.js
 npm run preview
 ```
 
@@ -44,7 +45,10 @@ root:
 python scripts/validation/validate_ui_integrations.py
 ```
 
-Then run the web lint/build and any colocated React route/request/workflow
-tests. The registry currently contains the implemented Auth workflow and the
-starter home surface; add the public API contract and both client surfaces
-together when the next product workflow is introduced.
+Then run the web lint/build and the colocated request-boundary tests. The
+current Auth suite uses Node 24's built-in test runner so CI does not need a
+second browser or component-test dependency; component and browser workflow
+coverage can be added when those surfaces are introduced. The registry
+currently contains the implemented Auth workflow and the starter home surface;
+add the public API contract and both client surfaces together when the next
+product workflow is introduced.

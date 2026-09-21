@@ -688,3 +688,28 @@ runtime lacks PyYAML.
   Workflow references were updated consistently across backend, web, mobile
   and Agentic AI test workflows. No secrets, tokens or personal data were
   recorded.
+
+## 2026-09-21 — Correct Flutter metrics parsing and restore web test coverage
+
+- Date/time or time range: 2026-09-21 21:30–21:49 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Node.js, Python and GitHub Actions workflow review
+- AI Model: GPT-5
+- Summary of the user's request: Investigate the still-failing-looking backend,
+  Flutter and web test workflow logs and fix the remaining test-reporting and
+  test-discovery problems.
+- Summary of what the AI Agent did: Confirmed the supplied backend run was
+  green; updated the Flutter machine-protocol parser to support both nested and
+  legacy top-level event payloads; added parser regression coverage; made the
+  mobile and web metrics checks fail closed when result cases are absent; added
+  three dependency-free Node 24 Auth request-boundary tests for the web client;
+  switched the web workflow to Node's JUnit reporter; and synchronized the
+  client, CI and testing documentation.
+- Verification/evidence: CI-helper tests passed 3/3; web Auth tests passed
+  3/3; web lint and production build passed; generated web JUnit was reported as
+  3 passed, 0 failed and 0 errors; agent-resource validation passed; UI
+  integration validation passed; its 12 tests passed; and `git diff --check`
+  completed without content errors. No secrets, tokens or personal data were
+  recorded.

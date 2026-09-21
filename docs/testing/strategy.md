@@ -21,8 +21,11 @@ Testing will cover the current foundation and the later business workflows:
 
 ## Current evidence
 
-- React: lint and production build scripts validate the implemented cookie-based
-  Auth surface; no component test runner is checked in yet.
+- React: the Node 24 built-in test runner covers three deterministic Auth
+  request-boundary cases (request construction, RFC 7807 error normalization
+  and 204 logout handling), while lint and the production build validate the
+  implemented cookie-based Auth surface. Component and browser workflow tests
+  remain a later increment.
 - Flutter: Auth API-boundary/configuration tests, the Auth session UI and the
   static-analysis workflow are present alongside the starter widget test.
 - ASP.NET/API: `services/api` and its foundation test project are checked in;

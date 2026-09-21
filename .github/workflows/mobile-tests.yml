@@ -59,10 +59,16 @@ jobs:
             printf '0\n' > test-results/mobile/no-tests.marker
           fi
 
+          metrics_status=0
           if [[ ${#input_args[@]} -gt 0 ]]; then
-            python .github/scripts/report_test_metrics.py "${input_args[@]}" --format flutter --scope "Flutter Mobile"
+            python .github/scripts/report_test_metrics.py "${input_args[@]}" --format flutter --scope "Flutter Mobile" --require-results
+            metrics_status=$?
           else
             python .github/scripts/report_test_metrics.py --results-root test-results/mobile --scope "Flutter Mobile"
+            metrics_status=$?
+          fi
+          if [[ "$test_status" -eq 0 && "$metrics_status" -ne 0 ]]; then
+            test_status=$metrics_status
           fi
           exit "$test_status"
 
