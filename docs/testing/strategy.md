@@ -33,8 +33,10 @@ evidence.
   and 204 logout handling), while lint and the production build validate the
   implemented cookie-based Auth surface. Component and browser workflow tests
   remain a later increment.
-- Flutter: Auth API-boundary/configuration tests, the Auth session UI and the
-  static-analysis workflow are present alongside the starter widget test.
+- Flutter: five visible package-level tests cover the gateway configuration,
+  build-time API override and starter widget interaction; the Auth session UI,
+  secure-storage boundary and static-analysis workflow are also present. No
+  `integration_test` directory is checked in yet.
 - ASP.NET/API: `services/api` and its foundation test project are checked in;
   the API suite currently passes 21 cases covering health, OpenAPI/Swagger,
   CORS, forwarded headers, safe gateway errors, YARP forwarding/failure
