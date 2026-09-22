@@ -5,8 +5,8 @@ Verify paths and implementation state before relying on any entry.
 
 | Path | Responsibility | Contract to preserve |
 |---|---|---|
-| `apps/web` | React 19 + TypeScript + Vite client | public API only; shared Auth workflow plus starter UI |
-| `apps/mobile` | Flutter/Dart client and platform shells | public API only; shared Auth workflow plus starter app |
+| `apps/web` | React 19 + TypeScript + Vite client | public API only; first-class surface for clients, staff and administrators; shared Auth workflow plus starter UI |
+| `apps/mobile` | Flutter/Dart client and platform shells | public API only; first-class surface for clients, staff and administrators; shared Auth workflow plus starter app |
 | `services/api` | public ASP.NET Core API | REST, DTO/application layers, validation, auth proxy, OpenAPI |
 | `services/auth` | internal authentication service | private behind API/gateway |
 | `services/<name>` | future/internal backend services | own data/service contract and matching tests |
@@ -19,7 +19,7 @@ Verify paths and implementation state before relying on any entry.
 | `.github/workflows` | CI/build/test policy | path filters, complete metrics and failure evidence |
 | `docs/architecture`, `docs/adr` | architectural source of truth | update for material boundary decisions |
 | `docs/security`, `docs/agentic-ai` | threat and safety source of truth | deterministic validation and approval controls |
-| `docs/contracts/ui-integration.json` | shared React/Flutter workflow, route and public API registry | one workflow ID, both relevant client routes and declared `/api/...` references |
+| `docs/contracts/ui-integration.json` | shared React/Flutter workflow, route and public API registry | one workflow ID, both client routes for the participating roles and declared `/api/...` references |
 | `scripts/validation` | dependency-free repository and UI integration validators | fail-closed route/API checks and validator tests |
 | `docs/api/endpoint-catalog.md` | readable frontend, gateway, public API, test-only and AI endpoint inventory | start here for route lookup |
 | `docs/api/endpoint-catalog.json` | machine-checked catalog source | update with route changes and regenerate Markdown |
@@ -41,6 +41,11 @@ Verify paths and implementation state before relying on any entry.
   implemented Auth session-management workflow. The full route inventory is
   maintained in `docs/api/endpoint-catalog.md`; new client calls must be
   added to both the catalog and the UI registry.
+- React Web and Flutter Mobile are co-equal product surfaces for clients, staff
+  and administrators. A product workflow is planned for both clients by
+  default; platform differences are interaction adaptations, not role
+  ownership. The detailed user-facing standard is
+  `docs/project/ui-experience-principles.md`.
 - `services/api` and `services/auth` are implemented ASP.NET Core projects.
 - `services/auth` owns the current EF Core/Npgsql PostgreSQL model and checked-in
   migrations. Its default deterministic tests and opt-in real-provider tests

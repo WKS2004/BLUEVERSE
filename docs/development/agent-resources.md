@@ -8,10 +8,11 @@ smallest useful context while preserving the repository's architecture,
 security, testing and contribution requirements.
 
 The resource set is finalized for the current v0 foundation checkout. It
-contains eight BLUEVERSE-owned skills and fourteen source-pinned supplementary
-skills for the technologies that are actually present or explicitly planned:
-React 19 + Vite, Flutter, ASP.NET Core, PostgreSQL, EF Core and test-quality
-workflows. The registry also records six verified candidates that remain
+contains eight BLUEVERSE-owned skills and fifteen source-pinned supplementary
+skills. Technology guidance covers the stack that is actually present or
+explicitly planned: React 19 + Vite, Flutter, ASP.NET Core, PostgreSQL, EF Core
+and test-quality workflows. The set also includes the optional `caveman`
+response-style skill. The registry records six verified candidates that remain
 deferred because they are broad, operationally privileged or not yet required.
 
 This documentation describes how to use the resources. The operational source
@@ -99,6 +100,7 @@ large requirements matrices into skills or load every skill for every task.
 | Agentic AI orchestration, tools, approvals and evaluation | `blueverse-agentic-ai-workflow` | deferred governance/OWASP skills until executable AI workflows exist |
 | Docker, Compose, edge-nginx, networks and health | `blueverse-docker-gateway` | — |
 | GitHub Actions, path filters, metrics and artifacts | `blueverse-ci-validation` | — |
+| Response-style compression | — | `caveman` for explicit, user-requested conversational compression |
 
 The current React application is React 19 + Vite. Next.js, React Server
 Components, server actions, route handlers and server-only caching guidance
@@ -110,6 +112,11 @@ run the route/API contract validator described in
 [`ui-integration.md`](ui-integration.md). Shared workflow IDs connect the
 relevant React and Flutter surfaces; the clients never call each other or
 internal service hostnames.
+React Web and Flutter Mobile are co-equal surfaces for clients, staff and
+administrators, so agent guidance must plan both clients for a shared workflow
+by default. Platform adaptation is about interaction context, not stakeholder
+ownership. User-facing work also follows
+[`../project/ui-experience-principles.md`](../project/ui-experience-principles.md).
 For every frontend route, client API target, gateway/YARP/Nginx mapping,
 backend or internal service endpoint, health/OpenAPI route, test-only fixture
 endpoint or Agentic AI endpoint addition, update, rename, move or removal,
@@ -128,7 +135,7 @@ under `apps/mobile/test` and `apps/mobile/integration_test`, backend tests under
 ## Registry and maintenance
 
 The [skill registry](../../.agents/registry/skills.json) is the inventory for
-all twenty-two discovered skills. Imported skills are supplementary and must
+all twenty-three discovered skills. Imported skills are supplementary and must
 have:
 
 - a source repository and exact forty-character revision;

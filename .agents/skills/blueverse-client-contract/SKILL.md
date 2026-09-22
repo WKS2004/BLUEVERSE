@@ -11,6 +11,10 @@ code before changing either client.
 
 - React 19 + Vite and Flutter call only the public ASP.NET Core API/gateway.
   Never add direct Auth, Agentic AI, PostgreSQL or internal-service access.
+- Treat React Web and Flutter Mobile as co-equal product surfaces for clients,
+  staff and administrators. A shared workflow is cross-platform by default;
+  do not assign administration permanently to React or client-facing work
+  permanently to Flutter.
 - Prefer literal relative `/api/...` request paths. Absolute hosts must be
   allowlisted in `publicApi.allowedAbsoluteHosts`; unresolved dynamic request
   targets must fail validation rather than being inferred from configuration.
@@ -30,6 +34,10 @@ code before changing either client.
   but never replaces backend authorization or the role-to-permission model.
 - Preserve one API contract and authorization model across clients. Assess both
   clients for shared workflows and document intentional platform differences.
+- Read `docs/project/ui-experience-principles.md` for every UI workflow. Keep
+  the experience user-friendly, scope-aligned and realistic; adapt layout and
+  interaction for web or mobile without making a technical or analytical
+  dashboard the default.
 - Handle loading, success, empty, validation, denied, dependency-failure,
   timeout/retry, cancellation and malformed-response states as applicable.
 - `vercel-react-best-practices` is limited to browser/Vite-compatible guidance;

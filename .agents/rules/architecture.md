@@ -1,10 +1,17 @@
 # Architecture rules
 
 - Preserve `apps/web` and `apps/mobile` → public ASP.NET Core API → PostgreSQL.
+- Treat React Web and Flutter Mobile as co-equal product surfaces for clients,
+  staff and administrators. New product workflows are cross-platform by
+  default; do not assign a stakeholder group permanently to one frontend.
 - Keep `docs/contracts/ui-integration.json` as the canonical mapping from a
   shared workflow ID to its React route, Flutter route and public API endpoint
   references. The two clients connect through the workflow contract, never by
   calling one another.
+- Preserve workflow parity across clients: the same intent, role → permission
+  behavior and public API contract must be available in both surfaces, while
+  layout and interaction may adapt to web or mobile context. A genuinely
+  platform-specific exception requires an ADR.
 - Clients may use the gateway/public API only; never call internal Auth or
   Agentic AI services directly and never expose database access to clients.
 - Prefer literal relative `/api/...` request paths. Absolute API hosts must be
@@ -33,3 +40,8 @@ For any UI route or API request change, also read
 [`docs/development/ui-integration.md`](../../docs/development/ui-integration.md)
 and the endpoint catalog, update the catalog in the same change, then run the
 endpoint and UI integration contract validators.
+
+For UI quality and product scope, also read
+[`docs/project/ui-experience-principles.md`](../../docs/project/ui-experience-principles.md).
+Do not make technical dashboards, raw payloads or unexplained analytics the
+default experience when a clearer domain task-oriented interface is suitable.

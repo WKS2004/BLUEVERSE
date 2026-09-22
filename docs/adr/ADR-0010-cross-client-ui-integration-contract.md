@@ -6,10 +6,12 @@ Accepted for the v0 foundation; enforced as product workflows are added.
 
 ## Context
 
-React and Flutter represent different user experiences, but they must use the
-same server-owned authorization and API contract. A screen can compile while
-still navigating to an undeclared route, calling the wrong service, bypassing
-the public gateway or using an API shape that the other client does not share.
+React and Flutter represent different interaction contexts, but both are
+first-class product surfaces for clients, staff and administrators. They must
+use the same server-owned authorization and API contract. A screen can compile
+while still navigating to an undeclared route, calling the wrong service,
+bypassing the public gateway or using an API shape that the other client does
+not share.
 The starter clients and future domain backend source are not yet complete, so
 the repository needs a contract that is useful now without claiming future
 endpoints exist.
@@ -29,15 +31,19 @@ backend service are registered in the same change. Relative API paths are
 preferred; absolute URLs require an allowlisted host in the registry, and
 dynamic network targets fail closed because CI cannot prove which service they
 resolve to. The clients do not call one another; a shared workflow ID is the
-connection between their corresponding surfaces.
+connection between their corresponding surfaces. Every product workflow is
+expected to have both client surfaces unless an ADR records a genuine
+platform-specific exception.
 
 ## Consequences
 
 - Cross-platform integration is reviewable before a full backend stack exists.
 - Web and mobile changes cannot silently drift to different routes or service
   endpoints.
-- Platform-specific workflows remain possible, but their scope must be
-  explicit rather than inferred from a missing client surface.
+- Web and mobile may adapt layout and interaction to their strengths without
+  assigning stakeholder groups to a single platform.
+- Platform-specific workflows remain possible only as explicit, ADR-backed
+  exceptions rather than an implication of a missing client surface.
 - The current foundation registry contains the implemented Auth
   session-management endpoints but no domain API endpoints until the
   corresponding ASP.NET Core source and OpenAPI contract are checked in.

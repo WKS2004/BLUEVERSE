@@ -7,19 +7,28 @@
                               |
                          edge-nginx
                               |
-             +----------------+----------------+
-             |                                 |
-         React Web                       ASP.NET Core API
-         / Vercel                       /        |       \
-                                           Auth  Domain  Agentic AI
-                                               \       |       /
-                                                PostgreSQL
+             +----------------+------------------+
+             |                                   |
+      React Web Client                 Flutter Mobile Client
+             |                                   |
+             +----------------+------------------+
+                              |
+                       ASP.NET Core API
+                         /       |       \
+                     Auth      Domain  Agentic AI
+                               \       |       /
+                                PostgreSQL
 ```
 
-Flutter is a client application and communicates with the ASP.NET Core API. It
-is not a backend microservice. The public API and Auth sources are checked in at
-`services/api` and `services/auth`; domain and Agentic AI services will be added
-incrementally.
+React and Flutter are peer client applications and communicate with the
+ASP.NET Core API. Neither is a backend microservice. The public API and Auth
+sources are checked in at `services/api` and `services/auth`; domain and
+Agentic AI services will be added incrementally.
+
+Both clients are planned for clients, staff and administrators. React may
+optimize broad browser workspaces and Flutter may optimize mobile, location,
+camera and notification interactions, but platform strengths do not define
+which roles or business capabilities are allowed to use a client.
 
 ## Local Docker architecture
 
@@ -85,4 +94,5 @@ React and Flutter do not connect to one another. A shared workflow ID in
 the public `/api/...` endpoint references used by both clients. The registry
 and its CI validator must be updated whenever a UI is created, generated or
 changed. This preserves one public API/permission contract while allowing
-platform-specific presentation and route syntax.
+platform-adapted presentation and route syntax. Cross-platform capability is
+the default; a missing client surface is not an implicit product decision.

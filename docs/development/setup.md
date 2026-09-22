@@ -42,6 +42,11 @@ clients that contradict the API contract. For every UI change, also update and
 validate the shared [UI integration contract](ui-integration.md) so React and
 Flutter use the same workflow ID and public `/api/...` endpoint references.
 
+React Web and Flutter Mobile are peer product surfaces for clients, staff and
+administrators. Do not route a business capability to one platform solely
+because of the user's role; use platform strengths to adapt the interaction
+while keeping the workflow, permission behavior and public API contract shared.
+
 ## Agent resources
 
 Before making a repository change, read the root [`AGENTS.md`](../../AGENTS.md),

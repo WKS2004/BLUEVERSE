@@ -103,7 +103,18 @@ Persist only the data required for the application and Agentic AI workflow. Use 
 
 React and Flutter must use the same backend contract and authorization model.
 
+React Web and Flutter Mobile are co-equal product surfaces for clients, staff
+and administrators. New product workflows are cross-platform by default; do
+not assign administration permanently to React or client-facing work
+permanently to Flutter. Platform-specific layouts and interactions are
+encouraged when they fit the context, but they do not define role ownership.
+
 Do not create client-side business rules that contradict the API.
+
+UI work should be user-friendly, scope-aligned and realistic for the coastal
+domain rather than defaulting to a technical or analytical dashboard. Follow
+[`docs/project/ui-experience-principles.md`](docs/project/ui-experience-principles.md)
+for the detailed experience standard.
 
 For every UI change, re-check frontend route declarations and every request
 target with `scripts/validation/validate_ui_integrations.py`. A route or

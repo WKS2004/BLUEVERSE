@@ -65,6 +65,13 @@ React Server Components, server-action and server-route advice unless the
 repository explicitly adopts those technologies. Flutter and React must still
 use only the public `/api/...` boundary.
 
+For any React/Flutter workflow, treat both clients as first-class surfaces for
+clients, staff and administrators. Plan both routes and shared role/permission
+behavior by default; use platform strengths to adapt interaction rather than
+assigning a stakeholder group to one frontend. Read
+`docs/project/ui-experience-principles.md` for the user-friendly,
+scope-aligned and realistic UI standard.
+
 ## Cross-layer triggers
 
 - Any endpoint or route addition, update, rename, move or removal—including

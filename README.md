@@ -24,13 +24,20 @@ This repository is the **v0 foundation** for the SE3090 integrated full-stack an
 The system is intentionally designed as one integrated system:
 
 ```text
-React Web ───────┐
-                 ├──> ASP.NET Core Web API ───> PostgreSQL
-Flutter Mobile ──┘             │
-                               └──> internal Agentic AI services
+React Web Client ───────┐
+                         ├──> ASP.NET Core Web API ───> PostgreSQL
+Flutter Mobile Client ──┘             │
+                                     └──> internal Agentic AI services
 ```
 
 React and Flutter must not call Agentic AI services directly. The ASP.NET Core API remains the authoritative public application layer.
+
+React Web and Flutter Mobile are peer product surfaces for clients, staff and
+administrators. The platform choice is based on the user's context and
+preference, not a fixed role assignment: both clients use the same workflow
+intent, role → permission model and public API contract. React can optimize
+wide browser workspaces and Flutter can optimize mobile and field interaction,
+but neither platform is reserved for one stakeholder group.
 
 Every new, generated or updated UI is a cross-layer change. Register its
 shared workflow ID, React route, Flutter route and public `/api/...` endpoint
@@ -239,6 +246,7 @@ Start with:
 - `docs/development/setup.md`
 - `docs/development/ci.md`
 - `docs/development/ui-integration.md`
+- `docs/project/ui-experience-principles.md`
 - `docs/api/README.md`
 - `docs/database/schema.md`
 - `docs/project/foundation-gap-analysis.md`

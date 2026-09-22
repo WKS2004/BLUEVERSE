@@ -16,6 +16,19 @@
     { "id": "blueverse-postgresql-efcore", "status": "project", "localPath": ".agents/skills/blueverse-postgresql-efcore" },
     { "id": "blueverse-test-design", "status": "project", "localPath": ".agents/skills/blueverse-test-design" },
     {
+      "id": "caveman",
+      "status": "imported",
+      "localPath": ".agents/skills/caveman",
+      "source": {
+        "repository": "https://github.com/JuliusBrussee/caveman",
+        "path": "skills/caveman/SKILL.md",
+        "revision": "e62c3203f09a368bc398dab0254f4444fb1076ad",
+        "license": "MIT for the skill; upstream engine-linked runtime directories use BSL-1.1"
+      },
+      "scope": ["agent-response-style"],
+      "compatibility": "Optional response-style guidance only. BLUEVERSE rules, safety, progress, evidence and saved-artifact prose remain authoritative; use only when explicitly invoked."
+    },
+    {
       "id": "vercel-react-best-practices",
       "status": "imported",
       "localPath": ".agents/skills/vercel-react-best-practices",

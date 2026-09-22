@@ -16,6 +16,10 @@ called scripts as one unit.
   boundary. UI workflows must run the validator for React and Flutter changes;
   service, API/architecture documentation, Compose/Docker gateway or workflow
   changes must also trigger the shared UI contract workflow.
+- Preserve the cross-platform product rule in CI evidence: a shared workflow
+  must be traceable to both React Web and Flutter Mobile for its participating
+  clients, staff or administrators. CI must not encode role-based frontend
+  ownership; platform-specific interaction is not a missing-client waiver.
 - Treat `docs/api/endpoint-catalog.json`, its generated Markdown view and
   `.agents/scripts/validate_endpoint_catalog.py` as the complete route/API CI
   boundary. Route, service, gateway, client and endpoint-documentation changes

@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "status": "active",
-  "description": "Canonical cross-client registry for shared UI workflows, frontend routes and public API endpoint references.",
+  "description": "Canonical cross-platform registry for UI workflows used by clients, staff and administrators across React Web and Flutter Mobile, including frontend routes and public API endpoint references.",
   "endpointCatalog": "docs/api/endpoint-catalog.json",
   "publicApi": {
     "gatewayPath": "/api",

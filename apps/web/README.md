@@ -1,10 +1,14 @@
 # BLUEVERSE Web
 
-The web client is a React 19 + TypeScript application built with Vite. The
+The web client is a React 19 + TypeScript application built with Vite. It is a
+first-class product surface for clients, staff and administrators. The
 checked-in UI includes the shared `/login` Auth session-management workflow:
 cookie-based login, refresh recovery, current-device/everywhere logout and
 active-session display. Domain workflows beyond Auth remain deferred to the
-v1 implementation work.
+v1 implementation work. When they are introduced, the web surface should
+optimize browser strengths such as wide work areas, keyboard operation,
+comparison and review without becoming a technical-only administration
+console.
 
 ## Commands
 

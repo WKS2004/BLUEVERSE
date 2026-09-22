@@ -19,6 +19,14 @@ Testing will cover the current foundation and the later business workflows:
 - Agentic AI workflow evaluation in each AI service’s local `tests/` directory
 - deployment smoke tests
 
+The React and Flutter suites must cover the same product workflows for the
+roles that use them. Test differences should reflect browser versus mobile
+interaction, not an assumption that administration belongs to React or
+client-facing work belongs to Flutter. UI behavior should also be reviewed
+against [`../project/ui-experience-principles.md`](../project/ui-experience-principles.md)
+so passing technical request tests does not hide an unrealistic or confusing
+user experience.
+
 Database-provider decisions are defined by
 [`../../.agents/rules/data-access.md`](../../.agents/rules/data-access.md):
 provider-independent tests may use the existing isolated test provider, while
