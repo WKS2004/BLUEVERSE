@@ -21,7 +21,8 @@ route declarations or client API literals change.
    the implementation.
    For cross-client UI work, use
    `docs/contracts/ui-integration.json` as the route/API traceability
-   contract and run `scripts/validation/validate_ui_integrations.py`.
+   contract, read `docs/project/ui-experience-principles.md`, and run
+   `scripts/validation/validate_ui_integrations.py`.
 2. Place the case under the owning package or service's framework-default test
    path and assign a stable ID with requirement traceability. Use
    `apps/web/src` (and optional `apps/web/e2e`), `apps/mobile/test` or
@@ -36,7 +37,9 @@ route declarations or client API literals change.
 5. Use deterministic synthetic fixtures and ensure the matching workflow
    discovers tests and reports complete failures and metrics.
    UI request-boundary tests must call only the registered public gateway
-   endpoint and route/workflow tests must cover both relevant clients.
+   endpoint and route/workflow tests must cover both relevant clients and every
+   participating role. Differences between clients should reflect interaction
+   context or device capabilities, not role-based frontend ownership.
 6. For .NET test execution, read `.agents/skill-overlays/dotnet-test/run-tests.md`
    before using the portable `run-tests` skill. Use the other imported test
    quality skills only for their narrow stated purpose.

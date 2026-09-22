@@ -11,6 +11,12 @@ SE3090 requires each student to have primary ownership of a substantial business
 - documentation
 - Agentic AI
 
+Business components are not assigned to a single frontend. The owning change
+must plan the component's React Web and Flutter Mobile experience for the
+participating roles, using the shared public API and permission contract. The
+two surfaces may optimize different interaction contexts, but neither is
+reserved for administration, staff or client work by default.
+
 Do not create project-manager-only, testing-only or documentation-only roles.
 
 Individual evidence should remain traceable through commits, pull requests, issues, tests, implementation ownership and the member's AI usage log at

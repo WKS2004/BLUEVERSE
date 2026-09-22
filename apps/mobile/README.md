@@ -1,11 +1,15 @@
 # BLUEVERSE Mobile
 
-The mobile client is a Flutter/Dart application. The checked-in app includes
-the shared `/login` Auth session-management workflow: server-issued device
+The mobile client is a Flutter/Dart application and a first-class product
+surface for clients, staff and administrators. The checked-in app includes the
+shared `/login` Auth session-management workflow: server-issued device
 installation credentials, secure-storage-backed login and refresh,
 current-device/everywhere logout and active-session display. Field workflows,
 location/evidence capture and other domain features remain deferred to the v1
-implementation work.
+implementation work. It is not reserved for client-facing experiences; future
+workflows should preserve the same role, permission and API contract on mobile
+while using mobile strengths such as quick actions, location, camera and
+notifications where they genuinely help.
 
 ## Commands
 
@@ -20,7 +24,8 @@ flutter run
 
 The Flutter project includes generated platform folders for Android, iOS,
 Linux, macOS, Windows and web. Platform-specific release configuration should
-be added only when that target is part of the delivery scope.
+be added only when that target is part of the delivery scope; it must not be
+used to exclude a product role from the mobile client.
 
 ## API boundary
 

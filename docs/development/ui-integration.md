@@ -10,6 +10,20 @@ The machine-readable source of truth is
 validated by `scripts/validation/validate_ui_integrations.py` and by the
 `UI Integration Contract` GitHub Actions workflow.
 
+## Cross-platform product scope
+
+React Web and Flutter Mobile are both first-class surfaces for clients, staff
+and administrators. Product capabilities are cross-platform by default; the
+web/mobile distinction describes interaction context, not who is allowed to
+use a capability. React may emphasize wider browser workspaces and Flutter may
+emphasize quick mobile or field interaction, while both preserve the same
+workflow intent, role → permission behavior and public API contract.
+
+The user-facing quality bar is defined in
+[`../project/ui-experience-principles.md`](../project/ui-experience-principles.md).
+Interfaces should feel approachable and realistic for the coastal domain,
+not like generic technical or analytical dashboards.
+
 For a quick inventory of every current frontend route, gateway mapping,
 public API/Auth endpoint, test-only route and Agentic AI endpoint status, read
 the repository-local [endpoint catalog](../api/endpoint-catalog.md). The UI
@@ -45,10 +59,11 @@ with:
 5. the owning backend service and public `operationId`/contract reference for
    each endpoint.
 
-Both client surfaces are required for a shared workflow. If a capability is
-intentionally platform-specific, record it as a separate workflow with an
-explicit product decision and do not pretend that the other client supports
-it.
+Both client surfaces are required for every product workflow. A capability may
+be platform-specific only when the product decision is explicit, the reason is
+documented in an ADR and the registry does not imply unsupported parity.
+Never infer that administration belongs only to React or that client-facing
+experiences belong only to Flutter.
 
 Endpoint paths use the gateway's `/api/...` namespace. Prefer relative
 `/api/...` URLs. An absolute URL is valid only when its host is explicitly

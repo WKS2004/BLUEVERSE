@@ -23,10 +23,13 @@ Read the root `AGENTS.md`, `.agents/repository-map.md`,
    preserve existing tests, update the AI usage log after validation and review
    the final diff.
 
-For any React/Flutter finding, verify the shared workflow ID, frontend routes,
-public API references, gateway boundary and the
-`scripts/validation/validate_ui_integrations.py` result. Distinguish the
-implemented Auth workflow from reserved domain or AI integrations.
+For any React/Flutter finding, verify the shared workflow ID, both client
+routes for the participating roles, public API references, gateway boundary
+and the `scripts/validation/validate_ui_integrations.py` result. Distinguish
+the implemented Auth workflow from reserved domain or AI integrations. Also
+compare the client scope and user-facing direction with
+`docs/project/ui-experience-principles.md`; report any role-based frontend
+assignment or technical-dashboard default as documentation drift.
 
 For any route or endpoint finding, compare backend controller and mapped
 documentation routes, gateway configuration, client API literals and

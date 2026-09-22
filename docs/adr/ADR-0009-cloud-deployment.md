@@ -8,7 +8,10 @@ This matches the current deployment direction while keeping the application arch
 
 ## Decision
 
-Use Vercel for the React frontend and Render for Dockerized backend services, with managed PostgreSQL/Redis-compatible services where appropriate.
+Use Vercel for the React Web frontend, the selected mobile distribution
+channels for Flutter Mobile, and Render for Dockerized backend services, with
+managed PostgreSQL/Redis-compatible services where appropriate. Both clients
+use the same public API and permission contract.
 
 ## Consequences
 

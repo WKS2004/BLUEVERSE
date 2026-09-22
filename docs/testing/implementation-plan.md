@@ -22,7 +22,10 @@ foundation:
   no repository-root `test/` directory is used for authoritative cases.
 
 The remaining phases describe future client/domain/Agentic AI coverage; the
-current API/Auth foundation evidence is recorded in `test-matrix.md`.
+current API/Auth foundation evidence is recorded in `test-matrix.md`. Future
+domain workflow coverage is cross-platform by default: the same participating
+roles must be exercised through React Web and Flutter Mobile, with test
+differences limited to interaction context and device capabilities.
 
 ## 2. Default framework test locations
 

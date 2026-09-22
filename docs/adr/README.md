@@ -18,5 +18,6 @@ ADRs capture significant architectural decisions and their rationale.
 12. `ADR-0012-multi-account-device-sessions.md`
 13. `ADR-0013-auth-token-lifecycle.md`
 14. `ADR-0014-active-session-archive.md`
+15. `ADR-0015-cross-platform-role-coverage-and-ui-experience.md`
 
 Some decisions remain **Proposed / Pending implementation choice** because the foundation does not invent decisions that have not yet been made.

@@ -18,6 +18,11 @@
   [`docs/development/ui-integration.md`](../../docs/development/ui-integration.md)
   and its machine-readable registry. Keep both synchronized with the UI
   workflow subset of actual React, Flutter, gateway and public API routes.
+- Cross-platform product scope and user-facing UI quality are documented in
+  [`docs/project/ui-experience-principles.md`](../../docs/project/ui-experience-principles.md).
+  Keep agent guidance aligned with its default of both React and Flutter for
+  participating clients, staff and administrators; platform adaptations must
+  not become role ownership rules.
 - The complete quick-reference inventory is
   [`docs/api/endpoint-catalog.md`](../../docs/api/endpoint-catalog.md). Update
   its [JSON source](../../docs/api/endpoint-catalog.json) and regenerate the

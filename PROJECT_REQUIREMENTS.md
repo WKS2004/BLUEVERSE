@@ -122,34 +122,60 @@ Primary focus:
 - observations
 - fisheries/coastal workflows
 
-## 6. Cross-platform responsibility
+## 6. Cross-platform product responsibility
 
-### React
+React Web and Flutter Mobile are both first-class BLUEVERSE client surfaces.
+Both platforms must be able to support the product roles that use a workflow:
 
-Primarily supports:
+- clients, tourists and other public users;
+- staff and coastal operations teams; and
+- administrators and authorized reviewers.
 
-- administration
-- staff/operations
-- dashboards
-- reporting
-- data management
-- AI monitoring
-- approval workflows
+No role is assigned permanently to only one frontend. The same server-owned
+workflow, permission model and public API contract apply regardless of whether
+the user chooses the web app or the mobile app. A workflow intended for a role
+is planned for both clients by default, with an explicit product decision and
+ADR required for a genuinely platform-specific exception.
 
-### Flutter
+The platforms may optimize the same workflow for their strengths without
+creating separate responsibilities:
 
-Primarily supports:
+- React Web can provide wider layouts, keyboard-friendly work areas, richer
+  comparison and review, and browser-based sharing;
+- Flutter Mobile can provide quick actions, field use, location and camera
+  capture, offline-friendly interaction and notifications where appropriate.
 
-- coastal/tourist experiences
-- operational field workflows
-- mobile reporting
-- GPS/location
-- camera/evidence capture
-- notifications where appropriate
+These are interaction and context optimizations, not access restrictions. The
+role → permission model remains authoritative on the server.
 
-The two clients must have genuinely different responsibilities.
+## 7. Product and UI experience direction
 
-## 7. Agentic AI principles
+BLUEVERSE interfaces must feel like a credible, approachable coastal tourism
+and marine-resilience product. They should help people complete real tasks and
+make informed decisions without exposing internal implementation details as the
+main experience.
+
+Every UI should be:
+
+- user-friendly: use plain language, clear next actions, accessible controls,
+  useful loading/empty/error states and forgiving recovery paths;
+- scope-aligned: reflect the coastal, tourism, operations, environmental or
+  livelihood workflow being delivered and the permissions of the signed-in
+  user;
+- realistic: use believable domain content, meaningful labels and complete
+  task flows; clearly label synthetic or demonstration data;
+- calm and task-oriented: avoid a default “technical dashboard” or
+  “analytical control room” aesthetic, dense unexplained metrics, raw payloads,
+  service names and model internals unless the user's job genuinely requires
+  them; and
+- consistent across platforms: preserve the same workflow intent, language,
+  permission behavior and outcome while adapting layout and interaction to
+  web or mobile context.
+
+The detailed UI acceptance principles are maintained in
+[`docs/project/ui-experience-principles.md`](docs/project/ui-experience-principles.md).
+
+## 8. Agentic AI principles
 
 The final Agentic AI workflow must be meaningful and multi-step.
 
@@ -184,7 +210,7 @@ Execution
 
 Do not persist hidden model reasoning. Persist only workflow state and execution information required by the design.
 
-## 8. Marine Biodiversity Intelligence
+## 9. Marine Biodiversity Intelligence
 
 The separate IT3091 ML workstream is planned to become a genuine BLUEVERSE capability.
 
@@ -206,7 +232,7 @@ BLUEVERSE decision support
 
 The exact focal species, preprocessing, pseudo-absence method, feature set, model lineup and evaluation remain data-dependent and are not fixed by this foundation.
 
-## 9. Quality requirements
+## 10. Quality requirements
 
 The final project must demonstrate:
 
@@ -234,7 +260,7 @@ The final project must demonstrate:
 - CI evidence
 - deployment evidence
 
-## 10. Repository engineering requirements
+## 11. Repository engineering requirements
 
 - Git/GitHub from the beginning
 - small, traceable commits
@@ -249,7 +275,7 @@ The final project must demonstrate:
 - UI route/API integration registry and CI evidence remain synchronized with
   React, Flutter, gateway and backend changes
 
-## 11. Versioning
+## 12. Versioning
 
 Use Semantic-Versioning-shaped `x.y.z` numbering with BLUEVERSE-specific phase semantics.
 
@@ -261,7 +287,7 @@ Example:
 
 means major phase 2, integration release 10, bug-fix release 6.
 
-## 12. Definition of foundation completion
+## 13. Definition of foundation completion
 
 v0 is considered structurally ready when:
 

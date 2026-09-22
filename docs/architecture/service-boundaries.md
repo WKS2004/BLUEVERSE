@@ -20,15 +20,20 @@ The frontend's client routes and public API references are linked through the
 shared UI integration registry. Frontend route changes must pass its validator
 alongside the normal web/mobile checks.
 
-## frontend
+## client applications (`apps/web` and `apps/mobile`)
 
 Responsibilities:
 
-- React static application
-- client-side routing
-- presentation and user interaction
+- React Web and Flutter Mobile applications
+- client-side routing and navigation
+- role-aware presentation and user interaction
+- input capture, local state and user-facing validation
+- loading, empty, success, denied and recoverable failure states
+- platform-appropriate layouts and interaction patterns for the same workflow
 
-Not authoritative for permissions or business rules.
+Both clients are product surfaces for clients, staff and administrators. They
+are not authoritative for permissions or business rules; the public API and its
+role → permission model remain authoritative.
 
 ## api (`services/api`)
 

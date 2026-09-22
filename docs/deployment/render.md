@@ -10,7 +10,10 @@ It defines:
 - Dockerized Auth service
 - managed PostgreSQL
 
-The React frontend is intentionally outside this Blueprint because the planned frontend target is Vercel.
+The React Web frontend and Flutter Mobile client are intentionally outside this
+backend Blueprint. React is planned for Vercel, while Flutter is distributed
+through the selected mobile target channels; both consume the deployed public
+API.
 
 Before deploying:
 

@@ -8,6 +8,7 @@ This review compares the checked-in repository with the implementation plan from
 |---|---|---|
 | React web project | Auth workflow present | `apps/web` provides a public `/login` cookie-based Auth surface, refresh recovery, current-device/everywhere logout and active-session display. Future domain workflows remain v1 work. |
 | Flutter mobile project | Auth workflow present | `apps/mobile` provides a `/login` workflow using the public gateway, platform secure storage for installation/session credentials, refresh recovery and session/logout controls. Future domain workflows remain v1 work. |
+| Cross-platform product scope | Decision accepted, domain delivery pending | React Web and Flutter Mobile are both intended for clients, staff and administrators. The current Auth workflow is shared; no later domain workflow is implemented yet. Future workflow work must provide both surfaces by default and follow `docs/project/ui-experience-principles.md`. |
 | ASP.NET Core API | Foundation present | `services/api` provides the .NET 10 public gateway, OpenAPI/Swagger, CORS, JWT validation, health and YARP routing. Domain workflow endpoints remain future work. |
 | Auth service | Session lifecycle implemented | `services/auth` provides registration/login, server-issued installations, PBKDF2 password hashing, 15-minute JWTs, rotating hashed refresh tokens, one/30-day absolute sessions, five-account-per-device and five-session-per-account limits, scoped logout, active-session management with ended-session logs, permission policies, role/user administration, health and bootstrap seeding. |
 | PostgreSQL | Local infrastructure and Auth persistence present | Compose provides DHI PostgreSQL 16 and publishes host port `5432` for pgAdmin4. Auth uses EF Core constraints and checked-in migrations; domain schema remains future work. |
@@ -25,7 +26,7 @@ This review compares the checked-in repository with the implementation plan from
 
 The Project Guidelines require a final integrated workflow that starts in one client, passes through ASP.NET Core, PostgreSQL and Agentic AI, requires review or approval in the other client, and returns an updated status. This is intentionally not a v0 deliverable, but it must be planned as a first-class cross-platform acceptance test.
 
-The final submission also needs four distinct business components for a standard four-person group. Each component must have backend, database, React, Flutter, testing, Git/documentation and a distinct Agentic AI contribution. The current foundation does not claim those components are implemented.
+The final submission also needs four distinct business components for a standard four-person group. Each component must have backend, database, React, Flutter, testing, Git/documentation and a distinct Agentic AI contribution. Each participating role should be able to use the component through both client surfaces unless an explicit ADR records a platform-specific exception. The current foundation does not claim those components are implemented.
 
 ## Foundation acceptance checks
 

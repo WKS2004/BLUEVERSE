@@ -17,6 +17,13 @@
       "mustExclude": ["direct internal-service calls", "client-side authorization replacement"]
     },
     {
+      "id": "cross-platform-role-ui",
+      "task": "Plan a BLUEVERSE workflow for clients, staff and administrators across React Web and Flutter Mobile with a realistic user-facing experience.",
+      "expectedSkills": ["blueverse-client-contract"],
+      "expectedRules": ["architecture", "security", "documentation", "testing", "validation"],
+      "mustExclude": ["assigning administration to React only", "assigning client-facing work to Flutter only", "technical-dashboard default", "direct internal-service access"]
+    },
+    {
       "id": "api-endpoint",
       "task": "Implement an ASP.NET Core endpoint with validation and OpenAPI metadata.",
       "expectedSkills": ["blueverse-backend-service", "dotnet-webapi"],

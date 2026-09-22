@@ -30,6 +30,27 @@ Before changing a part of the repository, an agent must:
 6. report applicable checks, test results and any environment or foundation
    limitation before claiming completion.
 
+## Cross-platform product and UI scope
+
+React Web and Flutter Mobile are co-equal BLUEVERSE product surfaces for
+clients, staff and administrators. New product workflows are cross-platform
+by default: both clients use the same workflow intent, role → permission
+behavior and public API contract. Do not assign administration permanently to
+React or client-facing work permanently to Flutter.
+
+The clients may adapt layout and interaction to their contexts. React may use
+wide browser workspaces, keyboard operation and review patterns; Flutter may
+use quick mobile actions, field interaction, location, camera, offline-aware
+drafts and notifications where they genuinely help. These are experience
+adaptations, not role-based access rules.
+
+For UI work, read
+[`docs/project/ui-experience-principles.md`](../docs/project/ui-experience-principles.md).
+Interfaces should be user-friendly, scope-aligned and realistic for the
+coastal domain; technical or analytical detail is secondary unless the user's
+actual task requires it. A platform-specific workflow requires an explicit
+product decision and ADR.
+
 ## Mandatory endpoint-documentation workflow
 
 For every frontend route, client API target, gateway/YARP/Nginx mapping,
@@ -142,6 +163,7 @@ owned skills remain authoritative.
 | `flutter-*` | Official Flutter architecture, networking, JSON, routing and test guidance |
 | `dotnet-webapi`, `optimizing-ef-core-queries` | ASP.NET Core and EF Core guidance for the checked-in backend services |
 | `run-tests`, `assertion-quality`, `test-anti-patterns`, `test-gap-analysis`, `grade-tests` | Narrow .NET/polyglot test execution and quality analysis; BLUEVERSE testing rules remain binding |
+| `caveman` | Optional response compression; explicit invocation only, with project rules authoritative |
 
 Database-specific external skills are deliberately not loaded by default. The
 registry records verified PostgreSQL, migration and Testcontainers candidates

@@ -11,6 +11,7 @@
 - `development/ui-integration.md` — cross-client route/API contract and CI gate
 - `development/agent-resources.md` — agent routing, skills, provenance and validation
 - `project/` — roadmap, contribution and AI-use documentation
+- `project/ui-experience-principles.md` — cross-platform product and UI direction
 - `ai-contribution/` — one AI usage record per participating GitHub account
 - `security/` — security practices
 - `testing/` — test strategy and acceptance evidence
@@ -26,6 +27,12 @@ internal Auth service, Auth persistence, authorization and session-management
 contract are checked in at `services/api` and `services/auth`. Domain
 workflows and executable Agentic AI workflows remain implementation targets
 unless a page explicitly says the behavior is currently available.
+
+React Web and Flutter Mobile are both intended to serve clients, staff and
+administrators. Platform differences describe interaction strengths rather than
+ownership of a stakeholder group. See
+[`project/ui-experience-principles.md`](project/ui-experience-principles.md)
+for the product-facing UI standard.
 
 For a current-state summary, see
 [`project/foundation-gap-analysis.md`](project/foundation-gap-analysis.md).
