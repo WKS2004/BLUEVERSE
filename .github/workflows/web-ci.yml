@@ -2,9 +2,9 @@ name: React Web CI
 
 on:
   push:
-    branches: ["main", "dev", "features/**", "agentic-ai/**"]
+    branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
   pull_request:
-    branches: ["main", "dev", "features/**", "agentic-ai/**"]
+    branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
 
 permissions:
   contents: read
@@ -24,7 +24,12 @@ jobs:
           if [[ "$target" == "main" || "$target" == "dev" ]] || git diff --name-only "$range" | grep -Eq '^(apps/web/|docs/contracts/ui-integration\.json$|docs/development/ui-integration\.md$|scripts/validation/|\.github/workflows/(web-ci|ui-integration)\.yml$)'; then echo affected=true >> "$GITHUB_OUTPUT"; else echo affected=false >> "$GITHUB_OUTPUT"; fi
       - name: Not affected
         if: steps.scope.outputs.affected != 'true'
-        run: echo "Not affected - no React web changes."
+        run: |
+          echo "Not affected - no React web changes."
+          {
+            echo "## React Web CI: Not affected"
+            echo "No React web paths changed; lint/build was not required."
+          } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/setup-node@v5
         if: steps.scope.outputs.affected == 'true'
         with: { node-version: 24 }

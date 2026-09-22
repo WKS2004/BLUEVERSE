@@ -2,9 +2,10 @@ name: Sync GitHub Configuration
 
 on:
   push:
-    branches-ignore: ["github-sync/**"]
+    branches-ignore: ["github-sync/**", "docker-workflow-changes/**", "dev-backup-mistaken-commits/**"]
     paths:
       - ".github/**"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -17,6 +18,7 @@ concurrency:
 jobs:
   create-sync-pull-requests:
     name: Create configuration sync pull requests
+    if: ${{ github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'Sync .github from ') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout all branch history
@@ -36,12 +38,20 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git fetch --all --prune
+          failures=()
+
+          return_to_source() {
+            git switch --detach "origin/$SOURCE_BRANCH" >/dev/null
+          }
 
           while IFS= read -r target; do
             [ -n "$target" ] || continue
             [ "$target" = "$SOURCE_BRANCH" ] && continue
-            [ "$target" = "main" ] && continue
-            [ "$target" = "dev-backup" ] && continue
+            case "$target" in
+              HEAD|main|dev-backup|github-sync/*|docker-workflow-changes/*|dev-backup-mistaken-commits/*)
+                continue
+                ;;
+            esac
 
             safe_target=$(printf '%s' "$target" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9._-]/-/g')
             sync_branch="github-sync/${safe_target}/${RUN_ID}"
@@ -49,23 +59,45 @@ jobs:
 
             git checkout "origin/$SOURCE_BRANCH" -- .github
             if git diff --quiet -- .github; then
-              git switch --detach "origin/$SOURCE_BRANCH" >/dev/null
+              return_to_source
               git branch --delete --force "$sync_branch" >/dev/null
               continue
             fi
 
             git add .github
             git commit -m "Sync .github from ${SOURCE_BRANCH}"
-            git push origin "HEAD:refs/heads/${sync_branch}"
+            if ! git push origin "HEAD:refs/heads/${sync_branch}"; then
+              failures+=("${target}: could not push ${sync_branch}")
+              return_to_source
+              git branch --delete --force "$sync_branch" >/dev/null
+              continue
+            fi
 
-            pr_url=$(gh pr create \
-              --base "$target" \
-              --head "$sync_branch" \
-              --title "Sync .github from ${SOURCE_BRANCH}" \
-              --body "Automated synchronization of the .github folder from `${SOURCE_BRANCH}`. Application and service files are not changed.")
+            pr_url=$(gh pr list --base "$target" --head "$sync_branch" --state open --json url --jq '.[0].url // ""')
+            if [[ -z "$pr_url" ]]; then
+              if ! pr_url=$(gh pr create \
+                --base "$target" \
+                --head "$sync_branch" \
+                --title "Sync .github from ${SOURCE_BRANCH}" \
+                --body "Automated synchronization of the .github folder from `${SOURCE_BRANCH}`. Application and service files are not changed."); then
+                failures+=("${target}: could not create a pull request")
+                return_to_source
+                git branch --delete --force "$sync_branch" >/dev/null
+                continue
+              fi
+            fi
 
-            gh pr merge "$pr_url" --auto --squash --delete-branch
+            if ! gh pr merge "$pr_url" --auto --squash --delete-branch; then
+              failures+=("${target}: pull request created but could not be queued for automatic merge")
+            fi
 
-            git switch --detach "origin/$SOURCE_BRANCH" >/dev/null
+            return_to_source
             git branch --delete --force "$sync_branch" >/dev/null
           done < <(git for-each-ref --format='%(refname:strip=3)' 'refs/remotes/origin/*' | sort -u)
+
+          if ((${#failures[@]} > 0)); then
+            echo "::group::GitHub configuration synchronization failures"
+            printf '%s\n' "${failures[@]}"
+            echo "::endgroup::"
+            exit 1
+          fi

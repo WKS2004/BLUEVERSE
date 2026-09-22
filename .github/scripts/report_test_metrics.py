@@ -85,6 +85,20 @@ def parse_seconds(value: str | None) -> float:
         return hours * 3600 + minutes * 60 + seconds
 
 
+def first_error_line(value: object) -> str:
+    """Return a compact, safe first-line diagnostic from a Flutter error value."""
+    if value is None:
+        return ""
+    if isinstance(value, list):
+        text = "\n".join(str(item) for item in value)
+    elif isinstance(value, dict):
+        text = json.dumps(value, sort_keys=True)
+    else:
+        text = str(value)
+    lines = text.splitlines()
+    return lines[0][:240] if lines else ""
+
+
 def failure_detail(element: ET.Element) -> str:
     for child in element.iter():
         if local_name(child.tag) in {"Message", "failure", "error", "ErrorInfo"}:
@@ -211,16 +225,12 @@ def parse_flutter(path: Path) -> Metrics:
                 elif result in {"failure", "failed"}:
                     metrics.failed += 1
                     name = str(params.get("name") or started.get(test_id) or test_id)
-                    error_text = str(params.get("error") or "")
-                    detail_lines = error_text.splitlines()
-                    detail = detail_lines[0][:240] if detail_lines else ""
+                    detail = first_error_line(params.get("error"))
                     metrics.failed_cases.append(f"{name} — {detail}" if detail else name)
                 else:
                     metrics.errors += 1
                     name = str(params.get("name") or started.get(test_id) or test_id)
-                    error_text = str(params.get("error") or "")
-                    detail_lines = error_text.splitlines()
-                    detail = detail_lines[0][:240] if detail_lines else ""
+                    detail = first_error_line(params.get("error"))
                     metrics.failed_cases.append(f"{name} — {detail}" if detail else name)
     metrics.total = max(metrics.total, len(started))
     return metrics

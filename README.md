@@ -178,8 +178,9 @@ All backend requests use the gateway's `/api/...` namespace. Auth and future bac
 
 ## CI
 
-GitHub Actions contains source build/test workflows and independent Docker
-build/integration workflows:
+GitHub Actions contains separate source, test, contract, repository-policy
+and Docker workflows so each check remains visible on a commit or pull
+request:
 
 - `repository-ci.yml` checks required repository structure.
 - `ui-integration.yml` validates the shared React/Flutter route and public
@@ -195,6 +196,13 @@ build/integration workflows:
 - `agentic-ai-tests.yml` runs all Agentic AI test cases in one workflow, with
   overall and per-service metrics.
 
+The source and test workflows always check `main` and `dev`. On active work
+branch families (`features/**`, `agentic-ai/**`, `claude/**`, `codex/**`,
+`antigravity/**`, `gemini/**`, `maintenance/**` and `bug-fixes/**`), each
+workflow performs its own changed-path decision and reports `Not affected`
+when its suite does not apply. This keeps unrelated checks visible without
+running unrelated suites.
+
 Test cases stay in their owning package's default locations: React under
 `apps/web/src` (and optional `apps/web/e2e`), Flutter under `apps/mobile/test`
 and `apps/mobile/integration_test`, backend services under
@@ -206,12 +214,18 @@ tree for authoritative cases.
 - `docker-backend-build.yml` builds the public API and discovered ASP.NET services one by one.
 - `docker-stack-health.yml` waits for both build workflows, starts the root Compose file and checks frontend/API/service health endpoints.
 
-The web and backend build workflows run on `main` and `dev` pushes and pull requests. `main` always builds. On `dev`, they build only when their relevant application, service, Docker infrastructure, lockfile synchronization, workflow or build-context paths change. The stack-health workflow waits for both builds for the same commit, synchronizes the web lockfile again on its separate runner, and then runs the Compose health checks. Backend build failures are collected across all services so later services are still checked before the workflow fails.
+The web and backend build workflows run on `main` and `dev` pushes and pull requests. `main` always builds. On `dev`, they build only when their relevant application, service, Docker infrastructure, lockfile synchronization, workflow or build-context paths change. The stack-health workflow waits for both builds for the same commit and runs only for pull requests targeting `main`; it synchronizes the web lockfile again on its separate runner before running the Compose health checks. Backend build failures are collected across all services so later services are still checked before the workflow fails.
 
 The Docker backend workflow builds `services/api` first and then discovers and
 builds the other ASP.NET service directories, including the internal Auth
 service. The backend test workflow fails if a service source project has no
 discovered service-local test project.
+
+`github-config-sync.yml` copies only `.github/**` into focused pull requests
+for every branch except `main` and `dev-backup`, then queues automatic squash
+merges when repository settings allow GitHub Actions to do so. `branch-policy.yml`
+enforces lowercase approved names, while `dev-backup.yml` preserves mistaken
+backup commits before synchronizing the backup ref to the exact `dev` commit.
 
 See [Docker CI Workflows](docs/development/ci.md) for the complete workflow behavior and service conventions.
 

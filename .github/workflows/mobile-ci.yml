@@ -2,9 +2,9 @@ name: Flutter Mobile CI
 
 on:
   push:
-    branches: ["main", "dev", "features/**", "agentic-ai/**"]
+    branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
   pull_request:
-    branches: ["main", "dev", "features/**", "agentic-ai/**"]
+    branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
 
 permissions:
   contents: read
@@ -24,7 +24,12 @@ jobs:
           if [[ "$target" == "main" || "$target" == "dev" ]] || git diff --name-only "$range" | grep -Eq '^(apps/mobile/|docs/contracts/ui-integration\.json$|docs/development/ui-integration\.md$|scripts/validation/|\.github/workflows/(mobile-ci|ui-integration)\.yml$)'; then echo affected=true >> "$GITHUB_OUTPUT"; else echo affected=false >> "$GITHUB_OUTPUT"; fi
       - name: Not affected
         if: steps.scope.outputs.affected != 'true'
-        run: echo "Not affected - no Flutter mobile changes."
+        run: |
+          echo "Not affected - no Flutter mobile changes."
+          {
+            echo "## Flutter Mobile CI: Not affected"
+            echo "No Flutter mobile paths changed; dependency resolution/analysis was not required."
+          } >> "$GITHUB_STEP_SUMMARY"
       - uses: subosito/flutter-action@v2
         if: steps.scope.outputs.affected == 'true'
         with: { channel: stable, cache: true }

@@ -16,8 +16,8 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const branch = context.payload.ref;
-            const allowed = branch === 'main' ||
+            const branch = String(context.payload.ref || '');
+            const matchesPolicy = branch === 'main' ||
               branch === 'dev' ||
               branch === 'dev-backup' ||
               branch === 'default-template' ||
@@ -25,13 +25,14 @@ jobs:
               /^agentic-ai\/.+$/.test(branch) ||
               /^dev-backup-mistaken-commits\/[^/]+\/.+$/.test(branch) ||
               /^(claude|codex|antigravity|gemini|maintenance|bug-fixes|github-sync|docker-workflow-changes)\/.+$/.test(branch);
+            const isLowercase = branch === branch.toLowerCase();
 
-            if (allowed && branch === branch.toLowerCase()) {
+            if (matchesPolicy && isLowercase) {
               core.info(`Branch '${branch}' follows the repository naming policy.`);
               return;
             }
 
-            core.warning(`Branch '${branch}' is invalid. Branches must be lowercase and match: main, dev, dev-backup, default-template, features/**, agentic-ai/**, claude/**, codex/**, antigravity/**, gemini/**, maintenance/**, bug-fixes/**, github-sync/**, docker-workflow-changes/**, or dev-backup-mistaken-commits/**.`);
+            core.warning(`Branch '${branch}' is invalid. It must already be lowercase and match an approved repository branch pattern. The policy deletes it instead of renaming it so the original creator keeps clear ownership of valid branches.`);
             await github.rest.git.deleteRef({
               owner: context.repo.owner,
               repo: context.repo.repo,

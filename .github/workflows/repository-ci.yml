@@ -2,9 +2,9 @@ name: Repository Checks
 
 on:
   push:
-    branches: ["main", "dev", "features/**", "agentic-ai/**"]
+    branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
   pull_request:
-    branches: ["main", "dev", "features/**", "agentic-ai/**"]
+    branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
 
 permissions:
   contents: read
@@ -24,7 +24,12 @@ jobs:
           if [[ "$target" == "main" || "$target" == "dev" ]] || git diff --name-only "$range" | grep -Eq '^(\.github/|\.agents/|docs/|[^/]+$)'; then echo affected=true >> "$GITHUB_OUTPUT"; else echo affected=false >> "$GITHUB_OUTPUT"; fi
       - name: Not affected
         if: steps.scope.outputs.affected != 'true'
-        run: echo "Not affected - no repository foundation changes."
+        run: |
+          echo "Not affected - no repository foundation changes."
+          {
+            echo "## Repository Checks: Not affected"
+            echo "No repository foundation paths changed; foundation validation was not required."
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Check required foundation files
         if: steps.scope.outputs.affected == 'true'
         shell: bash

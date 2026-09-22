@@ -1,64 +1,112 @@
 name: Bug report
-description: Report a reproducible BLUEVERSE defect.
+description: Report a reproducible defect in BLUEVERSE.
 title: "[Bug] "
-labels: ["bug"]
+labels:
+  - bug
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Please search existing issues first. Do not include passwords, tokens, API keys, connection strings, private user data, or unredacted production logs.
+
   - type: textarea
     id: summary
     attributes:
       label: Summary
-      description: What went wrong?
+      description: State the observable defect in one or two sentences.
+      placeholder: What happened, and who or what was affected?
     validations:
       required: true
+
   - type: dropdown
     id: component
     attributes:
       label: Affected area
       options:
-        - API/service
-        - Authentication
+        - Public API or backend service
+        - Authentication and authorization
         - React web app
         - Flutter mobile app
-        - Database
+        - PostgreSQL or EF Core
         - Agentic AI workflow
-        - Infrastructure/deployment
+        - Docker, gateway or infrastructure
+        - GitHub Actions or repository automation
         - Documentation
         - Unknown
     validations:
       required: true
+
+  - type: dropdown
+    id: branch
+    attributes:
+      label: Branch context
+      options:
+        - main
+        - dev
+        - features/<feature-name>
+        - agentic-ai/<name>
+        - maintenance/<name>
+        - bug-fixes/<name>
+        - Other (describe below)
+    validations:
+      required: true
+
+  - type: input
+    id: commit
+    attributes:
+      label: Commit or pull request
+      description: Provide the short commit SHA or PR number/URL where the issue can be reproduced.
+      placeholder: e.g. abc1234 or #42
+    validations:
+      required: true
+
   - type: input
     id: environment
     attributes:
       label: Environment
-      description: Include dev, main, local Docker, browser/device, OS, and relevant version details.
+      description: Include local Docker or GitHub Actions, OS, browser/device, runtime versions and relevant configuration names (never secret values).
+      placeholder: e.g. GitHub Actions, Ubuntu, Flutter stable, Chrome 140
     validations:
       required: true
+
   - type: textarea
     id: reproduction
     attributes:
       label: Reproduction steps
+      description: Give the smallest complete set of steps, commands or test IDs that reproduces the issue.
     validations:
       required: true
+
   - type: textarea
     id: expected
     attributes:
       label: Expected behavior
     validations:
       required: true
+
   - type: textarea
     id: actual
     attributes:
       label: Actual behavior
     validations:
       required: true
+
   - type: textarea
-    id: route_api
+    id: contract
     attributes:
-      label: Route/API connection
-      description: If applicable, include the React or Flutter route, shared workflow ID, public /api/... endpoint, owning service and whether the failure is a wrong route, wrong endpoint or gateway/service failure.
+      label: Route, API or workflow contract
+      description: If applicable, include the shared workflow ID, React route, Flutter route, public /api/... endpoint, owning service and whether the failure is in the client, API contract, gateway or service.
+      placeholder: Write Not applicable when no client or API boundary is involved.
+
   - type: textarea
     id: diagnostics
     attributes:
-      label: Logs or screenshots
-      description: Paste sanitized logs or add screenshots. Never include passwords, tokens, keys, or private user data.
+      label: Logs, test IDs or screenshots
+      description: Paste sanitized logs, the failed workflow/check name, test IDs and screenshots. Remove secrets and personal data.
       render: shell
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context
+      description: Include related changes, attempted workarounds or links to relevant documentation.

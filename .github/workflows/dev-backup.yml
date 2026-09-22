@@ -53,14 +53,19 @@ jobs:
             rescue_branch="dev-backup-mistaken-commits/${actor}/${timestamp}"
 
             git switch --create "$rescue_branch" "origin/dev"
-            git merge --no-ff --no-edit "origin/dev-backup" || {
+            if git merge --no-ff --no-edit -X theirs "origin/dev-backup"; then
+              echo "Preserved all unwanted commits and preferred their content where a merge conflict was possible."
+            else
               git merge --abort || true
-              echo "Merge conflict while preserving unwanted dev-backup commits; stopping before synchronization."
-              exit 1
-            }
+              echo "Merge conflict while preserving unwanted dev-backup commits; recording both histories with an explicit merge commit."
+              git merge --no-ff --no-edit -s ours "origin/dev-backup"
+            fi
             git push origin "HEAD:refs/heads/${rescue_branch}"
             echo "Preserved all unwanted commits in merge commit on ${rescue_branch}."
           fi
 
-          git push --force origin "${dev_sha}:refs/heads/dev-backup"
+          if ! git push --force-with-lease="refs/heads/dev-backup:${backup_sha}" origin "${dev_sha}:refs/heads/dev-backup"; then
+            echo "::error::Could not synchronize dev-backup. The branch may have changed during this run, or a repository rule may still block force updates. Allow this workflow's token to update dev-backup or remove the force-update restriction from that branch rule, then rerun."
+            exit 1
+          fi
           echo "dev-backup synchronized with dev at ${dev_sha}."

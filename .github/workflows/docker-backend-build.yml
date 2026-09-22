@@ -77,7 +77,12 @@ jobs:
 
       - name: Skip backend image builds
         if: steps.scope.outputs.build != 'true'
-        run: echo "Skipping backend image builds because no relevant dev-branch changes were detected."
+        run: |
+          echo "Not affected - no relevant dev-branch changes were detected."
+          {
+            echo "## Docker Backend Builds: Not affected"
+            echo "No relevant dev-branch backend/Docker paths changed; image builds were skipped."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Log in to Docker Hardened Images registry
         if: steps.scope.outputs.build == 'true'

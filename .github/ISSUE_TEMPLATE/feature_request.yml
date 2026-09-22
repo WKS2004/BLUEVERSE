@@ -1,40 +1,86 @@
 name: Feature request
-description: Propose a BLUEVERSE feature or improvement.
+description: Propose a BLUEVERSE capability or improvement.
 title: "[Feature] "
-labels: ["enhancement"]
+labels:
+  - enhancement
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the user or operational outcome. Avoid putting secrets, private data or hidden model reasoning in an issue.
+
   - type: textarea
     id: problem
     attributes:
-      label: Problem
-      description: What stakeholder problem does this solve?
+      label: Problem and users
+      description: What problem exists, who experiences it and why does it matter?
     validations:
       required: true
+
   - type: textarea
     id: proposal
     attributes:
       label: Proposed solution
+      description: Explain the desired behavior from the user's or operator's perspective.
     validations:
       required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Primary scope
+      options:
+        - Public API or backend service
+        - Authentication and authorization
+        - PostgreSQL or EF Core
+        - React web app
+        - Flutter mobile app
+        - Agentic AI workflow
+        - Docker, gateway or infrastructure
+        - GitHub Actions or repository automation
+        - Documentation
+        - Cross-platform
+    validations:
+      required: true
+
   - type: textarea
     id: architecture
     attributes:
-      label: Architecture impact
-      description: Mention API, database, React, Flutter, AI or infrastructure impact.
+      label: Architecture and data impact
+      description: Describe affected services, client boundaries, database changes, authorization rules, gateway routes, Docker components or AI safety controls. Mention an ADR when this is a material architectural decision.
+
+  - type: textarea
+    id: contract
+    attributes:
+      label: UI, API and endpoint-catalog impact
+      description: For client or API work, provide the shared workflow ID, React route, Flutter route, public /api/... endpoint references, owning service and required endpoint-catalog changes. Write Not applicable when no contract boundary changes.
+    validations:
+      required: true
+
   - type: textarea
     id: acceptance_criteria
     attributes:
       label: Acceptance criteria
-      description: List the observable conditions that must be true for this feature to be complete.
+      description: List observable, testable conditions that must be true for the feature to be complete.
     validations:
       required: true
+
   - type: textarea
-    id: ui_integration
+    id: test_plan
     attributes:
-      label: UI and API integration impact
-      description: If React or Flutter is affected, provide the shared workflow ID, each client route, public /api/... endpoint references, owning service and expected CI/test evidence. Write Not applicable when no UI boundary changes.
+      label: Test and validation plan
+      description: Identify normal, invalid, boundary, dependency-failure, authorization and cross-client cases, plus the workflow or local command that should prove them.
     validations:
       required: true
+
+  - type: textarea
+    id: documentation
+    attributes:
+      label: Documentation and operational impact
+      description: List README, setup, API catalog, UI contract, CI, deployment or runbook updates that should accompany the change. Write Not applicable when none are needed.
+    validations:
+      required: true
+
   - type: dropdown
     id: priority
     attributes:

@@ -1,204 +1,195 @@
 # CI Workflows
 
-BLUEVERSE uses repository/source validation workflows, dedicated client,
-backend and Agentic AI test workflows, and three workflows for the Dockerized
-web application and backend services.
+BLUEVERSE keeps repository, client, backend, Agentic AI, Docker and cross-client
+contract checks as separate GitHub Actions workflows. Separate workflows keep
+the check list readable on a commit or pull request while their scope logic
+avoids running unrelated work on active development branches.
 
-## DHI registry credentials
+## Permissions and secrets
 
-The selected Docker Hardened Images are pulled from `dhi.io`, which requires
-registry authentication. Configure these GitHub repository secrets before
-expecting Docker workflows to pass:
+Most validation workflows use `contents: read`. The workflows that mutate
+repository state are intentionally limited to the permissions they need:
+
+- `branch-policy.yml` can delete a newly created invalid branch;
+- `dev-backup.yml` can create the backup/rescue refs and update `dev-backup`;
+- `github-config-sync.yml` can create sync branches and pull requests.
+
+Configure the following repository secrets before expecting Docker checks to
+pass:
 
 | Secret | Value |
 |---|---|
 | `DHI_USERNAME` | Docker ID for a PAT, or the Docker organization name for an OAT. |
-| `DHI_TOKEN` | A Docker personal access token or organization access token with read/pull access to the required DHI repositories. |
+| `DHI_TOKEN` | A Docker personal or organization access token with read/pull access to the selected DHI images. |
 
-The web, backend and Compose health workflows log in to `dhi.io` immediately
-before any DHI image is pulled. Tokens are supplied only through GitHub Secrets
-and are never written to repository files or workflow logs. Pull requests from
-forks do not receive repository secrets; their Docker jobs therefore require a
-trusted branch or an approved credential strategy before they can pull DHI
-images.
+Docker credentials are supplied only to the Docker jobs. Pull requests from
+forks do not receive repository secrets, so those runs require a trusted
+branch or another approved credential strategy before DHI images can be
+pulled.
 
-## Source and repository workflows
+## Workflow inventory
 
-| Workflow | Scope | Current behavior |
+| Workflow | Trigger/scope | Purpose |
 |---|---|---|
-| `repository-ci.yml` | Repository foundation | Checks required root files/directories, validates `.agents` resources and CI helper scripts, and checks registry metadata, overlays, routing fixtures and links. |
-| `ui-integration.yml` | `apps/web/**`, `apps/mobile/**`, `services/**`, API/architecture contract docs, `infrastructure/docker/**`, `compose.yaml`, all workflows and the UI contract | Validates the shared React/Flutter workflow registry, rejects wrong frontend routes and unregistered/direct backend targets, and tests the validator. |
-| `backend-ci.yml` | `services/**` | Restores/builds discovered ASP.NET projects when present. Backend tests run in the dedicated backend test workflow. |
-| `web-ci.yml` | `apps/web/**` | Runs `npm install`, ESLint and the Vite build. |
-| `mobile-ci.yml` | `apps/mobile/**` | Runs Flutter dependency resolution and analysis. Mobile tests run in the dedicated mobile test workflow. |
-| `web-tests.yml` | `apps/web/src/**`, optional `apps/web/e2e/**` | Runs all React web test cases and reports overall metrics. |
-| `mobile-tests.yml` | `apps/mobile/test/**`, optional `apps/mobile/integration_test/**` | Runs all Flutter mobile test cases and reports test metrics. |
-| `backend-tests.yml` | `services/**` | Runs every discovered backend microservice test project from service-local test directories in one workflow, with overall and per-service metrics. |
-| `agentic-ai-tests.yml` | `services/ai/**`, `services/ai-agents/**`, `services/agents/**` | Runs only for pushes and pull requests targeting `main`, `dev` or `agentic-ai/**`; runs every discovered Agentic AI test suite from each agent’s local `tests/` directory in one workflow, with overall and per-service metrics. |
+| `repository-ci.yml` | `main`, `dev` always; active work families when repository paths change | Checks foundation files, `.agents` resources and CI helper tests. |
+| `ui-integration.yml` | `main`, `dev` always; active work families when UI/API contract paths change | Validates the UI registry, endpoint catalog and validator tests. |
+| `backend-ci.yml` | Same source-branch policy; service paths | Restores and builds discovered ASP.NET projects. |
+| `web-ci.yml` | Same source-branch policy; web/contract paths | Validates the UI contract, lints and builds React. |
+| `mobile-ci.yml` | Same source-branch policy; mobile/contract paths | Validates the UI contract and analyzes Flutter. |
+| `web-tests.yml` | Same source-branch policy; web test paths | Runs React tests and reports JUnit metrics. |
+| `mobile-tests.yml` | Same source-branch policy; mobile test paths | Runs Flutter unit/widget and integration machine tests. |
+| `backend-tests.yml` | Same source-branch policy; service paths | Runs every discovered backend test project with aggregate and per-service evidence. |
+| `agentic-ai-tests.yml` | Same source-branch policy; Agentic AI paths | Runs every discovered AI test suite with aggregate and per-service evidence. |
+| `branch-policy.yml` | Branch creation | Enforces lowercase approved branch names and deletes invalid branches. |
+| `dev-backup.yml` | Pushes to `dev` or `dev-backup` | Creates and synchronizes the exact `dev-backup` ref while preserving mistaken history. |
+| `github-config-sync.yml` | `.github/**` pushes | Creates focused `.github`-only pull requests for other branches and queues auto-merge. |
 
-### UI integration contract
+The supported active work families are `features/**`, `agentic-ai/**`,
+`claude/**`, `codex/**`, `antigravity/**`, `gemini/**`, `maintenance/**` and
+`bug-fixes/**`. Automation branches such as `github-sync/**`,
+`docker-workflow-changes/**` and `dev-backup-mistaken-commits/**` are excluded
+from normal source/test workflow triggers.
 
-The source of truth for cross-client UI integration is
-`docs/contracts/ui-integration.json`. It maps one workflow ID to its React
-route, Flutter route and public `/api/...` endpoint references. The clients do
-not call one another or internal service hostnames; the shared workflow ID is
-the cross-platform connection and the public API is the only backend boundary.
+## Main, dev and path-aware behavior
 
-`ui-integration.yml` runs for client, service, gateway, registry and validator
-changes. `web-ci.yml` and `mobile-ci.yml` also run the validator whenever their
-client changes. The gate rejects:
+For source and test workflows, `main` and `dev` do not use path filters: their
+jobs always perform the corresponding check. On an active work branch, the
+workflow checks the changed-file range for the push or pull request. When no
+relevant path changed, the workflow remains successful and writes a visible
+`Not affected` step and job summary. This preserves a predictable check list
+without spending runner time on unrelated clients or services.
 
-- a frontend route used by React or Flutter but absent from the registry;
-- a literal `/api/...` call that is not a registered endpoint reference;
-- a dynamic or otherwise unverifiable network target;
-- a call to Auth, Agentic AI, PostgreSQL, another internal service or a Docker
-  hostname or an absolute host not allowlisted by the public API contract; and
-- `/api/v1`-style versioned paths.
+The scope decision is made after checkout rather than only in the event
+trigger. That is important for the branch policy above: a workflow still
+appears on the commit and can explain why it did not run its expensive suite.
+Manual dispatch runs the selected workflow regardless of path scope.
 
-The current foundation registry contains the generated shared home surface and
-the implemented `auth-session-management` workflow. The Auth workflow maps
-both client `/login` routes to the public `/api/auth/login`, `/api/auth/refresh`,
-`/api/auth/me`, `/api/auth/sessions`, `/api/auth/logout` and
-`/api/auth/logout-all-devices` references. Future client workflows must add
-their public API contract, both client surfaces and tests in the same change.
-The static gate complements the runtime API/Auth gateway and service tests.
+## UI and API integration contract
 
-Run the same checks locally from the repository root:
+`docs/contracts/ui-integration.json` is the source of truth for shared client
+workflows. It maps one workflow ID to its React route, Flutter route and public
+`/api/...` endpoint references. `docs/api/endpoint-catalog.json` and its
+generated Markdown view are the source of truth for the complete route/API
+catalog.
+
+`ui-integration.yml` runs the endpoint-catalog validator, the React/Flutter
+validator and its dependency-free tests. The client workflows run the same UI
+validator for their affected client paths. The checks reject:
+
+- a frontend route absent from the UI registry;
+- an unregistered literal `/api/...` request;
+- dynamic or otherwise unverifiable network targets;
+- client calls to Auth, Agentic AI, PostgreSQL, another internal service or a
+  Docker hostname; and
+- `/api/v1`-style path versioning.
+
+For any route, gateway, service or client contract change, update both JSON
+sources and regenerate the endpoint-catalog Markdown in the same change:
 
 ```bash
+python .agents/scripts/validate_endpoint_catalog.py --write-markdown
+python .agents/scripts/validate_endpoint_catalog.py
 python scripts/validation/validate_ui_integrations.py
-python -m unittest discover -s scripts/validation/tests -p "test_*.py"
 ```
 
-The general source and repository workflows also run for `features/**` and
-`agentic-ai/**` branches when their existing path filters match. The Agentic
-AI test workflow is restricted to `main`, `dev` and `agentic-ai/**` pushes or
-pull requests. Docker image workflows remain limited to `main` and `dev`. The
-Agentic AI test workflow reports zero tests while its service
-implementations are not yet present. The backend test workflow runs every
-discovered service-local test project and fails when a service source project
-has no matching test project or when any discovered suite fails.
+## Test discovery, metrics and artifacts
 
-### Agent-resource validation
+Authoritative tests stay beside their owning implementation:
 
-`repository-ci.yml` treats `.agents/`, `docs/`, root configuration and other
-foundation paths as repository changes. It runs the dependency-free
-`.agents/scripts/validate_agent_resources.py` validator, which checks:
+- React: `apps/web/src` and optional `apps/web/e2e`;
+- Flutter: `apps/mobile/test` and `apps/mobile/integration_test`;
+- backend: service-local test projects under `services/<service>`; and
+- Agentic AI: each service-local `tests/` directory under
+  `services/ai`, `services/ai-agents` or `services/agents`.
 
-- required root and `.agents` files;
-- skill names, descriptions, frontmatter and placeholders;
-- registry status, local paths, pinned imported revisions and compatibility
-  metadata;
-- third-party notices, portable-skill overlays and routing evaluation cases;
-- relative Markdown links, secret-like assignments and generated/cache paths.
+Each test workflow preserves the runner exit code, prints an aggregate metrics
+row, appends a summary table, uploads console/result artifacts and prints a
+final `FAILED TEST CASES` list. Backend and Agentic AI workflows also retain
+per-service rows and continue through discovered suites before failing the
+workflow. Missing backend tests for a service source project are treated as a
+failure; an entirely empty foundation suite is reported as zero tests until
+that implementation exists.
 
-Run the same gate locally from the repository root:
+`.github/scripts/report_test_metrics.py` parses JUnit, TRX and Flutter machine
+results. Flutter output is normalized across the nested current protocol, the
+legacy top-level `test`/`testID` protocol and line-delimited JSON lines that
+contain arrays of events. Empty or missing error fields are safe and do not
+crash the final failure report. Use `--require-results` when a real test suite
+must produce parseable cases.
+
+The helper tests are run by `repository-ci.yml`:
 
 ```bash
-python .agents/scripts/validate_agent_resources.py
-git diff --check
+python -m unittest discover -s .github/scripts/tests -p "test_*.py"
 ```
-
-The optional upstream skill validator requires a YAML dependency and is not a
-CI prerequisite. The foundation verifier is a separate infrastructure check;
-its Docker/runtime results remain environment-dependent even though the API
-and Auth source projects are now checked in.
-
-### Test metrics and result artifacts
-
-Each dedicated test workflow prints a metrics block in the job log and appends
-a table to the GitHub Actions step summary. The table includes total,
-completed, passed, failed, skipped, errors, not-run and duration values. The
-backend and Agentic AI workflows additionally print and summarize one row per
-service while retaining an overall aggregate row. JUnit, TRX, Flutter machine
-logs and console output are uploaded as workflow artifacts for failed or
-successful runs. The React workflow uses Node 24's built-in test runner and
-publishes JUnit XML for its colocated request-boundary cases. Backend VSTest
-output is written as `.trx`; the metrics helper parses both `.trx` and JUnit
-`.xml` files. Flutter machine output may use either the nested current payload
-shape or the legacy top-level `test`/`testID` shape; both are normalized before
-metrics are reported. When backend test projects are discovered, missing or
-empty parseable result files fail the workflow instead of silently reporting
-zero tests. A test is counted as passed or failed
-according to the test runner’s complete assertion result; the metrics do not
-infer correctness from an HTTP status code alone. Test completeness remains a
-test-authoring and review responsibility: new behavior must bring its scenario,
-boundary and extreme-condition tests in the same change.
-
-The repository foundation workflow also runs the dependency-free unit tests for
-`.github/scripts/report_test_metrics.py` so result-file discovery and the
-fail-closed metrics guard remain covered when CI helper code changes.
 
 ## Docker workflows
 
+Docker checks remain separate from source/test checks:
+
 | Workflow | Trigger/dependency | Purpose |
 |---|---|---|
-| `.github/workflows/docker-web-build.yml` | Push or pull request for `main`/`dev` | Synchronizes the React lockfile and builds the web image. |
-| `.github/workflows/docker-backend-build.yml` | Push or pull request for `main`/`dev` | Builds the public API and discovered ASP.NET backend services sequentially. |
-| `.github/workflows/docker-stack-health.yml` | After both build workflows succeed for the same commit | Starts the complete Compose stack and checks the public health endpoints. |
+| `docker-web-build.yml` | Push or PR targeting `main`/`dev` | Synchronizes the React lockfile and builds the web image. |
+| `docker-backend-build.yml` | Push or PR targeting `main`/`dev` | Builds the public API first, then each discovered ASP.NET backend service. |
+| `docker-stack-health.yml` | Successful Docker build workflows for a PR targeting `main` only | Checks the complete Compose network and public health endpoints. |
 
-## Branch and path behavior
+The web and backend image workflows always build for `main`. On `dev`, they
+build only when the relevant application, service, Docker infrastructure,
+lockfile, build context, global SDK or workflow paths changed. Backend image
+errors are collected across discovered services so later services are still
+checked before the workflow fails.
 
-The web and backend Docker workflows run for pushes to `main` and `dev`, and
-for pull requests targeting either branch.
-
-On `main`, both image workflows always build, regardless of which files changed.
-
-On `dev`, the build step runs only when relevant paths change:
-
-- Web: `apps/web/**`, `infrastructure/docker/frontend/**`, `scripts/Unix/bash/sync-web-lockfile.sh`, `scripts/Windows/powershell/sync-web-lockfile.ps1`, `.dockerignore`, or the web workflow itself.
-- Backend: `services/**`, `infrastructure/docker/api/**`, any first-level backend directory under `infrastructure/docker/**` other than `frontend` and `edge-nginx`, `.dockerignore`, `global.json`, or the backend workflow itself.
-
-Backend Docker infrastructure changes trigger validation even when the matching service directory is missing. This allows the workflow to report an invalid Dockerfile/service layout instead of silently skipping it. The scope checks use the changed-file range for a push or pull request; an initial `dev` push is treated as requiring a build.
-
-## Web image workflow
-
-The web workflow first runs `scripts/Unix/bash/sync-web-lockfile.sh`. This uses the DHI Node 24 image to create or update `apps/web/package-lock.json` from `package.json`, so `npm ci` has a synchronized lockfile during the Docker build. The workflow then validates `apps/web`, the frontend Dockerfile and the frontend Nginx configuration, and builds from the repository root as `blueverse-frontend:ci`.
-
-The synchronization script is called directly rather than duplicating its commands in the workflow. If the script is moved or missing, the workflow fails with the expected path so the workflow and local lockfile process cannot silently diverge.
-
-The image is built locally on the GitHub runner. It is not pushed to a container registry.
-
-## Backend image workflow
-
-The backend workflow requires `services/api` and builds it first. It then
-examines each first-level directory under `services`, excluding `api`:
-
-1. Find `Program.cs`.
-2. Check for ASP.NET Core indicators in the program or project files.
-3. Find the service's direct `.csproj` file.
-4. Use `infrastructure/docker/<service-name>/Dockerfile`.
-5. Build the image as `blueverse-<service-name>:ci`.
-
-Non-ASP.NET directories are skipped. The workflow also checks for backend Dockerfiles that have no matching service directory. A missing service directory, missing Dockerfile, missing project file or failed Docker build is recorded as an error, but does not stop the remaining services from building. The workflow prints all collected errors at the end and then fails.
-
-The backend Dockerfile convention is therefore:
+The Docker backend convention is:
 
 ```text
-services/<service-name>/              # ASP.NET service source and .csproj
+services/<service-name>/
 infrastructure/docker/<service-name>/Dockerfile
 ```
 
-The backend Docker workflow builds the checked-in `services/api` first and then
-the discovered `services/auth` service. Missing directories, Dockerfiles,
-project files or failed builds are still collected and reported as errors.
+The workflow identifies ASP.NET services from `Program.cs` and project
+metadata, requires `services/api`, verifies each matching Dockerfile and
+builds the images from the repository root. Non-ASP.NET service directories
+are reported as skipped rather than being silently treated as backend images.
 
-## Compose stack health workflow
+The stack-health workflow is intentionally heavy. It is not a direct push
+workflow: it listens for completed image workflows, proceeds only when both
+matching runs succeeded for the same commit and only when the originating run
+was a pull request targeting `main`. It checks out that exact commit, validates
+`compose.yaml` or `docker-compose.yml`, starts the stack on host port `8080`,
+checks `/health`, `/api/health` and each discovered backend
+`/api/<service-name>/health`, prints Compose diagnostics on failure and always
+tears the stack down.
 
-The stack workflow is not directly triggered by a push or pull request. It listens for completed runs of both image workflows, waits for both matching workflow runs for the same commit to complete successfully, and then checks out that exact commit. Failed or cancelled image workflows prevent the health checks from starting.
+## GitHub configuration synchronization
 
-It searches the repository root for `compose.yaml` or `docker-compose.yml`. If neither file exists, the workflow fails with an explicit error. Because this workflow uses a separate runner from the web image workflow, it runs the same web lockfile synchronization script again before Compose builds the frontend. It then validates and starts the stack with a CI host port of `8080` and waits for the services to start.
+When a push changes `.github/**`, `github-config-sync.yml` copies only that
+folder from the source branch onto each durable development branch except
+`main` and `dev-backup`, using a temporary `github-sync/<target>/<run-id>`
+branch. Its own `github-sync/**`, `docker-workflow-changes/**` and
+`dev-backup-mistaken-commits/**` automation branches are excluded as sources
+and targets because they are temporary or recovery refs. The workflow creates
+a focused pull request, requests automatic squash merging and asks GitHub to
+delete the temporary branch after merge. Existing open PRs for the same
+temporary branch are reused on a retry. Pushes created by the standard sync
+commit title are ignored to prevent a propagation loop.
 
-The following gateway endpoints are checked with retries:
+For this to work, repository settings must permit GitHub Actions to create pull
+requests and queue automatic merges. Required checks or review rules can still
+leave a sync PR open; the workflow reports that condition rather than changing
+branch protections.
 
-```text
-http://127.0.0.1:8080/health
-http://127.0.0.1:8080/api/health
-http://127.0.0.1:8080/api/<service-name>/health
+## Local validation
+
+From the repository root:
+
+```bash
+python .agents/scripts/validate_agent_resources.py
+python .agents/scripts/validate_endpoint_catalog.py
+python scripts/validation/validate_ui_integrations.py
+python -m unittest discover -s .github/scripts/tests -p "test_*.py"
+git diff --check
 ```
 
-The first endpoint checks the frontend. The second checks the public API. Additional endpoints are discovered from ASP.NET services under `services`, excluding `api`.
-
-When a health check fails, the workflow prints Compose status and recent service logs. Compose is always torn down with volumes and orphan containers removed, including after a failed build or health check.
-
-Each GitHub Actions workflow uses its own runner, so the stack workflow reruns lockfile synchronization and rebuilds its Compose images rather than reusing the local image tags from the two build workflows. None of the workflows pushes images to a registry.
+The GitHub runner is authoritative for Actions expression parsing, Docker,
+Flutter and hosted SDK behavior. Local validation should still be run before a
+pull request and its workflow results should be recorded in the PR template.

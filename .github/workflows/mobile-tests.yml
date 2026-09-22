@@ -2,9 +2,9 @@ name: Flutter Mobile Tests
 
 on:
   push:
-    branches: ["main", "dev", "features/**", "agentic-ai/**"]
+    branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
   pull_request:
-    branches: ["main", "dev", "features/**", "agentic-ai/**"]
+    branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
   workflow_dispatch:
 
 permissions:
@@ -15,18 +15,66 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Determine scope
+        id: scope
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE_SHA: ${{ github.event.before }}
+          CURRENT_SHA: ${{ github.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -Eeuo pipefail
+
+          target="$REF_NAME"
+          affected=false
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            affected=true
+          elif [[ "$EVENT_NAME" == "pull_request" ]]; then
+            target="$BASE_REF"
+            diff_range="${BASE_SHA}..${HEAD_SHA}"
+          else
+            diff_range="${BEFORE_SHA}..${CURRENT_SHA}"
+          fi
+
+          if [[ "$target" == "main" || "$target" == "dev" ]]; then
+            affected=true
+          elif [[ "$affected" != true ]] && git diff --name-only "$diff_range" | grep -Eq '^(apps/mobile/|docs/contracts/|docs/api/|docs/architecture/|docs/development/ui-integration\.md$|scripts/validation/|\.github/(scripts/|workflows/(mobile-tests|mobile-ci|ui-integration)\.yml$))'; then
+            affected=true
+          fi
+
+          echo "Flutter Mobile test workflow affected: $affected"
+          echo "affected=$affected" >> "$GITHUB_OUTPUT"
+
+      - name: Not affected
+        if: steps.scope.outputs.affected != 'true'
+        run: |
+          echo "Not affected - no Flutter mobile test paths changed on this development branch."
+          {
+            echo "## Flutter Mobile Tests: Not affected"
+            echo "No Flutter mobile test paths changed; the workflow completed without running the suite."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: subosito/flutter-action@v2
+        if: steps.scope.outputs.affected == 'true'
         with:
           channel: stable
           cache: true
 
       - name: Analyze Flutter application
+        if: steps.scope.outputs.affected == 'true'
         working-directory: apps/mobile
         run: flutter pub get && flutter analyze
 
       - name: Run all Flutter mobile test cases
         id: tests
+        if: steps.scope.outputs.affected == 'true'
         shell: bash
         run: |
           set +e
@@ -73,7 +121,7 @@ jobs:
           exit "$test_status"
 
       - name: Upload Flutter test results
-        if: always()
+        if: always() && steps.scope.outputs.affected == 'true'
         uses: actions/upload-artifact@v6
         with:
           name: flutter-mobile-test-results
@@ -81,7 +129,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Final failed Flutter test case list
-        if: always()
+        if: always() && steps.scope.outputs.affected == 'true'
         shell: bash
         run: |
           if [[ -f test-results/mobile/flutter-machine.json || -f test-results/mobile/flutter-integration-machine.json ]]; then

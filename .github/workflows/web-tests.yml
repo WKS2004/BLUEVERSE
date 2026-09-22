@@ -2,9 +2,9 @@ name: React Web Tests
 
 on:
   push:
-    branches: ["main", "dev", "features/**", "agentic-ai/**"]
+    branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
   pull_request:
-    branches: ["main", "dev", "features/**", "agentic-ai/**"]
+    branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
   workflow_dispatch:
 
 permissions:
@@ -15,17 +15,65 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Determine scope
+        id: scope
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE_SHA: ${{ github.event.before }}
+          CURRENT_SHA: ${{ github.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -Eeuo pipefail
+
+          target="$REF_NAME"
+          affected=false
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            affected=true
+          elif [[ "$EVENT_NAME" == "pull_request" ]]; then
+            target="$BASE_REF"
+            diff_range="${BASE_SHA}..${HEAD_SHA}"
+          else
+            diff_range="${BEFORE_SHA}..${CURRENT_SHA}"
+          fi
+
+          if [[ "$target" == "main" || "$target" == "dev" ]]; then
+            affected=true
+          elif [[ "$affected" != true ]] && git diff --name-only "$diff_range" | grep -Eq '^(apps/web/|docs/contracts/|docs/api/|docs/architecture/|docs/development/ui-integration\.md$|scripts/validation/|\.github/(scripts/|workflows/(web-tests|web-ci|ui-integration)\.yml$))'; then
+            affected=true
+          fi
+
+          echo "React Web test workflow affected: $affected"
+          echo "affected=$affected" >> "$GITHUB_OUTPUT"
+
+      - name: Not affected
+        if: steps.scope.outputs.affected != 'true'
+        run: |
+          echo "Not affected - no React web test paths changed on this development branch."
+          {
+            echo "## React Web Tests: Not affected"
+            echo "No React web test paths changed; the workflow completed without running the suite."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/setup-node@v5
+        if: steps.scope.outputs.affected == 'true'
         with:
           node-version: 24
 
       - name: Install web dependencies
+        if: steps.scope.outputs.affected == 'true'
         working-directory: apps/web
         run: npm install
 
       - name: Discover and run all React test cases
         id: tests
+        if: steps.scope.outputs.affected == 'true'
         shell: bash
         run: |
           set +e
@@ -59,7 +107,7 @@ jobs:
           exit "$test_status"
 
       - name: Report zero-test metrics
-        if: steps.tests.outcome == 'success'
+        if: steps.scope.outputs.affected == 'true' && steps.tests.outcome == 'success'
         shell: bash
         run: |
           if [[ -f test-results/web/no-tests.marker ]]; then
@@ -67,7 +115,7 @@ jobs:
           fi
 
       - name: Upload React test results
-        if: always()
+        if: always() && steps.scope.outputs.affected == 'true'
         uses: actions/upload-artifact@v6
         with:
           name: react-web-test-results
@@ -75,6 +123,6 @@ jobs:
           if-no-files-found: ignore
 
       - name: Final failed React test case list
-        if: always()
+        if: always() && steps.scope.outputs.affected == 'true'
         shell: bash
         run: python .github/scripts/report_test_metrics.py --results-root test-results/web --scope "React Web" --failures-only
