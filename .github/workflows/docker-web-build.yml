@@ -2,9 +2,27 @@ name: Docker Web Build
 
 on:
   push:
-    branches: ["main", "dev"]
+    branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
+    paths:
+      - "apps/web/**"
+      - "infrastructure/docker/frontend/**"
+      - "scripts/Unix/bash/sync-web-lockfile.sh"
+      - "scripts/Windows/powershell/sync-web-lockfile.ps1"
+      - ".dockerignore"
+      - "compose.yaml"
+      - "docker-compose.yml"
+      - ".github/workflows/docker-web-build.yml"
   pull_request:
-    branches: ["main", "dev"]
+    branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
+    paths:
+      - "apps/web/**"
+      - "infrastructure/docker/frontend/**"
+      - "scripts/Unix/bash/sync-web-lockfile.sh"
+      - "scripts/Windows/powershell/sync-web-lockfile.ps1"
+      - ".dockerignore"
+      - "compose.yaml"
+      - "docker-compose.yml"
+      - ".github/workflows/docker-web-build.yml"
 
 permissions:
   contents: read
@@ -43,22 +61,8 @@ jobs:
             diff_range="${BEFORE_SHA}..${CURRENT_SHA}"
           fi
 
-          if [[ "$target" == "main" ]]; then
+          if [[ "$EVENT_NAME" == "workflow_dispatch" || "$target" == "main" || "$target" == "dev" || "$target" == features/* || "$target" == agentic-ai/* || "$target" == claude/* || "$target" == codex/* || "$target" == antigravity/* || "$target" == gemini/* || "$target" == maintenance/* || "$target" == bug-fixes/* ]]; then
             build=true
-          elif [[ "$target" == "dev" ]]; then
-            if [[ "$EVENT_NAME" == "push" && "$BEFORE_SHA" =~ ^0+$ ]]; then
-              build=true
-            else
-              changed_files="$(git diff --name-only "$diff_range")"
-              while IFS= read -r changed_file; do
-                case "$changed_file" in
-                  apps/web/*|infrastructure/docker/frontend/*|scripts/Unix/bash/sync-web-lockfile.sh|scripts/Windows/powershell/sync-web-lockfile.ps1|.dockerignore|.github/workflows/docker-web-build.yml)
-                    build=true
-                    break
-                    ;;
-                esac
-              done <<< "$changed_files"
-            fi
           fi
 
           echo "Web image build required: $build"

@@ -59,10 +59,10 @@ List the exact commands, test IDs, workflow runs or manual checks performed.
 
 ## CI and Docker impact
 
-- [ ] Workflow triggers and path scope were reviewed for `main`, `dev` and the
-      source branch family.
-- [ ] “Not affected” behavior is intentional when a path-scoped check does not
-      apply.
+- [ ] Workflow branch and `paths` filters include every necessary source,
+      test, helper, Docker and documentation path.
+- [ ] Required-check rules account for workflows that are intentionally not
+      triggered when their path filter does not apply.
 - [ ] Dockerfile/Compose/gateway changes were validated, including the relevant
       image build and stack-health checks.
 - [ ] No workflow change exposes secrets to logs, forks or artifacts.

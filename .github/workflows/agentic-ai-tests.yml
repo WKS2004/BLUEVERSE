@@ -3,8 +3,20 @@ name: Agentic AI Tests
 on:
   push:
     branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
+    paths:
+      - "services/ai/**"
+      - "services/ai-agents/**"
+      - "services/agents/**"
+      - ".github/scripts/**"
+      - ".github/workflows/agentic-ai-tests.yml"
   pull_request:
     branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
+    paths:
+      - "services/ai/**"
+      - "services/ai-agents/**"
+      - "services/agents/**"
+      - ".github/scripts/**"
+      - ".github/workflows/agentic-ai-tests.yml"
   workflow_dispatch:
 
 permissions:
@@ -43,7 +55,7 @@ jobs:
             diff_range="${BEFORE_SHA}..${CURRENT_SHA}"
           fi
 
-          if [[ "$target" == "main" || "$target" == "dev" ]]; then
+          if [[ "$target" == "main" || "$target" == "dev" || ("$EVENT_NAME" == "push" && "$BEFORE_SHA" =~ ^0+$) ]]; then
             affected=true
           elif [[ "$affected" != true ]] && git diff --name-only "$diff_range" | grep -Eq '^(services/(ai|ai-agents|agents)/|\.github/(scripts/|workflows/agentic-ai-tests\.yml$))'; then
             affected=true

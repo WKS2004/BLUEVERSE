@@ -31,15 +31,15 @@ pulled.
 
 | Workflow | Trigger/scope | Purpose |
 |---|---|---|
-| `repository-ci.yml` | `main`, `dev` always; active work families when repository paths change | Checks foundation files, `.agents` resources and CI helper tests. |
-| `ui-integration.yml` | `main`, `dev` always; active work families when UI/API contract paths change | Validates the UI registry, endpoint catalog and validator tests. |
-| `backend-ci.yml` | Same source-branch policy; service paths | Restores and builds discovered ASP.NET projects. |
-| `web-ci.yml` | Same source-branch policy; web/contract paths | Validates the UI contract, lints and builds React. |
-| `mobile-ci.yml` | Same source-branch policy; mobile/contract paths | Validates the UI contract and analyzes Flutter. |
-| `web-tests.yml` | Same source-branch policy; web test paths | Runs React tests and reports JUnit metrics. |
-| `mobile-tests.yml` | Same source-branch policy; mobile test paths | Runs Flutter unit/widget and integration machine tests. |
-| `backend-tests.yml` | Same source-branch policy; service paths | Runs every discovered backend test project with aggregate and per-service evidence. |
-| `agentic-ai-tests.yml` | Same source-branch policy; Agentic AI paths | Runs every discovered AI test suite with aggregate and per-service evidence. |
+| `repository-ci.yml` | Supported work branches; `.github/**`, `.agents/**`, `docs/**` or root-file changes | Checks foundation files, `.agents` resources and CI helper tests. |
+| `ui-integration.yml` | Supported work branches; client, service, contract, gateway, Compose or workflow paths | Validates the UI registry, endpoint catalog and validator tests. |
+| `backend-ci.yml` | Supported work branches; `services/**`, `global.json` or its workflow | Restores and builds discovered ASP.NET projects. |
+| `web-ci.yml` | Supported work branches; web/contract paths or its workflows | Validates the UI contract, lints and builds React. |
+| `mobile-ci.yml` | Supported work branches; mobile/contract paths or its workflows | Validates the UI contract and analyzes Flutter. |
+| `web-tests.yml` | Supported work branches; web, contract, helper or test-workflow paths | Runs React tests and reports JUnit metrics. |
+| `mobile-tests.yml` | Supported work branches; mobile, contract, helper or test-workflow paths | Runs Flutter unit/widget and integration machine tests. |
+| `backend-tests.yml` | Supported work branches; service, catalog, helper or test-workflow paths | Runs every discovered backend test project with aggregate and per-service evidence. |
+| `agentic-ai-tests.yml` | Supported work branches; Agentic AI, helper or AI-test workflow paths | Runs every discovered AI test suite with aggregate and per-service evidence. |
 | `branch-policy.yml` | Branch creation | Enforces lowercase approved branch names and deletes invalid branches. |
 | `dev-backup.yml` | Pushes to `dev` or `dev-backup` | Creates and synchronizes the exact `dev-backup` ref while preserving mistaken history. |
 | `github-config-sync.yml` | `.github/**` pushes | Creates focused `.github`-only pull requests for other branches and queues auto-merge. |
@@ -50,19 +50,27 @@ The supported active work families are `features/**`, `agentic-ai/**`,
 `docker-workflow-changes/**` and `dev-backup-mistaken-commits/**` are excluded
 from normal source/test workflow triggers.
 
-## Main, dev and path-aware behavior
+## Branch and path-aware behavior
 
-For source and test workflows, `main` and `dev` do not use path filters: their
-jobs always perform the corresponding check. On an active work branch, the
-workflow checks the changed-file range for the push or pull request. When no
-relevant path changed, the workflow remains successful and writes a visible
-`Not affected` step and job summary. This preserves a predictable check list
-without spending runner time on unrelated clients or services.
+Every source, test and Docker image workflow combines a supported branch
+filter with a workflow-specific `paths` filter. GitHub Actions therefore does
+not start an unrelated workflow for a commit that cannot affect it. Each
+workflow also retains a small post-checkout scope guard for manual dispatches,
+initial branch pushes and a clear `Not affected` summary when the changed-file
+range cannot be classified.
 
-The scope decision is made after checkout rather than only in the event
-trigger. That is important for the branch policy above: a workflow still
-appears on the commit and can explain why it did not run its expensive suite.
-Manual dispatch runs the selected workflow regardless of path scope.
+The filters include the workflow and shared helper files themselves so a CI
+change revalidates the affected check. The UI contract workflow additionally
+covers client, service, endpoint-catalog, gateway, Compose and validator paths.
+The test workflows include `.github/scripts/**` so a metrics-parser change
+reruns the relevant result-processing suite.
+
+Manual dispatch runs the selected workflow regardless of the path filter. A
+workflow that is required by branch protection must be configured carefully:
+GitHub may leave a required check pending when its path filter excludes a
+pull request. Use required checks that match the repository's branch/path
+policy, or retain a lightweight always-triggered gate when a branch rule
+requires a check on every pull request.
 
 ## UI and API integration contract
 
@@ -129,15 +137,15 @@ Docker checks remain separate from source/test checks:
 
 | Workflow | Trigger/dependency | Purpose |
 |---|---|---|
-| `docker-web-build.yml` | Push or PR targeting `main`/`dev` | Synchronizes the React lockfile and builds the web image. |
-| `docker-backend-build.yml` | Push or PR targeting `main`/`dev` | Builds the public API first, then each discovered ASP.NET backend service. |
+| `docker-web-build.yml` | Supported work branches; web/Docker/Compose paths | Synchronizes the React lockfile and builds the web image. |
+| `docker-backend-build.yml` | Supported work branches; service/Docker/Compose paths | Builds the public API first, then each discovered ASP.NET backend service. |
 | `docker-stack-health.yml` | Successful Docker build workflows for a PR targeting `main` only | Checks the complete Compose network and public health endpoints. |
 
-The web and backend image workflows always build for `main`. On `dev`, they
-build only when the relevant application, service, Docker infrastructure,
-lockfile, build context, global SDK or workflow paths changed. Backend image
-errors are collected across discovered services so later services are still
-checked before the workflow fails.
+The web and backend image workflows start only when their relevant application,
+service, Docker infrastructure, lockfile, Compose, global SDK or workflow
+paths change on a supported work branch. Backend image errors are collected
+across discovered services so later services are still checked before the
+workflow fails.
 
 The Docker backend convention is:
 
@@ -152,9 +160,10 @@ builds the images from the repository root. Non-ASP.NET service directories
 are reported as skipped rather than being silently treated as backend images.
 
 The stack-health workflow is intentionally heavy. It is not a direct push
-workflow: it listens for completed image workflows, proceeds only when both
-matching runs succeeded for the same commit and only when the originating run
-was a pull request targeting `main`. It checks out that exact commit, validates
+workflow: it listens for completed image workflows, proceeds only when the
+originating run was a pull request targeting `main`, determines which required
+image workflows were triggered for that exact comparison range, waits for
+those runs to succeed, and then checks out the exact commit. It validates
 `compose.yaml` or `docker-compose.yml`, starts the stack on host port `8080`,
 checks `/health`, `/api/health` and each discovered backend
 `/api/<service-name>/health`, prints Compose diagnostics on failure and always

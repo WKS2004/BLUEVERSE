@@ -196,12 +196,11 @@ request:
 - `agentic-ai-tests.yml` runs all Agentic AI test cases in one workflow, with
   overall and per-service metrics.
 
-The source and test workflows always check `main` and `dev`. On active work
-branch families (`features/**`, `agentic-ai/**`, `claude/**`, `codex/**`,
-`antigravity/**`, `gemini/**`, `maintenance/**` and `bug-fixes/**`), each
-workflow performs its own changed-path decision and reports `Not affected`
-when its suite does not apply. This keeps unrelated checks visible without
-running unrelated suites.
+The source, test and Docker image workflows combine the active work branch
+families (`main`, `dev`, `features/**`, `agentic-ai/**`, `claude/**`,
+`codex/**`, `antigravity/**`, `gemini/**`, `maintenance/**` and `bug-fixes/**`)
+with workflow-specific path filters. A workflow starts only when its relevant
+paths change; manual dispatch remains available for an explicit run.
 
 Test cases stay in their owning package's default locations: React under
 `apps/web/src` (and optional `apps/web/e2e`), Flutter under `apps/mobile/test`
@@ -214,7 +213,7 @@ tree for authoritative cases.
 - `docker-backend-build.yml` builds the public API and discovered ASP.NET services one by one.
 - `docker-stack-health.yml` waits for both build workflows, starts the root Compose file and checks frontend/API/service health endpoints.
 
-The web and backend build workflows run on `main` and `dev` pushes and pull requests. `main` always builds. On `dev`, they build only when their relevant application, service, Docker infrastructure, lockfile synchronization, workflow or build-context paths change. The stack-health workflow waits for both builds for the same commit and runs only for pull requests targeting `main`; it synchronizes the web lockfile again on its separate runner before running the Compose health checks. Backend build failures are collected across all services so later services are still checked before the workflow fails.
+The web and backend build workflows run on supported branch families when their relevant application, service, Docker infrastructure, lockfile synchronization, Compose, workflow or build-context paths change. The stack-health workflow waits for the required image builds for the same commit and runs only for pull requests targeting `main`; it synchronizes the web lockfile again on its separate runner before running the Compose health checks. Backend build failures are collected across all services so later services are still checked before the workflow fails.
 
 The Docker backend workflow builds `services/api` first and then discovers and
 builds the other ASP.NET service directories, including the internal Auth

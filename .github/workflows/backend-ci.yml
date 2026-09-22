@@ -3,8 +3,16 @@ name: Backend CI
 on:
   push:
     branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
+    paths:
+      - "services/**"
+      - "global.json"
+      - ".github/workflows/backend-ci.yml"
   pull_request:
     branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
+    paths:
+      - "services/**"
+      - "global.json"
+      - ".github/workflows/backend-ci.yml"
 
 permissions:
   contents: read
@@ -21,7 +29,7 @@ jobs:
         run: |
           target="${{ github.ref_name }}"; range="${{ github.event.before }}..${{ github.sha }}"
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then target="${{ github.base_ref }}"; range="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"; fi
-          if [[ "$target" == "main" || "$target" == "dev" ]] || git diff --name-only "$range" | grep -Eq '^(services/|global\.json$|\.github/workflows/backend-ci\.yml$)'; then echo affected=true >> "$GITHUB_OUTPUT"; else echo affected=false >> "$GITHUB_OUTPUT"; fi
+          if [[ "$target" == "main" || "$target" == "dev" || ("${{ github.event_name }}" == "push" && "${{ github.event.before }}" =~ ^0+$) ]] || git diff --name-only "$range" | grep -Eq '^(services/|global\.json$|\.github/workflows/backend-ci\.yml$)'; then echo affected=true >> "$GITHUB_OUTPUT"; else echo affected=false >> "$GITHUB_OUTPUT"; fi
       - name: Not affected
         if: steps.scope.outputs.affected != 'true'
         run: |

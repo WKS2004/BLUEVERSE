@@ -57,14 +57,17 @@ that prevents a pull request from merging when a workflow fails.
 
 ## Path-aware checks
 
-Source and test workflows run for `main`, `dev` and the supported development
-branch families. `main` and `dev` always execute their relevant checks. On an
-active work branch, each workflow determines whether its paths changed and
-prints a successful `Not affected` result when the workflow does not apply.
-This keeps the check names visible without spending time on unrelated suites.
+Source, test and Docker image workflows combine the supported development
+branch families with workflow-specific `paths` filters. A commit changing only
+the mobile app does not start the backend or web workflows; a commit changing
+the endpoint catalog or shared CI helper starts the checks that consume it.
+Manual dispatch remains available for an explicit full run.
 
-The special automation branches are not included in the source/test workflow
-branch filters. Their jobs are driven only by their own automation workflows.
+The special automation branches are not included in the source/test/Docker
+workflow branch filters. Their jobs are driven only by their own automation
+workflows. Because a path-filtered workflow may not create a check at all,
+required-check rules must be configured to match this policy; use a lightweight
+always-triggered gate where a branch rule demands a check on every pull request.
 
 ## GitHub configuration synchronization
 

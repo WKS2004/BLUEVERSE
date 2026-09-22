@@ -3,8 +3,26 @@ name: Backend Microservices Tests
 on:
   push:
     branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
+    paths:
+      - "services/**"
+      - "global.json"
+      - "docs/api/**"
+      - "docs/architecture/**"
+      - ".github/scripts/**"
+      - ".github/workflows/backend-tests.yml"
+      - ".github/workflows/backend-ci.yml"
+      - ".github/workflows/ui-integration.yml"
   pull_request:
     branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
+    paths:
+      - "services/**"
+      - "global.json"
+      - "docs/api/**"
+      - "docs/architecture/**"
+      - ".github/scripts/**"
+      - ".github/workflows/backend-tests.yml"
+      - ".github/workflows/backend-ci.yml"
+      - ".github/workflows/ui-integration.yml"
   workflow_dispatch:
 
 permissions:
@@ -43,7 +61,7 @@ jobs:
             diff_range="${BEFORE_SHA}..${CURRENT_SHA}"
           fi
 
-          if [[ "$target" == "main" || "$target" == "dev" ]]; then
+          if [[ "$target" == "main" || "$target" == "dev" || ("$EVENT_NAME" == "push" && "$BEFORE_SHA" =~ ^0+$) ]]; then
             affected=true
           elif [[ "$affected" != true ]] && git diff --name-only "$diff_range" | grep -Eq '^(services/|global\.json$|docs/api/|docs/architecture/|\.github/(scripts/|workflows/(backend-tests|backend-ci|ui-integration)\.yml$))'; then
             affected=true
