@@ -16,6 +16,12 @@ called scripts as one unit.
   boundary. UI workflows must run the validator for React and Flutter changes;
   service, API/architecture documentation, Compose/Docker gateway or workflow
   changes must also trigger the shared UI contract workflow.
+- Treat `docs/api/endpoint-catalog.json`, its generated Markdown view and
+  `.agents/scripts/validate_endpoint_catalog.py` as the complete route/API CI
+  boundary. Route, service, gateway, client and endpoint-documentation changes
+  **must** update the JSON and regenerate Markdown in the same change; the
+  endpoint validator must run and pass before completion. Keep its path filters
+  synchronized for every route source and documentation path.
 - Prefer repository helpers and reproducible dependencies over duplicated YAML.
   Never expose secrets to forks, logs, artifacts or summaries.
 - Preserve complete runner outcomes, result artifacts and a final
@@ -25,6 +31,9 @@ called scripts as one unit.
   health coordination.
 - Distinguish intentional zero-test foundation state from broken discovery;
   missing suites must fail once the corresponding implementation exists.
+- When PostgreSQL integration tests are enabled, make Docker/database
+  prerequisites and failure behavior explicit; never silently skip provider
+  coverage or expose connection strings in logs and artifacts.
 - For `.agents` changes, keep `repository-ci.yml` as the single CI gate and
   extend `validate_agent_resources.py` rather than adding a duplicate workflow.
 

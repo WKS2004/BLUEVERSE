@@ -1,0 +1,4 @@
+@BlueverseAuth_HostAddress = http://localhost:5151
+
+GET {{BlueverseAuth_HostAddress}}/api/auth/health
+Accept: application/json

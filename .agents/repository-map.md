@@ -5,8 +5,8 @@ Verify paths and implementation state before relying on any entry.
 
 | Path | Responsibility | Contract to preserve |
 |---|---|---|
-| `apps/web` | React 19 + TypeScript + Vite client | public API only; current code is starter UI |
-| `apps/mobile` | Flutter/Dart client and platform shells | public API only; current code is starter app |
+| `apps/web` | React 19 + TypeScript + Vite client | public API only; shared Auth workflow plus starter UI |
+| `apps/mobile` | Flutter/Dart client and platform shells | public API only; shared Auth workflow plus starter app |
 | `services/api` | public ASP.NET Core API | REST, DTO/application layers, validation, auth proxy, OpenAPI |
 | `services/auth` | internal authentication service | private behind API/gateway |
 | `services/<name>` | future/internal backend services | own data/service contract and matching tests |
@@ -21,7 +21,11 @@ Verify paths and implementation state before relying on any entry.
 | `docs/security`, `docs/agentic-ai` | threat and safety source of truth | deterministic validation and approval controls |
 | `docs/contracts/ui-integration.json` | shared React/Flutter workflow, route and public API registry | one workflow ID, both relevant client routes and declared `/api/...` references |
 | `scripts/validation` | dependency-free repository and UI integration validators | fail-closed route/API checks and validator tests |
+| `docs/api/endpoint-catalog.md` | readable frontend, gateway, public API, test-only and AI endpoint inventory | start here for route lookup |
+| `docs/api/endpoint-catalog.json` | machine-checked catalog source | update with route changes and regenerate Markdown |
+| `docs/database/README.md`, `docs/database/schema.md` | implemented PostgreSQL/EF Core foundation and schema reference | distinguish Auth persistence from reserved future domain/AI schema |
 | `.agents/skills` | on-demand repository workflows | concise discovery metadata; rules remain authoritative |
+| `.agents/rules/data-access.md` | PostgreSQL, EF Core, migration and test-provider policy | use with backend/test workflows for persistence work |
 | `.agents/registry` | provenance and compatibility metadata for vendored skills | every imported external skill is source-pinned and licensed |
 | `.agents/skill-overlays` | repository-specific bindings for portable skills | overlays extend skills without overriding project rules |
 | `.agents/evals` | deterministic routing and resource-quality fixtures | no secrets, hidden reasoning or generated output |
@@ -33,12 +37,17 @@ Verify paths and implementation state before relying on any entry.
 - Selected base images are listed in `AGENTS.md` and `rules/docker.md`.
 - The gateway's public convention is `/api/...`; there is no client-facing
   direct `/auth/...` or bare backend `/health` route.
-- The current UI registry contains only the generated shared home surface and
-  no domain API endpoints; the starter clients must not add unregistered calls.
-- Backend and Agentic AI implementations may be absent even when Docker,
-  Compose, docs or CI refer to them. A reserved path, empty source folder or
-  directory containing only ignored `bin/`/`obj/` output is not an
-  implementation.
+- The current UI registry contains the generated shared home surface and the
+  implemented Auth session-management workflow. The full route inventory is
+  maintained in `docs/api/endpoint-catalog.md`; new client calls must be
+  added to both the catalog and the UI registry.
+- `services/api` and `services/auth` are implemented ASP.NET Core projects.
+- `services/auth` owns the current EF Core/Npgsql PostgreSQL model and checked-in
+  migrations. Its default deterministic tests and opt-in real-provider tests
+  have different purposes; neither alone proves all database behavior.
+  Agentic AI implementations may still be absent even when Docker, Compose,
+  docs or CI refer to them. A reserved path, empty source folder or directory
+  containing only ignored `bin/`/`obj/` output is not an implementation.
 - Test workflows may intentionally report zero tests for not-yet-created suites;
   new behavior must add its authoritative tests and workflow discovery together.
 
@@ -47,7 +56,11 @@ Verify paths and implementation state before relying on any entry.
 - Setup/commands: `docs/development/setup.md`, `docs/development/ci.md`
 - UI integration: `docs/development/ui-integration.md`,
   `docs/contracts/ui-integration.json`
+- Complete endpoint/routing inventory: `docs/api/endpoint-catalog.md`,
+  `docs/api/endpoint-catalog.json`
 - Architecture/networking: `docs/architecture/`, `docs/adr/`
 - Security/AI safety: `docs/security/`, `docs/agentic-ai/`
 - Test matrix/order: `docs/testing/`
+- Database foundation/schema: `docs/database/README.md`,
+  `docs/database/schema.md`, `.agents/rules/data-access.md`
 - Ownership/logging: `docs/project/`

@@ -17,11 +17,12 @@ Never commit `.env`.
 For local Compose, `.env` also defines the internal API-to-Auth destination.
 Keep it as `http://auth:8080`; clients must continue using the public gateway
 at `/api/...`. Replace the example database/admin passwords before using the
-stack, even for local shared environments.
+stack, even for local shared environments, and replace the example JWT signing
+key with a unique random value of at least 32 UTF-8 bytes.
 
-When the Auth implementation is present, the configured `ADMIN_EMAIL` and
-`ADMIN_PASSWORD` seed one administrator account. Normal registration must not
-automatically grant Admin privileges.
+The configured `ADMIN_EMAIL` and `ADMIN_PASSWORD` seed one administrator
+account after Auth applies its EF Core migrations. Normal registration never
+automatically grants Admin privileges.
 
 ## Applications
 
@@ -32,20 +33,22 @@ apps/web
 apps/mobile
 ```
 
-Both clients are still generated starter implementations. The expected
-`services/api` and `services/auth` directories are currently absent, so add the
-ASP.NET projects before attempting the full Compose build. Do not add business
-rules to the clients that contradict the API contract. For every UI change,
-also update and validate the shared [UI integration contract](ui-integration.md)
-so React and Flutter use the same workflow ID and public `/api/...` endpoint
-references.
+Both clients retain starter shells outside the implemented Auth workflow. The
+shared `/login` workflow uses the public gateway for login, refresh, current
+user/session reads and scoped logout; browser state uses protected cookies and
+mobile state uses platform secure storage. The ASP.NET projects are available
+under `services/api` and `services/auth`; do not add business rules to the
+clients that contradict the API contract. For every UI change, also update and
+validate the shared [UI integration contract](ui-integration.md) so React and
+Flutter use the same workflow ID and public `/api/...` endpoint references.
 
 ## Agent resources
 
 Before making a repository change, read the root [`AGENTS.md`](../../AGENTS.md),
 the [`agent-resources.md`](agent-resources.md) overview and
 [`.agents/routing.md`](../../.agents/routing.md). Then load only the routed
-rules and one matching BLUEVERSE skill. Imported framework skills are optional
+rules and one matching BLUEVERSE skill. Load additional cross-layer skills when
+the routing matrix selects them. Imported framework skills are optional
 supplements; repository rules and owned skills take precedence.
 
 Validate the agent resources from the repository root:
@@ -74,6 +77,14 @@ The repository uses:
 ```
 
 as defined by `global.json`.
+
+Restore the repository-pinned EF Core tool before creating or inspecting Auth
+migrations:
+
+```bash
+dotnet tool restore
+dotnet tool run dotnet-ef migrations list --project services/auth/Blueverse.Auth.csproj
+```
 
 ## Docker
 

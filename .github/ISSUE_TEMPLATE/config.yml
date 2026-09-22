@@ -1,1 +1,8 @@
 blank_issues_enabled: false
+contact_links:
+  - name: Development and CI guide
+    url: https://github.com/WKS2004/BLUEVERSE/blob/dev/docs/development/ci.md
+    about: Read the repository setup, branch, workflow and Docker validation guidance before opening an issue.
+  - name: UI and API integration contract
+    url: https://github.com/WKS2004/BLUEVERSE/blob/dev/docs/development/ui-integration.md
+    about: Check the shared React/Flutter workflow registry and public API boundary guidance.

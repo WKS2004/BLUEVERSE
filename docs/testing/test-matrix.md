@@ -6,18 +6,18 @@ the minimum evidence expected as each component is introduced.
 
 | Area | Minimum evidence |
 |---|---|
-| API | `services/api/tests` covers current foundation behavior with stable cases `API-HEALTH-*`, `API-CONTRACT-*`, `API-CORS-*`, `API-EDGE-*`, `API-ERROR-*` and `API-PROXY-*`: unit/HTTP health, non-versioned routing, OpenAPI/Swagger, CORS allow/deny/preflight, forwarded headers, safe gateway errors and YARP forwarding/failure isolation. JWT/permission, DTO validation, persistence, migration, audit and domain-workflow tests remain blocked until those API contracts are implemented. |
-| Authentication | Login/token/protected endpoint, password-hashing, claims, expiry and permission tests once `services/auth` exists |
-| Authorization | Permission allow/deny tests |
-| PostgreSQL | Migration/schema/integration verification |
-| React | Unit, component, request-boundary, accessibility and workflow tests colocated under `apps/web/src` (and optional `apps/web/e2e`) |
-| Flutter | Analyze, unit and widget tests under `apps/mobile/test`; application/device workflows under `apps/mobile/integration_test` |
+| API | `services/api/tests` covers current foundation behavior with stable cases `API-HEALTH-*`, `API-CONTRACT-*`, `API-CORS-*`, `API-EDGE-*`, `API-ERROR-*`, `API-PROXY-*` and `API-AUTH-*`: unit/HTTP health, non-versioned routing, public/Auth OpenAPI routing, CORS allow/deny/preflight, forwarded headers, safe gateway errors, JWT issuer/audience/lifetime/algorithm/cookie allow/deny and YARP forwarding/failure isolation. The default suite currently passes 21 cases. |
+| Authentication | `services/auth/tests` covers 67 default cases for registration/login, validation and malformed-input problem details, server-issued installations and device proof, native/cookie transport and cookie cleanup, rotating refresh tokens and replay/expiry failures, one/30-day expiry, per-session revocation and cross-account isolation, active-session archival and refresh-token relinking, five-session account eviction, five-account device capacity, protected endpoints and safe errors, account/device/everywhere logout, profile-only updates, complete user/role/permission administration, administrative mutation authorization, strict assignment validation, system-role escalation, bootstrap seeding, token revocation, password hashing, JWT/configuration boundaries and persistence-model constraints. |
+| Authorization | Permission allow/deny, policy-provider behavior, catalog isolation, administrative mutation protection and system-role escalation tests in `services/auth/tests` |
+| PostgreSQL | Checked-in Auth EF Core model/migrations, including device installations and refresh-token rotation; `AUTH-POSTGRES-SESSION-001` exercises real-provider refresh replay and concurrent capacity decisions when explicitly enabled, while local live migration and gateway smoke checks provide deployment evidence. Provider-independent tests may use the isolated test provider; they do not replace PostgreSQL evidence. |
+| React | `npm.cmd run build`, `npm.cmd run lint` and the Node 24 native test runner validate the public cookie-based Auth surface; three `WEB-AUTH-*` request-boundary cases cover request construction, RFC 7807 error mapping and 204 logout handling. Component/browser workflow tests remain the next increment |
+| Flutter | `flutter analyze` and machine-mode `flutter test` validate five visible package-level gateway/configuration, build-define and widget cases plus the secure-storage/API boundary; no `apps/mobile/integration_test` directory is checked in yet |
 | Backend services | Matching `services/<service-name>/tests` project for every service under `services/` |
 | UI integration contract | Dependency-free registry/validator checks that every shared workflow has the relevant React and Flutter routes and that client API literals resolve to declared public `/api/...` endpoints |
 | Integration | React/Flutter against the same public API, gateway routing and cross-platform workflow; no client-to-client or internal-service calls |
 | Agentic AI | Service-specific contract, safety, evaluation and complete acceptance workflow under each AI service’s `tests/` directory, normally `services/ai/<agent-service>/tests` |
 | Security | Unauthorized/invalid-input/prompt-injection cases with complete assertions: expected HTTP outcomes across relevant `1xx`–`5xx` statuses plus body/schema, authorization, state and side-effect validation |
-| CI | Passing source, client, backend, AI and integration workflows; current backend/Compose runs remain blocked by missing services |
+| CI | Passing source, client, backend, AI and integration workflows; backend test discovery fails when a service source project has no matching local test project |
 | Deployment | Health + smoke-test evidence |
 
 Every row requires scenario-based coverage, not a single happy-path case:

@@ -1,0 +1,640 @@
+{
+  "schema": 1,
+  "status": "active",
+  "auditedAt": "2026-09-22",
+  "purpose": "Fast, repository-local inventory of implemented frontend routes, gateway routes, public API endpoints, test-only routes, and Agentic AI endpoint status.",
+  "authority": {
+    "uiWorkflowRegistry": "docs/contracts/ui-integration.json",
+    "backendSources": [
+      "services/api",
+      "services/auth"
+    ],
+    "gatewaySources": [
+      "infrastructure/docker/edge-nginx/nginx.conf",
+      "infrastructure/docker/frontend/nginx.conf",
+      "services/api/appsettings.json",
+      "services/api/Program.cs",
+      "services/auth/Program.cs"
+    ],
+    "aiSources": [
+      "services/ai",
+      "services/ai-agents",
+      "services/agents",
+      "docs/agentic-ai"
+    ]
+  },
+  "updatePolicy": [
+    "Update this catalog in the same change as any route or endpoint addition, modification, rename, move, or removal.",
+    "Describe the endpoint's purpose and usage; record historical rationale in an ADR or normal change documentation when needed.",
+    "Keep docs/contracts/ui-integration.json synchronized for every endpoint referenced by a registered web or mobile workflow.",
+    "Do not list generated bin/obj output, test fixtures, reserved architecture, or absent AI services as production endpoints.",
+    "Run .agents/scripts/validate_endpoint_catalog.py after source or catalog changes."
+  ],
+  "frontendRoutes": [
+    {
+      "id": "web-home",
+      "client": "react",
+      "route": "/",
+      "source": "apps/web/src/App.tsx",
+      "workflowId": "foundation-home",
+      "status": "starter",
+      "description": "Starter web application home route.",
+      "usage": "Loads the foundation entry screen; it currently has no public API dependency."
+    },
+    {
+      "id": "web-login",
+      "client": "react",
+      "route": "/login",
+      "source": "apps/web/src/App.tsx",
+      "workflowId": "auth-session-management",
+      "status": "implemented",
+      "description": "Web authentication and session-management route.",
+      "usage": "Uses the public Auth API for login, refresh, current-user, session listing, logout, and logout-all-devices operations."
+    },
+    {
+      "id": "mobile-home",
+      "client": "flutter",
+      "route": "/",
+      "source": "apps/mobile/lib/main.dart",
+      "workflowId": "foundation-home",
+      "status": "starter",
+      "description": "Starter mobile application home route.",
+      "usage": "Loads the foundation entry screen; it currently has no public API dependency."
+    },
+    {
+      "id": "mobile-login",
+      "client": "flutter",
+      "route": "/login",
+      "source": "apps/mobile/lib/main.dart",
+      "workflowId": "auth-session-management",
+      "status": "implemented",
+      "description": "Mobile authentication and session-management route.",
+      "usage": "Uses the same public Auth API contract as the React workflow."
+    }
+  ],
+  "gatewayRoutes": [
+    {
+      "id": "frontend-spa",
+      "method": "ANY",
+      "path": "/",
+      "type": "reverse-proxy",
+      "upstream": "frontend",
+      "source": "infrastructure/docker/edge-nginx/nginx.conf",
+      "description": "Local edge entry point for the React SPA and static frontend assets.",
+      "usage": "Serves browser UI traffic and forwards non-API frontend requests to the frontend container."
+    },
+    {
+      "id": "frontend-spa-fallback",
+      "method": "ANY",
+      "path": "/",
+      "type": "static-fallback",
+      "upstream": "frontend",
+      "source": "infrastructure/docker/frontend/nginx.conf",
+      "description": "Frontend Nginx SPA fallback route.",
+      "usage": "Serves static files and falls back to index.html for browser navigation."
+    },
+    {
+      "id": "frontend-health",
+      "method": "GET",
+      "path": "/health",
+      "type": "static-health",
+      "upstream": "frontend",
+      "source": "infrastructure/docker/frontend/nginx.conf",
+      "description": "Frontend container health endpoint.",
+      "usage": "Used by Docker-stack health checks to confirm the frontend server is reachable."
+    },
+    {
+      "id": "public-api-proxy",
+      "method": "ANY",
+      "path": "/api/",
+      "type": "reverse-proxy",
+      "upstream": "api",
+      "source": "infrastructure/docker/edge-nginx/nginx.conf",
+      "description": "The only public edge path for backend API traffic.",
+      "usage": "Forwards client API requests to the API gateway; clients must not target Auth, Agentic AI, database, or other internal hosts directly."
+    },
+    {
+      "id": "auth-yarp-route",
+      "method": "ANY",
+      "path": "/api/auth/{**catch-all}",
+      "type": "reverse-proxy",
+      "upstream": "auth",
+      "source": "services/api/appsettings.json",
+      "description": "API-gateway route that forwards public Auth paths to the internal Auth service.",
+      "usage": "Keeps Auth internal while exposing its approved endpoints through the public API boundary."
+    },
+    {
+      "id": "public-swagger-ui",
+      "method": "GET",
+      "path": "/api/swagger",
+      "type": "documentation-ui",
+      "upstream": "api",
+      "source": "services/api/Program.cs",
+      "description": "API Swagger UI mounted below the public API boundary.",
+      "usage": "Provides interactive API documentation for local development and contract inspection."
+    }
+  ],
+  "publicApiEndpoints": [
+    {
+      "id": "api-health",
+      "method": "GET",
+      "path": "/api/health",
+      "ownerService": "api",
+      "publicBoundary": "api",
+      "operationId": "Get",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Reports that the public API process is healthy.",
+      "usage": "Used by local stack health checks and operational diagnostics.",
+      "source": "services/api/Controllers/HealthController.cs"
+    },
+    {
+      "id": "api-openapi-document",
+      "method": "GET",
+      "path": "/api/swagger/{documentName}.json",
+      "ownerService": "api",
+      "publicBoundary": "api",
+      "operationId": "OpenApiDocument",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Returns the API service OpenAPI document.",
+      "usage": "Used by Swagger UI and tooling that needs the public API contract.",
+      "source": "services/api/Program.cs"
+    },
+    {
+      "id": "api-swagger-document",
+      "method": "GET",
+      "path": "/api/swagger/{documentName}/swagger.json",
+      "ownerService": "api",
+      "publicBoundary": "api",
+      "operationId": "SwaggerDocument",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Returns the API service Swagger document at the Swagger UI-compatible path.",
+      "usage": "Used by the mounted API Swagger UI and local contract inspection.",
+      "source": "services/api/Program.cs"
+    },
+    {
+      "id": "api-swagger-ui",
+      "method": "GET",
+      "path": "/api/swagger",
+      "ownerService": "api",
+      "publicBoundary": "api",
+      "operationId": "SwaggerUi",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Serves the interactive Swagger UI for the public API.",
+      "usage": "Used by developers and contract tooling to inspect the API without accessing an internal service host.",
+      "source": "services/api/Program.cs"
+    },
+    {
+      "id": "auth-swagger-ui-document",
+      "method": "GET",
+      "path": "/api/auth/swagger/{documentName}/swagger.json",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "AuthSwaggerDocument",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Returns the Auth service OpenAPI document through its public documentation path.",
+      "usage": "Used for Auth contract inspection without exposing the Auth service host directly.",
+      "source": "services/auth/Program.cs"
+    },
+    {
+      "id": "auth-register",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "Register",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Creates a new user account and establishes the initial authentication result.",
+      "usage": "Used by an onboarding client flow when registration is enabled.",
+      "source": "services/auth/Controllers/AuthController.cs"
+    },
+    {
+      "id": "auth-login",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "Login",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Authenticates credentials and returns the access and refresh session result.",
+      "usage": "Primary sign-in operation for the React and Flutter Auth workflow.",
+      "source": "services/auth/Controllers/AuthController.cs",
+      "uiWorkflowIds": [
+        "auth-session-management"
+      ]
+    },
+    {
+      "id": "auth-refresh",
+      "method": "POST",
+      "path": "/api/auth/refresh",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "Refresh",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Refreshes an access token using an approved refresh token.",
+      "usage": "Keeps an existing client session alive without asking for credentials again.",
+      "source": "services/auth/Controllers/AuthController.cs",
+      "uiWorkflowIds": [
+        "auth-session-management"
+      ]
+    },
+    {
+      "id": "auth-logout",
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "Logout",
+      "status": "implemented",
+      "auth": "authenticated",
+      "description": "Logs out all signed-in accounts on the current device and archives their sessions.",
+      "usage": "Used when a signed-in React or Flutter user signs out of the current device.",
+      "source": "services/auth/Controllers/AuthController.cs",
+      "uiWorkflowIds": [
+        "auth-session-management"
+      ]
+    },
+    {
+      "id": "auth-logout-account",
+      "method": "POST",
+      "path": "/api/auth/logout/{id:guid}",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "LogoutAccount",
+      "status": "implemented",
+      "auth": "authenticated",
+      "description": "Ends the selected account session identified by a user ID.",
+      "usage": "Supports an authenticated account-management operation when a specific account session must be closed.",
+      "source": "services/auth/Controllers/AuthController.cs"
+    },
+    {
+      "id": "auth-logout-all-devices",
+      "method": "POST",
+      "path": "/api/auth/logout-all-devices",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "LogoutAllDevices",
+      "status": "implemented",
+      "auth": "authenticated",
+      "description": "Revokes all sessions for the authenticated account across devices.",
+      "usage": "Used by the React and Flutter Auth workflow for account-wide session protection.",
+      "source": "services/auth/Controllers/AuthController.cs",
+      "uiWorkflowIds": [
+        "auth-session-management"
+      ]
+    },
+    {
+      "id": "auth-sessions",
+      "method": "GET",
+      "path": "/api/auth/sessions",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "GetSessions",
+      "status": "implemented",
+      "auth": "authenticated",
+      "description": "Lists active sessions for the authenticated account.",
+      "usage": "Used by the React and Flutter Auth workflow to display device/session state.",
+      "source": "services/auth/Controllers/AuthController.cs",
+      "uiWorkflowIds": [
+        "auth-session-management"
+      ]
+    },
+    {
+      "id": "auth-revoke-session",
+      "method": "DELETE",
+      "path": "/api/auth/sessions/{sessionId:guid}",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "RevokeSession",
+      "status": "implemented",
+      "auth": "authenticated",
+      "description": "Revokes one selected authenticated session.",
+      "usage": "Supports an account-management screen that lets a user remove one device/session.",
+      "source": "services/auth/Controllers/AuthController.cs"
+    },
+    {
+      "id": "auth-change-password",
+      "method": "POST",
+      "path": "/api/auth/change-password",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "ChangePassword",
+      "status": "implemented",
+      "auth": "authenticated",
+      "description": "Changes the authenticated user's password after validating the current credential.",
+      "usage": "Used by an authenticated account-security flow.",
+      "source": "services/auth/Controllers/AuthController.cs"
+    },
+    {
+      "id": "auth-me",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "GetCurrentUser",
+      "status": "implemented",
+      "auth": "authenticated",
+      "description": "Returns the current authenticated user's profile and authorization context.",
+      "usage": "Used by the React and Flutter Auth workflow to restore the signed-in account.",
+      "source": "services/auth/Controllers/AuthController.cs",
+      "uiWorkflowIds": [
+        "auth-session-management"
+      ]
+    },
+    {
+      "id": "auth-update-me",
+      "method": "PUT",
+      "path": "/api/auth/me",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "UpdateCurrentUser",
+      "status": "implemented",
+      "auth": "authenticated",
+      "description": "Updates editable profile data for the current authenticated user.",
+      "usage": "Supports an authenticated profile-management flow.",
+      "source": "services/auth/Controllers/AuthController.cs"
+    },
+    {
+      "id": "auth-delete-me",
+      "method": "DELETE",
+      "path": "/api/auth/me",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "DeleteCurrentUser",
+      "status": "implemented",
+      "auth": "authenticated",
+      "description": "Deletes or deactivates the current authenticated account according to the Auth service policy.",
+      "usage": "Supports an authenticated account-deletion flow.",
+      "source": "services/auth/Controllers/AuthController.cs"
+    },
+    {
+      "id": "auth-health",
+      "method": "GET",
+      "path": "/api/auth/health",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "Get",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Reports Auth service and database readiness.",
+      "usage": "Used by the API gateway and Docker-stack health diagnostics.",
+      "source": "services/auth/Controllers/HealthControllers.cs"
+    },
+    {
+      "id": "auth-permissions",
+      "method": "GET",
+      "path": "/api/auth/permissions",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "GetPermissions",
+      "status": "implemented",
+      "auth": "permission:auth.permission.read",
+      "description": "Lists permissions available to an authorized administration caller.",
+      "usage": "Supports authorization administration and permission discovery.",
+      "source": "services/auth/Controllers/PermissionsController.cs"
+    },
+    {
+      "id": "auth-permission-by-id",
+      "method": "GET",
+      "path": "/api/auth/permissions/{id:guid}",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "GetPermissionById",
+      "status": "implemented",
+      "auth": "permission:auth.permission.read",
+      "description": "Returns one permission by identifier.",
+      "usage": "Supports authorization administration and permission detail views.",
+      "source": "services/auth/Controllers/PermissionsController.cs"
+    },
+    {
+      "id": "auth-roles",
+      "method": "GET",
+      "path": "/api/auth/roles",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "GetRoles",
+      "status": "implemented",
+      "auth": "permission:auth.role.read",
+      "description": "Lists roles for authorized administration callers.",
+      "usage": "Supports role administration and authorization inspection.",
+      "source": "services/auth/Controllers/RolesController.cs"
+    },
+    {
+      "id": "auth-role-by-id",
+      "method": "GET",
+      "path": "/api/auth/roles/{id:guid}",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "GetRoleById",
+      "status": "implemented",
+      "auth": "permission:auth.role.read",
+      "description": "Returns one role by identifier.",
+      "usage": "Supports role detail and authorization administration screens.",
+      "source": "services/auth/Controllers/RolesController.cs"
+    },
+    {
+      "id": "auth-role-create",
+      "method": "POST",
+      "path": "/api/auth/roles",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "CreateRole",
+      "status": "implemented",
+      "auth": "permission:auth.role.manage",
+      "description": "Creates a role with the supplied authorization metadata.",
+      "usage": "Supports authorized role administration.",
+      "source": "services/auth/Controllers/RolesController.cs"
+    },
+    {
+      "id": "auth-role-update",
+      "method": "PUT",
+      "path": "/api/auth/roles/{id:guid}",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "UpdateRole",
+      "status": "implemented",
+      "auth": "permission:auth.role.manage",
+      "description": "Updates an existing role.",
+      "usage": "Supports authorized role administration.",
+      "source": "services/auth/Controllers/RolesController.cs"
+    },
+    {
+      "id": "auth-role-delete",
+      "method": "DELETE",
+      "path": "/api/auth/roles/{id:guid}",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "DeleteRole",
+      "status": "implemented",
+      "auth": "permission:auth.role.manage",
+      "description": "Deletes a role when it is safe to do so under authorization policy.",
+      "usage": "Supports authorized role administration.",
+      "source": "services/auth/Controllers/RolesController.cs"
+    },
+    {
+      "id": "auth-role-assign-permissions",
+      "method": "POST",
+      "path": "/api/auth/roles/{id:guid}/permissions",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "AssignPermissions",
+      "status": "implemented",
+      "auth": "permission:auth.role.manage",
+      "description": "Assigns permissions to a role.",
+      "usage": "Supports authorized role-to-permission administration.",
+      "source": "services/auth/Controllers/RolesController.cs"
+    },
+    {
+      "id": "auth-users",
+      "method": "GET",
+      "path": "/api/auth/users",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "GetAllUsers",
+      "status": "implemented",
+      "auth": "permission:auth.user.read",
+      "description": "Lists users for authorized administration callers.",
+      "usage": "Supports user administration and authorization inspection.",
+      "source": "services/auth/Controllers/UsersController.cs"
+    },
+    {
+      "id": "auth-user-by-id",
+      "method": "GET",
+      "path": "/api/auth/users/{id:guid}",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "GetUserById",
+      "status": "implemented",
+      "auth": "permission:auth.user.read",
+      "description": "Returns one user by identifier.",
+      "usage": "Supports authorized user administration detail views.",
+      "source": "services/auth/Controllers/UsersController.cs"
+    },
+    {
+      "id": "auth-user-create",
+      "method": "POST",
+      "path": "/api/auth/users",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "CreateUser",
+      "status": "implemented",
+      "auth": "permission:auth.user.manage",
+      "description": "Creates a user through the authorized administration boundary.",
+      "usage": "Supports authorized user administration.",
+      "source": "services/auth/Controllers/UsersController.cs"
+    },
+    {
+      "id": "auth-user-update",
+      "method": "PUT",
+      "path": "/api/auth/users/{id:guid}",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "UpdateUser",
+      "status": "implemented",
+      "auth": "permission:auth.user.manage",
+      "description": "Updates an existing user through the authorized administration boundary.",
+      "usage": "Supports authorized user administration.",
+      "source": "services/auth/Controllers/UsersController.cs"
+    },
+    {
+      "id": "auth-user-delete",
+      "method": "DELETE",
+      "path": "/api/auth/users/{id:guid}",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "DeleteUser",
+      "status": "implemented",
+      "auth": "permission:auth.user.manage",
+      "description": "Deletes a user through the authorized administration boundary.",
+      "usage": "Supports authorized user administration.",
+      "source": "services/auth/Controllers/UsersController.cs"
+    },
+    {
+      "id": "auth-user-assign-roles",
+      "method": "POST",
+      "path": "/api/auth/users/{id:guid}/roles",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "AssignRoles",
+      "status": "implemented",
+      "auth": "permission:auth.user.manage",
+      "description": "Assigns roles to a user.",
+      "usage": "Supports authorized user-to-role administration.",
+      "source": "services/auth/Controllers/UsersController.cs"
+    }
+  ],
+  "testOnlyEndpoints": [
+    {
+      "id": "api-test-errors",
+      "method": "GET",
+      "path": "/api/test-only/errors",
+      "ownerService": "api",
+      "publicBoundary": "test-host",
+      "status": "test-only",
+      "description": "Test-host endpoint for deterministic API error behavior.",
+      "usage": "Used only by API integration tests; never a production route.",
+      "source": "services/api/tests/Blueverse.Api.Tests/Fixtures/TestOnlyControllers.cs"
+    },
+    {
+      "id": "api-test-request-context",
+      "method": "GET",
+      "path": "/api/test-only/request-context",
+      "ownerService": "api",
+      "publicBoundary": "test-host",
+      "status": "test-only",
+      "description": "Test-host endpoint for request-context behavior.",
+      "usage": "Used only by API integration tests; never a production route.",
+      "source": "services/api/tests/Blueverse.Api.Tests/Fixtures/TestOnlyControllers.cs"
+    },
+    {
+      "id": "api-test-auth",
+      "method": "GET",
+      "path": "/api/test-only/auth",
+      "ownerService": "api",
+      "publicBoundary": "test-host",
+      "status": "test-only",
+      "description": "Test-host endpoint for API authorization behavior.",
+      "usage": "Used only by API integration tests; never a production route.",
+      "source": "services/api/tests/Blueverse.Api.Tests/Fixtures/TestOnlyAuthController.cs"
+    },
+    {
+      "id": "auth-test-errors",
+      "method": "GET",
+      "path": "/api/test-only/auth-errors",
+      "ownerService": "auth",
+      "publicBoundary": "test-host",
+      "status": "test-only",
+      "description": "Test-host endpoint for deterministic Auth error behavior.",
+      "usage": "Used only by Auth integration tests; never a production route.",
+      "source": "services/auth/tests/Blueverse.Auth.Tests/Fixtures/TestOnlyControllers.cs"
+    }
+  ],
+  "aiEndpoints": {
+    "status": "none-implemented",
+    "clientAccess": "forbidden",
+    "sourceDirectories": [
+      "services/ai",
+      "services/ai-agents",
+      "services/agents"
+    ],
+    "documentationSources": [
+      "docs/agentic-ai"
+    ],
+    "entries": [],
+    "notes": "The repository contains Agentic AI architecture and workflow documentation but no executable AI service or AI API endpoint. Do not invent or expose target routes. When an AI service is implemented, add each endpoint here and keep clients behind the public API boundary."
+  },
+  "forbiddenPatterns": [
+    "/api/v1",
+    "direct Auth service hostnames from React or Flutter",
+    "direct Agentic AI service hostnames from React or Flutter",
+    "direct PostgreSQL or database targets from React or Flutter",
+    "undocumented dynamic or unapproved absolute API hosts"
+  ]
+}

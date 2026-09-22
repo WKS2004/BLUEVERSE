@@ -15,6 +15,11 @@ the agent configuration itself.
 - Every new, generated or updated UI must be registered in
   `docs/contracts/ui-integration.json` with its React route, Flutter route and
   public API endpoint references before it can pass CI.
+- The complete route and endpoint quick reference is
+  `docs/api/endpoint-catalog.md`. Update its source data in
+  `docs/api/endpoint-catalog.json` whenever a frontend route, gateway route,
+  public API/Auth route or Agentic AI endpoint changes, then regenerate the
+  Markdown view. Ordinary endpoint work does not change `.agents` guidance.
 - The two clients connect through shared workflow IDs and the public API; they
   must not call one another or use internal service hostnames.
 - Do not expose internal Agentic AI services directly to clients.
@@ -88,6 +93,10 @@ Protect agent tools and workflows against prompt injection and unauthorized tool
 
 Use PostgreSQL and EF Core migrations.
 
+For EF Core models, migrations, queries, persistence tests or provider-specific
+behavior, also read [`.agents/rules/data-access.md`](.agents/rules/data-access.md)
+and the owning `blueverse-postgresql-efcore` workflow.
+
 Persist only the data required for the application and Agentic AI workflow. Use constraints, indexes and audit fields where appropriate.
 
 ## Clients
@@ -103,6 +112,15 @@ Agentic AI, PostgreSQL/internal-service target, an unapproved absolute API
 host, a dynamic/unverifiable network target, and `/api/v1`-style path are
 invalid. Prefer literal relative `/api/...` paths; the check applies even when
 a UI is generated from a template.
+
+For any API, gateway, frontend-route or Agentic AI route change, first read
+`docs/api/endpoint-catalog.md`, update `docs/api/endpoint-catalog.json` with
+the endpoint's purpose and usage, regenerate the Markdown view with
+`python .agents/scripts/validate_endpoint_catalog.py --write-markdown`, then
+run `python .agents/scripts/validate_endpoint_catalog.py`. The implementation
+sources remain authoritative. Change `.agents` rules or skills only when the
+user explicitly requests or approves an agent-guidance change; routine
+endpoint maintenance belongs in `docs/api/`.
 
 ## Testing
 

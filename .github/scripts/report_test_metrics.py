@@ -63,6 +63,18 @@ def parse_seconds(value: str | None) -> float:
     try:
         return float(value)
     except ValueError:
+        clock_match = re.fullmatch(
+            r"(?:(\d+):)?(\d{1,2}):(\d{2})(?:\.(\d+))?", value
+        )
+        if clock_match:
+            hours, minutes, seconds, fraction = clock_match.groups()
+            fractional_seconds = float(f"0.{fraction}") if fraction else 0.0
+            return (
+                int(hours or 0) * 3600
+                + int(minutes) * 60
+                + int(seconds)
+                + fractional_seconds
+            )
         match = re.fullmatch(
             r"P(?:\d+D)?T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?",
             value,
@@ -71,6 +83,20 @@ def parse_seconds(value: str | None) -> float:
             return 0.0
         hours, minutes, seconds = (float(part or 0) for part in match.groups())
         return hours * 3600 + minutes * 60 + seconds
+
+
+def first_error_line(value: object) -> str:
+    """Return a compact, safe first-line diagnostic from a Flutter error value."""
+    if value is None:
+        return ""
+    if isinstance(value, list):
+        text = "\n".join(str(item) for item in value)
+    elif isinstance(value, dict):
+        text = json.dumps(value, sort_keys=True)
+    else:
+        text = str(value)
+    lines = text.splitlines()
+    return lines[0][:240] if lines else ""
 
 
 def failure_detail(element: ET.Element) -> str:
@@ -149,7 +175,7 @@ def parse_xml(path: Path) -> Metrics:
 
 def parse_flutter(path: Path) -> Metrics:
     metrics = Metrics()
-    started: set[str] = set()
+    started: dict[str, str] = {}
     completed: set[str] = set()
     for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
         try:
@@ -162,38 +188,49 @@ def parse_flutter(path: Path) -> Metrics:
             if not isinstance(event, dict):
                 continue
             if event.get("type") == "testStart":
-                params = event.get("testStart", {})
+                # Flutter has emitted both the current nested payload shape and
+                # the older package:test machine protocol shape. The latter
+                # stores the test definition under `test` and keeps the test
+                # completion fields at the event root.
+                params = event.get("testStart") or event.get("test") or {}
+                if not isinstance(params, dict):
+                    params = {}
                 if params.get("hidden"):
                     continue
-                test_id = str(params.get("id", params.get("name", len(started))))
-                started.add(test_id)
+                raw_id = params.get("id", params.get("testID", event.get("testID")))
+                test_id = str(raw_id if raw_id is not None else len(started))
+                started[test_id] = str(params.get("name") or test_id)
             elif event.get("type") == "testDone":
-                params = event.get("testDone", {})
+                params = event.get("testDone") or event
+                if not isinstance(params, dict):
+                    params = event
                 if params.get("hidden"):
                     continue
-                test_id = str(params.get("id", len(completed)))
+                raw_id = params.get("id", params.get("testID", event.get("testID")))
+                test_id = str(raw_id if raw_id is not None else len(completed))
                 if test_id in completed:
                     continue
                 completed.add(test_id)
+                time_value = params.get("time", event.get("time"))
+                if isinstance(time_value, (int, float)):
+                    metrics.duration_seconds += float(time_value) / 1000
+                elif time_value is not None:
+                    metrics.duration_seconds += parse_seconds(str(time_value))
                 result = str(params.get("result", "error")).lower()
                 metrics.total += 1
-                if result == "success":
-                    metrics.passed += 1
-                elif result in {"skipped", "pending"}:
+                if params.get("skipped") is True or result in {"skipped", "pending"}:
                     metrics.skipped += 1
+                elif result in {"success", "passed", "pass"}:
+                    metrics.passed += 1
                 elif result in {"failure", "failed"}:
                     metrics.failed += 1
-                    name = str(params.get("name", params.get("id", "unknown-test")))
-                    error_text = str(params.get("error") or "")
-                    detail_lines = error_text.splitlines()
-                    detail = detail_lines[0][:240] if detail_lines else ""
+                    name = str(params.get("name") or started.get(test_id) or test_id)
+                    detail = first_error_line(params.get("error"))
                     metrics.failed_cases.append(f"{name} — {detail}" if detail else name)
                 else:
                     metrics.errors += 1
-                    name = str(params.get("name", params.get("id", "unknown-test")))
-                    error_text = str(params.get("error") or "")
-                    detail_lines = error_text.splitlines()
-                    detail = detail_lines[0][:240] if detail_lines else ""
+                    name = str(params.get("name") or started.get(test_id) or test_id)
+                    detail = first_error_line(params.get("error"))
                     metrics.failed_cases.append(f"{name} — {detail}" if detail else name)
     metrics.total = max(metrics.total, len(started))
     return metrics
@@ -215,18 +252,32 @@ def main() -> int:
     parser.add_argument("--format", choices=("auto", "junit", "flutter"), default="auto")
     parser.add_argument("--scope", required=True)
     parser.add_argument("--failures-only", action="store_true")
+    parser.add_argument(
+        "--require-results",
+        action="store_true",
+        help="fail when no parseable test cases are discovered",
+    )
     args = parser.parse_args()
 
     grouped: dict[str, Metrics] = defaultdict(Metrics)
+    result_files: list[Path] = []
     if args.input:
         for input_path in args.input:
+            result_files.append(input_path)
             if args.format == "flutter":
                 grouped[args.scope].add(parse_flutter(input_path))
             else:
                 grouped[args.scope].add(parse_xml(input_path))
     else:
-        files = sorted(args.results_root.rglob("*.xml")) if args.results_root and args.results_root.exists() else []
-        for path in files:
+        if args.results_root and args.results_root.exists():
+            result_files = sorted(
+                {
+                    path
+                    for pattern in ("*.xml", "*.trx")
+                    for path in args.results_root.rglob(pattern)
+                }
+            )
+        for path in result_files:
             relative = path.relative_to(args.results_root)
             service = relative.parts[0] if len(relative.parts) > 1 else path.parent.name
             try:
@@ -278,6 +329,13 @@ def main() -> int:
             lines.append("- None detected.")
         existing_summary = summary_path.read_text(encoding="utf-8") if summary_path.exists() else ""
         summary_path.write_text(existing_summary + "\n".join(lines) + "\n", encoding="utf-8")
+
+    if args.require_results and (not result_files or overall.total == 0):
+        print(
+            f"ERROR: {args.scope} expected parseable test results, but no test cases were discovered.",
+            file=sys.stderr,
+        )
+        return 2
     return 0
 
 

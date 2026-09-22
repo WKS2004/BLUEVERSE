@@ -10,6 +10,15 @@ The machine-readable source of truth is
 validated by `scripts/validation/validate_ui_integrations.py` and by the
 `UI Integration Contract` GitHub Actions workflow.
 
+For a quick inventory of every current frontend route, gateway mapping,
+public API/Auth endpoint, test-only route and Agentic AI endpoint status, read
+the repository-local [endpoint catalog](../api/endpoint-catalog.md). The UI
+registry is intentionally only the workflow-facing subset. Any API or route
+change must update the endpoint catalog in the same change; the catalog
+validator checks its source declarations and this UI registry for drift.
+Update the catalog JSON, then regenerate its Markdown view with
+`python .agents/scripts/validate_endpoint_catalog.py --write-markdown`.
+
 ## Boundary
 
 ```text
@@ -69,7 +78,8 @@ and forwarding to internal services.
 
 `ui-integration.yml` runs when either client, the public API, a service,
 API/architecture contract documentation, Compose/Docker gateway routing, any
-workflow, the registry or this validator changes. The web and mobile CI
+workflow, the endpoint catalog, the registry or either validator changes. The
+web and mobile CI
 workflows also run the same validator for every affected client change. A
 failure is a merge blocker: an undeclared route, undeclared `/api/...` call,
 dynamic/unverifiable network target, unapproved absolute API host, direct
@@ -77,15 +87,15 @@ internal target, versioned API path or missing shared surface must be fixed in
 the change that introduced it. A client may not hide its API host or path in
 an unresolved variable and rely on CI to infer the intended service.
 
-The current v0 starter clients have one shared `foundation-home` entry and no
-API references because the tracked API/OpenAPI source is not present yet. The
-empty endpoint list is intentional; it is not permission to add unregistered
-client calls. The first real screen must add its backend contract and tests in
-the same change.
+The current v0 clients retain the `foundation-home` entry and also implement
+the shared `auth-session-management` workflow. Its public Auth endpoint
+references are registered in the same manifest; future screens must follow the
+same pattern rather than adding unregistered calls.
 
 Run locally from the repository root:
 
 ```text
+<bundled-python> .agents/scripts/validate_endpoint_catalog.py
 <bundled-python> scripts/validation/validate_ui_integrations.py
 <bundled-python> -m unittest discover -s scripts/validation/tests -p "test_*.py"
 ```

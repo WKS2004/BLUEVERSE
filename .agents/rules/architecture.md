@@ -16,6 +16,12 @@
   hard-coded role names or client-only business rules.
 - Keep DTOs, application/service layers, async I/O, validation, structured
   errors and OpenAPI at the public API boundary.
+- Use `docs/api/endpoint-catalog.md` as the fast inventory of implemented
+  frontend, gateway, public API, internal, test-only and Agentic AI routes.
+  For every route addition, update, rename, move or removal, update its JSON
+  source and regenerate the Markdown view in the same change; it complements,
+  but does not replace, the UI workflow registry. Run the endpoint validator
+  before completion.
 - Avoid speculative services in the v0 foundation. A material boundary,
   persistence or orchestration decision requires an ADR and matching tests.
 
@@ -25,4 +31,5 @@ actually exists.
 
 For any UI route or API request change, also read
 [`docs/development/ui-integration.md`](../../docs/development/ui-integration.md)
-and run the UI integration contract validator.
+and the endpoint catalog, update the catalog in the same change, then run the
+endpoint and UI integration contract validators.

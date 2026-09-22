@@ -312,3 +312,524 @@ runtime lacks PyYAML.
   passed; embedded Bash syntax checks passed for 10 workflows; branch-policy
   JavaScript syntax passed; `git diff --check` passed; and the final diff was
   reviewed for stale branch-policy documentation.
+
+## 2026-09-20 — Implement and validate Auth service recommendations
+
+- Date/time or time range: 2026-09-20 17:00–17:57 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-5
+- Summary of the user's request: Revalidate the repository-wide Auth-service
+  findings and implement the resulting recommendations.
+- Summary of what the AI Agent did: Hardened required JWT and database
+  configuration; added public-API JWT validation and Auth token-version
+  revocation; protected system roles and rejected unknown role/permission
+  assignments; added EF Core design-time support and an initial migration;
+  bounded startup/readiness behavior; added API/Auth security tests and CI
+  test-project enforcement; synchronized Compose, Render, environment,
+  architecture, security, database and testing documentation; and added the
+  repository-pinned EF Core tool manifest.
+- Verification/evidence: API build passed with 0 warnings and 0 errors; Auth
+  build passed with 0 warnings and 0 errors; API tests passed 17/17 and Auth
+  tests passed 9/9; the pinned EF Core tool listed
+  `20260920114913_InitialAuthSchema`; runtime smoke returned Auth health `503`
+  with `status: unhealthy` for an unavailable database and `401` for an
+  unauthenticated protected request; agent-resource and UI-integration
+  validators passed; 12 repository validation tests passed; and no committed
+  secrets were introduced.
+
+## 2026-09-20 — Complete the Auth endpoint gap audit
+
+- Date/time or time range: 2026-09-20 21:20–21:38 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-5
+- Summary of the user's request: Re-audit the Auth service for missing
+  endpoints and implement the logout endpoint plus other justified gaps.
+- Summary of what the AI Agent did: Revalidated the existing Auth routes and
+  repository contracts; added authenticated logout, explicit password change,
+  individual role reads and individual permission reads; applied token-version
+  revocation to logout/password changes; added structured endpoint tests and
+  synchronized the API, security and test documentation. Also disabled the
+  Windows EventLog sink in the public API process so non-administrator test
+  hosts cannot turn safe error handling into a logging failure. Refresh-token,
+  password-recovery, email-verification and session endpoints were not added
+  because the repository has no corresponding persistence or delivery
+  contract.
+- Verification/evidence: Auth build passed with 0 warnings and 0 errors;
+  Auth tests passed 12/12, including logout revocation, password-change
+  revocation, re-login, authorization and not-found response assertions.
+
+## 2026-09-20 — Implement multi-account device sessions and scoped logout
+
+- Date/time or time range: 2026-09-20 21:40–22:20 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-5
+- Summary of the user's request: Remove password fields from `PUT /api/auth/me`,
+  support up to five logged-in accounts per device, add device-scoped,
+  account-scoped and every-device logout behavior, and update the repository
+  documentation.
+- Summary of what the AI Agent did: Added persisted user-device sessions with
+  session-version JWT claims; enforced the five active-account device limit;
+  added `POST /api/auth/logout`, `POST /api/auth/logout/{id}` and
+  `POST /api/auth/logout-all-devices`; separated profile updates from password
+  changes; added the EF Core migration, integration tests, ADR and synchronized
+  API, security, database and testing documentation.
+- Verification/evidence: API build passed with 0 warnings and 0 errors; Auth
+  build passed with 0 warnings and 0 errors; API tests passed 17/17 and Auth
+  tests passed 16/16; OpenAPI smoke verified the logout routes, password-change
+  route and profile-only update schema; UI-integration, agent-resource and
+  repository validation tests passed; `git diff --check` passed; the new EF
+  migration was listed successfully, while applied-state verification was
+  unavailable because PostgreSQL was not running; no secrets were introduced.
+
+## 2026-09-21 — Fix PostgreSQL session-transaction login failure
+
+- Date/time or time range: 2026-09-21 04:15–04:50 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-5
+- Summary of the user's request: Diagnose and fix the HTTP 500 returned by
+  valid Auth login requests after the multi-device session update while the
+  Docker Compose stack and PostgreSQL database were running.
+- Summary of what the AI Agent did: Reproduced the failure through the public
+  gateway and inspected the Auth container logs; identified that
+  `NpgsqlRetryingExecutionStrategy` rejected the manually opened serializable
+  session transaction; wrapped the complete session mutation in EF Core's
+  execution strategy; rebuilt and recreated the Auth container.
+- Verification/evidence: Auth build passed with 0 warnings and 0 errors; Auth
+  tests passed 16/16; live Docker health returned 200 with PostgreSQL
+  connected; valid login returned 200 and its token authorized `/api/auth/me`
+  with 200; invalid credentials returned 401; the rebuilt Auth logs showed no
+  remaining transaction exception; Compose configuration and Auth image build
+  passed; no secrets were recorded.
+
+## 2026-09-21 — Create Auth session lifecycle implementation plan
+
+- Date/time or time range: 2026-09-21 04:55–05:06 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-5
+- Summary of the user's request: Create an implementation plan before
+  implementing server-issued device installations, five-account-per-device
+  and five-session-per-account limits, expiration, remember-me durations and
+  access/refresh token lifecycle behavior.
+- Summary of what the AI Agent did: Added
+  `docs/project/auth-session-management-implementation-plan.md` covering the
+  proposed data model, secure web/mobile storage, 1-day/30-day session policy,
+  JWT and refresh-token rotation, capacity eviction, PostgreSQL concurrency,
+  endpoints, client integration, testing, Docker validation, migration and
+  rollout phases. No implementation code was changed for this planning step.
+- Verification/evidence: The plan file exists with 433 lines, contains no
+  trailing whitespace, and its ADR/API links resolve; the repository's
+  existing `git diff --check` completed without content errors; no secrets or
+  tokens were recorded.
+
+## 2026-09-21 — Execute Auth session and token lifecycle implementation plan
+
+- Date/time or time range: 2026-09-21 05:06–10:44 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, .NET/EF Core, Docker Compose, Flutter
+  and npm tooling
+- AI Model: GPT-5
+- Summary of the user's request: Re-revise and execute the Auth session
+  implementation plan, including server-issued device credentials, five
+  account sessions per installation, five active sessions per account,
+  expiration and remember-me lifetimes, access/refresh token lifecycle,
+  logout scopes, client integration, documentation and final plan cleanup.
+- Summary of what the AI Agent did: Implemented server-issued installation
+  identifiers and hashed device proofs; added one-day/30-day absolute session
+  policy, short-lived access JWTs, rotating hashed refresh tokens and replay
+  revocation; added cookie and native response transport, session listing and
+  revocation, capacity eviction, PostgreSQL transaction/advisory locking and
+  expiration cleanup; synchronized the API gateway, React, Flutter, Compose,
+  migration, ADR, security, database, testing and UI-contract documentation;
+  added an opt-in real-PostgreSQL concurrency test and removed the completed
+  implementation-plan file after validation.
+- Verification/evidence: Auth default tests passed 21/21; the opt-in
+  PostgreSQL test `AUTH-POSTGRES-SESSION-001` passed 1/1 against the running
+  database and cleaned up its temporary user; API tests passed 17/17; React
+  build/lint and Flutter analyze/test passed; UI-contract validation and its
+  tests passed 12/12; EF migrations were listed/applied successfully; the
+  rebuilt Docker Compose Auth image and live gateway smoke checks passed with
+  health 200, valid login 200, invalid login 401, refresh 200, protected
+  `/me` 200, logout 204, revoked `/me` 401 and successful cookie transport;
+  recent Auth/API logs contained no error lines or configured-secret values.
+
+## 2026-09-21 — Fix Flutter Android local gateway connectivity
+
+- Date/time or time range: 2026-09-21 10:44–15:08 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Flutter/Dart, Docker Compose and ADB
+- AI Model: GPT-5
+- Summary of the user's request: Diagnose and fix the Android client's
+  failure to reach the laptop's local BLUEVERSE gateway, determine the correct
+  local network address and ensure the client uses port 80 instead of changing
+  socket ports.
+- Summary of what the AI Agent did: Replaced mobile `localhost` targets with
+  a port-80 gateway resolver supporting the Android emulator host,
+  laptop-LAN override and USB ADB reverse fallback; added stable connectivity
+  errors, Android debug/profile cleartext permission, network configuration
+  tests and setup documentation; validated the laptop Wi-Fi address and
+  Compose port mapping; rebuilt and installed the debug APK.
+- Verification/evidence: Laptop Wi-Fi was `172.28.20.242` and the attached
+  Android device was `172.28.24.80` on the same subnet; Compose published
+  edge-nginx on `0.0.0.0:80` and gateway health returned 200; direct device
+  LAN access was blocked with a failed ARP neighbor, consistent with managed
+  Wi-Fi client isolation; `adb reverse tcp:80 tcp:80` reached port 80 from the
+  device; Dart analysis reported no issues, Flutter tests passed 4/4, the
+  debug APK build and install succeeded, UI-contract validation passed and
+  validator tests passed 12/12. No secrets or tokens were recorded.
+
+## 2026-09-21 — Make the Flutter gateway override authoritative
+
+- Date/time or time range: 2026-09-21 16:35–17:03 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Flutter/Dart, Gradle, ADB and the
+  repository validation scripts
+- AI Model: GPT-5
+- Summary of the user's request: Fix the Flutter `BLUEVERSE_API_BASE_URL`
+  configuration because `flutter run` and `flutter build` continued to use
+  checked-in IP fallbacks instead of the requested laptop address.
+- Summary of what the AI Agent did: Removed the environment-specific laptop
+  IP from the mobile runtime defaults; made a supplied
+  `--dart-define=BLUEVERSE_API_BASE_URL=...` value authoritative; clarified
+  the build/run commands and port-80 behavior in the mobile, root, networking
+  and local-deployment documentation; and added a compile-time override
+  regression test.
+- Verification/evidence: The override test passed with a synthetic LAN URL;
+  the complete Flutter suite passed 5/5; Flutter analysis reported no issues;
+  the debug APK built successfully with the override; `flutter run` installed
+  and launched the Android app using an explicit port-80 USB-reverse URL; UI
+  integration validation passed and its 12 validator tests passed. No secrets,
+  tokens or personal data were recorded.
+
+## 2026-09-21 — Separate active Auth sessions from lifecycle logs
+
+- Date/time or time range: 2026-09-21 17:05–19:16 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, .NET/EF Core, Docker Compose,
+  PostgreSQL and HTTP smoke checks
+- AI Model: GPT-5
+- Summary of the user's request: Replace the single `UserSessions` table model
+  with a table containing only active sessions and a separate log table that
+  retains revoked, expired and otherwise stale session records.
+- Summary of what the AI Agent did: Added `ActiveSessions` and
+  `UserSessionLogs` persistence models; moved ended sessions and their hashed
+  refresh-token associations into the archive; updated JWT validation, login,
+  refresh, logout, capacity eviction, expiry cleanup and security invalidation
+  paths; added a data-preserving EF migration; added archive behavior tests;
+  and updated the Auth schema, security, testing and ADR documentation.
+- Verification/evidence: Auth build succeeded with no warnings; default Auth
+  tests passed 23/23; active/archive tests passed 2/2; the opt-in PostgreSQL
+  session/concurrency test passed 1/1; the live migration applied successfully
+  to the local database; live login returned 200 and logout returned 204; the
+  resulting database contained separate `ActiveSessions` and
+  `UserSessionLogs` tables with refresh-token links preserved; API tests passed
+  17/17; gateway, API and Auth health checks returned 200; EF reported no
+  pending model changes. No secrets or tokens were recorded.
+
+## 2026-09-21 — Synchronize repository documentation with Auth implementation
+
+- Date/time or time range: 2026-09-21 20:00–20:20 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and repository validation scripts
+- AI Model: GPT-5
+- Summary of the user's request: Update the repository documentation to reflect
+  the current Auth, client, session, database, testing and deployment state.
+- Summary of what the AI Agent did: Audited current documentation against the
+  checked-in Auth implementation and synchronized the root, client, API,
+  architecture, security, database, setup, CI, testing, ADR and foundation-gap
+  documentation. Corrected stale starter/empty-registry wording and test
+  counts, documented `ActiveSessions` versus `UserSessionLogs`, and clarified
+  server-issued device credentials and client storage behavior.
+- Verification/evidence: `git diff --check` completed without content errors;
+  agent-resource validation passed with 21 skills; UI integration contract
+  validation passed; endpoint, session, database and migration documentation
+  was reviewed against the current source. No secrets, tokens or personal data
+  were recorded.
+
+## 2026-09-21 — Complete API and Auth test coverage
+
+- Date/time or time range: 2026-09-21 20:20–20:45 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and .NET test tooling
+- AI Model: GPT-5
+- Summary of the user's request: Analyze the repository API and Auth surfaces,
+  implement missing and necessary tests, and update the documentation.
+- Summary of what the AI Agent did: Added API JWT boundary and Auth Swagger
+  routing tests; added Auth endpoint, validation, cookie, device-proof,
+  session, logout, administration, error, seeding, authorization, JWT,
+  refresh-secret, password-hashing and EF model-contract tests. Fixed malformed
+  access-token lifetime configuration handling and labeled Auth exception
+  responses with the RFC 7807 media type.
+- Verification/evidence: API tests passed 21/21; default Auth tests passed
+  60/60; `git diff --check` completed without content errors; agent-resource
+  validation passed with 21 skills; UI integration contract validation passed.
+  The opt-in PostgreSQL test was not rerun because
+  `BLUEVERSE_AUTH_POSTGRES_TEST_CONNECTION` was not configured in this shell.
+  No secrets, tokens or personal data were recorded.
+
+## 2026-09-21 — Finalize and re-evaluate repository tests
+
+- Date/time or time range: 2026-09-21 20:45–21:05 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, .NET, Flutter, Node and Python test tooling
+- AI Model: GPT-5
+- Summary of the user's request: Re-evaluate all implemented tests, finalize their
+  assertions and coverage, and update the documentation.
+- Summary of what the AI Agent did: Audited the API/Auth test methods for false
+  confidence and missing boundary behavior; replaced a weak refresh-token
+  assertion with exact persisted-token and revocation checks; strengthened session
+  response schema and validation assertions; added malformed-JSON, administrative
+  authorization/validation, cookie session-revocation/everywhere-logout and JWT
+  configuration-boundary coverage; removed an unused test-helper field; and
+  synchronized the test matrix, strategy, implementation plan, API, foundation
+  and Auth test-suite documentation to 67 Auth cases.
+- Verification/evidence: API tests passed 21/21; default Auth tests passed 67/67;
+  repository Python validation tests passed 12/12; Flutter tests passed 5/5 with
+  `--no-pub`; Flutter analysis reported no issues; local web ESLint, TypeScript
+  build and Vite production build passed; agent-resource and UI-integration
+  validators passed; and `git diff --check` completed without content errors.
+  The opt-in PostgreSQL test was not run because
+  `BLUEVERSE_AUTH_POSTGRES_TEST_CONNECTION` was not configured. The machine-wide
+  npm wrapper was unavailable, so the equivalent repository-local Node binaries
+  were used for web validation. No secrets, tokens or personal data were recorded.
+
+## 2026-09-21 — Finalize repository documentation
+
+- Date/time or time range: 2026-09-21 21:05–21:12 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and bundled repository validators
+- AI Model: GPT-5
+- Summary of the user's request: Finalize all documentation across the
+  repository after the completed Auth, session, client and test work.
+- Summary of what the AI Agent did: Audited the repository documentation against
+  the checked-in source and contracts; corrected stale Auth-pending and empty
+  UI-registry statements; clarified configurable gateway port behavior; aligned
+  the roadmap, repository map, Docker documentation, security checklist and
+  session-archive ADR; and improved the root/documentation indexes. Historical
+  contribution entries were preserved.
+- Verification/evidence: Agent-resource validation passed with 21 skills; UI
+  integration validation passed; tracked Markdown relative-link validation and
+  Markdown fence parity checks passed; `git diff --check` completed without
+  content errors; and the documented API/Auth/session state was reviewed against
+  the current source and contract registry. No secrets, tokens or personal data
+  were recorded.
+
+## 2026-09-21 — Correct backend workflow test metrics discovery
+
+- Date/time or time range: 2026-09-21 21:12–21:23 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Python, GitHub Actions workflow review
+  and .NET test tooling
+- AI Model: GPT-5
+- Summary of the user's request: Investigate why backend tests appeared to be
+  skipped or reported as zero in the GitHub Actions backend workflow.
+- Summary of what the AI Agent did: Traced the workflow's VSTest output and
+  metrics helper; fixed result discovery to include `.trx` files as well as
+  JUnit `.xml`; added a fail-closed `--require-results` guard for discovered
+  backend suites; added CI-helper regression tests; ran those tests in the
+  repository foundation workflow; and synchronized the CI documentation.
+- Verification/evidence: The helper tests passed 2/2; API tests passed 21/21;
+  Auth tests passed 67/67; the corrected reporter aggregated the generated TRX
+  files as 88 total, 88 completed, 88 passed, 0 failed and 0 skipped with
+  per-service rows; agent-resource and UI-integration validators passed; and
+  `git diff --check` completed without content errors. No secrets, tokens or
+  personal data were recorded.
+
+## 2026-09-21 — Resolve GitHub Actions artifact-runtime warning
+
+- Date/time or time range: 2026-09-21 21:23–21:29 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and official GitHub Actions release review
+- AI Model: GPT-5
+- Summary of the user's request: Re-check the backend workflow log after the
+  metrics fix because the workflow still appeared to show an error.
+- Summary of what the AI Agent did: Confirmed the supplied run completed API
+  and Auth tests successfully with 88/88 aggregate results and zero skips;
+  distinguished the unconditional failed-case heading from an actual failure;
+  identified the remaining Node.js 20 deprecation warning from
+  `actions/upload-artifact@v4`; and upgraded all test artifact upload steps to
+  the official Node.js 24-compatible `actions/upload-artifact@v6` release.
+- Verification/evidence: The supplied log contains no failed test, failed case
+  or non-zero exit code; it reports API 21/21, Auth 67/67 and aggregate 88/88.
+  Workflow references were updated consistently across backend, web, mobile
+  and Agentic AI test workflows. No secrets, tokens or personal data were
+  recorded.
+
+## 2026-09-21 — Correct Flutter metrics parsing and restore web test coverage
+
+- Date/time or time range: 2026-09-21 21:30–21:49 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Node.js, Python and GitHub Actions workflow review
+- AI Model: GPT-5
+- Summary of the user's request: Investigate the still-failing-looking backend,
+  Flutter and web test workflow logs and fix the remaining test-reporting and
+  test-discovery problems.
+- Summary of what the AI Agent did: Confirmed the supplied backend run was
+  green; updated the Flutter machine-protocol parser to support both nested and
+  legacy top-level event payloads; added parser regression coverage; made the
+  mobile and web metrics checks fail closed when result cases are absent; added
+  three dependency-free Node 24 Auth request-boundary tests for the web client;
+  switched the web workflow to Node's JUnit reporter; and synchronized the
+  client, CI and testing documentation.
+- Verification/evidence: CI-helper tests passed 3/3; web Auth tests passed
+  3/3; web lint and production build passed; generated web JUnit was reported as
+  3 passed, 0 failed and 0 errors; agent-resource validation passed; UI
+  integration validation passed; its 12 tests passed; and `git diff --check`
+  completed without content errors. No secrets, tokens or personal data were
+  recorded.
+
+## 2026-09-21 — Add validated endpoint and route catalog
+
+- Date/time or time range: 2026-09-21 23:53–2026-09-22 00:07 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Python and repository workflow review
+- AI Model: GPT-5
+- Summary of the user's request: Create a fast, consistent `.agents` reference for all frontend routes, gateway routes, public API/Auth endpoints and Agentic AI endpoint status, and require agents to keep it synchronized whenever routes change.
+- Summary of what the AI Agent did: Added `.agents/api/README.md` and a machine-readable catalog covering current React, Flutter, gateway, API, Auth, Swagger, health and test-only routes; documented that no executable Agentic AI API exists; added source/UI/client drift validation; integrated the validator into agent-resource validation and CI; updated root instructions, routing, rules, skills, UI-contract documentation and endpoint-registry linkage; and added a routing evaluation case.
+- Verification/evidence: Endpoint catalog validation passed with 32 public endpoints, 4 frontend routes and no implemented AI endpoints; agent-resource validation passed with 21 skills; UI integration validation passed; its 14 tests passed, including endpoint-catalog regression coverage; and `git diff --check` completed without content errors. No secrets, tokens or personal data were recorded.
+
+## 2026-09-22 — Separate endpoint documentation from agent guidance
+
+- Date/time or time range: 2026-09-22 00:35 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Python and repository workflow review
+- AI Model: GPT-5
+- Summary of the user's request: Re-evaluate the endpoint catalog location so routine API changes do not rewrite agent guidance, and provide a readable Markdown inventory under docs.
+- Summary of what the AI Agent did: Moved the catalog data to `docs/api/endpoint-catalog.json`, generated `docs/api/endpoint-catalog.md`, changed agent rules and skills to point to the readable docs and protect guidance from routine endpoint edits, made the validator compare the Markdown view with JSON and discover gateway and Swagger routes from source, and updated CI and UI-contract references.
+- Verification/evidence: Endpoint catalog validation passed with 32 public endpoints and 4 frontend routes; agent-resource and UI-contract validation passed; 14 validation tests passed; and `git diff --check` found no whitespace errors. The optional upstream skill validator could not run because PyYAML is unavailable in the bundled Python runtime; the repository agent-resource validator passed for all 21 skills.
+
+## 2026-09-22 — Fix endpoint catalog review findings
+
+- Date/time or time range: 2026-09-22 00:56 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and Python
+- AI Model: GPT-6
+- Summary of the user's request: Fix the validator, catalog accuracy, guidance conflicts and test gaps identified in the review.
+- Summary of what the AI Agent did: Added source-specific endpoint discovery and checks for declared authorization, ownership and production/test/AI classification; detected literal minimal APIs and rejected unsupported mappings; added rejection regression tests; corrected device-wide logout documentation; reconciled guidance-edit authorization; removed stale foundation wording; narrowed skill routing; and documented the static validator's limits.
+- Verification/evidence: All 32 validation tests passed, including the four previously accepted invalid scenarios; endpoint, agent-resource and UI-contract validators passed; Markdown matches the JSON catalog; and `git diff --check` found no whitespace errors. Source checks cover supported C# declarations and do not replace runtime authorization tests.
+
+## 2026-09-22 — Final endpoint and agent-resource hygiene review
+
+- Date/time or time range: 2026-09-22 01:24 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and Python
+- AI Model: GPT-5
+- Summary of the user's request: Verify that the endpoint-catalog and `.agents` improvements were complete without disturbing the project structure or reducing repository hygiene.
+- Summary of what the AI Agent did: Re-ran the endpoint-catalog, agent-resource and UI-contract validators; ran the complete validation regression suite and syntax checks; confirmed source/application directories were not changed; verified that `.agents` contains no generated artifacts; and removed the verified-empty stale `.agents/api` directory left by the catalog relocation.
+- Verification/evidence: Endpoint catalog passed with 32 public endpoints, 4 frontend routes and no implemented AI endpoints; all 21 repository skills validated; the UI contract passed; all 32 validation tests passed; AST syntax checks passed; no `.agents/api` or generated/cache/build artifacts remain under `.agents`; and `git diff --check` completed without content errors. No historical contribution records were edited, and no secrets, tokens or personal data were recorded.
+
+## 2026-09-22 — Make endpoint documentation synchronization mandatory
+
+- Date/time or time range: 2026-09-22 01:38 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and Python
+- AI Model: GPT-5
+- Summary of the user's request: Ensure agents are required to update the API/route documentation every time they add, update, rename, move or remove any kind of endpoint.
+- Summary of what the AI Agent did: Added a blocking endpoint-documentation gate to the universal `.agents` safety, documentation, architecture, security, testing and validation rules; expanded the routing matrix and agent README to cover frontend, client, gateway, backend, internal, health, OpenAPI, test-only and Agentic AI routes; strengthened all endpoint-relevant BLUEVERSE skills; expanded the routing evaluation case; removed a duplicated repository-map line; and synchronized the developer-facing resource documentation.
+- Verification/evidence: Agent-resource validation passed for all 21 skills; endpoint-catalog validation passed with 32 public endpoints, 4 frontend routes and no implemented AI endpoints; UI integration validation passed; all 32 validation tests passed; and `git diff --check` completed without content errors. No secrets, tokens or personal data were recorded.
+
+## 2026-09-22 — Add token-efficient endpoint lookup guidance
+
+- Date/time or time range: 2026-09-22 01:48 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and Python
+- AI Model: GPT-5
+- Summary of the user's request: Make agents use the endpoint catalog as the default fast source and inspect the repository only when the catalog is insufficient, uncertain or explicitly requested.
+- Summary of what the AI Agent did: Added `.agents/rules/endpoint-catalog.md` with the fast-path lookup and source-escalation policy; added an endpoint lookup routing row; linked the rule from the `.agents` README, documentation rule and developer resource guide; and preserved the mandatory same-change catalog synchronization workflow for endpoint modifications.
+- Verification/evidence: Agent-resource validation passed for all 21 skills; endpoint-catalog validation passed with 32 public endpoints, 4 frontend routes and no implemented AI endpoints; UI integration validation passed; all 32 validation tests passed; and `git diff --check` completed without content errors. No secrets, tokens or personal data were recorded.
+
+## 2026-09-22 — Execute PostgreSQL and EF Core agent-resource plan
+
+- Date/time or time range: 2026-09-22 02:15–02:28 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and Python
+- AI Model: GPT-5
+- Summary of the user's request: Execute the approved implementation plan for improving `.agents` with PostgreSQL, EF Core, database testing, skills, rules and efficient repository-specific guidance.
+- Summary of what the AI Agent did: Added the BLUEVERSE PostgreSQL/EF Core data-access rule and workflow skill; routed database, migration and provider-specific testing tasks; added database routing evaluation cases; strengthened backend, testing, CI and foundation-audit guidance; updated database/testing/resource documentation; pinned verified external database candidates as deferred with provenance and reasons; and added the new rule to deterministic resource validation.
+- Verification/evidence: `.agents/scripts/validate_agent_resources.py` passed with 22 repository skills; endpoint-catalog validation passed with 32 public endpoints and 4 frontend routes; UI integration validation passed; all 32 validation tests passed; and `git diff --check` completed without content errors. No application tests or historical contribution records were changed, and no secrets, tokens or personal data were recorded.
+
+## 2026-09-22 — Finalize PostgreSQL agent-resource documentation audit
+
+- Date/time or time range: 2026-09-22 02:29–02:37 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and Python
+- AI Model: GPT-5
+- Summary of the user's request: Perform a final repository-wide review and finalize the `.agents` implementations and supporting documentation.
+- Summary of what the AI Agent did: Audited the complete agent-resource inventory, registry, routing, rules, skills, database/testing documentation, foundation status and link integrity; corrected stale 21-skill/foundation wording; clarified cross-layer skill loading; linked persistence testing to the data-access rule; and preserved the existing project structure and protected tests.
+- Verification/evidence: `.agents/scripts/validate_agent_resources.py` passed with 22 skills; endpoint-catalog and UI-integration validators passed; all 32 validation tests passed; Markdown relative links passed for 118 files; `git diff --check` completed without content errors; no generated artifacts were found under `.agents`; and no application source or existing test was changed.
+
+## 2026-09-22 — Final repository-wide documentation and validation audit
+
+- Date/time or time range: 2026-09-22 09:10 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Python, Node.js and .NET CLI
+- AI Model: GPT-5
+- Summary of the user's request: Recheck the whole repository one final time and update the documentation through the current implementation state.
+- Summary of what the AI Agent did: Audited the repository source layout, API/Auth contracts, endpoint catalog, UI integration contract, database and session documentation, Docker and gateway configuration, CI workflows, test discovery and coverage evidence, and current agent resources; updated the foundation gap analysis and testing documentation to reflect the verified current suites and environment-dependent evidence; and preserved the already-synchronized endpoint catalog because no endpoint source changes were required.
+- Verification/evidence: Endpoint catalog validation passed with 32 public endpoints and 4 frontend routes; UI integration validation passed; all 32 validation tests passed; agent-resource validation passed with 22 skills; API tests passed 21/21; Auth tests passed 67/67; web lint, build and 3 request tests passed; `git diff --check` completed without content errors. Local Flutter execution was blocked by a silent Windows Flutter test hang, Docker Compose validation was blocked because the Docker CLI is unavailable in this environment, and the Windows foundation verifier requires an elevated Administrator PowerShell session. No secrets, tokens or personal data were recorded.
+
+## 2026-09-22 — Refresh GitHub Actions workflows, metrics reporting and repository templates
+
+- Date/time or time range: 2026-09-22 through 09:58 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Python and Git Bash
+- AI Model: GPT-5
+- Summary of the user's request: Diagnose the Flutter failure-reporting errors, refresh the complete `.github` configuration including issue and pull-request templates, keep the repository documentation synchronized, and make workflow execution respond to relevant paths on the supported branch families.
+- Summary of what the AI Agent did: Hardened `.github/scripts/report_test_metrics.py` against array-wrapped Flutter machine events, missing error values and other malformed failure metadata; added focused regression coverage; updated the separated web, mobile, backend, Agentic AI, repository, UI-integration, Docker, branch-policy, dev-backup and `.github` synchronization workflows; added workflow-level path filters while preserving full checks for the required protected branches; corrected the UI Integration Contract scope declaration so its tested client and gateway paths are represented in the trigger; refreshed the issue forms, pull-request template, CI and Git workflow documentation, and retained the repository’s branch and automation safeguards.
+- Verification/evidence: Flutter metrics edge-case tests passed 4/4; UI and repository validation tests passed 32/32; endpoint-catalog validation passed with 32 public endpoints and 4 frontend routes; UI integration validation passed; agent-resource validation passed with 22 skills; extracted workflow Bash blocks passed `bash -n`; and `git diff --check` completed without content errors. No secrets, tokens, hidden reasoning or personal data were recorded, and earlier contribution records were preserved unchanged.

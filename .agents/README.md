@@ -10,6 +10,12 @@ decisions.
 For the repository-facing explanation of the finalized resource set, see
 [`docs/development/agent-resources.md`](../docs/development/agent-resources.md).
 
+For endpoint lookup questions that do not change code, use
+[`rules/endpoint-catalog.md`](rules/endpoint-catalog.md) and the readable
+catalog first. Do not scan the whole repository when the catalog answers the
+question; escalate to the catalog-listed source only under that rule's doubt,
+missing-data, validation or explicit-verification conditions.
+
 ## How agents must use these resources
 
 Before changing a part of the repository, an agent must:
@@ -23,6 +29,36 @@ Before changing a part of the repository, an agent must:
    architecture;
 6. report applicable checks, test results and any environment or foundation
    limitation before claiming completion.
+
+## Mandatory endpoint-documentation workflow
+
+For every frontend route, client API target, gateway/YARP/Nginx mapping,
+backend or internal service endpoint, health route, OpenAPI/Swagger route,
+test-only fixture endpoint or Agentic AI endpoint addition, update, rename,
+move or removal, agents **MUST**:
+
+1. Read the [readable endpoint catalog](../docs/api/endpoint-catalog.md)
+   before scanning the complete source tree.
+2. Update its [JSON source](../docs/api/endpoint-catalog.json) in the same
+   change with the exact method/path, source, owner, boundary,
+   authorization, purpose and usage. Remove entries for removed routes.
+3. Update `docs/contracts/ui-integration.json` when a React or Flutter
+   workflow or public API reference is affected.
+4. Regenerate the Markdown view with
+   `python .agents/scripts/validate_endpoint_catalog.py --write-markdown`.
+5. Run `python .agents/scripts/validate_endpoint_catalog.py`; run
+   `python scripts/validation/validate_ui_integrations.py` and its tests for
+   affected client workflows.
+
+This is a blocking definition-of-done requirement. Do not claim an endpoint
+change is complete while the catalog validator reports drift, stale Markdown,
+missing metadata, an undocumented route or an unsupported route form. Routine
+route changes update `docs/api/`, not `.agents` guidance.
+
+The route inventory is application documentation under `docs/api/`.
+Routine route changes update that documentation; they do not rewrite
+`.agents` instructions. Update rules or skills here only when the user
+explicitly requests or approves an agent-guidance change.
 
 For every task also read [`rules/change-safety.md`](rules/change-safety.md),
 then [`rules/validation.md`](rules/validation.md) before handoff. Use
@@ -46,14 +82,18 @@ directory or tool actually exists before modifying or reporting on it.
     ├── change-safety.md       # Scope, permissions and context discipline
     ├── docker.md              # Images, Dockerfiles and network behavior
     ├── documentation.md       # Setup, architecture and ADR documentation
+    ├── endpoint-catalog.md    # Fast endpoint lookup and source escalation
+    ├── data-access.md         # PostgreSQL, EF Core and provider-test policy
     ├── git.md                 # Commit, pull-request and contribution hygiene
     ├── ai-usage.md            # AI contribution logging and identity checks
     ├── security.md            # Input, secrets, authorization and AI safety
     ├── testing.md             # Mandatory test-case implementation rules
     └── validation.md          # Changed-path validation and evidence
 ├── scripts/
-│   └── validate_agent_resources.py
-│                               # Deterministic rules/skills/link validation
+│   ├── validate_agent_resources.py
+│   │                           # Deterministic rules/skills/link validation
+│   └── validate_endpoint_catalog.py
+│                               # Source/catalog/UI contract drift validation
 ├── registry/
 │   └── skills.json            # Pinned source and compatibility metadata
 ├── skill-overlays/            # Repository bindings for portable skills
@@ -65,6 +105,7 @@ directory or tool actually exists before modifying or reporting on it.
     ├── blueverse-client-contract/
     ├── blueverse-docker-gateway/
     ├── blueverse-foundation-audit/
+    ├── blueverse-postgresql-efcore/
     ├── blueverse-test-design/
     ├── vercel-react-best-practices/
     ├── flutter-*/
@@ -84,6 +125,7 @@ instead of copying them.
 | `blueverse-backend-service` | ASP.NET API/Auth/internal service work |
 | `blueverse-client-contract` | React/Flutter public-contract work |
 | `blueverse-test-design` | Test cases, IDs, matrices, fixtures and runners |
+| `blueverse-postgresql-efcore` | PostgreSQL/EF Core persistence, migrations and provider-specific tests |
 | `blueverse-agentic-ai-workflow` | AI orchestration, tools, approvals and evaluation |
 | `blueverse-docker-gateway` | DHI, Compose, edge-nginx, networks and health |
 | `blueverse-ci-validation` | GitHub Actions, discovery, metrics and artifacts |
@@ -98,8 +140,14 @@ owned skills remain authoritative.
 |---|---|
 | `vercel-react-best-practices` | React 19 + Vite performance and rendering guidance; Next.js-only rules are excluded by the BLUEVERSE compatibility section |
 | `flutter-*` | Official Flutter architecture, networking, JSON, routing and test guidance |
-| `dotnet-webapi`, `optimizing-ef-core-queries` | ASP.NET Core and EF Core guidance for the future backend source |
+| `dotnet-webapi`, `optimizing-ef-core-queries` | ASP.NET Core and EF Core guidance for the checked-in backend services |
 | `run-tests`, `assertion-quality`, `test-anti-patterns`, `test-gap-analysis`, `grade-tests` | Narrow .NET/polyglot test execution and quality analysis; BLUEVERSE testing rules remain binding |
+
+Database-specific external skills are deliberately not loaded by default. The
+registry records verified PostgreSQL, migration and Testcontainers candidates
+as deferred because they are broad, operationally privileged or not yet needed
+by the current test setup. Use the BLUEVERSE-owned data-access rule and skill
+first; reconsider a candidate only when the implementation surface requires it.
 
 Provenance, upstream revisions, licenses, local paths and deferred candidates
 are recorded in [`registry/skills.json`](registry/skills.json). Do not update
@@ -208,6 +256,9 @@ scripts/validation/
                Dependency-free UI route/API contract checks and tests
 infrastructure/docker/
                Docker and gateway configuration
+docs/api/endpoint-catalog.md
+               Readable inventory of frontend, gateway, public API, test-only
+               and Agentic AI endpoint status
 ```
 
 The system boundary is:
@@ -229,19 +280,28 @@ endpoint references. Run
 updated client surface. The two clients connect through shared workflow IDs
 and the public API; they never call each other or internal service hostnames.
 
+For the complete route inventory, use `docs/api/endpoint-catalog.md`.
+The UI registry is intentionally only the workflow-facing subset; the
+endpoint catalog also records backend, gateway, documentation and test-host
+routes. Update `docs/api/endpoint-catalog.json`, regenerate the Markdown
+view and run `.agents/scripts/validate_endpoint_catalog.py` whenever a route,
+endpoint, client API literal or gateway mapping changes.
+
 ## Current foundation status
 
 This repository is a v0 foundation. At the time these resources were written:
 
 - the React and Flutter starter clients are present;
-- the Flutter project contains generated starter tests;
-- `services/api` contains reserved folders and ignored build output but no
-  tracked service source project; `services/auth` is a reserved location with
-  no source project;
+- the implemented shared Auth session workflow is present in both clients;
+- `services/api` and `services/auth` contain tracked ASP.NET Core projects,
+  controller routes, tests and OpenAPI configuration;
+- `services/auth` currently owns the implemented EF Core/Npgsql PostgreSQL
+  model and checked-in migrations; the default suite uses an isolated test
+  provider while provider-specific PostgreSQL coverage is explicitly enabled;
 - Agentic AI service implementations are described by target architecture and
   safety documentation but are not assumed to exist;
-- Docker and CI workflows may report missing service projects until those
-  projects are intentionally added.
+- the endpoint catalog intentionally lists no implemented Agentic AI API;
+- ignored `bin/` and `obj/` output is not implementation evidence.
 
 Agents must distinguish current implementation from target architecture. Do
 not create replacement sample applications or a repository-root centralized
@@ -271,8 +331,8 @@ deployment or health behavior.
 
 ## Keeping this directory current
 
-When repository conventions materially change, update the applicable rule file
-and this README in the same change. Keep rules concise and enforceable; place
+When repository conventions materially change, propose any required guidance
+update and apply it only with explicit user authorization. Keep rules concise and enforceable; place
 large matrices, implementation phases and evidence requirements in the linked
 `docs/` documents. Never add secrets, private data, generated build output or
 machine-specific configuration to `.agents`.

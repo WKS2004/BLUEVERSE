@@ -19,9 +19,8 @@ this branch:
 - built-in OpenAPI, Swashbuckle and Swagger UI publication;
 - allowed, rejected and preflight CORS behavior;
 - forwarded headers and safe RFC 7807-style gateway errors;
+- public gateway JWT validation for missing, invalid and valid bearer tokens;
 - YARP Auth forwarding and unavailable-destination behavior.
 
-JWT validation, named permission policies, DTO validation, persistence,
-migrations, audit records and domain workflows are not implemented in the API
-yet, so they require additional source contracts before meaningful tests can
-be added.
+Named permission policies, Auth persistence/migrations, audit records and
+domain workflows belong to their owning service or remain future API work.

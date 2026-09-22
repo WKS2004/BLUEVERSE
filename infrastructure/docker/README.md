@@ -24,8 +24,8 @@ The frontend Nginx file is a `server`-context configuration because the Dockerfi
 
 ## Important
 
-The React application directory and public API application are checked in. The
-Auth application directory referenced by its Dockerfile is still pending:
+The React/mobile application directories and both ASP.NET applications are
+checked in. Their Docker build contexts are:
 
 ```text
 apps/web

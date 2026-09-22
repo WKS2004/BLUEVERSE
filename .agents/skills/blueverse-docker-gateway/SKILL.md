@@ -5,6 +5,13 @@ description: Change or review BLUEVERSE Dockerfiles, Compose services, edge-ngin
 
 # BLUEVERSE Docker and gateway
 
+Read `docs/api/endpoint-catalog.md` before changing a gateway, YARP,
+frontend-server, health or public-path mapping. **MUST** update its JSON
+source and regenerate the Markdown view in the same change for every mapping
+addition, update, rename or removal. Run
+`.agents/scripts/validate_endpoint_catalog.py`; a gateway or health change is
+incomplete while it reports stale or undocumented routes.
+
 Read the root `AGENTS.md`, `.agents/routing.md`, and the Docker, architecture,
 security, documentation and validation rules. Inspect `compose.yaml`, the
 affected Dockerfile/config and matching workflow before editing.

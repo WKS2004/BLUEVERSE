@@ -2,9 +2,19 @@ name: Repository Checks
 
 on:
   push:
-    branches: ["main", "dev", "features/**", "agentic-ai/**"]
+    branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
+    paths:
+      - ".github/**"
+      - ".agents/**"
+      - "docs/**"
+      - "*"
   pull_request:
-    branches: ["main", "dev", "features/**", "agentic-ai/**"]
+    branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
+    paths:
+      - ".github/**"
+      - ".agents/**"
+      - "docs/**"
+      - "*"
 
 permissions:
   contents: read
@@ -21,10 +31,15 @@ jobs:
         run: |
           target="${{ github.ref_name }}"; range="${{ github.event.before }}..${{ github.sha }}"
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then target="${{ github.base_ref }}"; range="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"; fi
-          if [[ "$target" == "main" || "$target" == "dev" ]] || git diff --name-only "$range" | grep -Eq '^(\.github/|\.agents/|docs/|[^/]+$)'; then echo affected=true >> "$GITHUB_OUTPUT"; else echo affected=false >> "$GITHUB_OUTPUT"; fi
+          if [[ "$target" == "main" || "$target" == "dev" || ("${{ github.event_name }}" == "push" && "${{ github.event.before }}" =~ ^0+$) ]] || git diff --name-only "$range" | grep -Eq '^(\.github/|\.agents/|docs/|[^/]+$)'; then echo affected=true >> "$GITHUB_OUTPUT"; else echo affected=false >> "$GITHUB_OUTPUT"; fi
       - name: Not affected
         if: steps.scope.outputs.affected != 'true'
-        run: echo "Not affected - no repository foundation changes."
+        run: |
+          echo "Not affected - no repository foundation changes."
+          {
+            echo "## Repository Checks: Not affected"
+            echo "No repository foundation paths changed; foundation validation was not required."
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Check required foundation files
         if: steps.scope.outputs.affected == 'true'
         shell: bash
@@ -36,3 +51,6 @@ jobs:
       - name: Validate repository agent resources
         if: steps.scope.outputs.affected == 'true'
         run: python .agents/scripts/validate_agent_resources.py
+      - name: Validate CI helper scripts
+        if: steps.scope.outputs.affected == 'true'
+        run: python -m unittest discover -s .github/scripts/tests -p "test_*.py"

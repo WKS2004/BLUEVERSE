@@ -2,9 +2,27 @@ name: Backend Microservices Tests
 
 on:
   push:
-    branches: ["main", "dev", "features/**", "agentic-ai/**"]
+    branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
+    paths:
+      - "services/**"
+      - "global.json"
+      - "docs/api/**"
+      - "docs/architecture/**"
+      - ".github/scripts/**"
+      - ".github/workflows/backend-tests.yml"
+      - ".github/workflows/backend-ci.yml"
+      - ".github/workflows/ui-integration.yml"
   pull_request:
-    branches: ["main", "dev", "features/**", "agentic-ai/**"]
+    branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
+    paths:
+      - "services/**"
+      - "global.json"
+      - "docs/api/**"
+      - "docs/architecture/**"
+      - ".github/scripts/**"
+      - ".github/workflows/backend-tests.yml"
+      - ".github/workflows/backend-ci.yml"
+      - ".github/workflows/ui-integration.yml"
   workflow_dispatch:
 
 permissions:
@@ -18,12 +36,57 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Determine scope
+        id: scope
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE_SHA: ${{ github.event.before }}
+          CURRENT_SHA: ${{ github.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -Eeuo pipefail
+
+          target="$REF_NAME"
+          affected=false
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            affected=true
+          elif [[ "$EVENT_NAME" == "pull_request" ]]; then
+            target="$BASE_REF"
+            diff_range="${BASE_SHA}..${HEAD_SHA}"
+          else
+            diff_range="${BEFORE_SHA}..${CURRENT_SHA}"
+          fi
+
+          if [[ "$target" == "main" || "$target" == "dev" || ("$EVENT_NAME" == "push" && "$BEFORE_SHA" =~ ^0+$) ]]; then
+            affected=true
+          elif [[ "$affected" != true ]] && git diff --name-only "$diff_range" | grep -Eq '^(services/|global\.json$|docs/api/|docs/architecture/|\.github/(scripts/|workflows/(backend-tests|backend-ci|ui-integration)\.yml$))'; then
+            affected=true
+          fi
+
+          echo "Backend test workflow affected: $affected"
+          echo "affected=$affected" >> "$GITHUB_OUTPUT"
+
+      - name: Not affected
+        if: steps.scope.outputs.affected != 'true'
+        run: |
+          echo "Not affected - no backend test paths changed on this development branch."
+          {
+            echo "## Backend Microservices Tests: Not affected"
+            echo "No backend test paths changed; the workflow completed without running the suites."
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - uses: actions/setup-dotnet@v5
+        if: steps.scope.outputs.affected == 'true'
         with:
           global-json-file: global.json
 
       - name: Run all backend microservice test projects
         id: tests
+        if: steps.scope.outputs.affected == 'true'
         shell: bash
         run: |
           set +e
@@ -36,11 +99,40 @@ jobs:
             test_projects+=("$project")
           done < <(find services -type f -name '*.csproj' \( -name '*Tests.csproj' -o -name '*Test.csproj' -o -path '*/tests/*' \) -print0 2>/dev/null | sort -z -u)
 
+          missing_test_services=()
+          while IFS= read -r -d '' service_dir; do
+            service_projects=()
+            while IFS= read -r -d '' project; do
+              service_projects+=("$project")
+            done < <(find "$service_dir" -maxdepth 1 -type f -name '*.csproj' -print0 2>/dev/null)
+
+            if [[ ${#service_projects[@]} -eq 0 ]]; then
+              continue
+            fi
+
+            has_test_project=false
+            for test_project in "${test_projects[@]}"; do
+              if [[ "$test_project" == "$service_dir/"* ]]; then
+                has_test_project=true
+                break
+              fi
+            done
+
+            if [[ "$has_test_project" != true ]]; then
+              missing_test_services+=("${service_dir#services/}")
+            fi
+          done < <(find services -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null | sort -z)
+
+          if [[ ${#missing_test_services[@]} -gt 0 ]]; then
+            echo "Backend services with source projects but no discovered test project:"
+            printf ' - %s\n' "${missing_test_services[@]}"
+            overall_status=1
+          fi
+
           if [[ ${#test_projects[@]} -eq 0 ]]; then
             echo "No backend test projects found in the default service test locations under services/."
-            echo "This workflow currently reports zero tests until backend services and their tests are added."
             python .github/scripts/report_test_metrics.py --results-root test-results/backend --scope "Backend Microservices"
-            exit 0
+            exit "$overall_status"
           fi
 
           for project in "${test_projects[@]}"; do
@@ -68,18 +160,23 @@ jobs:
             fi
           done
 
-          python .github/scripts/report_test_metrics.py --results-root test-results/backend --scope "Backend Microservices"
+          python .github/scripts/report_test_metrics.py --results-root test-results/backend --scope "Backend Microservices" --require-results
+          metrics_status=$?
+          if [[ "$metrics_status" -ne 0 ]]; then
+            overall_status=1
+            echo "Backend test metrics did not contain parseable test results."
+          fi
           exit "$overall_status"
 
       - name: Upload backend test results
-        if: always()
-        uses: actions/upload-artifact@v4
+        if: always() && steps.scope.outputs.affected == 'true'
+        uses: actions/upload-artifact@v6
         with:
           name: backend-microservices-test-results
           path: test-results/backend
           if-no-files-found: ignore
 
       - name: Final failed backend test case list
-        if: always()
+        if: always() && steps.scope.outputs.affected == 'true'
         shell: bash
         run: python .github/scripts/report_test_metrics.py --results-root test-results/backend --scope "Backend Microservices" --failures-only

@@ -2,9 +2,27 @@ name: Docker Backend Builds
 
 on:
   push:
-    branches: ["main", "dev"]
+    branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
+    paths:
+      - "services/**"
+      - "infrastructure/docker/api/**"
+      - "infrastructure/docker/*/**"
+      - ".dockerignore"
+      - "global.json"
+      - "compose.yaml"
+      - "docker-compose.yml"
+      - ".github/workflows/docker-backend-build.yml"
   pull_request:
-    branches: ["main", "dev"]
+    branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
+    paths:
+      - "services/**"
+      - "infrastructure/docker/api/**"
+      - "infrastructure/docker/*/**"
+      - ".dockerignore"
+      - "global.json"
+      - "compose.yaml"
+      - "docker-compose.yml"
+      - ".github/workflows/docker-backend-build.yml"
 
 permissions:
   contents: read
@@ -43,33 +61,8 @@ jobs:
             diff_range="${BEFORE_SHA}..${CURRENT_SHA}"
           fi
 
-          if [[ "$target" == "main" ]]; then
+          if [[ "$EVENT_NAME" == "workflow_dispatch" || "$target" == "main" || "$target" == "dev" || "$target" == features/* || "$target" == agentic-ai/* || "$target" == claude/* || "$target" == codex/* || "$target" == antigravity/* || "$target" == gemini/* || "$target" == maintenance/* || "$target" == bug-fixes/* ]]; then
             build=true
-          elif [[ "$target" == "dev" ]]; then
-            if [[ "$EVENT_NAME" == "push" && "$BEFORE_SHA" =~ ^0+$ ]]; then
-              build=true
-            else
-              changed_files="$(git diff --name-only "$diff_range")"
-              while IFS= read -r changed_file; do
-                case "$changed_file" in
-                  services/*|infrastructure/docker/api/*|.dockerignore|global.json|.github/workflows/docker-backend-build.yml)
-                    build=true
-                    break
-                    ;;
-                  infrastructure/docker/*/*)
-                    docker_service="${changed_file#infrastructure/docker/}"
-                    docker_service="${docker_service%%/*}"
-                    # Any backend Dockerfile directory change is relevant, even
-                    # when its service directory is missing and validation must
-                    # report that mismatch.
-                    if [[ "$docker_service" != "frontend" && "$docker_service" != "edge-nginx" ]]; then
-                      build=true
-                      break
-                    fi
-                    ;;
-                esac
-              done <<< "$changed_files"
-            fi
           fi
 
           echo "Backend image build required: $build"
@@ -77,7 +70,12 @@ jobs:
 
       - name: Skip backend image builds
         if: steps.scope.outputs.build != 'true'
-        run: echo "Skipping backend image builds because no relevant dev-branch changes were detected."
+        run: |
+          echo "Not affected - no relevant dev-branch changes were detected."
+          {
+            echo "## Docker Backend Builds: Not affected"
+            echo "No relevant dev-branch backend/Docker paths changed; image builds were skipped."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Log in to Docker Hardened Images registry
         if: steps.scope.outputs.build == 'true'

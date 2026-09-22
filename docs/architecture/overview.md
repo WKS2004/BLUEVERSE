@@ -17,11 +17,11 @@
 ```
 
 Flutter is a client application and communicates with the ASP.NET Core API. It
-is not a backend microservice. The public API source is checked in at
-`services/api`; the Auth, domain and Agentic AI services in the diagram are
-separate dependencies that will be added incrementally.
+is not a backend microservice. The public API and Auth sources are checked in at
+`services/api` and `services/auth`; domain and Agentic AI services will be added
+incrementally.
 
-## Local Docker architecture (when the Auth service is present)
+## Local Docker architecture
 
 ```text
 Client
@@ -31,11 +31,10 @@ Client
   |
   +--> frontend :80
   |
-  +--> api :8080 ------+
-  |                    |
-  +--> auth :8080  |
-                       v
-                   postgres :5432
+  +--> api :8080 ------> auth :8080
+                            |
+                            v
+                        postgres :5432
 ```
 
 Docker networks:
@@ -53,6 +52,7 @@ services use the database network rather than that host port.
 ASP.NET Core is authoritative for:
 
 - authentication/authorization integration
+- Auth session lifecycle, refresh-token rotation and device/account logout
 - request validation
 - business rules
 - persistence

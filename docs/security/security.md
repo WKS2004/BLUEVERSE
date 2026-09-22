@@ -5,26 +5,33 @@ implemented or has not yet been verified in the current repository.
 
 ## Repository
 
-- [ ] `.env` ignored
-- [ ] secrets absent from commits
-- [ ] no credentials in Dockerfiles
-- [ ] no private data in test fixtures
+- [x] `.env` ignored
+- [x] secrets absent from commits
+- [x] no credentials in Dockerfiles
+- [x] no private data in test fixtures
 
 ## API
 
-- [ ] JWT authentication
-- [ ] permission-based authorization
-- [ ] validation
-- [ ] secure CORS
-- [ ] structured error handling
+- [x] JWT authentication with required 32-byte minimum signing key
+- [x] permission-based authorization with system-role escalation protection
+- [x] persisted device sessions with five-account-per-device and five-session-per-account limits, scoped logout and logout-all-devices support
+- [x] active sessions separated from ended-session lifecycle logs; archived rows cannot authenticate
+- [x] malformed JWT lifetime configuration fails closed instead of silently selecting a default
+- [x] unexpected API/Auth failures use sanitized RFC 7807 responses without exception or credential disclosure
+- [x] server-issued device credentials with hashed keys and secure web/native transport
+- [x] rotating hashed refresh tokens with replay revocation and one/30-day absolute expiry
+- [x] password changes isolated to `POST /api/auth/change-password`; profile updates do not accept password fields
+- [x] validation
+- [x] secure CORS
+- [x] structured error handling
 - [ ] rate/abuse controls considered where appropriate
 
 ## Database
 
-- [ ] restricted network exposure
-- [ ] migration-based schema changes
+- [x] restricted network exposure for internal Auth/database networks
+- [x] migration-based Auth schema changes
 - [ ] least-privilege credentials
-- [ ] no plaintext passwords/tokens
+- [x] no plaintext passwords/tokens
 
 ## Agentic AI
 

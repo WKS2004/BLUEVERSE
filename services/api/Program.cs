@@ -1,7 +1,17 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// The Windows EventLog provider can throw when the application source has not
+// been registered. Console/container logging remains the authoritative sink.
+if (OperatingSystem.IsWindows())
+{
+    builder.Logging.AddFilter<Microsoft.Extensions.Logging.EventLog.EventLogLoggerProvider>(_ => false);
+}
 
 // Controllers & OpenAPI
 builder.Services.AddControllers();
@@ -28,6 +38,60 @@ builder.Services.AddSwaggerGen(options =>
         [new OpenApiSecuritySchemeReference("Bearer", document)] = []
     });
 });
+
+// Validate Auth-issued JWTs at the public API boundary. The signing key is
+// shared with the Auth service through deployment secrets, never source code.
+var secretKey = builder.Configuration["JWT_SIGNING_KEY"];
+if (string.IsNullOrWhiteSpace(secretKey))
+{
+    throw new InvalidOperationException("JWT_SIGNING_KEY must be configured.");
+}
+
+var secretKeyBytes = Encoding.UTF8.GetBytes(secretKey);
+if (secretKeyBytes.Length < 32)
+{
+    throw new InvalidOperationException("JWT_SIGNING_KEY must be at least 32 UTF-8 bytes.");
+}
+
+var issuer = builder.Configuration["Jwt:Issuer"] ?? "Blueverse.Auth";
+var audience = builder.Configuration["Jwt:Audience"] ?? "Blueverse.Client";
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+    options.SaveToken = false;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(secretKeyBytes),
+        ValidateIssuer = true,
+        ValidIssuer = issuer,
+        ValidateAudience = true,
+        ValidAudience = audience,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.FromMinutes(1),
+        ValidAlgorithms = [SecurityAlgorithms.HmacSha256]
+    };
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            if (string.IsNullOrWhiteSpace(context.Token))
+            {
+                context.Token = context.Request.Cookies["blueverse_access_token"];
+            }
+
+            return Task.CompletedTask;
+        }
+    };
+});
+
+builder.Services.AddAuthorization();
 
 // CORS Policy
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() 
@@ -97,6 +161,7 @@ app.UseSwaggerUI(options =>
     options.SwaggerEndpoint("/api/auth/swagger/v1/swagger.json", "BLUEVERSE Auth API");
 });
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 // Route gateway controllers (e.g. /api/health)

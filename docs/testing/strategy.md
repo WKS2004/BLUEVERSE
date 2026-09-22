@@ -19,17 +19,42 @@ Testing will cover the current foundation and the later business workflows:
 - Agentic AI workflow evaluation in each AI service’s local `tests/` directory
 - deployment smoke tests
 
+Database-provider decisions are defined by
+[`../../.agents/rules/data-access.md`](../../.agents/rules/data-access.md):
+provider-independent tests may use the existing isolated test provider, while
+PostgreSQL translation, migrations, constraints, indexes, transactions,
+locking, concurrency and persistence behavior require real PostgreSQL
+evidence.
+
 ## Current evidence
 
-- React: lint and production build scripts are configured; no component test
-  runner is checked in yet.
-- Flutter: the generated counter widget test and static-analysis workflow are
-  present.
-- ASP.NET/API: `services/api` is checked in and builds, but no API test project
-  is checked in yet. The Auth service and its tests remain pending.
-- Docker: web/backend image and Compose health workflows are configured. The
-  API image can be built, while the complete backend/Compose workflow remains
-  blocked by the missing Auth service.
+- React: the Node 24 built-in test runner covers three deterministic Auth
+  request-boundary cases (request construction, RFC 7807 error normalization
+  and 204 logout handling), while lint and the production build validate the
+  implemented cookie-based Auth surface. Component and browser workflow tests
+  remain a later increment.
+- Flutter: five visible package-level tests cover the gateway configuration,
+  build-time API override and starter widget interaction; the Auth session UI,
+  secure-storage boundary and static-analysis workflow are also present. No
+  `integration_test` directory is checked in yet.
+- ASP.NET/API: `services/api` and its foundation test project are checked in;
+  the API suite currently passes 21 cases covering health, OpenAPI/Swagger,
+  CORS, forwarded headers, safe gateway errors, YARP forwarding/failure
+  isolation and JWT issuer/audience/lifetime/algorithm/cookie boundaries.
+- Auth: `services/auth` has a package-local test project with 67 passing
+  default test cases covering endpoint behavior, Auth OpenAPI/health and safe
+  exception contracts, malformed-input validation, administration and
+  administrative mutation authorization, escalation, server-issued
+  installations and proof failures, five-account device capacity, five-session
+  account eviction, account/device/everywhere logout including cookie cleanup,
+  active-session archival and refresh-token relinking, rotating refresh-token
+  replay/expiry protection, logout/password token revocation, profile-only
+  updates, session metadata isolation, bootstrap seeding, password hashing,
+  JWT claims/configuration boundaries, opaque-secret properties and
+  persistence-model constraints. The PostgreSQL session/concurrency smoke test
+  is opt-in.
+- Docker: web/backend image and Compose health workflows are configured. Full
+  runtime evidence still depends on Docker Desktop/DHI access and PostgreSQL.
 
 Critical business rules should have deterministic tests.
 

@@ -2,7 +2,7 @@ name: UI Integration Contract
 
 on:
   push:
-    branches: ["main", "dev", "features/**", "agentic-ai/**"]
+    branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
     paths:
       - "apps/web/**"
       - "apps/mobile/**"
@@ -12,11 +12,13 @@ on:
       - "docs/architecture/**"
       - "docs/development/ui-integration.md"
       - "scripts/validation/**"
+      - ".agents/scripts/validate_endpoint_catalog.py"
       - "infrastructure/docker/**"
       - "compose.yaml"
       - ".github/workflows/**"
+      - ".github/scripts/**"
   pull_request:
-    branches: ["main", "dev", "features/**", "agentic-ai/**"]
+    branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
     paths:
       - "apps/web/**"
       - "apps/mobile/**"
@@ -26,9 +28,11 @@ on:
       - "docs/architecture/**"
       - "docs/development/ui-integration.md"
       - "scripts/validation/**"
+      - ".agents/scripts/validate_endpoint_catalog.py"
       - "infrastructure/docker/**"
       - "compose.yaml"
       - ".github/workflows/**"
+      - ".github/scripts/**"
   workflow_dispatch:
 
 permissions:
@@ -39,13 +43,65 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Determine scope
+        id: scope
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE_SHA: ${{ github.event.before }}
+          CURRENT_SHA: ${{ github.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -Eeuo pipefail
+
+          target="$REF_NAME"
+          affected=false
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            affected=true
+          elif [[ "$EVENT_NAME" == "pull_request" ]]; then
+            target="$BASE_REF"
+            diff_range="${BASE_SHA}..${HEAD_SHA}"
+          else
+            diff_range="${BEFORE_SHA}..${CURRENT_SHA}"
+          fi
+
+          if [[ "$target" == "main" || "$target" == "dev" || ("$EVENT_NAME" == "push" && "$BEFORE_SHA" =~ ^0+$) ]]; then
+            affected=true
+          elif [[ "$affected" != true ]] && git diff --name-only "$diff_range" | grep -Eq '^(apps/web/|apps/mobile/|services/|docs/contracts/|docs/api/|docs/architecture/|docs/development/ui-integration\.md$|scripts/validation/|\.agents/scripts/validate_endpoint_catalog\.py$|infrastructure/docker/|compose\.yaml$|\.github/workflows/|\.github/scripts/)'; then
+            affected=true
+          fi
+
+          echo "UI integration contract workflow affected: $affected"
+          echo "affected=$affected" >> "$GITHUB_OUTPUT"
+
+      - name: Not affected
+        if: steps.scope.outputs.affected != 'true'
+        run: |
+          echo "Not affected - no UI/API contract paths changed on this development branch."
+          {
+            echo "## UI Integration Contract: Not affected"
+            echo "No UI/API contract paths changed; the validators were not run."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/setup-python@v6
+        if: steps.scope.outputs.affected == 'true'
         with:
           python-version: "3.12"
 
+      - name: Validate complete endpoint catalog
+        if: steps.scope.outputs.affected == 'true'
+        run: python .agents/scripts/validate_endpoint_catalog.py
+
       - name: Validate React and Flutter route/API contract
+        if: steps.scope.outputs.affected == 'true'
         run: python scripts/validation/validate_ui_integrations.py
 
       - name: Test the UI integration validator
+        if: steps.scope.outputs.affected == 'true'
         run: python -m unittest discover -s scripts/validation/tests -p "test_*.py"

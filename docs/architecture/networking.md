@@ -38,10 +38,21 @@ call each other, Auth, Agentic AI, PostgreSQL or an internal Docker hostname.
 
 ## Host access
 
-The gateway is published on host port `80` by default (`BLUEVERSE_HTTP_PORT`):
+The gateway is published on host port `80` for local development by the
+Compose default. Set `BLUEVERSE_HTTP_PORT` when a different host port is
+required; the client contract still targets the gateway that is configured for
+the environment:
 
 ```text
 http://localhost
 ```
 
-For a physical mobile device, replace `localhost` with the development machine's LAN address. The gateway listens on port 80 by default.
+For a physical mobile device, pass the development machine's current
+Wi-Fi/LAN IPv4 address to Flutter at compile time:
+`--dart-define=BLUEVERSE_API_BASE_URL=http://<laptop-lan-ip>:80`. The address
+is intentionally not hardcoded because it is environment-specific and may
+change through DHCP. Android emulators use `10.0.2.2:80` to reach the host.
+An attached Android device can use `adb reverse tcp:80 tcp:80` as a USB
+fallback when a managed Wi-Fi network isolates clients. Port `50872` or
+another changing client-side port is not the gateway port; the mobile client
+must target port `80`.

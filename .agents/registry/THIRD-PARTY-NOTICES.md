@@ -74,3 +74,15 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## Verified but deferred database candidates
+
+These resources are recorded in [`skills.json`](skills.json) for reproducible
+future review but are not vendored into `.agents/skills` and therefore are not
+part of the repository's required runtime or agent context:
+
+- [Microsoft PostgreSQL skills](https://github.com/microsoft/postgres-skills/tree/adadc036a652e5d8017db5e659e8b34c42292170/plugin/skills/postgresql-best-practices) — MIT. The upstream plugin also bundles live database tooling and broad operational guidance.
+- [Testcontainers for .NET skill](https://github.com/testcontainers/claude-skills/tree/5263fe47160c3ef187b93de4b21d2d7380bce12e/plugins/testcontainers/skills/testcontainers-dotnet) — MIT. The repository will reconsider it when a disposable PostgreSQL fixture is adopted.
+- [PostgreSQL migration skill](https://github.com/timescale/pg-aiguide/tree/2bf9f11df6175d555e9a7f63325b226dca71c1b7/skills/postgres-database-migration) — Apache-2.0. The current EF migration surface does not yet require its production-scale, zero-downtime guidance.
+
+No source text from these deferred resources is copied into this repository.

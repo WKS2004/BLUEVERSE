@@ -9,19 +9,20 @@ cases across the complete BLUEVERSE repository. It complements
 The plan is intentionally staged because the current checkout is a v0
 foundation:
 
-- `apps/web` is a Vite React starter with lint/build scripts but no web test
-  runner.
-- `apps/mobile` is a generated Flutter counter application with one starter
-  widget test.
-- `services/api` and `services/auth` are reserved architecture locations but
-  are not present yet.
+- `apps/web` is a Vite React client with an implemented cookie-based Auth
+  session workflow, lint/build scripts and a dependency-free Node 24
+  request-boundary test runner; no web component test runner exists yet.
+- `apps/mobile` is a Flutter client with the Auth session workflow, secure
+  storage/API-boundary tests and the original starter widget test.
+- `services/api` and `services/auth` are checked-in ASP.NET services with
+  package-local test projects under their owning service directories.
 - No executable Agentic AI service is present yet; the AI documentation defines
   the target boundary and safety contract only.
 - Test workflows use each framework’s normal package/service test locations;
   no repository-root `test/` directory is used for authoritative cases.
 
-This plan must not be interpreted as evidence that the missing services or
-their tests already exist.
+The remaining phases describe future client/domain/Agentic AI coverage; the
+current API/Auth foundation evidence is recorded in `test-matrix.md`.
 
 ## 2. Default framework test locations
 
@@ -161,11 +162,14 @@ thought.
 
 ### 4.1 React web (`apps/web/src` and optional `apps/web/e2e`)
 
-Use Vitest and React Testing Library for deterministic unit, component and
-workflow tests. Use MSW or an equivalent request boundary for API responses;
-do not make unit tests depend on a live backend.
+The current dependency-free Auth request-boundary suite uses Node 24's built-in
+test runner and mocks `fetch`; it does not depend on a live backend. When UI
+component and browser workflow coverage is introduced, use Vitest and React
+Testing Library (with MSW or an equivalent request boundary) for deterministic
+tests.
 
-Implement cases for:
+The current `/login` surface is the first product workflow. Implement cases
+for it and later workflows covering:
 
 - rendering, loading, empty, success and error states;
 - form validation, server validation errors and retry behavior;
@@ -179,9 +183,11 @@ Implement cases for:
 - browser-level smoke flows for login, one representative business workflow,
   approval and logout after the public API exists.
 
-The initial starter counter test should be replaced with product behavior once
-the first BLUEVERSE screen is implemented. Do not preserve generated demo tests
-as the project’s quality evidence.
+The existing Auth surface is the first web product-test target and currently
+has request-boundary cases for login, RFC 7807 error mapping and
+everywhere-logout. Extend it with component and browser workflow cases before
+using the generated home surface as quality evidence for future domain
+workflows.
 
 ### 4.2 Flutter mobile (`apps/mobile/test` and `apps/mobile/integration_test`)
 
@@ -189,7 +195,8 @@ Use `flutter_test` for widget tests and Dart unit tests. Add `integration_test`
 only for workflows that need the real application shell, navigation, platform
 permissions or device behavior.
 
-Implement cases for:
+The current Auth surface already exercises the public gateway and platform
+secure-storage boundary. Continue implementing cases for:
 
 - startup, routing, loading, offline, empty, success and error states;
 - shared API contract behavior with the React client;
@@ -241,18 +248,38 @@ Implement cases for:
 
 ### 4.4 Auth service (`services/auth/tests`)
 
-Implement cases for:
+The current default suite passes 67 deterministic cases and implements these
+behaviors:
 
-- valid and invalid login;
+- valid and invalid registration/login;
+- server-issued device installations, proof-key validation and cookie/native
+  transport behavior;
+- five-account-per-device capacity and account/device/everywhere logout scopes;
+- five-session-per-account eviction with the oldest active session removed;
+- profile-only updates with password changes isolated to their dedicated route;
 - password hashing and verification without exposing passwords;
 - account/credential failure handling and non-enumerating errors;
-- JWT claims, expiry, issuer/audience and signing configuration;
-- refresh/revocation behavior if refresh tokens are implemented;
+- JWT session claims, expiry, issuer/audience and signing configuration;
+- rotating hashed refresh tokens, replacement links and consumed-token replay
+  revocation;
+- separation of `ActiveSessions` from `UserSessionLogs`, including refresh-token
+  relinking when a session is archived;
 - protected endpoint behavior;
+- malformed JSON and field-level validation problem details;
+- administrative mutation authorization and creation-payload validation;
 - role and permission assignment/revocation;
 - admin bootstrap validation using environment-provided configuration;
 - rate limiting/lockout if selected for the final design;
 - health, database failure and migration failure behavior.
+
+The API foundation suite currently passes 21 cases. It covers health, public and
+Auth OpenAPI routing, CORS allow/deny/preflight, forwarded headers, safe gateway
+errors, YARP forwarding/failure isolation and JWT issuer/audience/lifetime,
+algorithm and protected-cookie boundaries.
+
+The PostgreSQL-backed capacity/refresh/archive smoke test is opt-in. The
+remaining health/database-failure and deployment-specific migration cases are
+environment-dependent follow-up coverage.
 
 ### 4.5 Every additional backend service (`services/<service-name>/tests`)
 
@@ -346,35 +373,38 @@ Deliver:
 - approved test-data policy and reusable factories/builders;
 - runner/configuration decisions for React, Flutter, .NET and AI;
 - CI failure behavior that fails when a discovered test suite is missing or
-  cannot run, while still allowing the current v0 service gap to be reported
-  honestly until services are created.
+  cannot run, while still allowing future service or Agentic AI gaps to be
+  reported honestly until those implementations are created.
 
 Exit criteria: a contributor can locate a test by product area, service and
 case ID, and can run each available suite locally.
 
 ### Phase 1 — React test harness and foundation cases
 
-Add Vitest, React Testing Library, request mocking, coverage reporting and
-scripts for unit/component/workflow tests. Add the first product-level cases
-and remove reliance on the generated counter as quality evidence.
+The first product-level Auth request-boundary cases now run through Node 24's
+built-in test runner with JUnit output and complete assertion checks. Extend
+this foundation with Vitest, React Testing Library, request mocking and
+coverage reporting when component/workflow tests are introduced; do not rely
+on the generated home surface as quality evidence.
 
 Exit criteria: `lint`, build and web tests run in CI; failures produce readable
-case IDs and coverage artifacts.
+case IDs and JUnit artifacts. Coverage reporting remains part of the future
+component/workflow harness.
 
 ### Phase 2 — Flutter test harness and foundation cases
 
-Use the default Flutter test locations. Add unit/widget fixtures, API boundary
-mocks and the first startup/auth/workflow cases. Keep `flutter analyze`
-mandatory.
+Use the default Flutter test locations. Extend the existing Auth API-boundary
+and widget fixtures with startup, persistence, device and workflow cases. Keep
+`flutter analyze` mandatory.
 
 Exit criteria: analyzer, unit/widget tests and any selected integration tests
 run in CI on a supported Flutter channel.
 
 ### Phase 3 — API and Auth services
 
-Create the service test projects when the corresponding source projects are
-introduced. Add HTTP, authorization, validation, persistence, migration,
-security and health cases before exposing the services to clients.
+The API and Auth test projects are now present. Maintain HTTP, authorization,
+validation, persistence, migration, security and health cases as the service
+contracts grow.
 
 Exit criteria: API and Auth tests run against the same contracts used by React
 and Flutter, and every protected route has allow/deny evidence.
@@ -486,10 +516,10 @@ A case is complete only when:
 The recommended order for the repository is:
 
 1. create the test registry, IDs, fixture policy and runner documentation;
-2. add the React runner and starter application cases;
-3. formalize the default Flutter test runner and replace the generated
-   counter-only evidence;
-4. implement API/Auth tests alongside the missing service projects;
+2. maintain the React runner and extend the Auth session-workflow cases;
+3. extend the Flutter test runner with Auth persistence/device workflow cases
+   and retire reliance on the generated counter-only evidence;
+4. expand API/Auth tests alongside new service behavior and domain workflows;
 5. apply the same test template to every additional backend service;
 6. implement AI service tests after actual AI boundaries and schemas are
    committed;

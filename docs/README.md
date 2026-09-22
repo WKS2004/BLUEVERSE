@@ -20,14 +20,22 @@
 ## Reading the documentation
 
 The repository is a v0 foundation and the documentation deliberately separates
-the checked-in state from the target contract. The current clients are starter
-projects, and the public API foundation is checked in at `services/api`.
-`services/auth`, persistence, authorization, domain workflows and Agentic AI
-workflows remain implementation targets unless a page explicitly says the
-behavior is currently available.
+the checked-in state from the target contract. The clients retain starter
+surfaces outside the implemented Auth workflow. The public API gateway,
+internal Auth service, Auth persistence, authorization and session-management
+contract are checked in at `services/api` and `services/auth`. Domain
+workflows and executable Agentic AI workflows remain implementation targets
+unless a page explicitly says the behavior is currently available.
 
 For a current-state summary, see
 [`project/foundation-gap-analysis.md`](project/foundation-gap-analysis.md).
+
+For the public Auth route inventory, transport/session contract and error
+behavior, see [`api/README.md`](api/README.md). For current automated-test
+evidence, see [`testing/test-matrix.md`](testing/test-matrix.md) and
+[`testing/strategy.md`](testing/strategy.md). These pages describe the
+checked-in v0 foundation; deferred domain and Agentic AI work remains clearly
+marked as planned.
 
 For the finalized coding-agent workflow, read
 [`development/agent-resources.md`](development/agent-resources.md), then

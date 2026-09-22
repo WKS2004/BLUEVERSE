@@ -10,6 +10,10 @@
 - Preserve intended Compose networks, health/readiness behavior, gateway
   routing and internal-service isolation. Do not publish internal ports merely
   to simplify local testing.
+- Keep `docs/api/endpoint-catalog.json` and its Markdown view synchronized
+  with edge-nginx, YARP, frontend-server and health-route mappings. Run the
+  endpoint catalog validator after gateway changes so undocumented public
+  paths fail closed.
 - Keep secrets in environment variables or approved secret storage; never put
   credentials in Compose, images, logs or `.agents`.
 

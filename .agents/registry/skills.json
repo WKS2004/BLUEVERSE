@@ -13,6 +13,7 @@
     { "id": "blueverse-client-contract", "status": "project", "localPath": ".agents/skills/blueverse-client-contract" },
     { "id": "blueverse-docker-gateway", "status": "project", "localPath": ".agents/skills/blueverse-docker-gateway" },
     { "id": "blueverse-foundation-audit", "status": "project", "localPath": ".agents/skills/blueverse-foundation-audit" },
+    { "id": "blueverse-postgresql-efcore", "status": "project", "localPath": ".agents/skills/blueverse-postgresql-efcore" },
     { "id": "blueverse-test-design", "status": "project", "localPath": ".agents/skills/blueverse-test-design" },
     {
       "id": "vercel-react-best-practices",
@@ -228,6 +229,36 @@
         "license": "MIT (declared by upstream repository)"
       },
       "reason": "Consider after the starter web client has real feature components and state boundaries to review."
+    },
+    {
+      "id": "postgresql-best-practices",
+      "source": {
+        "repository": "https://github.com/microsoft/postgres-skills",
+        "path": "plugin/skills/postgresql-best-practices",
+        "revision": "adadc036a652e5d8017db5e659e8b34c42292170",
+        "license": "MIT"
+      },
+      "reason": "Verified upstream, but deferred from the portable baseline because the upstream plugin bundles a live postgres-mcp tool and broad operational sub-skills. The narrower BLUEVERSE-owned PostgreSQL/EF Core workflow preserves context efficiency and repository boundaries; reconsider when a reviewed read-only integration is explicitly needed."
+    },
+    {
+      "id": "testcontainers-dotnet",
+      "source": {
+        "repository": "https://github.com/testcontainers/claude-skills",
+        "path": "plugins/testcontainers/skills/testcontainers-dotnet",
+        "revision": "5263fe47160c3ef187b93de4b21d2d7380bce12e",
+        "license": "MIT"
+      },
+      "reason": "Verified upstream guidance, but deferred because the current Auth PostgreSQL test is opt-in and the upstream skill is a large generic guide. Reconsider when a disposable PostgreSQL fixture is adopted and its package/version/CI policy is approved."
+    },
+    {
+      "id": "postgres-database-migration",
+      "source": {
+        "repository": "https://github.com/timescale/pg-aiguide",
+        "path": "skills/postgres-database-migration",
+        "revision": "2bf9f11df6175d555e9a7f63325b226dca71c1b7",
+        "license": "Apache-2.0"
+      },
+      "reason": "Verified upstream migration guidance, but deferred until the repository has production-scale tables or a zero-downtime migration requirement. Current EF migration work is better routed through the BLUEVERSE data-access rule and service workflow."
     }
   ]
 }
