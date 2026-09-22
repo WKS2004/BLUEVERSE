@@ -83,6 +83,7 @@ directory or tool actually exists before modifying or reporting on it.
     ├── docker.md              # Images, Dockerfiles and network behavior
     ├── documentation.md       # Setup, architecture and ADR documentation
     ├── endpoint-catalog.md    # Fast endpoint lookup and source escalation
+    ├── data-access.md         # PostgreSQL, EF Core and provider-test policy
     ├── git.md                 # Commit, pull-request and contribution hygiene
     ├── ai-usage.md            # AI contribution logging and identity checks
     ├── security.md            # Input, secrets, authorization and AI safety
@@ -104,6 +105,7 @@ directory or tool actually exists before modifying or reporting on it.
     ├── blueverse-client-contract/
     ├── blueverse-docker-gateway/
     ├── blueverse-foundation-audit/
+    ├── blueverse-postgresql-efcore/
     ├── blueverse-test-design/
     ├── vercel-react-best-practices/
     ├── flutter-*/
@@ -123,6 +125,7 @@ instead of copying them.
 | `blueverse-backend-service` | ASP.NET API/Auth/internal service work |
 | `blueverse-client-contract` | React/Flutter public-contract work |
 | `blueverse-test-design` | Test cases, IDs, matrices, fixtures and runners |
+| `blueverse-postgresql-efcore` | PostgreSQL/EF Core persistence, migrations and provider-specific tests |
 | `blueverse-agentic-ai-workflow` | AI orchestration, tools, approvals and evaluation |
 | `blueverse-docker-gateway` | DHI, Compose, edge-nginx, networks and health |
 | `blueverse-ci-validation` | GitHub Actions, discovery, metrics and artifacts |
@@ -139,6 +142,12 @@ owned skills remain authoritative.
 | `flutter-*` | Official Flutter architecture, networking, JSON, routing and test guidance |
 | `dotnet-webapi`, `optimizing-ef-core-queries` | ASP.NET Core and EF Core guidance for the checked-in backend services |
 | `run-tests`, `assertion-quality`, `test-anti-patterns`, `test-gap-analysis`, `grade-tests` | Narrow .NET/polyglot test execution and quality analysis; BLUEVERSE testing rules remain binding |
+
+Database-specific external skills are deliberately not loaded by default. The
+registry records verified PostgreSQL, migration and Testcontainers candidates
+as deferred because they are broad, operationally privileged or not yet needed
+by the current test setup. Use the BLUEVERSE-owned data-access rule and skill
+first; reconsider a candidate only when the implementation surface requires it.
 
 Provenance, upstream revisions, licenses, local paths and deferred candidates
 are recorded in [`registry/skills.json`](registry/skills.json). Do not update
@@ -286,6 +295,9 @@ This repository is a v0 foundation. At the time these resources were written:
 - the implemented shared Auth session workflow is present in both clients;
 - `services/api` and `services/auth` contain tracked ASP.NET Core projects,
   controller routes, tests and OpenAPI configuration;
+- `services/auth` currently owns the implemented EF Core/Npgsql PostgreSQL
+  model and checked-in migrations; the default suite uses an isolated test
+  provider while provider-specific PostgreSQL coverage is explicitly enabled;
 - Agentic AI service implementations are described by target architecture and
   safety documentation but are not assumed to exist;
 - the endpoint catalog intentionally lists no implemented Agentic AI API;

@@ -8,11 +8,11 @@ smallest useful context while preserving the repository's architecture,
 security, testing and contribution requirements.
 
 The resource set is finalized for the current v0 foundation checkout. It
-contains seven BLUEVERSE-owned skills and fourteen source-pinned supplementary
+contains eight BLUEVERSE-owned skills and fourteen source-pinned supplementary
 skills for the technologies that are actually present or explicitly planned:
-React 19 + Vite, Flutter, ASP.NET Core, EF Core and test-quality workflows.
-The registry also records three candidates that remain deferred until the
-corresponding implementation exists.
+React 19 + Vite, Flutter, ASP.NET Core, PostgreSQL, EF Core and test-quality
+workflows. The registry also records six verified candidates that remain
+deferred because they are broad, operationally privileged or not yet required.
 
 This documentation describes how to use the resources. The operational source
 of truth remains the files under `.agents/` and the root [`AGENTS.md`](../../AGENTS.md).
@@ -48,6 +48,7 @@ claiming implementation or test completion.
 | `.agents/routing.md` | Minimal rule/skill routing matrix |
 | `.agents/rules/` | Focused repository constraints |
 | `.agents/rules/endpoint-catalog.md` | Fast endpoint lookup and source-escalation rule |
+| `.agents/rules/data-access.md` | PostgreSQL, EF Core, migration and test-provider policy |
 | `docs/api/endpoint-catalog.md` | Fast, readable endpoint and route lookup |
 | `docs/api/endpoint-catalog.json` | Machine-checked source for the readable catalog |
 | `.agents/skills/` | On-demand project and supplementary workflows |
@@ -65,7 +66,8 @@ For every implementation or review task:
 2. Read `.agents/routing.md` and identify the changed paths.
 3. Always read `rules/change-safety.md` and `rules/validation.md`.
 4. Read only the additional rules selected by the routing row.
-5. Read one matching BLUEVERSE-owned skill.
+5. Read one matching BLUEVERSE-owned skill; load an additional cross-layer
+   owned skill when the routing row selects it.
 6. Read an imported skill only when the task needs its framework-specific
    guidance.
 7. For any route, endpoint, client API call, gateway mapping or AI API task,
@@ -73,9 +75,12 @@ For every implementation or review task:
    `docs/api/endpoint-catalog.md` before scanning the full source tree. Use the
    catalog as the default answer source; inspect implementation only when the
    lookup rule's escalation conditions apply.
-8. Inspect the targeted source, tests, workflow and detailed documentation
+8. For persistence, migration, EF Core or PostgreSQL work, read
+   `.agents/rules/data-access.md`, `docs/database/README.md` and
+   `docs/database/schema.md` before scanning the complete service.
+9. Inspect the targeted source, tests, workflow and detailed documentation
    named by the routing row.
-9. Run the narrowest useful validation first and report missing tools,
+10. Run the narrowest useful validation first and report missing tools,
    services, credentials or foundation projects exactly.
 
 Skill discovery should remain lightweight: descriptions are used for routing,
@@ -88,6 +93,7 @@ large requirements matrices into skills or load every skill for every task.
 |---|---|---|
 | Repository readiness and gap analysis | `blueverse-foundation-audit` | — |
 | ASP.NET API, Auth, persistence and backend services | `blueverse-backend-service` | `dotnet-webapi`, `optimizing-ef-core-queries` |
+| PostgreSQL/EF Core persistence, migrations and provider-specific tests | `blueverse-postgresql-efcore` | deferred PostgreSQL/Testcontainers skills only when approved and needed |
 | React/Flutter API contracts and permission-aware clients | `blueverse-client-contract` | matching Flutter skills; `vercel-react-best-practices` for React/Vite performance |
 | Test design, IDs, fixtures and discovery | `blueverse-test-design` | `run-tests`, `assertion-quality`, `test-anti-patterns`, `test-gap-analysis`, `grade-tests` |
 | Agentic AI orchestration, tools, approvals and evaluation | `blueverse-agentic-ai-workflow` | deferred governance/OWASP skills until executable AI workflows exist |
@@ -122,7 +128,7 @@ under `apps/mobile/test` and `apps/mobile/integration_test`, backend tests under
 ## Registry and maintenance
 
 The [skill registry](../../.agents/registry/skills.json) is the inventory for
-all twenty-one discovered skills. Imported skills are supplementary and must
+all twenty-two discovered skills. Imported skills are supplementary and must
 have:
 
 - a source repository and exact forty-character revision;
@@ -184,3 +190,9 @@ implemented shared Auth workflow, plus the tracked `services/api` and
 Agentic AI services are not present. Ignored `bin/` and `obj/` output is not
 implementation evidence. See the [foundation gap analysis](../project/foundation-gap-analysis.md)
 for the current repository status and the next implementation gates.
+
+The current database implementation is the Auth EF Core/Npgsql model with
+checked-in PostgreSQL migrations. The default Auth tests intentionally use an
+isolated provider for deterministic provider-independent cases, while
+PostgreSQL-specific behavior is covered by explicitly enabled real-provider
+tests. Future domain and Agentic AI schemas remain unimplemented.

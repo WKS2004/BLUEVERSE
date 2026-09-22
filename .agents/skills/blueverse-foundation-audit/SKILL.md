@@ -11,8 +11,9 @@ Read the root `AGENTS.md`, `.agents/repository-map.md`,
 1. Inspect `git status --short` and inventory tracked/source files with
    targeted `rg --files` exclusions; do not use generated output as evidence.
 2. Compare implementation against `PROJECT_REQUIREMENTS.md`, architecture/ADR
-   documents, the UI integration registry, endpoint catalog, CI workflows,
-   tests, Docker configuration and `.agents` registry, overlays and skills.
+   documents, the UI integration registry, endpoint catalog, database docs, CI
+   workflows, tests, Docker configuration and `.agents` registry, overlays and
+   skills.
 3. Distinguish implemented behavior, reserved paths, ignored build output,
    target architecture and environment-blocked checks. Documentation or Docker
    stubs never count as a working service.
@@ -34,6 +35,12 @@ documentation routes, gateway configuration, client API literals and
 drift as a concrete finding. Confirm that every route addition, update, rename,
 move or removal also has a same-change catalog update and regenerated Markdown;
 missing synchronization is a release-blocking documentation defect.
+
+For any database finding, compare the actual EF Core/Npgsql configuration,
+checked-in migrations, Compose PostgreSQL service, provider-specific tests and
+`docs/database/` against `.agents/rules/data-access.md`. Distinguish the
+existing InMemory test scope from real PostgreSQL evidence, and do not treat a
+reserved future domain or Agentic AI schema as implemented.
 
 Run `python .agents/scripts/validate_agent_resources.py` for agent-resource
 audits and report unavailable foundation, application, Docker or platform

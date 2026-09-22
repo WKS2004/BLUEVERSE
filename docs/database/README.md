@@ -24,6 +24,24 @@ Username: blueverse
 Password: the POSTGRES_PASSWORD value from .env
 ```
 
+## Agent fast path
+
+For a database question, start with this document and
+[`schema.md`](schema.md), then use
+[`../../.agents/rules/data-access.md`](../../.agents/rules/data-access.md) and
+the `blueverse-postgresql-efcore` workflow. Inspect the owning service source
+only when the requested detail is absent, the documentation disagrees with
+the implementation, or the user asks for source-level verification.
+
+## Test-provider boundary
+
+The Auth suite uses an isolated EF Core provider for deterministic tests whose
+behavior does not depend on PostgreSQL. This is not evidence for PostgreSQL
+SQL translation, migrations, constraints, indexes, transactions, locking or
+concurrency. Those behaviors require the explicitly enabled real PostgreSQL
+test path documented in [`services/auth/tests/README.md`](../../services/auth/tests/README.md)
+or an approved disposable PostgreSQL fixture.
+
 ## Rules
 
 - use EF Core migrations
@@ -45,5 +63,8 @@ Password: the POSTGRES_PASSWORD value from .env
   administrator seeding
 - Use the repository-pinned `dotnet-ef` tool manifest when creating or
   inspecting migrations
+- Review generated migration SQL and the existing-data upgrade path before
+  applying a migration; document rollback or forward-recovery expectations for
+  changes that can affect existing rows
 - do not store passwords or tokens in domain tables
 - do not store hidden Agentic AI reasoning

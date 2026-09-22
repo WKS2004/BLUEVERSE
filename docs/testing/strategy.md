@@ -19,6 +19,13 @@ Testing will cover the current foundation and the later business workflows:
 - Agentic AI workflow evaluation in each AI service’s local `tests/` directory
 - deployment smoke tests
 
+Database-provider decisions are defined by
+[`../../.agents/rules/data-access.md`](../../.agents/rules/data-access.md):
+provider-independent tests may use the existing isolated test provider, while
+PostgreSQL translation, migrations, constraints, indexes, transactions,
+locking, concurrency and persistence behavior require real PostgreSQL
+evidence.
+
 ## Current evidence
 
 - React: the Node 24 built-in test runner covers three deterministic Auth

@@ -17,7 +17,7 @@ This review compares the checked-in repository with the implementation plan from
 | ML biodiversity capability | Planned | The requirements describe the OBIS/Bio-ORACLE direction, but correctly defer model implementation until the data-dependent workstream is ready. |
 | Testing | API/Auth/client foundation coverage present | API tests cover 21 gateway foundation cases, the default Auth suite covers 67 deterministic endpoint/security/session/persistence cases plus an opt-in PostgreSQL session/concurrency smoke test, and React build/lint plus Flutter analyze/widget/API-boundary tests cover the shared Auth client surfaces. Domain workflow coverage remains future work. |
 | CI/CD | Source, client, Docker and UI-contract foundations present | `web-ci.yml` and `mobile-ci.yml` run the shared UI integration validator; `ui-integration.yml` rechecks the registry when either client, backend, gateway or contract changes; Docker workflows remain as documented. Runtime API/gateway and cross-platform acceptance checks still require tracked backend services. |
-| Agent resources | Finalized and validated | `.agents/` contains seven BLUEVERSE-owned workflows, fourteen pinned supplementary skills, registry/provenance metadata, a portable .NET overlay, routing evaluations and a dependency-free validator enforced by `repository-ci.yml`. |
+| Agent resources | Finalized and validated | `.agents/` contains eight BLUEVERSE-owned workflows, fourteen pinned supplementary skills, PostgreSQL/EF Core data-access guidance, registry/provenance metadata, a portable .NET overlay, routing evaluations and a dependency-free validator enforced by `repository-ci.yml`. |
 | Deployment | Configuration present, evidence pending | Render API/Auth/PostgreSQL and Vercel documentation exist; live URLs, migrations and deployment evidence must be recorded before submission. |
 | Git/GitHub | Repository present | Git metadata and branch history are present in the reviewed checkout. Continue using focused commits, pull requests and contribution evidence. |
 
@@ -68,7 +68,7 @@ passes from the repository root:
 python .agents/scripts/validate_agent_resources.py
 ```
 
-The current checkout passes this gate with twenty-one repository skills
+The current checkout passes this gate with twenty-two repository skills
 validated. The optional upstream YAML-based skill validator and the Windows
 foundation verifier remain environment-dependent; their unavailable or
 elevation-blocked results must be reported separately from the agent-resource

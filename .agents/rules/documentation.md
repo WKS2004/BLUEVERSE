@@ -11,6 +11,9 @@
   reserved service, future workflow or planned test suite as available.
 - Prefer links to detailed source-of-truth docs over copying long matrices into
   agent rules; verify links and commands during validation.
+- For database documentation, use `docs/database/` as the detailed source of
+  truth and keep `.agents/rules/data-access.md` limited to enforceable routing
+  and provider/test decisions.
 - UI/API integration behavior is documented in
   [`docs/development/ui-integration.md`](../../docs/development/ui-integration.md)
   and its machine-readable registry. Keep both synchronized with the UI

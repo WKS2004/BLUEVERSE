@@ -5,7 +5,8 @@ description: Design, add, or review BLUEVERSE automated tests, stable test IDs, 
 
 # BLUEVERSE test design
 
-Read the root `AGENTS.md`, `.agents/rules/testing.md`,
+Read the root `AGENTS.md`, `.agents/rules/testing.md` and
+`.agents/rules/data-access.md` when a test touches persistence,
 `docs/testing/implementation-plan.md` and `docs/testing/test-matrix.md`.
 
 For route and endpoint tests, also read `docs/api/endpoint-catalog.md`.
@@ -39,6 +40,11 @@ route declarations or client API literals change.
 6. For .NET test execution, read `.agents/skill-overlays/dotnet-test/run-tests.md`
    before using the portable `run-tests` skill. Use the other imported test
    quality skills only for their narrow stated purpose.
+7. For PostgreSQL/EF Core behavior, use `blueverse-postgresql-efcore` and
+   distinguish provider-independent tests from real-provider migration,
+   translation, constraint, transaction and concurrency tests. Do not add a
+   Testcontainers dependency or replace existing fixtures without an approved
+   implementation need.
 
 Treat existing tests as protected specifications. Obtain explicit user
 permission before changing, deleting, skipping or weakening one. Preserve a

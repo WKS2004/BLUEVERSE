@@ -50,6 +50,34 @@
       "expectedSkills": ["blueverse-foundation-audit"],
       "expectedRules": ["change-safety", "documentation", "validation"],
       "mustExclude": ["counting bin/obj output as implementation"]
+    },
+    {
+      "id": "postgres-migration",
+      "task": "Add an EF Core migration for a PostgreSQL-backed Auth model and review the upgrade path.",
+      "expectedSkills": ["blueverse-postgresql-efcore", "blueverse-backend-service"],
+      "expectedRules": ["architecture", "data-access", "security", "testing", "documentation", "validation"],
+      "mustExclude": ["SQL Server substitution", "claiming InMemory proves PostgreSQL behavior", "committing connection strings"]
+    },
+    {
+      "id": "postgres-query",
+      "task": "Investigate a slow EF Core query and verify its PostgreSQL translation and indexes.",
+      "expectedSkills": ["blueverse-postgresql-efcore", "blueverse-backend-service", "optimizing-ef-core-queries"],
+      "expectedRules": ["architecture", "data-access", "security", "testing", "validation"],
+      "mustExclude": ["optimizing without provider evidence", "direct client database access", "generic advice that ignores Npgsql"]
+    },
+    {
+      "id": "postgres-integration-test",
+      "task": "Add a PostgreSQL integration test for a transaction, constraint, migration or concurrency behavior.",
+      "expectedSkills": ["blueverse-postgresql-efcore", "blueverse-test-design"],
+      "expectedRules": ["data-access", "testing", "security", "validation"],
+      "mustExclude": ["using only InMemory for provider behavior", "weakening protected tests", "silently skipping unavailable Docker"]
+    },
+    {
+      "id": "database-inventory",
+      "task": "Quickly determine the implemented PostgreSQL schema, migrations and test-provider boundaries.",
+      "expectedSkills": ["blueverse-postgresql-efcore"],
+      "expectedRules": ["data-access", "validation"],
+      "mustExclude": ["scanning every repository directory first", "treating future Agentic AI tables as implemented"]
     }
   ]
 }

@@ -785,3 +785,27 @@ runtime lacks PyYAML.
 - Summary of the user's request: Make agents use the endpoint catalog as the default fast source and inspect the repository only when the catalog is insufficient, uncertain or explicitly requested.
 - Summary of what the AI Agent did: Added `.agents/rules/endpoint-catalog.md` with the fast-path lookup and source-escalation policy; added an endpoint lookup routing row; linked the rule from the `.agents` README, documentation rule and developer resource guide; and preserved the mandatory same-change catalog synchronization workflow for endpoint modifications.
 - Verification/evidence: Agent-resource validation passed for all 21 skills; endpoint-catalog validation passed with 32 public endpoints, 4 frontend routes and no implemented AI endpoints; UI integration validation passed; all 32 validation tests passed; and `git diff --check` completed without content errors. No secrets, tokens or personal data were recorded.
+
+## 2026-09-22 — Execute PostgreSQL and EF Core agent-resource plan
+
+- Date/time or time range: 2026-09-22 02:15–02:28 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and Python
+- AI Model: GPT-5
+- Summary of the user's request: Execute the approved implementation plan for improving `.agents` with PostgreSQL, EF Core, database testing, skills, rules and efficient repository-specific guidance.
+- Summary of what the AI Agent did: Added the BLUEVERSE PostgreSQL/EF Core data-access rule and workflow skill; routed database, migration and provider-specific testing tasks; added database routing evaluation cases; strengthened backend, testing, CI and foundation-audit guidance; updated database/testing/resource documentation; pinned verified external database candidates as deferred with provenance and reasons; and added the new rule to deterministic resource validation.
+- Verification/evidence: `.agents/scripts/validate_agent_resources.py` passed with 22 repository skills; endpoint-catalog validation passed with 32 public endpoints and 4 frontend routes; UI integration validation passed; all 32 validation tests passed; and `git diff --check` completed without content errors. No application tests or historical contribution records were changed, and no secrets, tokens or personal data were recorded.
+
+## 2026-09-22 — Finalize PostgreSQL agent-resource documentation audit
+
+- Date/time or time range: 2026-09-22 02:29–02:37 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and Python
+- AI Model: GPT-5
+- Summary of the user's request: Perform a final repository-wide review and finalize the `.agents` implementations and supporting documentation.
+- Summary of what the AI Agent did: Audited the complete agent-resource inventory, registry, routing, rules, skills, database/testing documentation, foundation status and link integrity; corrected stale 21-skill/foundation wording; clarified cross-layer skill loading; linked persistence testing to the data-access rule; and preserved the existing project structure and protected tests.
+- Verification/evidence: `.agents/scripts/validate_agent_resources.py` passed with 22 skills; endpoint-catalog and UI-integration validators passed; all 32 validation tests passed; Markdown relative links passed for 118 files; `git diff --check` completed without content errors; no generated artifacts were found under `.agents`; and no application source or existing test was changed.

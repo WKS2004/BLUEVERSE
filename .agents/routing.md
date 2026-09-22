@@ -3,8 +3,9 @@
 Use this file as the first lookup after the root `AGENTS.md`. Read the
 universal `rules/change-safety.md`, then only the rows that match changed paths.
 Keep the initial context limited to the root instructions, this routing matrix,
-the universal safety/validation rules and one relevant workflow skill. Load
-supporting references only when the selected skill requires them.
+the universal safety/validation rules and one relevant workflow skill. Load an
+additional cross-layer skill when the routing row explicitly selects it, and
+load supporting references only when the selected skill requires them.
 Add `rules/documentation.md` when behavior, commands or architecture are
 documented, `rules/testing.md` for behavior changes, and `rules/ai-usage.md`
 for every AI-assisted contribution.
@@ -20,10 +21,12 @@ universal rule. Skills provide the workflow; rules remain authoritative.
 | `docs/contracts/**`, `scripts/validation/**`, UI route/API integration | architecture, security, testing, documentation, validation, endpoint-catalog | `docs/development/ui-integration.md`, `docs/api/endpoint-catalog.md`; shared UI/API and endpoint-catalog validators |
 | Any frontend route, client API target, backend/internal/test/AI endpoint, health/OpenAPI route or gateway mapping addition, update, rename, move or removal; `docs/api/endpoint-catalog.*` | architecture, security, documentation, testing, validation, endpoint-catalog | **Mandatory:** read `docs/api/endpoint-catalog.md`, update its JSON source in the same change, regenerate Markdown, run the source/catalog validator, and run UI validation when a client workflow is affected |
 | `services/api/**`, `services/auth/**`, `services/*/**` | architecture, security, testing, documentation, validation, endpoint-catalog, docker if containerized | `docs/api/endpoint-catalog.md`, `docs/api/`, architecture/security docs; matching backend workflow |
+| PostgreSQL, EF Core, migrations, persistence models, constraints, indexes or provider-specific queries | architecture, security, data-access, testing, documentation, validation | `docs/database/README.md`, `docs/database/schema.md`, owning service migrations/tests; `blueverse-postgresql-efcore` workflow |
 | `services/**` | architecture, security, testing, validation, docker if containerized | `docs/testing/`; backend workflow discovery |
 | `services/ai/**`, `services/ai-agents/**`, `services/agents/**`, AI orchestration/tools/workflows | architecture, security, testing, validation, endpoint-catalog | `docs/agentic-ai/`; deterministic safety/evaluation workflow |
 | `compose.yaml`, `infrastructure/docker/**` | architecture, security, docker, documentation, validation, endpoint-catalog | `docs/api/endpoint-catalog.md`, `docs/deployment/`, `infrastructure/docker/README.md`; config/health checks |
 | `.github/workflows/**`, `.github/scripts/**` | testing, documentation, validation, git | `docs/development/ci.md`; YAML/script and discovery review |
+| `docs/database/**` | data-access, architecture, testing, documentation, validation | owning EF model/migrations/tests plus `.agents/rules/data-access.md` |
 | `docs/**`, `README.md`, `PROJECT_REQUIREMENTS.md` | documentation, architecture/security/testing as applicable, validation | affected source/workflows; link and command review |
 | `.agents/**`, `AGENTS.md` | change-safety, documentation, validation | this directory, root rules, `git diff --check`; edit guidance only on explicit user request or approval |
 | `.agents/skills/**` | change-safety, documentation, validation | selected skill, registry entry and linked supporting files |
@@ -34,6 +37,7 @@ universal rule. Skills provide the workflow; rules remain authoritative.
 |---|---|
 | Whole-repository audit or readiness review | `$blueverse-foundation-audit` |
 | ASP.NET API, Auth, persistence or backend service | `$blueverse-backend-service` |
+| PostgreSQL, EF Core persistence, migrations or provider-specific data behavior | `$blueverse-postgresql-efcore` |
 | Shared React/Flutter API contract or permission UI | `$blueverse-client-contract` |
 | Test design, stable IDs, matrices, fixtures or runners | `$blueverse-test-design` |
 | Agentic AI orchestration, tools, approvals or evaluation | `$blueverse-agentic-ai-workflow` |
@@ -78,6 +82,11 @@ use only the public `/api/...` boundary.
 - Docker/gateway/health change: docker + architecture + documentation +
   validation; update the gateway section of the docs catalog in the same
   change and check internal isolation and public `/api/...` routing.
+- Persistence model, migration, constraint, index, transaction or provider
+  behavior change: read `data-access.md`, use the PostgreSQL/EF Core workflow,
+  update the owning database and test documentation, and use real PostgreSQL
+  evidence for provider-sensitive behavior. Do not replace protected tests or
+  add a database runtime dependency solely to satisfy agent guidance.
 
 ## Efficient inspection order
 
@@ -86,9 +95,11 @@ use only the public `/api/...` boundary.
    opening the complete source tree.
 3. Changed file plus direct imports/references and its local README/config;
    exclude generated and cache paths by default.
-4. Routed rule files and only the linked detailed docs needed for a decision.
-5. Existing tests and the matching CI discovery path.
-6. Narrow checks first, broader checks only when the change crosses a boundary.
+4. For persistence work, read `docs/database/README.md` and
+   `docs/database/schema.md` before scanning migrations or the complete service.
+5. Routed rule files and only the linked detailed docs needed for a decision.
+6. Existing tests and the matching CI discovery path.
+7. Narrow checks first, broader checks only when the change crosses a boundary.
 
 Do not read every document or run every workflow by default. Do not skip a
 routed rule merely because the target implementation is currently absent; use

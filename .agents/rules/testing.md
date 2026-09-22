@@ -5,6 +5,10 @@ The detailed matrix and implementation order live in
 and [`docs/testing/test-matrix.md`](../../docs/testing/test-matrix.md). This
 file is the fast mandatory checklist.
 
+For persistence tests, also read
+[`data-access.md`](data-access.md). It defines when an isolated provider is
+acceptable and when real PostgreSQL evidence is required.
+
 ## Placement and traceability
 
 - Keep authoritative tests in the owning package’s default test location:

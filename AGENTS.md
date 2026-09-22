@@ -93,6 +93,10 @@ Protect agent tools and workflows against prompt injection and unauthorized tool
 
 Use PostgreSQL and EF Core migrations.
 
+For EF Core models, migrations, queries, persistence tests or provider-specific
+behavior, also read [`.agents/rules/data-access.md`](.agents/rules/data-access.md)
+and the owning `blueverse-postgresql-efcore` workflow.
+
 Persist only the data required for the application and Agentic AI workflow. Use constraints, indexes and audit fields where appropriate.
 
 ## Clients

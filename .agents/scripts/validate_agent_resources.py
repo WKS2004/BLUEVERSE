@@ -23,6 +23,7 @@ REQUIRED_FILES = (
     AGENTS_ROOT / "repository-map.md",
     AGENTS_ROOT / "routing.md",
     AGENTS_ROOT / "rules" / "change-safety.md",
+    AGENTS_ROOT / "rules" / "data-access.md",
     AGENTS_ROOT / "rules" / "validation.md",
     REGISTRY_PATH,
     NOTICE_PATH,
@@ -165,6 +166,9 @@ def validate_registry(errors: list[str], skill_names: set[str]) -> None:
         if not isinstance(source, dict):
             errors.append(f"deferred skill lacks source metadata: {skill_id}")
             continue
+        for required in ("repository", "path", "license"):
+            if not source.get(required):
+                errors.append(f"deferred skill {skill_id} lacks source.{required}")
         revision = source.get("revision")
         if not isinstance(revision, str) or not re.fullmatch(r"[0-9a-f]{40}", revision):
             errors.append(f"deferred skill must use a 40-character pinned revision: {skill_id}")

@@ -18,8 +18,8 @@ not complete while the catalog validator fails. Routine route work leaves
 `.agents` guidance unchanged.
 
 Read the root `AGENTS.md`, `.agents/routing.md`, and the architecture,
-security, testing, Docker and validation rules. Verify the target service and
-requirement before generating code. A reserved directory or ignored `bin/` and
+security, data-access, testing, Docker and validation rules. Verify the target
+service and requirement before generating code. A reserved directory or ignored `bin/` and
 `obj/` output is not a service and is not permission to create a sample app.
 
 - Keep clients behind the public API and internal services private. Use `/api/`
@@ -29,6 +29,9 @@ requirement before generating code. A reserved directory or ignored `bin/` and
 - Use PostgreSQL through the service layer and EF Core migrations. Add
   constraints, indexes, audit fields, transactions and migration evidence when
   the implementation requires them.
+- For provider-sensitive behavior, follow `blueverse-postgresql-efcore` and
+  validate against real PostgreSQL; do not treat an InMemory test as provider
+  evidence.
 - A new service needs source, authoritative tests, matching CI discovery,
   Docker/health wiring and synchronized docs/ADR material as applicable.
 - `dotnet-webapi` and `optimizing-ef-core-queries` are supplementary. This

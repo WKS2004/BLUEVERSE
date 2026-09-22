@@ -31,6 +31,9 @@ called scripts as one unit.
   health coordination.
 - Distinguish intentional zero-test foundation state from broken discovery;
   missing suites must fail once the corresponding implementation exists.
+- When PostgreSQL integration tests are enabled, make Docker/database
+  prerequisites and failure behavior explicit; never silently skip provider
+  coverage or expose connection strings in logs and artifacts.
 - For `.agents` changes, keep `repository-ci.yml` as the single CI gate and
   extend `validate_agent_resources.py` rather than adding a duplicate workflow.
 

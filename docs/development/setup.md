@@ -47,7 +47,8 @@ Flutter use the same workflow ID and public `/api/...` endpoint references.
 Before making a repository change, read the root [`AGENTS.md`](../../AGENTS.md),
 the [`agent-resources.md`](agent-resources.md) overview and
 [`.agents/routing.md`](../../.agents/routing.md). Then load only the routed
-rules and one matching BLUEVERSE skill. Imported framework skills are optional
+rules and one matching BLUEVERSE skill. Load additional cross-layer skills when
+the routing matrix selects them. Imported framework skills are optional
 supplements; repository rules and owned skills take precedence.
 
 Validate the agent resources from the repository root:
