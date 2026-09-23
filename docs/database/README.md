@@ -12,7 +12,7 @@ PostgreSQL is the authoritative relational database.
 postgres:5432
 ```
 
-Local Compose explicitly publishes PostgreSQL on host port `5432` so pgAdmin4 can connect to it. The DHI volume is mounted at `/var/lib/postgresql`, allowing the image to manage its versioned `16/data` directory. This is intended for local development only; production databases must remain privately managed.
+Local Compose publishes PostgreSQL on `127.0.0.1:5432` so pgAdmin4 on the Windows host can connect without exposing the database to the local network. The DHI volume is mounted at `/var/lib/postgresql`, allowing the image to manage its versioned `16/data` directory. This is intended for local development only; production databases must remain privately managed.
 
 Use these pgAdmin4 connection settings:
 

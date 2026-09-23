@@ -42,22 +42,22 @@ class AuthResponse {
     required this.user,
   });
 
-  final String? token;
+  final String token;
   final DateTime expiresAt;
   final String deviceId;
   final String? deviceKey;
-  final String? refreshToken;
+  final String refreshToken;
   final DateTime sessionExpiresAt;
   final bool rememberMe;
   final AuthUser user;
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
     return AuthResponse(
-      token: json['token'] as String?,
+      token: _requiredString(json, 'token'),
       expiresAt: DateTime.parse(_requiredString(json, 'expiresAt')),
       deviceId: _requiredString(json, 'deviceId'),
       deviceKey: json['deviceKey'] as String?,
-      refreshToken: json['refreshToken'] as String?,
+      refreshToken: _requiredString(json, 'refreshToken'),
       sessionExpiresAt: DateTime.parse(
         _requiredString(json, 'sessionExpiresAt'),
       ),

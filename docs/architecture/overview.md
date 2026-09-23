@@ -50,11 +50,12 @@ Docker networks:
 
 - `blueverse_edge`
 - `blueverse_internal` — API and Auth only; Docker marks it internal
-- `blueverse_database` — API, Auth and PostgreSQL
+- `blueverse_database` — Auth and PostgreSQL
 
 The edge gateway is the only application entry point. PostgreSQL is explicitly
-published on host port `5432` for local pgAdmin4 access; the application
-services use the database network rather than that host port.
+published on `127.0.0.1:5432` for local pgAdmin4 access; Auth uses the
+database network rather than that host port. The API has no database
+credential or database-network attachment in the v0 stack.
 
 ## Intended public application boundary
 

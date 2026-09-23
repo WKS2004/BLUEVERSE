@@ -122,12 +122,10 @@ Browser / Flutter / Postman
     edge-nginx :80 (BLUEVERSE_HTTP_PORT)
        /       \
       /         \
- frontend       API ──> internal Auth
-                    |
-                 PostgreSQL
+ frontend       API ──> internal Auth ──> PostgreSQL
 ```
 
-Local PostgreSQL is published on host port `5432` for pgAdmin4 inspection and management. Backend services still communicate over Docker's internal network; do not use this host exposure for production deployments.
+Local PostgreSQL is published on `127.0.0.1:5432` for pgAdmin4 inspection and management on the Windows host. Auth communicates with it over Docker's database network; do not use this host exposure for production deployments.
 
 Copy `.env.example` to `.env` before starting the stack.
 
@@ -218,7 +216,7 @@ tree for authoritative cases.
 
 - `docker-web-build.yml` synchronizes the React lockfile with the DHI Node 24 image, then builds the React web image.
 - `docker-backend-build.yml` builds the public API and discovered ASP.NET services one by one.
-- `docker-stack-health.yml` waits for both build workflows, starts the root Compose file and checks frontend/API/service health endpoints.
+- `docker-stack-health.yml` waits for both build workflows, starts the root Compose file and checks frontend/API/service health endpoints plus the public API/Auth Swagger routes.
 
 The web and backend build workflows run on supported branch families when their relevant application, service, Docker infrastructure, lockfile synchronization, Compose, workflow or build-context paths change. The stack-health workflow waits for the required image builds for the same commit and runs only for pull requests targeting `main`; it synchronizes the web lockfile again on its separate runner before running the Compose health checks. Backend build failures are collected across all services so later services are still checked before the workflow fails.
 

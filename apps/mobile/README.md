@@ -71,6 +71,9 @@ The Auth adapter stores the server-issued device ID, device proof key,
 short-lived access token and rotating refresh token in platform secure storage.
 It calls the public `/api/auth/...` gateway routes only; the mobile app never
 calls the internal Auth service, PostgreSQL or another Docker hostname.
+Package tests inject an in-memory credential store and mock HTTP client to
+check native login, refresh, session recovery, logout and failure behavior
+without storing real credentials or requiring a live gateway.
 
 Every request remains an endpoint registered in
 [`docs/contracts/ui-integration.json`](../../docs/contracts/ui-integration.json).

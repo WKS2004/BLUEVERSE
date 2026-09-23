@@ -12,14 +12,14 @@ blueverse_internal (internal=true)
   auth
 
 blueverse_database
-  api
   auth
   postgres
 ```
 
 The edge gateway is connected to the edge and internal networks so it can
-receive host traffic and proxy to internal services. API/Auth/PostgreSQL use
-the separate database network.
+receive host traffic and proxy to internal services. Auth and PostgreSQL use
+the separate database network. The API reaches Auth through
+`blueverse_internal` and has no PostgreSQL credential in v0.
 
 ## Routing
 

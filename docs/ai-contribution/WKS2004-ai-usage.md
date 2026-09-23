@@ -857,3 +857,27 @@ runtime lacks PyYAML.
 - Summary of the user's request: Remove `skills-lock.json` after confirming that it is not required by the BLUEVERSE repository.
 - Summary of what the AI Agent did: Deleted only the repository-root `skills-lock.json`; left the Caveman skill copies, provenance registry and licensing notice unchanged; and preserved earlier contribution records.
 - Verification/evidence: The requested file was removed; the repository agent-resource validator and `git diff --check` were rerun successfully; no application, API or UI source was changed; and no secrets, tokens, hidden reasoning or personal data were recorded.
+
+## 2026-09-23 — Close v0 API verification and mobile Auth test gaps
+
+- Date/time or time range: 2026-09-23 08:53 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, WSL Docker, Flutter SDK and bundled Python
+- AI Model: GPT-6
+- Summary of the user's request: Accept the working local Docker stack and temporary client screens, preserve Windows pgAdmin4 access on PostgreSQL port 5432, and fix the remaining v0 foundation issues.
+- Summary of what the AI Agent did: Bound local PostgreSQL to `127.0.0.1:5432`, removed the unused database credential and database-network attachment from the public API container, extended Docker stack health checks to the public API/Auth Swagger routes, added eleven Flutter Auth API and credential-boundary cases with an injectable secure-storage adapter, rejected malformed session-list items, added a credential-free Postman v0 API collection, and synchronized the relevant architecture, setup, CI, test and foundation documentation. Temporary React and Flutter screens were left in place.
+- Verification/evidence: Compose configuration validated and affected containers were recreated without rebuilding or deleting the database volume; all services reported healthy, six public gateway health/Swagger requests returned HTTP 200, Auth reported database connectivity, PostgreSQL contained Auth tables and EF migration history, and Windows localhost port 5432 accepted a TCP connection. Flutter analysis found no issues and all 16 package tests passed. Thirty-two UI validator tests, the endpoint catalog, UI integration and agent-resource validators passed; Postman JSON and its 15 scripts parsed; the edited stack-check Bash block passed syntax validation; `git diff --check` had no content errors. No Android device/emulator or hosted CI run was available for this review.
+
+## 2026-09-23 — Recheck v0 foundation fixes and native Auth token handling
+
+- Date/time or time range: 2026-09-23 09:10–09:18 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Flutter SDK and bundled Python
+- AI Model: GPT-6
+- Summary of the user's request: Review whether the prior v0 foundation fixes were successfully completed.
+- Summary of what the AI Agent did: Rechecked the requirements, local gateway, database port, Auth contracts and test workflows; made native Flutter Auth responses require nonempty access and refresh tokens so malformed success responses cannot retain an older token as a successful sign-in; added two new malformed-token cases without changing earlier tests; and updated the test counts and remaining acceptance checks in the documentation.
+- Verification/evidence: The API suite passed 21/21 cases, the Auth suite passed 67/67, Flutter analysis found no issues and all 18 package tests passed, and 32 UI-validator tests plus the UI contract, endpoint catalog and agent-resource validators passed. Six live gateway routes returned HTTP 200, Windows localhost port 5432 accepted a TCP connection, and `git diff --check` found no content errors. Authenticated Postman, Android device/emulator and hosted CI acceptance runs remain open; no secrets or credentials were recorded.

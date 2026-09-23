@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/auth_models.dart';
 import 'api_gateway_config.dart';
+import 'auth_credential_store.dart';
 
 class AuthApiException implements Exception {
   const AuthApiException(this.statusCode, this.message);
@@ -21,10 +21,10 @@ class AuthApiException implements Exception {
 class AuthApiService {
   AuthApiService({
     http.Client? client,
-    FlutterSecureStorage? storage,
+    AuthCredentialStore? storage,
     ApiGatewayConfig? gateway,
   }) : _transport = client ?? http.Client(),
-       _storage = storage ?? const FlutterSecureStorage(),
+       _storage = storage ?? const SecureAuthCredentialStore(),
        _gateway = gateway ?? const ApiGatewayConfig();
 
   static const _deviceIdKey = 'blueverse.device_id';
@@ -33,7 +33,7 @@ class AuthApiService {
   static const _refreshTokenKey = 'blueverse.refresh_token';
 
   final http.Client _transport;
-  final FlutterSecureStorage _storage;
+  final AuthCredentialStore _storage;
   final ApiGatewayConfig _gateway;
   Uri? _preferredBaseUri;
 
@@ -42,8 +42,8 @@ class AuthApiService {
     required String password,
     required bool rememberMe,
   }) async {
-    final deviceId = await _storage.read(key: _deviceIdKey);
-    final deviceKey = await _storage.read(key: _deviceKeyKey);
+    final deviceId = await _storage.read(_deviceIdKey);
+    final deviceKey = await _storage.read(_deviceKeyKey);
     final response = await _request(
       '/api/auth/login',
       (uri) async => _transport.post(
@@ -65,7 +65,7 @@ class AuthApiService {
   }
 
   Future<AuthResponse> refresh() async {
-    final refreshToken = await _storage.read(key: _refreshTokenKey);
+    final refreshToken = await _storage.read(_refreshTokenKey);
     if (refreshToken == null || refreshToken.isEmpty) {
       throw const AuthApiException(
         HttpStatus.unauthorized,
@@ -80,8 +80,8 @@ class AuthApiService {
         headers: _jsonHeaders,
         body: jsonEncode({
           'refreshToken': refreshToken,
-          'deviceId': await _storage.read(key: _deviceIdKey),
-          'deviceKey': await _storage.read(key: _deviceKeyKey),
+          'deviceId': await _storage.read(_deviceIdKey),
+          'deviceKey': await _storage.read(_deviceKeyKey),
           'useCookies': false,
         }),
       ),
@@ -128,15 +128,15 @@ class AuthApiService {
 
   Future<void> clearStoredSession() async {
     await Future.wait([
-      _storage.delete(key: _deviceIdKey),
-      _storage.delete(key: _deviceKeyKey),
-      _storage.delete(key: _accessTokenKey),
-      _storage.delete(key: _refreshTokenKey),
+      _storage.delete(_deviceIdKey),
+      _storage.delete(_deviceKeyKey),
+      _storage.delete(_accessTokenKey),
+      _storage.delete(_refreshTokenKey),
     ]);
   }
 
   Future<Map<String, String>> _authHeaders() async {
-    final token = await _storage.read(key: _accessTokenKey);
+    final token = await _storage.read(_accessTokenKey);
     return {
       ..._jsonHeaders,
       if (token != null && token.isNotEmpty)
@@ -145,16 +145,12 @@ class AuthApiService {
   }
 
   Future<void> _persist(AuthResponse auth) async {
-    await _storage.write(key: _deviceIdKey, value: auth.deviceId);
+    await _storage.write(_deviceIdKey, auth.deviceId);
     if (auth.deviceKey != null) {
-      await _storage.write(key: _deviceKeyKey, value: auth.deviceKey);
+      await _storage.write(_deviceKeyKey, auth.deviceKey!);
     }
-    if (auth.token != null) {
-      await _storage.write(key: _accessTokenKey, value: auth.token);
-    }
-    if (auth.refreshToken != null) {
-      await _storage.write(key: _refreshTokenKey, value: auth.refreshToken);
-    }
+    await _storage.write(_accessTokenKey, auth.token);
+    await _storage.write(_refreshTokenKey, auth.refreshToken);
   }
 
   AuthResponse _decodeAuthResponse(http.Response response) =>
@@ -179,8 +175,12 @@ class AuthApiService {
       throw const FormatException('The API response is not a list.');
     }
     return decoded
-        .whereType<Map>()
-        .map(Map<String, dynamic>.from)
+        .map((item) {
+          if (item is! Map) {
+            throw const FormatException('An API list item is not an object.');
+          }
+          return Map<String, dynamic>.from(item);
+        })
         .toList(growable: false);
   }
 

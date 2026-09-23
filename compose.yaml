@@ -32,7 +32,7 @@ services:
     container_name: blueverse-postgres
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-blueverse}
       POSTGRES_USER: ${POSTGRES_USER:-blueverse}
@@ -63,15 +63,11 @@ services:
       ASPNETCORE_HTTP_PORTS: ${API_HTTP_PORT:-8080}
       JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY in .env}
       ReverseProxy__Clusters__auth__Destinations__auth__Address: ${AUTH_SERVICE_URL:-http://auth:8080}
-      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-blueverse};Username=${POSTGRES_USER:-blueverse};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     depends_on:
-      postgres:
-        condition: service_healthy
       auth:
         condition: service_started
     networks:
       - blueverse_internal
-      - blueverse_database
 
   auth:
     build:

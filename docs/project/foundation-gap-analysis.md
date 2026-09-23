@@ -11,13 +11,13 @@ This review compares the checked-in repository with the implementation plan from
 | Cross-platform product scope | Decision accepted, domain delivery pending | React Web and Flutter Mobile are both intended for clients, staff and administrators. The current Auth workflow is shared; no later domain workflow is implemented yet. Future workflow work must provide both surfaces by default and follow `docs/project/ui-experience-principles.md`. |
 | ASP.NET Core API | Foundation present | `services/api` provides the .NET 10 public gateway, OpenAPI/Swagger, CORS, JWT validation, health and YARP routing. Domain workflow endpoints remain future work. |
 | Auth service | Session lifecycle implemented | `services/auth` provides registration/login, server-issued installations, PBKDF2 password hashing, 15-minute JWTs, rotating hashed refresh tokens, one/30-day absolute sessions, five-account-per-device and five-session-per-account limits, scoped logout, active-session management with ended-session logs, permission policies, role/user administration, health and bootstrap seeding. |
-| PostgreSQL | Local infrastructure and Auth persistence present | Compose provides DHI PostgreSQL 16 and publishes host port `5432` for pgAdmin4. Auth uses EF Core constraints and checked-in migrations; domain schema remains future work. |
+| PostgreSQL | Local infrastructure and Auth persistence present | Compose provides DHI PostgreSQL 16 on Windows localhost port `5432` for pgAdmin4. Auth uses EF Core constraints and checked-in migrations; the live local database contains the Auth tables and EF migration history. Domain schema remains future work. |
 | Edge gateway | Present | `edge-nginx` routes frontend and `/api/*` traffic only. The API forwards `/api/auth/*` to the internal Auth service. |
 | Permission authorization | Implemented for Auth | Permission policies use role-derived claims, unknown assignments are rejected, and system roles are protected by a dedicated permission. |
 | Agentic AI | Architecture documented only | Safety, tools, workflow state and evaluation guidance exist under `docs/agentic-ai`; no executable agent workflow is present yet. |
 | ML biodiversity capability | Planned | The requirements describe the OBIS/Bio-ORACLE direction, but correctly defer model implementation until the data-dependent workstream is ready. |
-| Testing | API/Auth/client foundation coverage present | API tests cover 21 gateway foundation cases, the default Auth suite covers 67 deterministic endpoint/security/session/persistence cases plus an opt-in PostgreSQL session/concurrency smoke test, the web suite has three Node 24 Auth request-boundary cases, and Flutter has five visible package-level gateway/configuration/build-define/widget cases. Domain workflow and device integration coverage remain future work. |
-| CI/CD | Source, client, Docker and UI-contract foundations present | `web-ci.yml` and `mobile-ci.yml` run the shared UI integration validator; `web-tests.yml`, `mobile-tests.yml` and `backend-tests.yml` discover and report their current suites; `ui-integration.yml` rechecks the registry when either client, backend, gateway or contract changes. Runtime API/gateway, PostgreSQL and cross-platform acceptance evidence still require Docker, database and supported device/runtime environments. |
+| Testing | API/Auth/client foundation coverage present | API tests cover 21 gateway foundation cases, the default Auth suite covers 67 deterministic endpoint/security/session/persistence cases plus an opt-in PostgreSQL session/concurrency smoke test, the web suite has three Node 24 Auth request-boundary cases, and Flutter has gateway/configuration/build-define/widget cases plus thirteen Auth API and credential-boundary cases. Domain workflow and device integration coverage remain future work. |
+| CI/CD | Source, client, Docker and UI-contract foundations present | `web-ci.yml` and `mobile-ci.yml` run the shared UI integration validator; `web-tests.yml`, `mobile-tests.yml` and `backend-tests.yml` discover and report their current suites; `ui-integration.yml` rechecks the registry when either client, backend, gateway or contract changes. The Docker stack check probes health and public API/Auth Swagger routes. Local Compose, Auth/database health and Swagger were verified on 2026-09-23; Android device/emulator and hosted CI run evidence remain to be recorded. |
 | Agent resources | Finalized and validated | `.agents/` contains eight BLUEVERSE-owned workflows, fourteen pinned supplementary skills, PostgreSQL/EF Core data-access guidance, registry/provenance metadata, a portable .NET overlay, routing evaluations and a dependency-free validator enforced by `repository-ci.yml`. |
 | Deployment | Configuration present, evidence pending | Render API/Auth/PostgreSQL and Vercel documentation exist; live URLs, migrations and deployment evidence must be recorded before submission. |
 | Git/GitHub | Repository present | Git metadata and branch history are present in the reviewed checkout. Continue using focused commits, pull requests and contribution evidence. |
@@ -45,6 +45,18 @@ These checks prove gateway routing and service readiness only; they do not
 substitute for authentication, authorization, database, client integration, or
 Agentic AI tests.
 
+On 2026-09-23, `docker compose --env-file .env config --quiet` passed and
+`docker compose --env-file .env up --detach --no-build --wait` reported healthy
+services after the localhost PostgreSQL binding and API network change. All
+five listed gateway requests plus `/api/swagger` returned HTTP 200. The Auth
+health response reported the database connected, a read-only PostgreSQL query
+listed the Auth tables and `__EFMigrationsHistory`, and Windows
+`127.0.0.1:5432` accepted a TCP connection for pgAdmin4. No Android device or
+emulator was available in `flutter devices`; that device check remains open.
+The authenticated Postman collection still needs a local non-administrator
+account for a complete run. These working-tree changes have not been pushed,
+so hosted CI evidence for them is not yet available.
+
 ## UI integration acceptance check
 
 Before a real screen is considered complete, verify the shared registry and
@@ -69,7 +81,7 @@ passes from the repository root:
 python .agents/scripts/validate_agent_resources.py
 ```
 
-The current checkout passes this gate with twenty-two repository skills
+The current checkout passes this gate with twenty-three repository skills
 validated. The optional upstream YAML-based skill validator and the Windows
 foundation verifier remain environment-dependent; their unavailable or
 elevation-blocked results must be reported separately from the agent-resource

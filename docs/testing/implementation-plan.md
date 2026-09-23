@@ -12,8 +12,9 @@ foundation:
 - `apps/web` is a Vite React client with an implemented cookie-based Auth
   session workflow, lint/build scripts and a dependency-free Node 24
   request-boundary test runner; no web component test runner exists yet.
-- `apps/mobile` is a Flutter client with the Auth session workflow, secure
-  storage/API-boundary tests and the original starter widget test.
+- `apps/mobile` is a Flutter client with the Auth session workflow, mock
+  public-API and in-memory credential-store boundary tests, plus the original
+  starter widget test. A live device workflow test remains future work.
 - `services/api` and `services/auth` are checked-in ASP.NET services with
   package-local test projects under their owning service directories.
 - No executable Agentic AI service is present yet; the AI documentation defines

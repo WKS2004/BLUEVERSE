@@ -157,6 +157,23 @@ PostgreSQL-backed Auth concurrency test is opt-in and must receive its
 connection string through the environment; it is never committed to the
 repository.
 
+## Postman verification
+
+Import the [v0 API verification collection](postman/blueverse-v0.postman_collection.json)
+into Postman. It uses only the local public gateway at `http://localhost`.
+Set `userEmail` and `userPassword` in Postman to an existing non-administrator
+account, then run the collection in order. If the local stack has only the
+bootstrap administrator, first create a separate normal account with
+`POST /api/auth/register` and unique local credentials. The requests check frontend, API,
+Auth and database health; both OpenAPI documents; unauthenticated and invalid
+login responses; login, profile, active sessions, refresh-token rotation,
+permission denial, logout and revoked-token rejection.
+
+The collection contains no credentials. Keep the account password and tokens
+in the local Postman session, and do not export or commit a collection after
+populating its runtime variables. A complete collection run clears its saved
+tokens; clear the Postman collection variables after an interrupted run.
+
 Additional ASP.NET services expose health routes through the same gateway convention:
 
 ```text
