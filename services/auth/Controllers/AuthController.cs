@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Blueverse.Auth.Dtos;
+using Blueverse.Auth.Security;
 using Blueverse.Auth.Services;
 
 namespace Blueverse.Auth.Controllers;
@@ -13,11 +14,6 @@ public class AuthController : ControllerBase
     // Public gateway contract: POST /api/auth/login, POST /api/auth/refresh,
     // GET /api/auth/me, GET /api/auth/sessions, POST /api/auth/logout and
     // POST /api/auth/logout-all-devices.
-    private const string DeviceIdCookieName = "blueverse_device_id";
-    private const string DeviceKeyCookieName = "blueverse_device_key";
-    private const string AccessTokenCookieName = "blueverse_access_token";
-    private const string RefreshTokenCookieName = "blueverse_refresh_token";
-
     private readonly IAuthService _authService;
     private readonly IHostEnvironment _environment;
 
@@ -99,12 +95,17 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequestDto dto)
     {
+        if (dto.UseCookies && dto.AccountId is Guid accountId)
+        {
+            return await ActivateCookieAccountAsync(dto, accountId);
+        }
+
         if (dto.UseCookies || string.IsNullOrWhiteSpace(dto.RefreshToken))
         {
             dto.UseCookies = true;
-            dto.RefreshToken = Request.Cookies[RefreshTokenCookieName];
-            dto.DeviceId ??= Request.Cookies[DeviceIdCookieName];
-            dto.DeviceKey ??= Request.Cookies[DeviceKeyCookieName];
+            dto.RefreshToken = GetSelectedRefreshToken();
+            dto.DeviceId ??= Request.Cookies[AuthCookieNames.DeviceId];
+            dto.DeviceKey ??= Request.Cookies[AuthCookieNames.DeviceKey];
         }
 
         try
@@ -137,7 +138,7 @@ public class AuthController : ControllerBase
         var loggedOut = await _authService.LogoutCurrentDeviceAsync(userId, sessionId);
         if (loggedOut)
         {
-            ClearAuthCookies();
+            ClearAccountAuthCookies(userId, clearInstallationWhenNoOtherAccounts: true);
         }
 
         return loggedOut ? NoContent() : Unauthorized();
@@ -146,6 +147,7 @@ public class AuthController : ControllerBase
     [Authorize]
     [HttpPost("logout/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> LogoutAccount(Guid id)
     {
@@ -154,10 +156,52 @@ public class AuthController : ControllerBase
             return Unauthorized();
         }
 
-        var loggedOut = await _authService.LogoutAccountOnCurrentDeviceAsync(actorUserId, sessionId, id);
-        if (loggedOut && id == actorUserId)
+        if (id != actorUserId)
         {
-            ClearAuthCookies();
+            return Forbid();
+        }
+
+        var loggedOut = await _authService.LogoutAccountOnCurrentDeviceAsync(actorUserId, sessionId, id);
+        if (loggedOut)
+        {
+            ClearAccountAuthCookies(id, clearInstallationWhenNoOtherAccounts: id == actorUserId);
+        }
+
+        return loggedOut ? NoContent() : Unauthorized();
+    }
+
+    [Authorize]
+    [HttpPost("logout-account")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> LogoutSelectedAccount([FromBody] LogoutAccountRequestDto dto)
+    {
+        if (dto.UserId == Guid.Empty)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Invalid Account",
+                Detail = "Select an account to remove from this browser.",
+                Status = StatusCodes.Status400BadRequest
+            });
+        }
+
+        if (!TryGetCurrentSession(out var actorUserId, out var sessionId))
+        {
+            return Unauthorized();
+        }
+
+        if (dto.UserId != actorUserId)
+        {
+            return Forbid();
+        }
+
+        var loggedOut = await _authService.LogoutAccountOnCurrentDeviceAsync(actorUserId, sessionId, dto.UserId);
+        if (loggedOut)
+        {
+            ClearAccountAuthCookies(dto.UserId, clearInstallationWhenNoOtherAccounts: dto.UserId == actorUserId);
         }
 
         return loggedOut ? NoContent() : Unauthorized();
@@ -166,21 +210,34 @@ public class AuthController : ControllerBase
     [Authorize]
     [HttpPost("logout-all-devices")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> LogoutAllDevices()
+    public async Task<IActionResult> LogoutAllDevices([FromBody] PasswordVerificationDto dto)
     {
         if (!TryGetCurrentUserId(out var userId))
         {
             return Unauthorized();
         }
 
-        var loggedOut = await _authService.LogoutAllDevicesAsync(userId);
-        if (loggedOut)
+        try
         {
-            ClearAuthCookies();
-        }
+            var loggedOut = await _authService.LogoutAllDevicesAsync(userId, dto.CurrentPassword);
+            if (loggedOut)
+            {
+                ClearAccountAuthCookies(userId, clearInstallationWhenNoOtherAccounts: true);
+            }
 
-        return loggedOut ? NoContent() : Unauthorized();
+            return loggedOut ? NoContent() : Unauthorized();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Password Verification Failed",
+                Detail = ex.Message,
+                Status = StatusCodes.Status400BadRequest
+            });
+        }
     }
 
     [Authorize]
@@ -199,26 +256,46 @@ public class AuthController : ControllerBase
     }
 
     [Authorize]
-    [HttpDelete("sessions/{sessionId:guid}")]
+    [HttpDelete("/api/auth/sessions/{sessionId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> RevokeSession(Guid sessionId)
+    public async Task<IActionResult> RevokeSession(Guid sessionId, [FromBody] PasswordVerificationDto dto)
     {
         if (!TryGetCurrentUserId(out var userId))
         {
             return Unauthorized();
         }
 
-        var revoked = await _authService.RevokeSessionAsync(userId, sessionId);
+        var hasCurrentSession = TryGetCurrentSessionId(out var currentSessionId);
+        bool revoked;
+        try
+        {
+            revoked = await _authService.RevokeSessionAsync(
+                userId,
+                sessionId,
+                hasCurrentSession ? currentSessionId : null,
+                dto.CurrentPassword);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Password Verification Failed",
+                Detail = ex.Message,
+                Status = StatusCodes.Status400BadRequest
+            });
+        }
+
         if (!revoked)
         {
             return NotFound();
         }
 
-        if (TryGetCurrentSessionId(out var currentSessionId) && currentSessionId == sessionId)
+        if (hasCurrentSession && currentSessionId == sessionId)
         {
-            ClearAuthCookies();
+            ClearAccountAuthCookies(userId, clearInstallationWhenNoOtherAccounts: true);
         }
 
         return NoContent();
@@ -244,7 +321,7 @@ public class AuthController : ControllerBase
             var changed = await _authService.ChangePasswordAsync(userId, dto);
             if (changed)
             {
-                ClearAuthCookies();
+                ClearAccountAuthCookies(userId, clearInstallationWhenNoOtherAccounts: true);
             }
 
             return changed ? NoContent() : Unauthorized();
@@ -330,6 +407,7 @@ public class AuthController : ControllerBase
                 return NotFound();
             }
 
+            ClearAccountAuthCookies(userId, clearInstallationWhenNoOtherAccounts: true);
             return NoContent();
         }
         catch (InvalidOperationException ex)
@@ -366,6 +444,60 @@ public class AuthController : ControllerBase
         return Guid.TryParse(User.FindFirstValue("session_id"), out sessionId);
     }
 
+    private async Task<IActionResult> ActivateCookieAccountAsync(RefreshTokenRequestDto dto, Guid accountId)
+    {
+        dto.UseCookies = true;
+        var accountAccessToken = Request.Cookies[AuthCookieNames.AccessTokenFor(accountId)];
+        var legacyAccessToken = Request.Cookies[AuthCookieNames.LegacyAccessToken];
+        var legacyMatches = AuthCookieNames.ReadUserId(legacyAccessToken) == accountId;
+
+        if (string.IsNullOrWhiteSpace(accountAccessToken) && legacyMatches)
+        {
+            accountAccessToken = legacyAccessToken;
+        }
+
+        if (!string.IsNullOrWhiteSpace(accountAccessToken))
+        {
+            if (AuthCookieNames.ReadUserId(accountAccessToken) != accountId)
+            {
+                return Unauthorized();
+            }
+
+            if (!string.IsNullOrWhiteSpace(Request.Cookies[AuthCookieNames.AccessTokenFor(accountId)]))
+            {
+                AppendActiveAccountCookie(accountId);
+                return NoContent();
+            }
+        }
+
+        var accountRefreshToken = Request.Cookies[AuthCookieNames.RefreshTokenFor(accountId)];
+        if (string.IsNullOrWhiteSpace(accountRefreshToken) && legacyMatches)
+        {
+            accountRefreshToken = Request.Cookies[AuthCookieNames.LegacyRefreshToken];
+        }
+
+        if (string.IsNullOrWhiteSpace(accountRefreshToken))
+        {
+            return Unauthorized();
+        }
+
+        dto.RefreshToken = accountRefreshToken;
+        dto.DeviceId = Request.Cookies[AuthCookieNames.DeviceId];
+        dto.DeviceKey = Request.Cookies[AuthCookieNames.DeviceKey];
+
+        try
+        {
+            var response = await _authService.RefreshAsync(dto);
+            return response.User.Id == accountId
+                ? AuthResponse(response, StatusCodes.Status200OK, useCookies: true)
+                : Unauthorized();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized();
+        }
+    }
+
     private IActionResult AuthResponse(AuthResponseDto response, int statusCode, bool useCookies)
     {
         AppendInstallationCookies(response);
@@ -384,14 +516,14 @@ public class AuthController : ControllerBase
 
     private void ApplyDeviceCookies(LoginRequestDto dto)
     {
-        dto.DeviceId ??= Request.Cookies[DeviceIdCookieName];
-        dto.DeviceKey ??= Request.Cookies[DeviceKeyCookieName];
+        dto.DeviceId ??= Request.Cookies[AuthCookieNames.DeviceId];
+        dto.DeviceKey ??= Request.Cookies[AuthCookieNames.DeviceKey];
     }
 
     private void ApplyDeviceCookies(RegisterRequestDto dto)
     {
-        dto.DeviceId ??= Request.Cookies[DeviceIdCookieName];
-        dto.DeviceKey ??= Request.Cookies[DeviceKeyCookieName];
+        dto.DeviceId ??= Request.Cookies[AuthCookieNames.DeviceId];
+        dto.DeviceKey ??= Request.Cookies[AuthCookieNames.DeviceKey];
     }
 
     private CookieOptions InstallationCookieOptions(AuthResponseDto response)
@@ -410,40 +542,136 @@ public class AuthController : ControllerBase
     {
         var sessionCookieOptions = InstallationCookieOptions(response);
 
-        Response.Cookies.Append(DeviceIdCookieName, response.DeviceId, sessionCookieOptions);
+        Response.Cookies.Append(AuthCookieNames.DeviceId, response.DeviceId, sessionCookieOptions);
         if (!string.IsNullOrWhiteSpace(response.DeviceKey))
         {
-            Response.Cookies.Append(DeviceKeyCookieName, response.DeviceKey, sessionCookieOptions);
+            Response.Cookies.Append(AuthCookieNames.DeviceKey, response.DeviceKey, sessionCookieOptions);
         }
     }
 
     private void AppendAuthCookies(AuthResponseDto response)
     {
+        var userId = response.User.Id;
         var accessCookieOptions = InstallationCookieOptions(response);
         accessCookieOptions.Expires = response.ExpiresAt;
-        Response.Cookies.Append(AccessTokenCookieName, response.Token!, accessCookieOptions);
+        Response.Cookies.Append(AuthCookieNames.AccessTokenFor(userId), response.Token!, accessCookieOptions);
 
         var sessionCookieOptions = InstallationCookieOptions(response);
         if (!string.IsNullOrWhiteSpace(response.RefreshToken))
         {
-            Response.Cookies.Append(RefreshTokenCookieName, response.RefreshToken, sessionCookieOptions);
+            Response.Cookies.Append(AuthCookieNames.RefreshTokenFor(userId), response.RefreshToken, sessionCookieOptions);
+        }
+
+        // Keep the original cookie names for older browser clients. The active
+        // account selector makes the account-scoped cookies authoritative.
+        Response.Cookies.Append(AuthCookieNames.LegacyAccessToken, response.Token!, accessCookieOptions);
+        if (!string.IsNullOrWhiteSpace(response.RefreshToken))
+        {
+            Response.Cookies.Append(AuthCookieNames.LegacyRefreshToken, response.RefreshToken, sessionCookieOptions);
+        }
+        Response.Cookies.Append(AuthCookieNames.ActiveAccountId, userId.ToString(), sessionCookieOptions);
+    }
+
+    private string? GetSelectedRefreshToken()
+    {
+        if (Guid.TryParse(Request.Cookies[AuthCookieNames.ActiveAccountId], out var selectedAccount))
+        {
+            var selectedToken = Request.Cookies[AuthCookieNames.RefreshTokenFor(selectedAccount)];
+            if (!string.IsNullOrWhiteSpace(selectedToken))
+            {
+                return selectedToken;
+            }
+
+            if (AuthCookieNames.ReadUserId(Request.Cookies[AuthCookieNames.LegacyAccessToken]) == selectedAccount)
+            {
+                return Request.Cookies[AuthCookieNames.LegacyRefreshToken];
+            }
+
+            // A missing refresh token for the selected account must never fall
+            // through to another account's legacy token.
+            return null;
+        }
+
+        return Request.Cookies[AuthCookieNames.LegacyRefreshToken];
+    }
+
+    private void AppendActiveAccountCookie(Guid userId)
+    {
+        Response.Cookies.Append(
+            AuthCookieNames.ActiveAccountId,
+            userId.ToString(),
+            new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = Request.IsHttps || (!_environment.IsDevelopment() && !_environment.IsEnvironment("Testing")),
+                SameSite = SameSiteMode.Lax,
+                Path = "/"
+            });
+    }
+
+    private void ClearAccountAuthCookies(Guid userId, bool clearInstallationWhenNoOtherAccounts)
+    {
+        var cookieOptions = ExpiredCookieOptions();
+        Response.Cookies.Delete(AuthCookieNames.AccessTokenFor(userId), cookieOptions);
+        Response.Cookies.Delete(AuthCookieNames.RefreshTokenFor(userId), cookieOptions);
+
+        if (AuthCookieNames.ReadUserId(Request.Cookies[AuthCookieNames.LegacyAccessToken]) == userId)
+        {
+            Response.Cookies.Delete(AuthCookieNames.LegacyAccessToken, cookieOptions);
+            Response.Cookies.Delete(AuthCookieNames.LegacyRefreshToken, cookieOptions);
+        }
+
+        if (Guid.TryParse(Request.Cookies[AuthCookieNames.ActiveAccountId], out var activeAccount) && activeAccount == userId)
+        {
+            Response.Cookies.Delete(AuthCookieNames.ActiveAccountId, cookieOptions);
+        }
+
+        if (clearInstallationWhenNoOtherAccounts && !HasOtherAccountCookies(userId))
+        {
+            ClearInstallationCookies(cookieOptions);
         }
     }
 
-    private void ClearAuthCookies()
+    private bool HasOtherAccountCookies(Guid excludedUserId)
     {
-        var cookieOptions = new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = Request.IsHttps || (!_environment.IsDevelopment() && !_environment.IsEnvironment("Testing")),
-            SameSite = SameSiteMode.Lax,
-            Path = "/",
-            Expires = DateTimeOffset.UnixEpoch
-        };
-
-        Response.Cookies.Delete(DeviceIdCookieName, cookieOptions);
-        Response.Cookies.Delete(DeviceKeyCookieName, cookieOptions);
-        Response.Cookies.Delete(AccessTokenCookieName, cookieOptions);
-        Response.Cookies.Delete(RefreshTokenCookieName, cookieOptions);
+        var accessPrefix = AuthCookieNames.AccountAccessTokenPrefix;
+        var refreshPrefix = AuthCookieNames.AccountRefreshTokenPrefix;
+        return Request.Cookies.Keys.Any(name =>
+            (name.StartsWith(accessPrefix, StringComparison.Ordinal) &&
+             !string.Equals(name, AuthCookieNames.AccessTokenFor(excludedUserId), StringComparison.Ordinal)) ||
+            (name.StartsWith(refreshPrefix, StringComparison.Ordinal) &&
+             !string.Equals(name, AuthCookieNames.RefreshTokenFor(excludedUserId), StringComparison.Ordinal)));
     }
+
+    private void ClearAllDeviceCookies()
+    {
+        var cookieOptions = ExpiredCookieOptions();
+        ClearInstallationCookies(cookieOptions);
+        Response.Cookies.Delete(AuthCookieNames.ActiveAccountId, cookieOptions);
+        Response.Cookies.Delete(AuthCookieNames.LegacyAccessToken, cookieOptions);
+        Response.Cookies.Delete(AuthCookieNames.LegacyRefreshToken, cookieOptions);
+
+        foreach (var name in Request.Cookies.Keys.Where(name =>
+            name.StartsWith(AuthCookieNames.AccountAccessTokenPrefix, StringComparison.Ordinal) ||
+            name.StartsWith(AuthCookieNames.AccountRefreshTokenPrefix, StringComparison.Ordinal)))
+        {
+            Response.Cookies.Delete(name, cookieOptions);
+        }
+    }
+
+    private void ClearInstallationCookies(CookieOptions cookieOptions)
+    {
+        Response.Cookies.Delete(AuthCookieNames.DeviceId, cookieOptions);
+        Response.Cookies.Delete(AuthCookieNames.DeviceKey, cookieOptions);
+    }
+
+    private CookieOptions ExpiredCookieOptions() => new()
+    {
+        HttpOnly = true,
+        Secure = Request.IsHttps || (!_environment.IsDevelopment() && !_environment.IsEnvironment("Testing")),
+        SameSite = SameSiteMode.Lax,
+        Path = "/",
+        Expires = DateTimeOffset.UnixEpoch
+    };
+
 }

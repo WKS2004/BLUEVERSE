@@ -5,9 +5,8 @@ description: Design, implement, or review BLUEVERSE Agentic AI orchestration, to
 
 # BLUEVERSE Agentic AI workflow
 
-Read `docs/api/endpoint-catalog.md` for AI route questions. The current
-catalog status is `none-implemented`; do not invent an AI endpoint from
-target architecture. For every AI endpoint addition, update, rename or
+Read `docs/api/endpoint-catalog.md` for AI route questions. Do not invent
+an endpoint from target architecture. For every AI endpoint addition, update, rename or
 removal, **MUST** update the catalog JSON in the same change with its exact
 method/path, usage, owner, public boundary and safety boundary, regenerate
 Markdown, then run the endpoint and applicable UI validators. An executable AI
@@ -16,9 +15,10 @@ route is not complete while the catalog is stale or validation fails.
 Read the root `AGENTS.md`, `.agents/routing.md`, the architecture, security,
 testing and validation rules, and only the relevant `docs/agentic-ai/` pages or
 ADRs. First classify the task as target design, resource review or checked-in
-implementation. The current repository documents an AI target architecture but
-does not contain an executable Agentic AI service; documentation and Docker
-stubs are not implementation evidence.
+implementation. Read the applicable owning agent, component and workflow
+contracts from the project documentation. Preserve distinct responsibilities,
+typed handoffs, authorization, evidence and approval points. Documentation
+and Docker stubs are not implementation evidence.
 
 - Keep AI services and tools behind the public ASP.NET Core API; React and
   Flutter must never call them directly.
@@ -34,7 +34,8 @@ stubs are not implementation evidence.
   escalation, retries, recovery, idempotency, timeout, concurrency and safe
   failure with deterministic fixtures; an LLM judge alone is insufficient.
 
-When an implementation exists, document the state machine, tool contracts,
+For each implementation, document the state machine, tool contracts,
 approval points, recovery behavior, audit fields and release-blocking
-evaluation thresholds before claiming readiness. Apply the deferred governance
-skills in `.agents/registry/skills.json` only when executable AI code exists.
+evaluation thresholds before claiming readiness. Apply a deferred governance
+skill in `.agents/registry/skills.json` only when its implementation surface
+and scope justify it.

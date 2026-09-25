@@ -1,17 +1,18 @@
 # Architecture rules
 
 - Preserve `apps/web` and `apps/mobile` → public ASP.NET Core API → PostgreSQL.
-- Treat React Web and Flutter Mobile as co-equal product surfaces for clients,
-  staff and administrators. New product workflows are cross-platform by
-  default; do not assign a stakeholder group permanently to one frontend.
+- Give React Web and Flutter Mobile equal authorized role, capability and
+  workflow-action coverage. Neither has stakeholder priority or design
+  emphasis. Read the applicable requirements and owning component document
+  when planning a feature.
 - Keep `docs/contracts/ui-integration.json` as the canonical mapping from a
   shared workflow ID to its React route, Flutter route and public API endpoint
   references. The two clients connect through the workflow contract, never by
   calling one another.
-- Preserve workflow parity across clients: the same intent, role → permission
-  behavior and public API contract must be available in both surfaces, while
-  layout and interaction may adapt to web or mobile context. A genuinely
-  platform-specific exception requires an ADR.
+- Preserve workflow parity across clients: the same authorized actions, state
+  transitions, role → permission behavior and public API contract must be
+  available in both surfaces. Layout and device integration may differ without
+  reducing business capability on either client.
 - Clients may use the gateway/public API only; never call internal Auth or
   Agentic AI services directly and never expose database access to clients.
 - Prefer literal relative `/api/...` request paths. Absolute API hosts must be
@@ -29,7 +30,7 @@
   source and regenerate the Markdown view in the same change; it complements,
   but does not replace, the UI workflow registry. Run the endpoint validator
   before completion.
-- Avoid speculative services in the v0 foundation. A material boundary,
+- Avoid speculative services. A material boundary,
   persistence or orchestration decision requires an ADR and matching tests.
 
 Before changing a boundary, read the relevant `docs/architecture/`,

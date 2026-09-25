@@ -58,13 +58,18 @@ public sealed class AuthEndpointTests : IClassFixture<AuthWebApplicationFactory>
 
     [Fact]
     [Trait("TestId", "AUTH-LOGOUT-001")]
-    public async Task LogoutRevokesAllIssuedTokensAndAllowsALaterLogin()
+    public async Task LogoutRevokesThisDeviceTokensAndLeavesOtherDevicesSignedIn()
     {
         var anonymousLogout = await _client.PostAsync("/api/auth/logout", content: null);
         Assert.Equal(HttpStatusCode.Unauthorized, anonymousLogout.StatusCode);
 
-        var registered = await RegisterAsync("Logout User");
-        var secondToken = await LoginAsync(registered.Email, "UserPassword-123!");
+        var registered = await RegisterWithDeviceAsync(
+            "Logout User",
+            $"logout-current-device-{Guid.NewGuid():N}");
+        var secondToken = await LoginWithDeviceAsync(
+            registered.Email,
+            "UserPassword-123!",
+            $"logout-other-device-{Guid.NewGuid():N}");
 
         using var logoutRequest = new HttpRequestMessage(HttpMethod.Post, "/api/auth/logout");
         logoutRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", registered.Token);
@@ -73,13 +78,13 @@ public sealed class AuthEndpointTests : IClassFixture<AuthWebApplicationFactory>
         Assert.Equal(HttpStatusCode.NoContent, logoutResponse.StatusCode);
         Assert.Empty(await logoutResponse.Content.ReadAsStringAsync());
 
-        foreach (var token in new[] { registered.Token, secondToken })
-        {
-            using var meRequest = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me");
-            meRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            var revokedResponse = await _client.SendAsync(meRequest);
-            Assert.Equal(HttpStatusCode.Unauthorized, revokedResponse.StatusCode);
-        }
+        using var revokedRequest = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me");
+        revokedRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", registered.Token);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await _client.SendAsync(revokedRequest)).StatusCode);
+
+        using var otherDeviceRequest = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me");
+        otherDeviceRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", secondToken);
+        Assert.Equal(HttpStatusCode.OK, (await _client.SendAsync(otherDeviceRequest)).StatusCode);
 
         var reloginResponse = await _client.PostAsJsonAsync("/api/auth/login", new
         {
@@ -260,7 +265,7 @@ public sealed class AuthEndpointTests : IClassFixture<AuthWebApplicationFactory>
 
     [Fact]
     [Trait("TestId", "AUTH-LOGOUT-DEVICE-001")]
-    public async Task LogoutAccountAndLogoutDeviceUseTheCurrentDeviceScope()
+    public async Task LogoutFromThisDeviceCannotEndAnotherAccountSession()
     {
         var deviceId = $"logout-device-{Guid.NewGuid():N}";
         var firstAccount = await RegisterWithDeviceAsync("First Device Account", deviceId);
@@ -276,40 +281,35 @@ public sealed class AuthEndpointTests : IClassFixture<AuthWebApplicationFactory>
             $"/api/auth/logout/{secondAccount.UserId}");
         accountLogoutRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", firstAccount.Token);
         var accountLogoutResponse = await _client.SendAsync(accountLogoutRequest);
-        Assert.Equal(HttpStatusCode.NoContent, accountLogoutResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, accountLogoutResponse.StatusCode);
+
+        using var selectedAccountLogoutRequest = AuthorizedRequest(
+            HttpMethod.Post,
+            "/api/auth/logout-account",
+            firstAccount.Token,
+            new { userId = secondAccount.UserId });
+        Assert.Equal(HttpStatusCode.Forbidden, (await _client.SendAsync(selectedAccountLogoutRequest)).StatusCode);
 
         using var secondAccountRequest = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me");
         secondAccountRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", secondAccount.Token);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await _client.SendAsync(secondAccountRequest)).StatusCode);
-
-        var secondAccountReloginToken = await LoginWithDeviceAsync(
-            secondAccount.Email,
-            "UserPassword-123!",
-            deviceId);
-        using var secondAccountReloginRequest = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me");
-        secondAccountReloginRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", secondAccountReloginToken);
-        Assert.Equal(HttpStatusCode.OK, (await _client.SendAsync(secondAccountReloginRequest)).StatusCode);
-
-        using var secondAccountOldTokenRequest = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me");
-        secondAccountOldTokenRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", secondAccount.Token);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await _client.SendAsync(secondAccountOldTokenRequest)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await _client.SendAsync(secondAccountRequest)).StatusCode);
 
         using var secondAccountOtherDeviceRequest = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me");
         secondAccountOtherDeviceRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", secondAccountOtherDeviceToken);
         Assert.Equal(HttpStatusCode.OK, (await _client.SendAsync(secondAccountOtherDeviceRequest)).StatusCode);
-
-        using var firstAccountRequest = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me");
-        firstAccountRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", firstAccount.Token);
-        Assert.Equal(HttpStatusCode.OK, (await _client.SendAsync(firstAccountRequest)).StatusCode);
 
         using var deviceLogoutRequest = new HttpRequestMessage(HttpMethod.Post, "/api/auth/logout");
         deviceLogoutRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", firstAccount.Token);
         var deviceLogoutResponse = await _client.SendAsync(deviceLogoutRequest);
         Assert.Equal(HttpStatusCode.NoContent, deviceLogoutResponse.StatusCode);
 
+        using var firstAccountRequest = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me");
+        firstAccountRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", firstAccount.Token);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await _client.SendAsync(firstAccountRequest)).StatusCode);
+
         using var thirdAccountRequest = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me");
         thirdAccountRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", thirdAccount.Token);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await _client.SendAsync(thirdAccountRequest)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await _client.SendAsync(thirdAccountRequest)).StatusCode);
 
         using var otherDeviceStillActiveRequest = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me");
         otherDeviceStillActiveRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", secondAccountOtherDeviceToken);
@@ -331,8 +331,11 @@ public sealed class AuthEndpointTests : IClassFixture<AuthWebApplicationFactory>
             "Unaffected Account",
             $"primary-device-{Guid.NewGuid():N}");
 
-        using var logoutAllRequest = new HttpRequestMessage(HttpMethod.Post, "/api/auth/logout-all-devices");
-        logoutAllRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", account.Token);
+        using var logoutAllRequest = AuthorizedRequest(
+            HttpMethod.Post,
+            "/api/auth/logout-all-devices",
+            account.Token,
+            new { currentPassword = "UserPassword-123!" });
         var logoutAllResponse = await _client.SendAsync(logoutAllRequest);
         Assert.Equal(HttpStatusCode.NoContent, logoutAllResponse.StatusCode);
 
@@ -354,6 +357,115 @@ public sealed class AuthEndpointTests : IClassFixture<AuthWebApplicationFactory>
         using var reauthenticatedRequest = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me");
         reauthenticatedRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", reauthenticatedToken);
         Assert.Equal(HttpStatusCode.OK, (await _client.SendAsync(reauthenticatedRequest)).StatusCode);
+    }
+
+    [Fact]
+    [Trait("TestId", "AUTH-LOGOUT-ALL-002")]
+    public async Task LogoutAllDevicesRejectsMissingOrIncorrectPasswordWithoutRevokingSessions()
+    {
+        var account = await RegisterWithDeviceAsync(
+            "Password Required Account",
+            $"password-required-{Guid.NewGuid():N}");
+
+        using var missingPasswordRequest = new HttpRequestMessage(HttpMethod.Post, "/api/auth/logout-all-devices")
+        {
+            Content = JsonContent.Create(new { currentPassword = string.Empty })
+        };
+        missingPasswordRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", account.Token);
+        var missingPasswordResponse = await _client.SendAsync(missingPasswordRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, missingPasswordResponse.StatusCode);
+        var missingPasswordBody = await missingPasswordResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Password Verification Failed", missingPasswordBody.GetProperty("title").GetString());
+
+        using var incorrectPasswordRequest = AuthorizedRequest(
+            HttpMethod.Post,
+            "/api/auth/logout-all-devices",
+            account.Token,
+            new { currentPassword = "WrongPassword-123!" });
+        Assert.Equal(HttpStatusCode.BadRequest, (await _client.SendAsync(incorrectPasswordRequest)).StatusCode);
+
+        using var stillActiveRequest = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me");
+        stillActiveRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", account.Token);
+        Assert.Equal(HttpStatusCode.OK, (await _client.SendAsync(stillActiveRequest)).StatusCode);
+    }
+
+    [Fact]
+    [Trait("TestId", "AUTH-SESSION-REVOKE-001")]
+    public async Task EndingAnotherDeviceSessionRequiresTheCurrentPassword()
+    {
+        var account = await RegisterWithDeviceAsync(
+            "Session Password Account",
+            $"session-current-{Guid.NewGuid():N}");
+        var otherDeviceToken = await LoginWithDeviceAsync(
+            account.Email,
+            "UserPassword-123!",
+            $"session-other-{Guid.NewGuid():N}");
+
+        using var sessionsRequest = new HttpRequestMessage(HttpMethod.Get, "/api/auth/sessions");
+        sessionsRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", account.Token);
+        var sessionsResponse = await _client.SendAsync(sessionsRequest);
+        Assert.Equal(HttpStatusCode.OK, sessionsResponse.StatusCode);
+        var sessions = await sessionsResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var remoteSessionId = sessions.EnumerateArray()
+            .Single(item => !item.GetProperty("isCurrent").GetBoolean())
+            .GetProperty("id").GetGuid();
+
+        using var noPasswordRequest = AuthorizedRequest(
+            HttpMethod.Delete,
+            $"/api/auth/sessions/{remoteSessionId}",
+            account.Token,
+            new { currentPassword = string.Empty });
+        Assert.Equal(HttpStatusCode.BadRequest, (await _client.SendAsync(noPasswordRequest)).StatusCode);
+
+        using var wrongPasswordRequest = AuthorizedRequest(
+            HttpMethod.Delete,
+            $"/api/auth/sessions/{remoteSessionId}",
+            account.Token,
+            new { currentPassword = "WrongPassword-123!" });
+        Assert.Equal(HttpStatusCode.BadRequest, (await _client.SendAsync(wrongPasswordRequest)).StatusCode);
+
+        using var stillActiveRequest = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me");
+        stillActiveRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", otherDeviceToken);
+        Assert.Equal(HttpStatusCode.OK, (await _client.SendAsync(stillActiveRequest)).StatusCode);
+
+        using var verifiedRequest = AuthorizedRequest(
+            HttpMethod.Delete,
+            $"/api/auth/sessions/{remoteSessionId}",
+            account.Token,
+            new { currentPassword = "UserPassword-123!" });
+        Assert.Equal(HttpStatusCode.NoContent, (await _client.SendAsync(verifiedRequest)).StatusCode);
+
+        using var revokedRequest = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me");
+        revokedRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", otherDeviceToken);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await _client.SendAsync(revokedRequest)).StatusCode);
+    }
+
+    [Fact]
+    [Trait("TestId", "AUTH-SESSION-REVOKE-002")]
+    public async Task EndingTheCurrentSessionDoesNotRequirePasswordVerification()
+    {
+        var account = await RegisterWithDeviceAsync(
+            "Current Session Logout User",
+            $"current-session-{Guid.NewGuid():N}");
+        using var sessionsRequest = new HttpRequestMessage(HttpMethod.Get, "/api/auth/sessions");
+        sessionsRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", account.Token);
+        var sessionsResponse = await _client.SendAsync(sessionsRequest);
+        Assert.Equal(HttpStatusCode.OK, sessionsResponse.StatusCode);
+        var sessions = await sessionsResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var currentSessionId = sessions.EnumerateArray()
+            .Single(item => item.GetProperty("isCurrent").GetBoolean())
+            .GetProperty("id").GetGuid();
+
+        using var logoutRequest = AuthorizedRequest(
+            HttpMethod.Delete,
+            $"/api/auth/sessions/{currentSessionId}",
+            account.Token,
+            new { currentPassword = string.Empty });
+        Assert.Equal(HttpStatusCode.NoContent, (await _client.SendAsync(logoutRequest)).StatusCode);
+
+        using var unauthorizedRequest = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me");
+        unauthorizedRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", account.Token);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await _client.SendAsync(unauthorizedRequest)).StatusCode);
     }
 
     [Fact]

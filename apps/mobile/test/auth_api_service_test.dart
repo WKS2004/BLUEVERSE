@@ -267,14 +267,29 @@ void main() {
     );
 
     test(
-      'MOB-AUTH-008 successful logout clears locally stored session data',
+      'MOB-AUTH-008 successful logout removes only the active account locally',
       () async {
         final storage = MemoryAuthCredentialStore();
         storage.values.addAll({
           'blueverse.device_id': 'synthetic-device',
           'blueverse.device_key': 'synthetic-device-key',
-          'blueverse.access_token': 'synthetic-access',
-          'blueverse.refresh_token': 'synthetic-refresh',
+          'blueverse.active_account_id': 'user-current',
+          'blueverse.access_token.user-current': 'synthetic-access',
+          'blueverse.refresh_token.user-current': 'synthetic-refresh',
+          'blueverse.access_token.user-other': 'other-access',
+          'blueverse.refresh_token.user-other': 'other-refresh',
+          'blueverse.account_ids': jsonEncode([
+            {
+              'id': 'user-current',
+              'fullName': 'Current User',
+              'email': 'current@example.test',
+            },
+            {
+              'id': 'user-other',
+              'fullName': 'Other User',
+              'email': 'other@example.test',
+            },
+          ]),
         });
         late http.Request request;
         final client = MockClient((incoming) async {
@@ -289,9 +304,22 @@ void main() {
         ).logoutCurrentDevice();
 
         expect(request.method, 'POST');
-        expect(request.url.path, '/api/auth/logout');
+        expect(request.url.path, '/api/auth/logout-account');
         expect(request.headers['authorization'], 'Bearer synthetic-access');
-        expect(storage.values, isEmpty);
+        expect(jsonDecode(request.body), {'userId': 'user-current'});
+        expect(
+          storage.values['blueverse.access_token.user-other'],
+          'other-access',
+        );
+        expect(
+          storage.values['blueverse.refresh_token.user-other'],
+          'other-refresh',
+        );
+        expect(storage.values['blueverse.active_account_id'], 'user-other');
+        expect(
+          storage.values.containsKey('blueverse.access_token.user-current'),
+          isFalse,
+        );
       },
     );
 
@@ -299,7 +327,17 @@ void main() {
       'MOB-AUTH-009 failed logout preserves the local session for recovery',
       () async {
         final storage = MemoryAuthCredentialStore();
-        storage.values['blueverse.access_token'] = 'synthetic-access';
+        storage.values.addAll({
+          'blueverse.active_account_id': 'user-current',
+          'blueverse.access_token.user-current': 'synthetic-access',
+          'blueverse.account_ids': jsonEncode([
+            {
+              'id': 'user-current',
+              'fullName': 'Current User',
+              'email': 'current@example.test',
+            },
+          ]),
+        });
         final client = MockClient(
           (_) async => http.Response(
             jsonEncode({'status': 503, 'detail': 'Service unavailable.'}),
@@ -321,7 +359,114 @@ void main() {
             ),
           ),
         );
-        expect(storage.values['blueverse.access_token'], 'synthetic-access');
+        expect(
+          storage.values['blueverse.access_token.user-current'],
+          'synthetic-access',
+        );
+      },
+    );
+
+    test('MOB-AUTH-011 ending all sessions sends password and preserves other accounts', () async {
+      final storage = MemoryAuthCredentialStore();
+      storage.values.addAll({
+        'blueverse.active_account_id': 'user-current',
+        'blueverse.access_token.user-current': 'current-access',
+        'blueverse.refresh_token.user-current': 'current-refresh',
+        'blueverse.access_token.user-other': 'other-access',
+        'blueverse.refresh_token.user-other': 'other-refresh',
+        'blueverse.account_ids': jsonEncode([
+          {
+            'id': 'user-current',
+            'fullName': 'Current User',
+            'email': 'current@example.test',
+          },
+          {
+            'id': 'user-other',
+            'fullName': 'Other User',
+            'email': 'other@example.test',
+          },
+        ]),
+      });
+      late http.Request request;
+      final client = MockClient((incoming) async {
+        request = incoming;
+        return http.Response('', 204);
+      });
+      addTearDown(client.close);
+
+      await AuthApiService(
+        client: client,
+        storage: storage,
+      ).logoutAllDevices('verified-password');
+
+      expect(request.method, 'POST');
+      expect(request.url.path, '/api/auth/logout-all-devices');
+      expect(jsonDecode(request.body), {
+        'currentPassword': 'verified-password',
+      });
+      expect(
+        storage.values['blueverse.access_token.user-other'],
+        'other-access',
+      );
+      expect(storage.values['blueverse.active_account_id'], 'user-other');
+      expect(
+        storage.values.containsKey('blueverse.access_token.user-current'),
+        isFalse,
+      );
+    });
+
+    test(
+      'MOB-AUTH-012 remote session revocation sends password verification',
+      () async {
+        final storage = MemoryAuthCredentialStore();
+        storage.values.addAll({
+          'blueverse.active_account_id': 'user-current',
+          'blueverse.access_token.user-current': 'current-access',
+        });
+        late http.Request request;
+        final client = MockClient((incoming) async {
+          request = incoming;
+          return http.Response('', 204);
+        });
+        addTearDown(client.close);
+
+        await AuthApiService(
+          client: client,
+          storage: storage,
+        ).revokeSession('remote-session', currentPassword: 'verified-password');
+
+        expect(request.method, 'DELETE');
+        expect(request.url.path, '/api/auth/sessions/remote-session');
+        expect(jsonDecode(request.body), {
+          'currentPassword': 'verified-password',
+        });
+        expect(request.headers['authorization'], 'Bearer current-access');
+      },
+    );
+
+    test(
+      'MOB-AUTH-013 self deletion uses the authenticated public endpoint',
+      () async {
+        final storage = MemoryAuthCredentialStore();
+        storage.values.addAll({
+          'blueverse.active_account_id': 'user-current',
+          'blueverse.access_token.user-current': 'current-access',
+        });
+        late http.Request request;
+        final client = MockClient((incoming) async {
+          request = incoming;
+          return http.Response('', 204);
+        });
+        addTearDown(client.close);
+
+        await AuthApiService(
+          client: client,
+          storage: storage,
+        ).deleteCurrentUser();
+
+        expect(request.method, 'DELETE');
+        expect(request.url.path, '/api/auth/me');
+        expect(request.headers['authorization'], 'Bearer current-access');
       },
     );
 
@@ -419,5 +564,78 @@ void main() {
         expect(storage.values, priorSession);
       },
     );
+
+    test(
+      'MOB-ADMIN-001 permission assignment uses the public role route',
+      () async {
+        final storage = MemoryAuthCredentialStore();
+        storage.values['blueverse.access_token'] = 'admin-token';
+        late http.Request request;
+        final client = MockClient((incoming) async {
+          request = incoming;
+          return http.Response(
+            jsonEncode({
+              'id': 'role-123',
+              'name': 'Coastal Editor',
+              'permissions': ['auth.user.read'],
+            }),
+            200,
+          );
+        });
+        addTearDown(client.close);
+
+        final result = await AuthApiService(client: client, storage: storage)
+            .adminSetRolePermissions(
+              id: 'role-123',
+              permissionCodes: ['auth.user.read'],
+            );
+
+        expect(request.method, 'POST');
+        expect(request.url.path, '/api/auth/roles/role-123/permissions');
+        expect(request.headers['authorization'], 'Bearer admin-token');
+        expect(jsonDecode(request.body), {
+          'permissionCodes': ['auth.user.read'],
+        });
+        expect(result['permissions'], ['auth.user.read']);
+      },
+    );
+
+    test('MOB-ADMIN-002 user creation submits account details through the public API', () async {
+      final storage = MemoryAuthCredentialStore();
+      storage.values['blueverse.access_token'] = 'admin-token';
+      late http.Request request;
+      final client = MockClient((incoming) async {
+        request = incoming;
+        return http.Response(
+          jsonEncode({
+            'id': 'user-123',
+            'email': 'new@example.test',
+            'fullName': 'New Coastal Member',
+            'roles': ['Viewer'],
+          }),
+          201,
+        );
+      });
+      addTearDown(client.close);
+
+      final result = await AuthApiService(client: client, storage: storage)
+          .adminCreateUser(
+            email: 'new@example.test',
+            password: 'synthetic-password',
+            fullName: 'New Coastal Member',
+            roleNames: ['Viewer'],
+          );
+
+      expect(request.method, 'POST');
+      expect(request.url.path, '/api/auth/users');
+      expect(request.headers['authorization'], 'Bearer admin-token');
+      expect(jsonDecode(request.body), {
+        'email': 'new@example.test',
+        'password': 'synthetic-password',
+        'fullName': 'New Coastal Member',
+        'roleNames': ['Viewer'],
+      });
+      expect(result['fullName'], 'New Coastal Member');
+    });
   });
 }

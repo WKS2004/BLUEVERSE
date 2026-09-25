@@ -13,10 +13,16 @@ sources are present at `services/api` and `services/auth`.
 - Auth service: Render
 - PostgreSQL: managed PostgreSQL on Render or an equivalent managed provider
 - Redis: managed Redis-compatible service when introduced
-- Agentic AI: deployment chosen after workflow/component design
+- Agentic AI: internal runtime and deployment to be chosen for the defined
+  four-agent v1 workflow; no executable service is checked in yet
+- Biodiversity ML: private inference runtime and model startup to be
+  documented when the separate IT3091 model is available
 
 The local `edge-nginx` gateway is a development/container architecture
 boundary. The production React frontend need not be routed through the local
 gateway when Vercel is the selected web platform, and the Flutter client is
-distributed through its mobile target channels. Both clients continue to use
-the same public API and permission contract.
+distributed through its mobile target channels. Both clients must offer the
+same permitted role and workflow capabilities through the public API and
+permission contract. Production configuration must keep Agentic AI and ML
+inference private and provide a reproducible startup path for the assessed
+workflow.

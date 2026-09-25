@@ -40,14 +40,16 @@ acceptable and when real PostgreSQL evidence is required.
 - Clients test only the public API/gateway. React covers component states,
   request boundaries, permissions, accessibility and workflows; Flutter covers
   analysis, unit/widget, API-boundary and mobile workflow behavior.
-- For a shared product workflow, test the same participating roles through
-  both React Web and Flutter Mobile. Platform-specific test differences should
-  reflect interaction context or device capability, not an assumption that
-  administration is web-only or client-facing work is mobile-only.
+- For every product workflow, test every authorized role and business
+  action through both React Web and Flutter Mobile. Assert equivalent state
+  transitions, permission behavior and outcomes. Platform-specific test
+  differences may reflect layout or device integration without removing
+  business capability from either client.
+- Derive case expectations from `PROJECT_REQUIREMENTS.md` and the applicable
+  owning component, workflow or agent contract under `docs/`.
 - Every client workflow test must trace to the shared UI integration registry:
   React and Flutter surfaces use the same workflow ID and endpoint references.
-  Route/API contract validation runs even while the current starter has zero
-  domain endpoints.
+  Route/API contract validation runs for every affected workflow.
 - Review user-facing workflow tests against
   [`docs/project/ui-experience-principles.md`](../../docs/project/ui-experience-principles.md)
   so technically correct request tests do not hide confusing, unrealistic or

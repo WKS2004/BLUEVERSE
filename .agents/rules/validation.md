@@ -40,8 +40,7 @@ authorization. Prose descriptions and runtime authorization still require
 source review and application tests. The optional upstream skill validator may be run
 in an environment with its YAML dependency, but it is not a CI prerequisite.
 
-The current foundation verifier intentionally expects backend project files
-that may not yet exist. If it fails for that known gap, report the exact
-missing paths; do not create substitute projects or call the check successful.
-Do not claim Docker/Compose health without Docker, credentials and actual
-services being available.
+If a verifier reports a missing project or service, confirm the current
+source tree and report the exact condition. Do not create substitute projects
+or call a failed check successful. Do not claim Docker/Compose health without
+Docker, credentials and actual services being available.

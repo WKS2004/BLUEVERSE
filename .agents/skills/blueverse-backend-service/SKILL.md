@@ -21,6 +21,8 @@ Read the root `AGENTS.md`, `.agents/routing.md`, and the architecture,
 security, data-access, testing, Docker and validation rules. Verify the target
 service and requirement before generating code. A reserved directory or ignored `bin/` and
 `obj/` output is not a service and is not permission to create a sample app.
+Read the applicable requirements and owning component/workflow documents;
+preserve the same public contract for React and Flutter.
 
 - Keep clients behind the public API and internal services private. Use `/api/`
   routes without an API-version path segment.

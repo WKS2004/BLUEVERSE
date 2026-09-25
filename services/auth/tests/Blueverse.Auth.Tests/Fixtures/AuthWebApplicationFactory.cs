@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging.Abstractions;
+
 namespace Blueverse.Auth.Tests.Fixtures;
 
 public sealed class AuthWebApplicationFactory : WebApplicationFactory<Program>
@@ -45,28 +47,16 @@ public sealed class AuthWebApplicationFactory : WebApplicationFactory<Program>
     {
         using var scope = Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
-        var role = await db.Roles.SingleAsync(item => item.Name == "Admin");
-
-        if (await db.Users.AnyAsync(user => user.Email == AdminEmail))
-        {
-            return;
-        }
-
         var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasherService>();
-        var admin = new User
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
-            Email = AdminEmail,
-            FullName = "Test Administrator",
-            PasswordHash = hasher.HashPassword(AdminPassword),
-            IsActive = true
-        };
-
-        db.Users.Add(admin);
-        db.UserRoles.Add(new UserRole
-        {
-            User = admin,
-            RoleId = role.Id
-        });
-        await db.SaveChangesAsync();
+            ["ADMIN_EMAIL"] = AdminEmail,
+            ["ADMIN_PASSWORD"] = AdminPassword
+        }).Build();
+        await AuthDataSeeder.SeedAdminAsync(
+            db,
+            configuration,
+            hasher,
+            NullLogger.Instance);
     }
 }

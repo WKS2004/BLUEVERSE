@@ -3,10 +3,12 @@ import { afterEach, test } from 'node:test'
 
 import {
   AuthApiError,
+  deleteCurrentUser,
   getCurrentUser,
   login,
   logoutAllDevices,
-} from './auth.ts'
+  revokeSession,
+} from '../auth.ts'
 
 const originalFetch = globalThis.fetch
 
@@ -86,16 +88,45 @@ test('WEB-AUTH-002 unauthorized RFC 7807 responses retain status and detail', as
   )
 })
 
-test('WEB-AUTH-003 logout everywhere uses the public route and accepts 204', async () => {
+test('WEB-AUTH-003 logout everywhere sends the password to the public route', async () => {
   let request
   globalThis.fetch = async (input, init) => {
     request = { input, init }
     return response(undefined, 204)
   }
 
-  await logoutAllDevices()
+  await logoutAllDevices('verified-current-password')
 
   assert.equal(request.input, '/api/auth/logout-all-devices')
   assert.equal(request.init.method, 'POST')
+  assert.equal(request.init.credentials, 'include')
+  assert.deepEqual(JSON.parse(request.init.body), { currentPassword: 'verified-current-password' })
+})
+
+test('WEB-AUTH-004 ending a session sends current-password verification', async () => {
+  let request
+  globalThis.fetch = async (input, init) => {
+    request = { input, init }
+    return response(undefined, 204)
+  }
+
+  await revokeSession('session-1', 'verified-current-password')
+
+  assert.equal(request.input, '/api/auth/sessions/session-1')
+  assert.equal(request.init.method, 'DELETE')
+  assert.deepEqual(JSON.parse(request.init.body), { currentPassword: 'verified-current-password' })
+})
+
+test('WEB-AUTH-005 account deletion uses the authenticated public route', async () => {
+  let request
+  globalThis.fetch = async (input, init) => {
+    request = { input, init }
+    return response(undefined, 204)
+  }
+
+  await deleteCurrentUser()
+
+  assert.equal(request.input, '/api/auth/me')
+  assert.equal(request.init.method, 'DELETE')
   assert.equal(request.init.credentials, 'include')
 })

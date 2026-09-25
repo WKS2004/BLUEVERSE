@@ -72,6 +72,13 @@ pull request. Use required checks that match the repository's branch/path
 policy, or retain a lightweight always-triggered gate when a branch rule
 requires a check on every pull request.
 
+The SE3090 assignment separately requires a workflow that restores, builds
+and runs backend tests on every push and pull request to `main`. The
+current backend source/test workflows have path filters, so this trigger
+requirement is not yet met for unrelated changes. Preserve the per-area
+workflows if useful, but add an always-triggered main-branch backend gate
+before the final submission; document its passing hosted run.
+
 ## UI and API integration contract
 
 `docs/contracts/ui-integration.json` is the source of truth for shared client
@@ -91,8 +98,9 @@ validator for their affected client paths. The checks reject:
   Docker hostname; and
 - `/api/v1`-style path versioning.
 
-For any route, gateway, service or client contract change, update both JSON
-sources and regenerate the endpoint-catalog Markdown in the same change:
+For any route or gateway change, update the endpoint-catalog JSON and
+regenerate its Markdown view in the same change. Update the UI-registry JSON
+when a client workflow, frontend route or its public API references change:
 
 ```bash
 python .agents/scripts/validate_endpoint_catalog.py --write-markdown

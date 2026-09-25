@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text.Json;
 using Blueverse.Auth.Tests.Fixtures;
 
 namespace Blueverse.Auth.Tests.Integration;
@@ -53,6 +55,270 @@ public sealed class AuthAdministrationContractTests : IClassFixture<AuthWebAppli
             Assert.Equal(JsonValueKind.Array, body.ValueKind);
             Assert.True(body.GetArrayLength() > 0);
         }
+    }
+
+    [Fact]
+    [Trait("TestId", "AUTH-AUTHZ-004")]
+    public async Task RoleActionsRequireReadPlusTheSpecificMutationGrant()
+    {
+        var admin = await AuthTestSupport.LoginAsync(
+            _client,
+            AuthWebApplicationFactory.AdminEmail,
+            AuthWebApplicationFactory.AdminPassword);
+        var member = await AuthTestSupport.RegisterAsync(_client, fullName: "Granular Role Editor");
+        var memberRoleName = $"Role-Reader-{Guid.NewGuid():N}";
+        var targetRoleName = $"Target-{Guid.NewGuid():N}";
+
+        using var createMemberRoleRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Post,
+            "/api/auth/roles",
+            admin.Token,
+            new { name = memberRoleName, description = "Role with deliberately limited grants" });
+        using var createMemberRoleResponse = await _client.SendAsync(createMemberRoleRequest);
+        var memberRole = await AuthTestSupport.ReadJsonAsync(createMemberRoleResponse);
+        Assert.Equal(HttpStatusCode.Created, createMemberRoleResponse.StatusCode);
+
+        using var assignReaderRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Post,
+            $"/api/auth/roles/{memberRole.GetProperty("id").GetGuid()}/permissions",
+            admin.Token,
+            new { permissionCodes = new[] { PermissionCodes.RoleRead } });
+        using var assignReaderResponse = await _client.SendAsync(assignReaderRequest);
+        Assert.Equal(HttpStatusCode.OK, assignReaderResponse.StatusCode);
+
+        using var assignMemberRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Post,
+            $"/api/auth/users/{member.UserId}/roles",
+            admin.Token,
+            new { roleNames = new[] { memberRoleName } });
+        using var assignMemberResponse = await _client.SendAsync(assignMemberRequest);
+        Assert.Equal(HttpStatusCode.OK, assignMemberResponse.StatusCode);
+        var readOnly = await AuthTestSupport.LoginAsync(_client, member.Email, "UserPassword-123!");
+
+        using var readRequest = AuthTestSupport.AuthorizedRequest(HttpMethod.Get, "/api/auth/roles", readOnly.Token);
+        using var readResponse = await _client.SendAsync(readRequest);
+        Assert.Equal(HttpStatusCode.OK, readResponse.StatusCode);
+
+        using var createDeniedRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Post,
+            "/api/auth/roles",
+            readOnly.Token,
+            new { name = $"Denied-{Guid.NewGuid():N}", description = "Read-only users cannot create roles" });
+        using var createDeniedResponse = await _client.SendAsync(createDeniedRequest);
+        Assert.Equal(HttpStatusCode.Forbidden, createDeniedResponse.StatusCode);
+
+        using var createTargetRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Post,
+            "/api/auth/roles",
+            admin.Token,
+            new { name = targetRoleName, description = "Target to update" });
+        using var createTargetResponse = await _client.SendAsync(createTargetRequest);
+        var targetRole = await AuthTestSupport.ReadJsonAsync(createTargetResponse);
+        Assert.Equal(HttpStatusCode.Created, createTargetResponse.StatusCode);
+        var targetRoleId = targetRole.GetProperty("id").GetGuid();
+
+        using var promoteToEditorRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Post,
+            $"/api/auth/roles/{memberRole.GetProperty("id").GetGuid()}/permissions",
+            admin.Token,
+            new { permissionCodes = new[] { PermissionCodes.RoleRead, PermissionCodes.RoleUpdate } });
+        using var promoteToEditorResponse = await _client.SendAsync(promoteToEditorRequest);
+        Assert.Equal(HttpStatusCode.OK, promoteToEditorResponse.StatusCode);
+        var editor = await AuthTestSupport.LoginAsync(_client, member.Email, "UserPassword-123!");
+
+        using var updateAllowedRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Put,
+            $"/api/auth/roles/{targetRoleId}",
+            editor.Token,
+            new { name = targetRoleName, description = "Updated with read and update grants" });
+        using var updateAllowedResponse = await _client.SendAsync(updateAllowedRequest);
+        var updatedRole = await AuthTestSupport.ReadJsonAsync(updateAllowedResponse);
+        Assert.Equal(HttpStatusCode.OK, updateAllowedResponse.StatusCode);
+        Assert.Equal("Updated with read and update grants", updatedRole.GetProperty("description").GetString());
+
+        using var deleteDeniedRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Delete,
+            $"/api/auth/roles/{targetRoleId}",
+            editor.Token);
+        using var deleteDeniedResponse = await _client.SendAsync(deleteDeniedRequest);
+        Assert.Equal(HttpStatusCode.Forbidden, deleteDeniedResponse.StatusCode);
+
+        using var permissionWriteDeniedRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Post,
+            $"/api/auth/roles/{targetRoleId}/permissions",
+            editor.Token,
+            new { permissionCodes = Array.Empty<string>() });
+        using var permissionWriteDeniedResponse = await _client.SendAsync(permissionWriteDeniedRequest);
+        Assert.Equal(HttpStatusCode.Forbidden, permissionWriteDeniedResponse.StatusCode);
+    }
+
+    [Fact]
+    [Trait("TestId", "AUTH-AUTHZ-005")]
+    public async Task UserActionsRequireReadPlusTheSpecificMutationGrant()
+    {
+        var admin = await AuthTestSupport.LoginAsync(
+            _client,
+            AuthWebApplicationFactory.AdminEmail,
+            AuthWebApplicationFactory.AdminPassword);
+        var member = await AuthTestSupport.RegisterAsync(_client, fullName: "Granular User Editor");
+        var target = await AuthTestSupport.RegisterAsync(_client, fullName: "Managed User Target");
+        var roleName = $"User-Editor-{Guid.NewGuid():N}";
+
+        using var createRoleRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Post,
+            "/api/auth/roles",
+            admin.Token,
+            new { name = roleName, description = "User actions with explicit grant combinations" });
+        using var createRoleResponse = await _client.SendAsync(createRoleRequest);
+        var role = await AuthTestSupport.ReadJsonAsync(createRoleResponse);
+        Assert.Equal(HttpStatusCode.Created, createRoleResponse.StatusCode);
+        var roleId = role.GetProperty("id").GetGuid();
+
+        using var setCreateOnlyRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Post,
+            $"/api/auth/roles/{roleId}/permissions",
+            admin.Token,
+            new { permissionCodes = new[] { PermissionCodes.UserCreate } });
+        using var setCreateOnlyResponse = await _client.SendAsync(setCreateOnlyRequest);
+        Assert.Equal(HttpStatusCode.OK, setCreateOnlyResponse.StatusCode);
+
+        using var assignMemberRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Post,
+            $"/api/auth/users/{member.UserId}/roles",
+            admin.Token,
+            new { roleNames = new[] { roleName } });
+        using var assignMemberResponse = await _client.SendAsync(assignMemberRequest);
+        Assert.Equal(HttpStatusCode.OK, assignMemberResponse.StatusCode);
+        var editor = await AuthTestSupport.LoginAsync(_client, member.Email, "UserPassword-123!");
+
+        using var createWithoutReadRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Post,
+            "/api/auth/users",
+            editor.Token,
+            new
+            {
+                email = AuthTestSupport.UniqueEmail("no-read"),
+                password = "ManagedPassword-123!",
+                fullName = "Must Not Be Created",
+                roleNames = Array.Empty<string>()
+            });
+        using var createWithoutReadResponse = await _client.SendAsync(createWithoutReadRequest);
+        Assert.Equal(HttpStatusCode.Forbidden, createWithoutReadResponse.StatusCode);
+
+        using var grantReadAndCreateRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Post,
+            $"/api/auth/roles/{roleId}/permissions",
+            admin.Token,
+            new { permissionCodes = new[] { PermissionCodes.UserRead, PermissionCodes.UserCreate } });
+        using var grantReadAndCreateResponse = await _client.SendAsync(grantReadAndCreateRequest);
+        Assert.Equal(HttpStatusCode.OK, grantReadAndCreateResponse.StatusCode);
+        editor = await AuthTestSupport.LoginAsync(_client, member.Email, "UserPassword-123!");
+
+        using var readAllowedRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Get,
+            "/api/auth/users",
+            editor.Token);
+        using var readAllowedResponse = await _client.SendAsync(readAllowedRequest);
+        Assert.Equal(HttpStatusCode.OK, readAllowedResponse.StatusCode);
+
+        using var createAllowedRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Post,
+            "/api/auth/users",
+            editor.Token,
+            new
+            {
+                email = AuthTestSupport.UniqueEmail("read-create"),
+                password = "ManagedPassword-123!",
+                fullName = "Created With Both Grants",
+                roleNames = Array.Empty<string>()
+            });
+        using var createAllowedResponse = await _client.SendAsync(createAllowedRequest);
+        Assert.Equal(HttpStatusCode.Created, createAllowedResponse.StatusCode);
+
+        using var updateWithoutGrantRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Put,
+            $"/api/auth/users/{target.UserId}",
+            editor.Token,
+            new { email = target.Email, fullName = "Must Not Update", isActive = true });
+        using var updateWithoutGrantResponse = await _client.SendAsync(updateWithoutGrantRequest);
+        Assert.Equal(HttpStatusCode.Forbidden, updateWithoutGrantResponse.StatusCode);
+
+        using var deleteWithoutGrantRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Delete,
+            $"/api/auth/users/{target.UserId}",
+            editor.Token);
+        using var deleteWithoutGrantResponse = await _client.SendAsync(deleteWithoutGrantRequest);
+        Assert.Equal(HttpStatusCode.Forbidden, deleteWithoutGrantResponse.StatusCode);
+
+        using var assignWithoutGrantsRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Post,
+            $"/api/auth/users/{target.UserId}/roles",
+            editor.Token,
+            new { roleNames = Array.Empty<string>() });
+        using var assignWithoutGrantsResponse = await _client.SendAsync(assignWithoutGrantsRequest);
+        Assert.Equal(HttpStatusCode.Forbidden, assignWithoutGrantsResponse.StatusCode);
+
+        using var grantUpdateRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Post,
+            $"/api/auth/roles/{roleId}/permissions",
+            admin.Token,
+            new
+            {
+                permissionCodes = new[]
+                {
+                    PermissionCodes.UserRead,
+                    PermissionCodes.UserCreate,
+                    PermissionCodes.UserUpdate,
+                    PermissionCodes.RoleRead
+                }
+            });
+        using var grantUpdateResponse = await _client.SendAsync(grantUpdateRequest);
+        Assert.Equal(HttpStatusCode.OK, grantUpdateResponse.StatusCode);
+        editor = await AuthTestSupport.LoginAsync(_client, member.Email, "UserPassword-123!");
+
+        using var updateAllowedRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Put,
+            $"/api/auth/users/{target.UserId}",
+            editor.Token,
+            new { email = target.Email, fullName = "Updated With All Required Grants", isActive = true });
+        using var updateAllowedResponse = await _client.SendAsync(updateAllowedRequest);
+        var updatedUser = await AuthTestSupport.ReadJsonAsync(updateAllowedResponse);
+        Assert.Equal(HttpStatusCode.OK, updateAllowedResponse.StatusCode);
+        Assert.Equal("Updated With All Required Grants", updatedUser.GetProperty("fullName").GetString());
+
+        using var assignAllowedRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Post,
+            $"/api/auth/users/{target.UserId}/roles",
+            editor.Token,
+            new { roleNames = Array.Empty<string>() });
+        using var assignAllowedResponse = await _client.SendAsync(assignAllowedRequest);
+        Assert.Equal(HttpStatusCode.OK, assignAllowedResponse.StatusCode);
+
+        using var grantDeleteRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Post,
+            $"/api/auth/roles/{roleId}/permissions",
+            admin.Token,
+            new
+            {
+                permissionCodes = new[]
+                {
+                    PermissionCodes.UserRead,
+                    PermissionCodes.UserCreate,
+                    PermissionCodes.UserUpdate,
+                    PermissionCodes.UserDelete,
+                    PermissionCodes.RoleRead
+                }
+            });
+        using var grantDeleteResponse = await _client.SendAsync(grantDeleteRequest);
+        Assert.Equal(HttpStatusCode.OK, grantDeleteResponse.StatusCode);
+        editor = await AuthTestSupport.LoginAsync(_client, member.Email, "UserPassword-123!");
+
+        using var deleteAllowedRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Delete,
+            $"/api/auth/users/{target.UserId}",
+            editor.Token);
+        using var deleteAllowedResponse = await _client.SendAsync(deleteAllowedRequest);
+        Assert.Equal(HttpStatusCode.NoContent, deleteAllowedResponse.StatusCode);
     }
 
     [Fact]
@@ -496,5 +762,31 @@ public sealed class AuthAdministrationContractTests : IClassFixture<AuthWebAppli
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
         Assert.False(await db.Users.AnyAsync(item => item.Id == user.UserId));
+    }
+
+    [Fact]
+    [Trait("TestId", "AUTH-USER-DELETE-002")]
+    public async Task SystemRoleAccountCannotDeleteItself()
+    {
+        var admin = await AuthTestSupport.LoginAsync(
+            _client,
+            AuthWebApplicationFactory.AdminEmail,
+            AuthWebApplicationFactory.AdminPassword);
+
+        using var deleteRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Delete,
+            "/api/auth/me",
+            admin.Token);
+        using var deleteResponse = await _client.SendAsync(deleteRequest);
+
+        Assert.Equal(HttpStatusCode.BadRequest, deleteResponse.StatusCode);
+        var problem = await deleteResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Account Deletion Prohibited", problem.GetProperty("title").GetString());
+
+        using var meRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Get,
+            "/api/auth/me",
+            admin.Token);
+        Assert.Equal(HttpStatusCode.OK, (await _client.SendAsync(meRequest)).StatusCode);
     }
 }

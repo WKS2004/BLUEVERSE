@@ -1,0 +1,125 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-coast-paper: #f7f6f0;
+  --color-coast-sand: #e9eff0;
+  --color-coast-pearl: #fbfdfd;
+  --color-coast-ink: #18394c;
+  --color-coast-deep: #205c79;
+  --color-coast-blue: #347b9b;
+  --color-coast-teal: #43858a;
+  --color-coast-glass: #c9e0e6;
+  --color-coast-sage: #e5eff0;
+  --color-coast-muted: #5c7481;
+  --color-coast-line: #d6e2e7;
+  --font-sans: 'Manrope', 'Aptos', 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Sora', 'Manrope', 'Aptos', 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+  --animate-coast-arrive: coast-arrive 650ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-coast-menu: coast-menu 180ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes coast-arrive {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes coast-menu {
+  from { opacity: 0; transform: translateY(-6px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes blueverse-loader-ring {
+  to { transform: rotate(1turn); }
+}
+
+@keyframes blueverse-loader-pulse {
+  0%, 100% { transform: scale(0.96); }
+  50% { transform: scale(1.04); }
+}
+
+@keyframes blueverse-loader-fill {
+  0%, 100% { transform: scaleY(0.2); opacity: 0.75; }
+  55% { transform: scaleY(1); opacity: 1; }
+}
+
+@keyframes blueverse-loader-halo {
+  0%, 100% { opacity: 0.32; transform: scale(0.94); }
+  50% { opacity: 0.8; transform: scale(1.04); }
+}
+
+@keyframes blueverse-loader-wave-away {
+  0% { clip-path: polygon(0 0, 100% 0, 100% 100%, 90% 100%, 80% 100%, 70% 100%, 60% 100%, 50% 100%, 40% 100%, 30% 100%, 20% 100%, 10% 100%, 0 100%); }
+  52% { clip-path: polygon(0 0, 100% 0, 100% 47%, 90% 52%, 80% 46%, 70% 53%, 60% 48%, 50% 54%, 40% 47%, 30% 52%, 20% 46%, 10% 52%, 0 48%); }
+  100% { clip-path: polygon(0 0, 100% 0, 100% 0%, 90% 2%, 80% 0%, 70% 3%, 60% 1%, 50% 3%, 40% 0%, 30% 2%, 20% 0%, 10% 2%, 0 0%); }
+}
+
+@keyframes blueverse-loader-content-away {
+  0%, 22% { opacity: 1; transform: translateY(0) scale(1); }
+  58%, 100% { opacity: 0; transform: translateY(-10px) scale(0.97); }
+}
+
+@keyframes blueverse-loader-fade-away {
+  to { opacity: 0; }
+}
+
+.blueverse-loader-backdrop {
+  background: radial-gradient(ellipse at 50% 45%, rgba(201, 224, 230, 0.58), transparent 52%), rgba(247, 246, 240, 0.92);
+  backdrop-filter: blur(8px);
+}
+
+.blueverse-loader-backdrop[data-loading-mode='authentication'] {
+  background: radial-gradient(ellipse at 50% 44%, rgba(105, 169, 169, 0.18), transparent 48%), rgba(240, 247, 248, 0.96);
+}
+
+.blueverse-loader-backdrop[data-exiting='true'] {
+  animation: blueverse-loader-wave-away 900ms cubic-bezier(0.72, 0, 0.2, 1) both;
+  pointer-events: none;
+}
+
+.blueverse-loader-content[data-exiting='true'] {
+  animation: blueverse-loader-content-away 520ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.blueverse-loader-ring {
+  background: conic-gradient(from 18deg, transparent 0deg, #347b9b 72deg, #43858a 165deg, #c9e0e6 258deg, transparent 330deg);
+  animation: blueverse-loader-ring 3.4s linear infinite;
+}
+
+.blueverse-loader-pulse {
+  animation: blueverse-loader-pulse 2.2s ease-in-out infinite;
+}
+
+.blueverse-loader-fill {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: blueverse-loader-fill 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.blueverse-loader-halo {
+  animation: blueverse-loader-halo 3.1s ease-in-out infinite;
+}
+
+@layer base {
+  :root { color-scheme: light; background: var(--color-coast-paper); }
+  html { min-width: 320px; scroll-behavior: smooth; }
+  body { min-width: 320px; margin: 0; background: var(--color-coast-paper); color: var(--color-coast-ink); font-family: var(--font-sans); font-synthesis: none; text-rendering: optimizeLegibility; }
+  button, input { font: inherit; }
+  button:not(:disabled) { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+  ::selection { background: var(--color-coast-glass); color: var(--color-coast-ink); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .blueverse-loader-ring,
+  .blueverse-loader-pulse,
+  .blueverse-loader-fill,
+  .blueverse-loader-halo { animation: none; }
+
+  .blueverse-loader-backdrop[data-exiting='true'] {
+    animation: blueverse-loader-fade-away 180ms ease-out both;
+    clip-path: none;
+  }
+
+  .blueverse-loader-content[data-exiting='true'] { animation: none; }
+}

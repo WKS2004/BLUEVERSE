@@ -23,7 +23,7 @@ export default defineConfig([
     files: ['**/*.test.js'],
     extends: [js.configs.recommended],
     languageOptions: {
-      globals: globals.node,
+      globals: { ...globals.node, ...globals.browser },
     },
   },
 ])

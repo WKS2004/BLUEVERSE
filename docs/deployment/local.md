@@ -81,9 +81,17 @@ http://localhost/api/swagger
 
 The local gateway uses host port `80`. The CI health workflow overrides the
 Compose host mapping to `http://127.0.0.1:8080` on the runner. For Android,
-use `http://10.0.2.2:80` from an emulator. A physical device requires the
-laptop's current LAN address passed to Flutter with
-`--dart-define=BLUEVERSE_API_BASE_URL=http://<laptop-lan-ip>:80`; the address
-is not hardcoded in the client. If managed Wi-Fi blocks device-to-device
-traffic, connect the device by USB and run `adb reverse tcp:80 tcp:80`; the
-Flutter client has a final `127.0.0.1:80` fallback for that tunnel.
+explicitly pass `http://10.0.2.2:80` for a standard emulator. A physical device
+requires the laptop's current LAN address passed to Flutter with
+`--dart-define=BLUEVERSE_API_BASE_URL=http://<laptop-lan-ip>:80`. This explicit
+value overrides the checked-in environment-specific Android fallback; do not
+rely on that fallback for a device run. If managed Wi-Fi blocks
+device-to-device traffic, connect the device by USB and run
+`adb reverse tcp:80 tcp:80`; the Flutter client has a final `127.0.0.1:80`
+fallback for that tunnel.
+
+The current Flutter resolver accepts only plain HTTP on port `80` and does
+not follow a changed `BLUEVERSE_HTTP_PORT` value. Keep the host gateway on
+port 80 for Flutter until the resolver is updated. The local address is for
+development and is not a deployment URL; HTTPS support for a production
+mobile build remains unresolved.

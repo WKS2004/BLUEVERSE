@@ -45,4 +45,24 @@ The eventual schema documentation must include:
 - seed data
 - Agentic AI workflow-state tables, if required
 
-Business-domain schema should be introduced according to the approved v1/v2/v3 component design rather than prematurely in v0.
+The v1 target schema must support four member-owned domains:
+
+- Coastal experiences: destinations, activities, offerings, schedules,
+  statuses, favourites and relevant biodiversity context.
+- Marine conditions and safety: sourced snapshots, freshness, activity
+  safety profiles and deterministic suitability results.
+- Coastal planning: recommendation requests, constraints, recommendations,
+  itineraries and ordered items.
+- Coastal operations: assessments, proposals, operational state, approval
+  decisions, advisories, alerts and execution history.
+
+Shared structured Agentic AI workflow state must retain only the objective,
+plan, steps, outputs or auditable summaries, validation, errors, bounded
+retries, approvals, result and timestamps required to operate and audit the
+workflow. Do not store hidden reasoning, passwords, bearer tokens or
+unnecessary sensitive data. Exact tables, keys and migrations remain design
+work; none of these v1 domain tables are claimed as implemented.
+
+See the [v1 component and agent index](../v1/README.md). Business-domain
+schema should be introduced with the implementation rather than prematurely
+in the v0 foundation.

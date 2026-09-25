@@ -5,6 +5,8 @@ migrations and application persistence code are checked in under
 `services/auth`.
 
 PostgreSQL is the authoritative relational database.
+The [v0 persistence component](../v0/components/postgresql-ef-core.md)
+summarizes the implemented Auth model and its verification boundary.
 
 ## Local service
 

@@ -50,7 +50,13 @@ public static class AuthDataSeeder
             [PermissionCodes.RoleRead] = (Guid.Parse("11111111-1111-1111-1111-111111111103"), "View roles"),
             [PermissionCodes.RoleManage] = (Guid.Parse("11111111-1111-1111-1111-111111111104"), "Manage roles"),
             [PermissionCodes.PermissionRead] = (Guid.Parse("11111111-1111-1111-1111-111111111105"), "View permissions"),
-            [PermissionCodes.SystemRoleManage] = (Guid.Parse("11111111-1111-1111-1111-111111111106"), "Assign or manage system roles")
+            [PermissionCodes.SystemRoleManage] = (Guid.Parse("11111111-1111-1111-1111-111111111106"), "Assign or manage system roles"),
+            [PermissionCodes.UserCreate] = (Guid.Parse("11111111-1111-1111-1111-111111111107"), "Create user accounts"),
+            [PermissionCodes.UserUpdate] = (Guid.Parse("11111111-1111-1111-1111-111111111108"), "Update user accounts and role assignments"),
+            [PermissionCodes.UserDelete] = (Guid.Parse("11111111-1111-1111-1111-111111111109"), "Delete user accounts"),
+            [PermissionCodes.RoleCreate] = (Guid.Parse("11111111-1111-1111-1111-111111111110"), "Create roles"),
+            [PermissionCodes.RoleUpdate] = (Guid.Parse("11111111-1111-1111-1111-111111111111"), "Update roles and assigned permissions"),
+            [PermissionCodes.RoleDelete] = (Guid.Parse("11111111-1111-1111-1111-111111111112"), "Delete roles")
         };
 
         var permissions = await db.Permissions

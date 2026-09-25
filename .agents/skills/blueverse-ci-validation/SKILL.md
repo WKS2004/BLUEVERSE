@@ -33,8 +33,8 @@ called scripts as one unit.
   and per-service evidence and attempt every discovered service.
 - Preserve selected DHI authentication/build behavior and exact-commit Docker
   health coordination.
-- Distinguish intentional zero-test foundation state from broken discovery;
-  missing suites must fail once the corresponding implementation exists.
+- Distinguish an absent implementation from broken test discovery; an
+  implemented service or workflow needs its owning suite and CI evidence.
 - When PostgreSQL integration tests are enabled, make Docker/database
   prerequisites and failure behavior explicit; never silently skip provider
   coverage or expose connection strings in logs and artifacts.

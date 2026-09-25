@@ -27,7 +27,7 @@ universal rule. Skills provide the workflow; rules remain authoritative.
 | `compose.yaml`, `infrastructure/docker/**` | architecture, security, docker, documentation, validation, endpoint-catalog | `docs/api/endpoint-catalog.md`, `docs/deployment/`, `infrastructure/docker/README.md`; config/health checks |
 | `.github/workflows/**`, `.github/scripts/**` | testing, documentation, validation, git | `docs/development/ci.md`; YAML/script and discovery review |
 | `docs/database/**` | data-access, architecture, testing, documentation, validation | owning EF model/migrations/tests plus `.agents/rules/data-access.md` |
-| `docs/**`, `README.md`, `PROJECT_REQUIREMENTS.md` | documentation, architecture/security/testing as applicable, validation | affected source/workflows; link and command review |
+| `docs/**`, `README.md`, `PROJECT_REQUIREMENTS.md` | documentation, architecture/security/testing as applicable, validation | affected source/workflows, applicable requirements and owning component documentation; link and command review |
 | `.agents/**`, `AGENTS.md` | change-safety, documentation, validation | this directory, root rules, `git diff --check`; edit guidance only on explicit user request or approval |
 | `.agents/skills/**` | change-safety, documentation, validation | selected skill, registry entry and linked supporting files |
 
@@ -65,12 +65,11 @@ React Server Components, server-action and server-route advice unless the
 repository explicitly adopts those technologies. Flutter and React must still
 use only the public `/api/...` boundary.
 
-For any React/Flutter workflow, treat both clients as first-class surfaces for
-clients, staff and administrators. Plan both routes and shared role/permission
-behavior by default; use platform strengths to adapt interaction rather than
-assigning a stakeholder group to one frontend. Read
-`docs/project/ui-experience-principles.md` for the user-friendly,
-scope-aligned and realistic UI standard.
+For any React/Flutter workflow, provide equal authorized role, capability and
+action coverage on both clients. Neither frontend has stakeholder priority or
+design emphasis. Both routes share workflow/permission semantics; layouts and
+device integrations can vary. Read the applicable requirements, owning
+component document and `docs/project/ui-experience-principles.md`.
 
 ## Cross-layer triggers
 

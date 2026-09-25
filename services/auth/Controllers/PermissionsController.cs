@@ -17,7 +17,7 @@ public class PermissionsController : ControllerBase
     }
 
     [HttpGet]
-    [HasPermission("auth.permission.read")]
+    [HasPermission(PermissionCodes.PermissionRead)]
     [ProducesResponseType(typeof(List<PermissionDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPermissions()
     {
@@ -26,7 +26,7 @@ public class PermissionsController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    [HasPermission("auth.permission.read")]
+    [HasPermission(PermissionCodes.PermissionRead)]
     [ProducesResponseType(typeof(PermissionDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetPermissionById(Guid id)

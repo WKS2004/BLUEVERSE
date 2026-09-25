@@ -1,30 +1,68 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:mobile/data/repositories/auth_repository.dart';
+import 'package:mobile/data/services/auth_api_service.dart';
+import 'package:mobile/data/services/auth_credential_store.dart';
 import 'package:mobile/main.dart';
+import 'package:mobile/ui/auth_view_model.dart';
+
+class MemoryCredentialStore implements AuthCredentialStore {
+  final values = <String, String>{};
+
+  @override
+  Future<String?> read(String key) async => values[key];
+
+  @override
+  Future<void> write(String key, String value) async {
+    values[key] = value;
+  }
+
+  @override
+  Future<void> delete(String key) async {
+    values.remove(key);
+  }
+}
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('BLUEVERSE home offers coastal discovery and account entry', (
+    tester,
+  ) async {
+    final client = MockClient(
+      (_) async =>
+          http.Response('{"status":401,"detail":"No active account."}', 401),
+    );
+    addTearDown(client.close);
+    final viewModel = AuthViewModel(
+      repository: AuthRepository(
+        apiService: AuthApiService(
+          client: client,
+          storage: MemoryCredentialStore(),
+        ),
+      ),
+    );
+    addTearDown(viewModel.dispose);
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MyHomePage(title: 'BLUEVERSE', viewModel: viewModel),
+        routes: {
+          '/signin': (_) => const Scaffold(body: Text('Sign in flow')),
+          '/signup': (_) => const Scaffold(body: Text('Registration flow')),
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    expect(find.text('BLUEVERSE'), findsOneWidget);
+    expect(find.textContaining('Closer to the coast.'), findsOneWidget);
+    expect(find.text('Sign in'), findsOneWidget);
+    expect(find.text('Create an account'), findsOneWidget);
+    expect(find.byIcon(Icons.add), findsNothing);
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    await tester.tap(find.text('Sign in'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sign in flow'), findsOneWidget);
   });
 }

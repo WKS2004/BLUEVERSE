@@ -115,6 +115,8 @@ def _normalise_path(value: str) -> str:
     value = value.strip()
     if "?" in value:
         value = value.split("?", 1)[0]
+    if "#" in value:
+        value = value.split("#", 1)[0]
     if not value.startswith("/"):
         value = "/" + value
     if len(value) > 1:
@@ -128,6 +130,7 @@ def _valid_frontend_route(value: object) -> bool:
 
 def _endpoint_matches(template: str, actual: str, prefix: bool = False) -> bool:
     template = _normalise_path(template)
+    template = re.sub(r"\$\{[^{}]+\}", "{parameter}", template)
     actual = _normalise_path(actual)
     if prefix:
         template = template.rstrip("/")
@@ -165,9 +168,25 @@ def _extract_api_literals(text: str) -> list[tuple[str, bool]]:
     values: list[tuple[str, bool]] = []
     for match in API_LITERAL_PATTERN.finditer(text):
         end = match.end()
+        value = re.sub(r"\$\{[^{}]+\}", "{parameter}", match.group("value"))
         is_template_prefix = text[end : end + 2] == "${"
-        values.append((match.group("value"), is_template_prefix))
+        values.append((value, is_template_prefix))
     return values
+
+
+def _composed_controller_path_exists(endpoint_path: str, source: str) -> bool:
+    """Recognize controller paths composed from a class prefix and action template."""
+    segments = _normalise_path(endpoint_path).strip("/").split("/")
+    first_parameter = next(
+        (index for index, segment in enumerate(segments) if segment.startswith("{") and segment.endswith("}")),
+        None,
+    )
+    if first_parameter is None:
+        return False
+    prefix = "/".join(segments[:first_parameter])
+    if not prefix or prefix not in source:
+        return False
+    return all(segment in source for segment in segments[first_parameter:])
 
 
 def _internal_target_pattern(manifest: dict) -> re.Pattern[str]:
@@ -375,9 +394,15 @@ def _validate_backend_contract(repo_root: Path, endpoint_map: dict[str, dict], e
                 endpoint_path,
                 endpoint_path[1:] if isinstance(endpoint_path, str) and endpoint_path.startswith("/") else None,
             )
-            if not isinstance(endpoint_path, str) or not any(
-                candidate and any(candidate in content for _, content in contents)
-                for candidate in path_candidates
+            if not isinstance(endpoint_path, str) or not (
+                any(
+                    candidate and any(candidate in content for _, content in contents)
+                    for candidate in path_candidates
+                )
+                or any(
+                    _composed_controller_path_exists(endpoint_path, content)
+                    for _, content in contents
+                )
             ):
                 errors.append(
                     f"endpoint {endpoint_id} public path {endpoint_path!r} is absent from services/{service_name} source/OpenAPI evidence"

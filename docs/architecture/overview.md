@@ -1,34 +1,36 @@
 # Architecture Overview
 
-## Target logical architecture
+## Local gateway with target v1 services
 
 ```text
-                     Internet / Local Network
-                              |
-                         edge-nginx
-                              |
-             +----------------+------------------+
-             |                                   |
-      React Web Client                 Flutter Mobile Client
-             |                                   |
-             +----------------+------------------+
-                              |
-                       ASP.NET Core API
-                         /       |       \
-                     Auth      Domain  Agentic AI
-                               \       |       /
-                                PostgreSQL
+React Web ──┐
+            ├──► edge-nginx ──► public /api/... ──► ASP.NET Core API
+Flutter ────┘                                      │
+                       ┌──────────────────────────┼──────────────────────┐
+                       ▼                          ▼                      ▼
+               Auth / domain services     private Agentic AI     private ML inference
+                       │
+                       ▼
+                   PostgreSQL
 ```
+
+This shows the local gateway convention. Hosted clients still use the
+approved public API boundary, but need not share the local `edge-nginx`
+deployment.
 
 React and Flutter are peer client applications and communicate with the
 ASP.NET Core API. Neither is a backend microservice. The public API and Auth
-sources are checked in at `services/api` and `services/auth`; domain and
-Agentic AI services will be added incrementally.
+sources are checked in at `services/api` and `services/auth`; v1 domain,
+Agentic AI and ML-inference implementations are not yet checked in. The
+[v1 guide](../v1/README.md) defines the four component and four agent
+boundaries without claiming they are live services.
+The [v0 guide](../v0/README.md) maps the implemented client, API, Auth,
+PostgreSQL and infrastructure foundation.
 
-Both clients are planned for clients, staff and administrators. React may
-optimize broad browser workspaces and Flutter may optimize mobile, location,
-camera and notification interactions, but platform strengths do not define
-which roles or business capabilities are allowed to use a client.
+Both clients must provide every permitted business workflow to tourists,
+coastal operators, operations reviewers and platform administrators. The
+same rule applies to later stakeholder roles. Presentation or device input
+may vary, but platform choice cannot limit a role, action or result.
 
 ## Local Docker architecture
 
@@ -72,7 +74,7 @@ ASP.NET Core is authoritative for:
 
 ## AI boundary
 
-If an internal Python Agentic AI service is introduced:
+If internal Python Agentic AI or ML inference services are introduced:
 
 ```text
 React / Flutter
@@ -81,12 +83,15 @@ React / Flutter
 ASP.NET Core API
        |
        v
-Internal Agentic AI service
+Internal Agentic AI or ML inference service
        |
        +--> tools / data sources
 ```
 
-The clients never call the AI service directly.
+The clients never call AI or ML inference services directly. The assessed
+operational workflow uses four distinct agents, deterministic validation and
+authorized human approval before a high-impact business action. See
+[Agentic AI architecture](../agentic-ai/architecture.md).
 
 ## Cross-client UI integration
 
@@ -95,5 +100,5 @@ React and Flutter do not connect to one another. A shared workflow ID in
 the public `/api/...` endpoint references used by both clients. The registry
 and its CI validator must be updated whenever a UI is created, generated or
 changed. This preserves one public API/permission contract while allowing
-platform-adapted presentation and route syntax. Cross-platform capability is
-the default; a missing client surface is not an implicit product decision.
+platform-adapted presentation and route syntax. Every authorized role and
+business action requires both client surfaces.

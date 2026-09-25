@@ -18,7 +18,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpGet]
-    [HasPermission("auth.role.read")]
+    [HasPermission(PermissionCodes.RoleRead)]
     [ProducesResponseType(typeof(List<RoleDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetRoles()
     {
@@ -27,7 +27,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    [HasPermission("auth.role.read")]
+    [HasPermission(PermissionCodes.RoleRead)]
     [ProducesResponseType(typeof(RoleDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetRoleById(Guid id)
@@ -47,7 +47,8 @@ public class RolesController : ControllerBase
     }
 
     [HttpPost]
-    [HasPermission("auth.role.manage")]
+    [HasPermission(PermissionCodes.RoleRead)]
+    [HasPermission(PermissionCodes.RoleCreate)]
     [ProducesResponseType(typeof(RoleDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateRole([FromBody] CreateRoleDto dto)
@@ -69,7 +70,8 @@ public class RolesController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [HasPermission("auth.role.manage")]
+    [HasPermission(PermissionCodes.RoleRead)]
+    [HasPermission(PermissionCodes.RoleUpdate)]
     [ProducesResponseType(typeof(RoleDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -102,7 +104,8 @@ public class RolesController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [HasPermission("auth.role.manage")]
+    [HasPermission(PermissionCodes.RoleRead)]
+    [HasPermission(PermissionCodes.RoleDelete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -135,7 +138,9 @@ public class RolesController : ControllerBase
     }
 
     [HttpPost("{id:guid}/permissions")]
-    [HasPermission("auth.role.manage")]
+    [HasPermission(PermissionCodes.RoleRead)]
+    [HasPermission(PermissionCodes.RoleUpdate)]
+    [HasPermission(PermissionCodes.PermissionRead)]
     [ProducesResponseType(typeof(RoleDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> AssignPermissions(Guid id, [FromBody] AssignPermissionsDto dto)

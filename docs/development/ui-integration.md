@@ -12,17 +12,30 @@ validated by `scripts/validation/validate_ui_integrations.py` and by the
 
 ## Cross-platform product scope
 
-React Web and Flutter Mobile are both first-class surfaces for clients, staff
-and administrators. Product capabilities are cross-platform by default; the
-web/mobile distinction describes interaction context, not who is allowed to
-use a capability. React may emphasize wider browser workspaces and Flutter may
-emphasize quick mobile or field interaction, while both preserve the same
-workflow intent, role → permission behavior and public API contract.
+React Web and Flutter Mobile are equally complete surfaces for tourists,
+coastal operators, operations reviewers and platform administrators. Every
+permitted workflow and business action is available in both clients. The
+same rule applies to future stakeholder roles. Screen size, input method
+and device capability may alter presentation, but neither platform owns or
+prioritizes a role, workflow or outcome. Both preserve the same workflow
+intent, role → permission behavior and public API contract. See the
+[project experience standard](../project/ui-experience-principles.md) and
+the applicable component documentation in the
+[documentation index](../README.md).
 
 The user-facing quality bar is defined in
 [`../project/ui-experience-principles.md`](../project/ui-experience-principles.md).
 Interfaces should feel approachable and realistic for the coastal domain,
 not like generic technical or analytical dashboards.
+
+React Web uses Tailwind CSS utility classes for page and component styling,
+with shared design tokens and base rules in the web Tailwind entry stylesheet.
+Use the [BLUEVERSE Design System](../../DESIGN.md) as the shared
+reference for both clients' coastal palette, type hierarchy, imagery, spacing,
+component character and interaction states. Keep shared site navigation and
+footer behavior in reusable React components. Flutter maps the same system
+into native widgets and `ThemeData`; visual layout may adapt to the device while
+preserving the same workflow and business outcome.
 
 For a quick inventory of every current frontend route, gateway mapping,
 public API/Auth endpoint, test-only route and Agentic AI endpoint status, read
@@ -59,11 +72,10 @@ with:
 5. the owning backend service and public `operationId`/contract reference for
    each endpoint.
 
-Both client surfaces are required for every product workflow. A capability may
-be platform-specific only when the product decision is explicit, the reason is
-documented in an ADR and the registry does not imply unsupported parity.
-Never infer that administration belongs only to React or that client-facing
-experiences belong only to Flutter.
+Both client surfaces and every permitted role/action are required for each
+product workflow. Device-specific input is allowed, but the underlying
+business capability must still work in the other client. Never infer that
+administration, review, tourism or field operations belong to one platform.
 
 Endpoint paths use the gateway's `/api/...` namespace. Prefer relative
 `/api/...` URLs. An absolute URL is valid only when its host is explicitly
@@ -102,10 +114,20 @@ internal target, versioned API path or missing shared surface must be fixed in
 the change that introduced it. A client may not hide its API host or path in
 an unresolved variable and rely on CI to infer the intended service.
 
-The current v0 clients retain the `foundation-home` entry and also implement
-the shared `auth-session-management` workflow. Its public Auth endpoint
-references are registered in the same manifest; future screens must follow the
-same pattern rather than adding unregistered calls.
+The current clients register the shared `foundation-home` entry and implement
+the `auth-session-management`, `auth-registration`, `auth-profile-management`,
+`coastal-overview-dashboard`, `auth-admin-entry`,
+`auth-permission-administration`, `auth-role-administration`,
+`auth-user-administration`, `not-found-recovery` and
+`server-error-recovery` workflows in both React and Flutter. Profile
+management includes profile editing, password changes, session review and
+revocation, and account deletion. Administration routes expose permission-
+checked user, role and permission actions. The dashboard uses current-account
+information and clearly marks coastal service areas as future work because
+those services are not available yet. Registration uses the same public
+`POST /api/auth/register` endpoint in both clients; the clients preserve their
+platform-specific cookie and secure-storage session handling. Each public Auth
+endpoint used by an implemented workflow is listed in the same manifest.
 
 Run locally from the repository root:
 

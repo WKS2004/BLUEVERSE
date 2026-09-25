@@ -37,7 +37,7 @@ the agent configuration itself.
 - Docker infrastructure: `infrastructure/docker`
 - Architecture/docs: `docs`
 
-Do not generate replacement sample applications into this foundation package.
+Do not replace repository applications with sample applications.
 
 ## Docker
 
@@ -89,6 +89,10 @@ Validate model/tool output deterministically before it can influence business op
 
 Protect agent tools and workflows against prompt injection and unauthorized tool execution.
 
+For Agentic AI work, read the applicable requirements and owning agent
+contract. Documentation of a workflow is not evidence that its service or
+tools are implemented.
+
 ## Database
 
 Use PostgreSQL and EF Core migrations.
@@ -103,11 +107,19 @@ Persist only the data required for the application and Agentic AI workflow. Use 
 
 React and Flutter must use the same backend contract and authorization model.
 
-React Web and Flutter Mobile are co-equal product surfaces for clients, staff
-and administrators. New product workflows are cross-platform by default; do
-not assign administration permanently to React or client-facing work
-permanently to Flutter. Platform-specific layouts and interactions are
-encouraged when they fit the context, but they do not define role ownership.
+For the React Web client, use Tailwind CSS utility classes for page and
+component styling. Keep shared design tokens and base styles in the web
+Tailwind entry stylesheet; add standalone component CSS only when a behavior
+cannot be expressed clearly with Tailwind utilities. Use Flutter's native
+widget styling for the mobile client.
+
+React Web and Flutter Mobile must offer the same authorized roles, business
+capabilities and workflow actions. Neither frontend has priority, design
+emphasis or ownership for management, tourists, field work or any other
+stakeholder group. Layout and device integrations may differ while the
+business outcome, permission checks and public API contract remain equivalent.
+Read the applicable requirements and
+[UI integration guidance](docs/development/ui-integration.md) for each workflow.
 
 Do not create client-side business rules that contradict the API.
 
@@ -175,6 +187,11 @@ Never commit generated secrets, `.env`, local IDE state, build artifacts or mach
 Architecture changes require an ADR when they materially affect a documented architectural decision.
 
 Keep setup and operational documentation synchronized with the actual repository.
+Always update the root `README.md` in the same change when prerequisites,
+local setup commands, environment configuration, Docker Compose behavior,
+deployment URLs, health checks, or shutdown/data-reset steps change. The README
+must remain a complete, reproducible local setup and deployment entry point;
+keep it aligned with the detailed setup and deployment documents.
 
 ## AI Usage Contributions
 
@@ -189,10 +206,13 @@ actual name. If either value is unknown, does not match the repository mapping,
 or is otherwise ambiguous, ask the user to confirm it before changing the log.
 Do not guess a team member's identity.
 
-Each record must include the date/time or time range, GitHub username, actual
+Each new record must include the date/time or time range, GitHub username, actual
 team member name, agent name, tool/app, AI model, user-request summary,
-agent-action summary, and verification/evidence. Never record secrets, tokens,
-hidden model reasoning or confidential personal data.
+agent-action summary, what AI output was accepted, changed or rejected, and
+verification/evidence. Never record secrets, tokens, hidden model reasoning or
+confidential personal data. Each student's assessed individual AI reflection
+must be written by that student; agents may document the requirement but must
+not author the reflection.
 
 Do not edit earlier contribution records unless the user explicitly requests
 that historical change. A request whose sole purpose is correcting, rewriting

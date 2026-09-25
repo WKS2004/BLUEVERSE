@@ -13,20 +13,26 @@ administrators or reviewers.
 
 ## Cross-platform product rule
 
-React Web and Flutter Mobile are equal product surfaces. A workflow normally
-has a route and usable experience in both clients, tied to one workflow ID, one
-public API contract and the same role → permission behavior. The screens do
-not need to be pixel-identical:
+React Web and Flutter Mobile are equal product surfaces. Every permitted
+workflow for every participating role has a route and usable experience in
+both clients, tied to one workflow ID, one public API contract and the same
+role → permission behavior. Neither client receives a stakeholder, workflow
+or business-action priority. Screen size, navigation, keyboard/touch input
+and device features may change how a task is presented without removing
+the task or changing its outcome. Flutter GPS is a mobile input method; an
+equivalent location-aware workflow remains usable in React.
 
-- React can use wide layouts, keyboard support, comparison, review and browser
-  sharing when those make a task easier.
-- Flutter can use compact flows, quick actions, location, camera, offline-aware
-  drafts and notifications when those make a task easier.
+### Visual direction and platform styling
 
-These are adaptations of one product capability, not separate ownership
-rules. Do not assume that administration is web-only or that client-facing
-experiences are mobile-only. A true exception requires an explicit product
-decision and ADR.
+The shared visual direction is coastal editorial: light paper and sea-glass
+surfaces, ocean-blue actions, restrained teal, natural coastal photography,
+spacious and varied layouts, and calm motion. The detailed, source-grounded
+reference is the [BLUEVERSE Design System](../../DESIGN.md).
+Apply its palette, type hierarchy, image treatment, component character and
+interaction states to both clients. React implements them with Tailwind and
+shared web components; Flutter maps them into native widgets and `ThemeData`.
+Layouts can adapt by screen and platform. Visual styling never changes the
+shared role, permission, workflow or business-action requirements.
 
 ## Experience standards
 
@@ -86,8 +92,8 @@ Before a UI workflow is considered ready, confirm:
    public API reference in `docs/contracts/ui-integration.json`.
 2. The participating roles and required permissions are explicit, and the
    server remains authoritative.
-3. The workflow is usable in both clients, with platform-appropriate
-   interaction rather than role-based exclusion.
+3. Every permitted role and action in the workflow is usable in both clients;
+   platform-specific input or layout does not reduce capability coverage.
 4. Normal, loading, empty, validation, denied, malformed, timeout/retry and
    dependency-failure states are covered where relevant.
 5. Copy, sample data and visuals feel credible for the current BLUEVERSE phase

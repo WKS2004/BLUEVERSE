@@ -23,40 +23,211 @@
     {
       "id": "foundation-home",
       "status": "starter",
-      "description": "Generated starter entry surface. It has no domain API dependency yet.",
+      "description": "Shared home workflow for coastal discovery and account entry. React Web introduces BLUEVERSE's coastal scope and restores signed-in account state. Flutter Mobile restores the saved session at launch and opens Dashboard for an authenticated user; signed-out users see a coastal onboarding carousel with Skip to the final Sign in/Create account choices. Signing out of the final active device account returns to the carousel. Coastal service workflows are not yet available.",
       "web": {
         "route": "/",
-        "source": "apps/web/src/App.tsx"
+        "source": "apps/web/src/app/routes.tsx"
       },
       "mobile": {
         "route": "/",
         "source": "apps/mobile/lib/main.dart"
       },
-      "apiRefs": []
+      "apiRefs": [
+        "auth-me",
+        "auth-refresh",
+        "auth-logout",
+        "auth-remove-account"
+      ]
     },
     {
       "id": "auth-session-management",
       "status": "implemented",
-      "description": "Shared sign-in and session-management workflow using protected browser cookies or Flutter secure storage.",
+      "description": "Shared sign-in workflow at /signin using protected browser cookies or Flutter secure storage. Up to five browser/device accounts can be selected, and each account signs out from its own active session.",
       "web": {
-        "route": "/login",
-        "source": "apps/web/src/App.tsx"
+        "route": "/signin",
+        "source": "apps/web/src/app/routes.tsx"
       },
       "mobile": {
-        "route": "/login",
+        "route": "/signin",
         "source": "apps/mobile/lib/main.dart"
       },
       "apiRefs": [
         "auth-login",
         "auth-refresh",
         "auth-me",
-        "auth-sessions",
         "auth-logout",
+        "auth-remove-account"
+      ]
+    },
+    {
+      "id": "auth-registration",
+      "status": "implemented",
+      "description": "Shared account creation at /signup. Registration does not accept a returnTo destination: successful registration signs the new account in and opens Profile.",
+      "web": {
+        "route": "/signup",
+        "source": "apps/web/src/app/routes.tsx"
+      },
+      "mobile": {
+        "route": "/signup",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": [
+        "auth-register",
+        "auth-me",
+        "auth-refresh"
+      ]
+    },
+    {
+      "id": "auth-profile-management",
+      "status": "implemented",
+      "description": "Shared authenticated profile workflow. Both clients show server-owned personal details, support profile updates and password changes, allow session review, require password verification to end another device or all sessions, and provide a final-confirmation account deletion flow subject to server system-role policy.",
+      "web": {
+        "route": "/profile",
+        "source": "apps/web/src/app/routes.tsx"
+      },
+      "mobile": {
+        "route": "/profile",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": [
+        "auth-me",
+        "auth-update-me",
+        "auth-delete-me",
+        "auth-change-password",
+        "auth-sessions",
+        "auth-revoke-session",
         "auth-logout-all-devices"
       ]
+    },
+    {
+      "id": "coastal-overview-dashboard",
+      "status": "implemented",
+      "description": "Shared signed-in overview of the current account and an honest preview of BLUEVERSE coastal service areas planned for future availability. Login-session details are managed in Profile.",
+      "web": {
+        "route": "/dashboard",
+        "source": "apps/web/src/app/routes.tsx"
+      },
+      "mobile": {
+        "route": "/dashboard",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": [
+        "auth-me",
+        "auth-refresh"
+      ]
+    },
+    {
+      "id": "auth-admin-entry",
+      "status": "implemented",
+      "description": "Permission-aware administration entry for users who hold at least one current administration read grant.",
+      "web": {
+        "route": "/admin",
+        "source": "apps/web/src/app/routes.tsx"
+      },
+      "mobile": {
+        "route": "/admin",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": [
+        "auth-me"
+      ]
+    },
+    {
+      "id": "auth-permission-administration",
+      "status": "implemented",
+      "description": "Read the application-defined permission catalogue and follow its role assignments. Permission codes are managed by the service; role grants can be added or removed by authorized role editors.",
+      "web": {
+        "route": "/admin/permissions",
+        "source": "apps/web/src/app/routes.tsx"
+      },
+      "mobile": {
+        "route": "/admin/permissions",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": [
+        "auth-permissions"
+      ]
+    },
+    {
+      "id": "auth-role-administration",
+      "status": "implemented",
+      "description": "Read roles, create roles, update details and permission assignments, and delete eligible non-system roles. Read and action permissions are checked together on the server.",
+      "web": {
+        "route": "/admin/roles",
+        "source": "apps/web/src/app/routes.tsx"
+      },
+      "mobile": {
+        "route": "/admin/roles",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": [
+        "auth-roles",
+        "auth-role-create",
+        "auth-role-update",
+        "auth-role-delete",
+        "auth-role-assign-permissions",
+        "auth-permissions"
+      ]
+    },
+    {
+      "id": "auth-user-administration",
+      "status": "implemented",
+      "description": "Read and manage user accounts, including details, active state, password resets and role assignments. Read and action grants are combined; system-role operations and account deletion rules are enforced on the server.",
+      "web": {
+        "route": "/admin/users",
+        "source": "apps/web/src/app/routes.tsx"
+      },
+      "mobile": {
+        "route": "/admin/users",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": [
+        "auth-users",
+        "auth-user-create",
+        "auth-user-update",
+        "auth-user-delete",
+        "auth-user-assign-roles",
+        "auth-roles"
+      ]
+    },
+    {
+      "id": "not-found-recovery",
+      "status": "implemented",
+      "description": "Global, branded not-found recovery. React unknown paths stay in the address bar and render inside the shared site shell; Flutter presents the recovery page within its app navigation. Both offer a clear return to the coastal home page.",
+      "web": {
+        "route": "/404",
+        "source": "apps/web/src/app/routes.tsx"
+      },
+      "mobile": {
+        "route": "/404",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": []
+    },
+    {
+      "id": "server-error-recovery",
+      "status": "implemented",
+      "description": "Global, branded server and rendering-error recovery with retry and home navigation. React renders the recovery content in its shared header/main/footer shell; Flutter uses its app navigation layout.",
+      "web": {
+        "route": "/500",
+        "source": "apps/web/src/app/routes.tsx"
+      },
+      "mobile": {
+        "route": "/500",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": []
     }
   ],
   "endpoints": [
+    {
+      "id": "auth-register",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "publicBoundary": "api",
+      "ownerService": "auth",
+      "operationId": "Register"
+    },
     {
       "id": "auth-login",
       "method": "POST",
@@ -90,6 +261,22 @@
       "operationId": "GetSessions"
     },
     {
+      "id": "auth-update-me",
+      "method": "PUT",
+      "path": "/api/auth/me",
+      "publicBoundary": "api",
+      "ownerService": "auth",
+      "operationId": "UpdateCurrentUser"
+    },
+    {
+      "id": "auth-delete-me",
+      "method": "DELETE",
+      "path": "/api/auth/me",
+      "publicBoundary": "api",
+      "ownerService": "auth",
+      "operationId": "DeleteCurrentUser"
+    },
+    {
       "id": "auth-logout",
       "method": "POST",
       "path": "/api/auth/logout",
@@ -104,6 +291,118 @@
       "publicBoundary": "api",
       "ownerService": "auth",
       "operationId": "LogoutAllDevices"
+    },
+    {
+      "id": "auth-remove-account",
+      "method": "POST",
+      "path": "/api/auth/logout-account",
+      "publicBoundary": "api",
+      "ownerService": "auth",
+      "operationId": "LogoutSelectedAccount"
+    },
+    {
+      "id": "auth-change-password",
+      "method": "POST",
+      "path": "/api/auth/change-password",
+      "publicBoundary": "api",
+      "ownerService": "auth",
+      "operationId": "ChangePassword"
+    },
+    {
+      "id": "auth-revoke-session",
+      "method": "DELETE",
+      "path": "/api/auth/sessions/{sessionId:guid}",
+      "publicBoundary": "api",
+      "ownerService": "auth",
+      "operationId": "RevokeSession"
+    },
+    {
+      "id": "auth-permissions",
+      "method": "GET",
+      "path": "/api/auth/permissions",
+      "publicBoundary": "api",
+      "ownerService": "auth",
+      "operationId": "GetPermissions"
+    },
+    {
+      "id": "auth-roles",
+      "method": "GET",
+      "path": "/api/auth/roles",
+      "publicBoundary": "api",
+      "ownerService": "auth",
+      "operationId": "GetRoles"
+    },
+    {
+      "id": "auth-role-create",
+      "method": "POST",
+      "path": "/api/auth/roles",
+      "publicBoundary": "api",
+      "ownerService": "auth",
+      "operationId": "CreateRole"
+    },
+    {
+      "id": "auth-role-update",
+      "method": "PUT",
+      "path": "/api/auth/roles/{id:guid}",
+      "publicBoundary": "api",
+      "ownerService": "auth",
+      "operationId": "UpdateRole"
+    },
+    {
+      "id": "auth-role-delete",
+      "method": "DELETE",
+      "path": "/api/auth/roles/{id:guid}",
+      "publicBoundary": "api",
+      "ownerService": "auth",
+      "operationId": "DeleteRole"
+    },
+    {
+      "id": "auth-role-assign-permissions",
+      "method": "POST",
+      "path": "/api/auth/roles/{id:guid}/permissions",
+      "publicBoundary": "api",
+      "ownerService": "auth",
+      "operationId": "AssignPermissions"
+    },
+    {
+      "id": "auth-users",
+      "method": "GET",
+      "path": "/api/auth/users",
+      "publicBoundary": "api",
+      "ownerService": "auth",
+      "operationId": "GetAllUsers"
+    },
+    {
+      "id": "auth-user-create",
+      "method": "POST",
+      "path": "/api/auth/users",
+      "publicBoundary": "api",
+      "ownerService": "auth",
+      "operationId": "CreateUser"
+    },
+    {
+      "id": "auth-user-update",
+      "method": "PUT",
+      "path": "/api/auth/users/{id:guid}",
+      "publicBoundary": "api",
+      "ownerService": "auth",
+      "operationId": "UpdateUser"
+    },
+    {
+      "id": "auth-user-delete",
+      "method": "DELETE",
+      "path": "/api/auth/users/{id:guid}",
+      "publicBoundary": "api",
+      "ownerService": "auth",
+      "operationId": "DeleteUser"
+    },
+    {
+      "id": "auth-user-assign-roles",
+      "method": "POST",
+      "path": "/api/auth/users/{id:guid}/roles",
+      "publicBoundary": "api",
+      "ownerService": "auth",
+      "operationId": "AssignRoles"
     }
   ]
 }

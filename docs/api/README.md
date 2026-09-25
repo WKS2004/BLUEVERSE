@@ -3,6 +3,8 @@
 The routes in this page are the public gateway contract. The gateway is
 implemented at `services/api` and forwards the internal Auth service at
 `services/auth` without exposing its container directly.
+The [v0 public API component guide](../v0/components/public-api-gateway.md)
+maps this contract to the owning source and extension rules.
 
 For the fastest complete inventory of frontend routes, gateway mappings,
 public API/Auth endpoints, test-only routes and Agentic AI endpoint status,
@@ -28,9 +30,10 @@ These are the public gateway paths backed by the internal Auth service:
 | `POST` | `/api/auth/register` | Register a user and issue an access token for a device session |
 | `POST` | `/api/auth/login` | Authenticate a user and issue an access token for a device session |
 | `POST` | `/api/auth/refresh` | Rotate a refresh token and issue a new short-lived access token |
-| `POST` | `/api/auth/logout` | Log out every signed-in account on the current device |
-| `POST` | `/api/auth/logout/{id}` | Log out one account on the current device; `{id}` is the account user ID |
-| `POST` | `/api/auth/logout-all-devices` | Log out the authenticated account from every device |
+| `POST` | `/api/auth/logout` | End the authenticated account's session on the current device |
+| `POST` | `/api/auth/logout/{id}` | End the authenticated account's current-device session when `{id}` matches the caller's user ID |
+| `POST` | `/api/auth/logout-account` | End the selected saved account's session on this device; other accounts remain signed in |
+| `POST` | `/api/auth/logout-all-devices` | Verify the current password, then end every session for the authenticated account |
 | `GET` | `/api/auth/sessions` | List the authenticated account’s active sessions without secrets |
 | `DELETE` | `/api/auth/sessions/{sessionId}` | Revoke one active session for the authenticated account |
 | `POST` | `/api/auth/change-password` | Change the authenticated user’s password and revoke existing tokens |
@@ -39,16 +42,16 @@ These are the public gateway paths backed by the internal Auth service:
 | `DELETE` | `/api/auth/me` | Delete the authenticated user’s account when permitted |
 | `GET` | `/api/auth/users` | List users with `auth.user.read` |
 | `GET` | `/api/auth/users/{id}` | Read one user with `auth.user.read` |
-| `POST` | `/api/auth/users` | Create a user with `auth.user.manage` |
-| `PUT` | `/api/auth/users/{id}` | Update a user with `auth.user.manage` |
-| `DELETE` | `/api/auth/users/{id}` | Delete a user with `auth.user.manage` |
-| `POST` | `/api/auth/users/{id}/roles` | Replace a user’s roles with `auth.user.manage` |
+| `POST` | `/api/auth/users` | Create a user with both `auth.user.read` and `auth.user.create`; initial role assignment also requires role read |
+| `PUT` | `/api/auth/users/{id}` | Update a user with both `auth.user.read` and `auth.user.update` |
+| `DELETE` | `/api/auth/users/{id}` | Delete a user with both `auth.user.read` and `auth.user.delete`; system-role accounts remain protected |
+| `POST` | `/api/auth/users/{id}/roles` | Replace a user’s roles with user read, user update and role read together |
 | `GET` | `/api/auth/roles` | List roles with `auth.role.read` |
 | `GET` | `/api/auth/roles/{id}` | Read one role with `auth.role.read` |
-| `POST` | `/api/auth/roles` | Create a role with `auth.role.manage` |
-| `PUT` | `/api/auth/roles/{id}` | Update a role with `auth.role.manage` |
-| `DELETE` | `/api/auth/roles/{id}` | Delete a role with `auth.role.manage` |
-| `POST` | `/api/auth/roles/{id}/permissions` | Replace role permissions with `auth.role.manage` |
+| `POST` | `/api/auth/roles` | Create a role with both `auth.role.read` and `auth.role.create` |
+| `PUT` | `/api/auth/roles/{id}` | Update a role with both `auth.role.read` and `auth.role.update` |
+| `DELETE` | `/api/auth/roles/{id}` | Delete a role with both `auth.role.read` and `auth.role.delete` |
+| `POST` | `/api/auth/roles/{id}/permissions` | Replace role permissions with role read, role update and permission read together |
 | `GET` | `/api/auth/permissions` | List permissions with `auth.permission.read` |
 | `GET` | `/api/auth/permissions/{id}` | Read one permission with `auth.permission.read` |
 | `GET` | `/api/auth/health` | Auth service readiness/health |
@@ -76,11 +79,16 @@ session beyond its original expiration. Access JWTs expire after 15 minutes.
 Refresh tokens are stored only as hashes and are rotated on every successful
 refresh; replay of a consumed token revokes its session.
 
-Device-scoped logout archives the active sessions for the current device and
-revokes their refresh tokens. The account-specific route archives only the
-selected account on that device, while `logout-all-devices` archives every
-session for the authenticated account and increments its token version.
-Password, role, permission and account-state changes continue to use
+`POST /api/auth/logout` ends only the authenticated account's session on the
+current device. The account-specific `logout/{id}` and `logout-account` routes
+also end only the caller's current-device account session; attempts to target
+a different account are forbidden. The account-menu action preserves other
+saved accounts on the same installation. `POST /api/auth/logout-all-devices`
+first verifies the current password, then ends every session for the
+authenticated account across installations. `DELETE /api/auth/sessions/{id}`
+ends one selected active session; ending the current session needs no password,
+while ending a session from another device requires current-password
+verification. Password, role, permission and account-state changes use
 account-wide token-version revocation and session archival.
 
 Active authentication state is stored in `ActiveSessions`. When a session ends
@@ -90,8 +98,10 @@ timestamp and reason. The log is retained for audit/support queries but is
 never an authentication source; the public session endpoint returns active
 sessions only.
 
-`PUT /api/auth/me` accepts profile fields only. Password changes use
-`POST /api/auth/change-password`.
+`PUT /api/auth/me` accepts editable profile fields only. Password changes use
+`POST /api/auth/change-password`. `DELETE /api/auth/me` deletes the current
+account only when it has no protected system role; rejected deletion identifies
+the assigned protected role or roles.
 
 Password recovery and email verification are not exposed because this
 repository has no corresponding delivery contract.
@@ -123,7 +133,7 @@ by the gateway at:
 GET /health
 ```
 
-The intended public API health route is:
+The public API health route is:
 
 ```text
 GET /api/health

@@ -31,9 +31,12 @@ Responsibilities:
 - loading, empty, success, denied and recoverable failure states
 - platform-appropriate layouts and interaction patterns for the same workflow
 
-Both clients are product surfaces for clients, staff and administrators. They
-are not authoritative for permissions or business rules; the public API and its
-role → permission model remain authoritative.
+Both clients provide every permitted business workflow to tourists, coastal
+operators, operations reviewers and platform administrators, and to future
+roles when introduced. Neither client owns or prioritizes a stakeholder
+group. They are not authoritative for permissions or business rules; the
+public API and its role → permission model remain authoritative. The
+[v1 component map](../v1/README.md) defines target business ownership.
 
 ## api (`services/api`)
 
@@ -72,6 +75,19 @@ Auth container, database or internal hostname directly.
 
 Persistent relational data store.
 
-## future Agentic AI service
+## v1 Agentic AI target
 
-Internal-only service if a separate process is used. It must not become a second public API.
+Four distinct agents are specified in the [v1 agent documents](../v1/README.md):
+Planning & Coordination, Marine Conditions Intelligence, Coastal Experience
+& Biodiversity, and Safety & Operations. No executable agent service is
+currently checked in. If a separate process is used, it remains internal
+and cannot become a second client-facing API. Application code performs
+deterministic validation; only authorized ASP.NET Core business logic
+executes approved protected changes.
+
+## v1 ML inference target
+
+The separate IT3091 workstream supplies the initial biodiversity model.
+BLUEVERSE v1 integrates it through a private inference boundary called by
+ASP.NET Core. A missing service yields an explicit unavailable result. The
+model and inference service are not implemented in this repository today.
