@@ -1,16 +1,37 @@
-# Agentic AI Tools
+# Agentic AI tools — v1 target
 
-Tool definitions will be documented here once the assessed workflow is
-selected. There are no executable Agentic AI tools in the current checkout.
+**Implementation status:** no executable Agentic AI tools are checked in.
+The names below are candidate allowlisted operations from the v1
+requirements, not API routes or callable production tools.
 
-For every tool document:
+| Agent | Candidate read-only tools |
+|---|---|
+| Coastal Experience & Biodiversity | destination_lookup, activity_lookup, offering_lookup, schedule_lookup, biodiversity_prediction_lookup |
+| Marine Conditions Intelligence | weather_forecast_lookup, marine_forecast_lookup, condition_snapshot_lookup |
+| Safety & Operations | safety_profile_lookup, operational_status_lookup, active_alert_lookup, operational_constraint_lookup |
+| Planning & Coordination | Delegates configured steps to specialist agents; it cannot create or grant itself tools. |
 
-- purpose
-- input schema
-- output schema
-- authorization requirements
-- allowed side effects
-- validation rules
-- failure behavior
-- audit information
-- prompt-injection considerations
+For every tool actually introduced, document its purpose, authorized
+agent(s), typed input, structured output, source or owning service,
+validation, allowed side effects, timeout, bounded retry, failure response,
+auditable summary and prompt-injection boundary. Keep access least
+privileged. The agent cannot call arbitrary network targets, request
+unnecessary secrets or use a tool outside its allowlist.
+
+An auditable tool summary must correlate the workflow, step, agent and tool;
+record the source/target category, start/end or elapsed duration, validated
+outcome, error and retry count where relevant; and omit credentials, raw
+unnecessary personal data and hidden model reasoning. The exact fields and
+retention policy belong to the implementation schema. These timings support
+failure diagnosis and the assignment's observability/performance evidence.
+
+Lookup results and external responses are untrusted data. Validate tool
+inputs before execution and outputs before they enter downstream planning
+or business validation. No agent tool directly publishes, suspends,
+cancels or modifies a protected BLUEVERSE record. ASP.NET Core owns
+authorized business execution after deterministic validation and required
+human approval.
+
+See the [four agent contracts](../v1/README.md),
+[safety controls](safety.md) and
+[requirements sections 13, 15, 19 and 25](../../PROJECT_REQUIREMENTS.md).

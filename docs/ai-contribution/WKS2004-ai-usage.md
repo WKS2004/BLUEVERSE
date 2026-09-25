@@ -881,3 +881,429 @@ runtime lacks PyYAML.
 - Summary of the user's request: Review whether the prior v0 foundation fixes were successfully completed.
 - Summary of what the AI Agent did: Rechecked the requirements, local gateway, database port, Auth contracts and test workflows; made native Flutter Auth responses require nonempty access and refresh tokens so malformed success responses cannot retain an older token as a successful sign-in; added two new malformed-token cases without changing earlier tests; and updated the test counts and remaining acceptance checks in the documentation.
 - Verification/evidence: The API suite passed 21/21 cases, the Auth suite passed 67/67, Flutter analysis found no issues and all 18 package tests passed, and 32 UI-validator tests plus the UI contract, endpoint catalog and agent-resource validators passed. Six live gateway routes returned HTTP 200, Windows localhost port 5432 accepted a TCP connection, and `git diff --check` found no content errors. Authenticated Postman, Android device/emulator and hosted CI acceptance runs remain open; no secrets or credentials were recorded.
+
+## 2026-09-23 — Integrate the v1 requirements and separate member and agent contracts
+
+- Date/time or time range: 2026-09-23 20:20 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and bundled Python
+- AI Model: GPT-6
+- Summary of the user's request: Integrate the updated v1 BLUEVERSE requirements into repository documentation and `.agents`, document each of the four member components and four agent responsibilities separately, and make React and Flutter equally complete for every permitted stakeholder and workflow without changing application code.
+- Summary of what the AI Agent did: Replaced the root requirements baseline with the supplied v1 content and clarified equal client capability, the assessed cross-client workflow and approval branches; created the separate member and agent documents plus shared v1 workflow, permission and delivery guides; aligned architecture, Agentic AI, database, security, testing, roadmap, UI, setup and agent instructions; and recorded the client-coverage decision in ADR-0016 while marking earlier emphasis language superseded.
+- Verification/evidence: Agent-resource validation passed for 23 skills; endpoint-catalog validation passed with 32 public endpoints, 4 frontend routes and no implemented AI endpoints; UI integration validation passed; 186 relative links in 53 changed/new Markdown files resolved; `git diff --check` found no content errors. Only Markdown documentation and `.agents` guidance changed; no application source, test, CI or machine-readable contract was edited.
+
+## 2026-09-23 — Document the v0 foundation and make agent guidance release-neutral
+
+- Date/time or time range: 2026-09-23 21:33 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and bundled Python
+- AI Model: GPT-6
+- Summary of the user's request: Analyze the repository, current documentation, agent resources and updated requirements; document the v0 technical components and implemented behavior in the style of the v1 guide; keep agent guidance universal rather than directing work to a specific release; and preserve equal React and Flutter capability.
+- Summary of what the AI Agent did: Added a v0 index, eight separate foundation-component references and a shared integration/acceptance guide; reconciled root, client, API, database, architecture, testing and developer documentation; recorded the implemented React hooks and Flutter ChangeNotifier Auth state patterns in their ADRs; and removed release-specific directions and stale foundation snapshots from root and `.agents` guidance.
+- Verification/evidence: Agent-resource validation passed for 23 repository skills; endpoint-catalog validation passed with 32 public endpoints, 4 frontend routes and no implemented AI endpoints; UI integration validation passed; 263 local links across 71 changed/new Markdown files resolved; `git diff --check` found no content errors. No application code, test, CI or machine-readable contract was edited.
+
+## 2026-09-23 — Complete the v0 and v1 requirements baseline
+
+- Date/time or time range: 2026-09-23 22:16 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and bundled Python
+- AI Model: GPT-6
+- Summary of the user's request: Update the complete `PROJECT_REQUIREMENTS.md` to include the newly documented v0 foundation while preserving the agreed v1 scope and equal React/Flutter capability.
+- Summary of what the AI Agent did: Expanded the requirements with eight v0 technical component contracts and the shared Auth acceptance path; linked all four separate v1 member documents and four separate agent documents; reconciled cross-client registry wording with its checked-in schema; and synchronized the security, API, persistence, testing, CI, deployment, documentation, ownership and definition-of-done sections with the v0 and v1 guides.
+- Verification/evidence: Agent-resource validation passed for 23 skills; endpoint-catalog validation passed with 32 public endpoints, 4 frontend routes and no implemented AI endpoints; UI integration validation passed; 295 local links across 71 changed/new Markdown files resolved; `git diff --check` passed; all changed/new files are Markdown documentation. No application source, test, CI or machine-readable contract was edited during this documentation work.
+
+## 2026-09-24 — Final review of requirements and documentation
+
+- Date/time or time range: 2026-09-24 00:13 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Python, pypdf and Poppler
+- AI Model: GPT-6
+- Summary of the user's request: Review the complete v0/v1 requirements, repository documentation and agent guidance once more, resolve inconsistencies and finalize the documentation.
+- Summary of what the AI Agent did: Compared the requirements and component guides with current source, contracts, CI and the local SE3090 assignment specification; corrected stale foundation wording and the CI contract-update instruction; added the assignment's consolidated report, individual reflection, video and evaluator-access requirements; clarified future AI-usage records; and recorded the path-filtered backend CI trigger as an outstanding assignment gap.
+- AI output accepted/changed/rejected: Retained the equal React/Flutter capability and four-component/four-agent scope; revised stale documentation and submission details after source review; rejected any claim that planned v1 services or path-filtered CI already meet final submission requirements.
+- Verification/evidence: Agent-resource, endpoint-catalog and UI-integration validators passed; all 32 UI-validator tests passed; 300 local links across 74 changed/new Markdown files resolved; all 56 main requirements sections and the eight v0/four member/four agent references were checked; `git diff --check` passed. No application source, tests, CI workflow or machine-readable contract was edited.
+
+## 2026-09-24 — Coastal web home page redesign
+
+- Date/time or time range: 2026-09-24 00:50 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, ImageGen, PowerShell, bundled Node.js and Python, local browser preview
+- AI Model: GPT-6
+- Summary of the user's request: Redesign only the project home page as a professional, welcoming coastal business site that reflects BLUEVERSE's scope without a military-style interface.
+- Summary of what the AI Agent did: Rebuilt the React home page around coastal discovery, marine awareness and stewardship; created two coastal image assets, converted them to WebP, added responsive styling, retained the existing signed-in session controls, and updated the home route descriptions and browser branding.
+- AI output accepted/changed/rejected: Kept the new layout and coastal visuals as a candidate for user review; compressed generated imagery and refined copy to avoid claiming unfinished domain workflows are available; did not carry forward the starter home page's authentication-first presentation.
+- Verification/evidence: Web lint, TypeScript build, Vite build and all three Auth request tests passed; endpoint-catalog and UI-integration validators passed; all 32 UI-validator tests passed; desktop and mobile local browser previews were reviewed; `git diff --check` passed.
+
+## 2026-09-24 — Refine the coastal home page with Tailwind CSS
+
+- Date/time or time range: 2026-09-24 08:10 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, Stitch MCP, ImageGen, PowerShell, bundled Node.js and Python
+- AI Model: GPT-6
+- Summary of the user's request: Rework the BLUEVERSE home page with a calmer coastal palette, Tailwind CSS, a persistent header, reusable header/footer components, registration routing, and accessible Back to Top behavior; update the relevant documentation and agent guidance.
+- Summary of what the AI Agent did: Reviewed the BLUEVERSE Stitch project and its dark navy/cyan mission-control theme; reinterpreted it as a daylight coastal business site using sand, paper, sage and teal; integrated Tailwind CSS with Vite; rebuilt the responsive React home page and shared header/footer; added a `/register` placeholder route to React and Flutter; updated the UI and endpoint catalogs and Tailwind guidance in the docs and client skill; and synchronized the npm lockfile.
+- AI output accepted/changed/rejected: Kept the coastal concept and generated daylight imagery; changed Stitch's dark, telemetry-heavy theme into a natural, open layout; rejected the previous orange/yellow emphasis and military-style visual cues.
+- Verification/evidence: UI integration and endpoint-catalog validators passed; TypeScript, ESLint and Vite production build passed; `git diff --check` found no content errors (Git emitted existing line-ending notices). A local preview is running at `http://127.0.0.1:4175/` and was opened in Codex; direct browser inspection was unavailable because the computer-use browser inventory failed to load its request-header policy. No test suites were run.
+
+## 2026-09-24 — Improve Auth pages and implement shared registration
+
+- Date/time or time range: 2026-09-24 08:38 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Node.js and Python, Flutter/Dart SDK
+- AI Model: GPT-6
+- Summary of the user's request: Improve BLUEVERSE's login and registration pages to match the coastal home-page direction.
+- Summary of what the AI Agent did: Reworked React login and registration into responsive account pages with shared editorial layout, coastal photography, Tailwind forms, accessible loading/error/password-visibility states and session preferences. Connected React registration to the public Auth endpoint, implemented the same registration outcome in Flutter through its Auth service/repository/view model and secure storage, updated both client themes and synchronized the workflow and endpoint documentation.
+- AI output accepted/changed/rejected: Kept the sand, paper and teal visual language and the existing public Auth contract; replaced the registration placeholder with account creation, matched web and mobile session handling, and made duplicate-account messaging generic to avoid echoing submitted email addresses.
+- Verification/evidence: TypeScript, ESLint, Vite production build, endpoint-catalog validation, UI integration validation and `git diff --check` passed; `/`, `/login` and `/register` each returned HTTP 200 locally. Dart formatting completed. Flutter analysis could not finish because the sandbox denied reading the installed `flutter_lints` file from the user-level Pub cache. No test suites were run.
+
+## 2026-09-24 — Refine BLUEVERSE account navigation and coastal page UX
+
+- Date/time or time range: 2026-09-24 09:20 (Asia/Colombo)
+- GitHub Username: WKS2004
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, ImageGen, Edge browser preview, PowerShell, bundled Node.js and Python, Dart SDK
+- AI Model: GPT-6
+- Summary of the user's request: Improve BLUEVERSE's auth-aware header, redesign the footer, differentiate login and registration, reduce repeated photography, and shift the visual palette toward ocean blue with more natural motion.
+- Summary of what the AI Agent did: Added shared React auth-session state with refresh-aware /api/auth/me handling and sign-out actions; updated header and footer account links for signed-in, signed-out and unavailable states; replaced the repeated photos with separate sign-in, registration and mangrove-lagoon assets; repositioned the account-page layouts, added password-match feedback and restrained entry/image motion; shifted web and mobile theme accents toward blue; and updated the web design-system notes. Reviewed grouped visitor and action links on Sri Lanka Tourism and Ocean Conservancy sites when reshaping the footer.
+- AI output accepted/changed/rejected: Kept the coastal photography approach but replaced repeated images with page-specific scenes; shifted the previous sand-and-teal emphasis toward cool ocean blues while keeping muted sand and restrained teal; retained Tailwind CSS and avoided operational or military styling.
+- Verification/evidence: TypeScript/Vite production build and ESLint passed; UI integration and endpoint-catalog validators passed; git diff --check passed; browser previews of the home, login, registration and footer were reviewed at desktop width, including the sticky header and visible Back to Top control; Dart format check reported no changes. The local auth API returned an empty error response during preview, so the web client now shows a generic account-status fallback and keeps sign-in/registration links visible; authenticated behavior against a running API was not exercised. No test suites were run.
+
+## 2026-09-24 — Refine account navigation and coastal registration artwork
+
+- Date/time or time range: 2026-09-24 10:22 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, ImageGen and local browser preview
+- AI Model: GPT-6
+- Summary of the user's request: Replace the cropped registration image with artwork suited to its tall panel; make signed-in navigation account-aware with session limits and multi-account actions; remove preview-only technical errors from shared navigation and home; improve rounded hover and motion details; update `.agents` and this usage log.
+- Summary of what the AI Agent did: Generated and integrated a portrait coastal guide image; shared authenticated session state between the header and home account panel; added a username disclosure with Profile, Dashboard, Manage sessions, New login, New registration and Sign out; displayed the five-session capacity and disabled New login at the cap; translated the public Auth API's device-account-capacity conflict into a recovery message; kept guest navigation usable when Auth status is unavailable; updated hover, focus, motion and rounded Tailwind styles; added client workflow guidance to `.agents`; fixed Back to top so hiding its focused control no longer interrupts scrolling.
+- AI output accepted/changed/rejected: Kept the blue coastal visual direction; replaced the prior registration photo with a newly composed portrait image; revised the header and footer account actions to match authentication state; removed generic session/service status copy from shared chrome and guest home content; left the Auth API and route contracts unchanged.
+- Verification/evidence: React TypeScript/Vite production build and ESLint passed; all 3 existing web request-boundary tests passed; UI integration, endpoint catalog and agent-resource validators passed; `git diff --check` reported no whitespace errors; local browser preview visually confirmed the registration crop and distinct sign-in image, guest home/footer state, sticky header, 12% Back to top threshold and completed smooth scroll to `scrollY=0`. The local preview used guest state only, so the signed-in menu branch was not exercised against a live Auth session. Changed files include `apps/web/src/components/SiteHeader.tsx`, `SiteFooter.tsx`, `AuthSessionProvider.tsx`, `apps/web/src/HomePage.tsx`, `RegistrationPage.tsx`, `LoginPage.tsx`, `auth.ts`, `apps/web/src/authSession.ts`, `apps/web/src/components/AuthPageLayout.tsx`, `apps/web/src/index.css`, `.agents/skills/blueverse-client-contract/SKILL.md` and `apps/web/src/assets/registration-coastal-guide.jpg`.
+
+## 2026-09-24 — Refine responsive pages and add account overview routes
+
+- Date/time or time range: 2026-09-24 13:05–13:28 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Node.js and Python, Dart SDK, local Vite preview
+- AI Model: GPT-6
+- Summary of the user's request: Improve the homepage and responsive hero, make login and registration fit a single page, move the mobile signed-in account control beside the menu button, and add editable Profile and overview Dashboard pages.
+- Summary of what the AI Agent did: Tightened the home hero to the available viewport and improved the coastal focus cards; compacted login and registration layouts for short screens; moved the mobile account disclosure beside the menu control; added matching React and Flutter Profile and Dashboard routes; connected profile-name editing and account/session summaries to the existing public Auth API; labeled future coastal service areas honestly; registered the routes and API references, including home-route session restoration; synchronized route and client documentation; and appended this contribution entry.
+- AI output accepted/changed/rejected: Kept the blue coastal visual direction and existing Auth contracts; limited profile editing to the full name because that is the only editable personal field in the server contract; used real account/session data and marked unimplemented services as future work instead of adding mock graphs.
+- Verification/evidence: React TypeScript/Vite production build and ESLint passed; endpoint catalog validation passed (32 public endpoints, 10 frontend routes); UI integration validation passed; `git diff --check` passed; `/`, `/login`, `/register`, `/profile` and `/dashboard` each returned HTTP 200 from the local preview. Dart formatting completed. Flutter analysis could not complete because the local Flutter SDK cannot create its lockfile under `D:\Program Files\Flutter\flutter`, and direct Dart analysis reports that the mobile package configuration is absent (`package:http` cannot be resolved). No test suites were run.
+
+## 2026-09-24 — Repair responsive account flows and preserve device accounts
+
+- Date/time or time range: 2026-09-24 14:57–15:02 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Node.js and Python, Dart SDK, local Vite preview tooling
+- AI Model: GPT-6
+- Summary of the user's request: Rework the React Web mobile login, registration and account dropdown layouts; preserve up to five signed-in accounts when switching; put login-session management on Profile; add shared Profile/Dashboard navigation; remove session-management content from Home; and return people to the page where they started after authentication.
+- Summary of what the AI Agent did: Added compact responsive auth layouts with page-specific mobile photography, tighter short-height layout rules and a narrow-view header disclosure; contained the mobile account picker to the viewport; retained safe same-origin return destinations; and added desktop sidebar/mobile navigation disclosure patterns for Profile and Dashboard. Moved session controls into Profile and removed Home session-management content. Added per-account Auth cookie sessions and legacy-cookie migration in the Auth service, account-scoped token storage and account switching in Flutter, and client-side account summary storage that excludes tokens. Added focused tests and synchronized UI/endpoint contracts and the endpoint catalog.
+- AI output accepted/changed/rejected: Kept the coastal blue visual direction and five-account device limit. Revised the account-switch implementation after integration testing exposed the legacy single-cookie migration edge case, and fixed native compatibility storage after existing tests exposed missing legacy token keys. Left the existing Flutter starter counter smoke test unchanged because it does not describe the BLUEVERSE app.
+- Verification/evidence: React production build and ESLint passed; all 4 web tests passed; UI and endpoint-catalog validators passed; all 33 validator tests passed; all 68 Auth tests passed; Dart analysis reported no issues; all 16 focused Flutter Auth/account-switch tests passed. The full Flutter suite had 20 passes and one existing `Counter increments smoke test` failure at `apps/mobile/test/widget_test.dart:19`, which expects the obsolete starter counter UI. `git diff --check` passed. A fresh responsive screenshot could not be captured: the computer-use runtime could not create its kernel assets, and local headless Edge exited after a GPU-process startup failure. The auth layouts were checked in source and production build.
+
+## 2026-09-24 — Restore spacious Login and Registration layouts
+
+- Date/time or time range: 2026-09-24 15:05–15:16 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Node.js and Python
+- AI Model: GPT-6
+- Summary of the user's request: Remove the compact, single-page Login and Registration treatment and restore the earlier roomier visual style.
+- Summary of what the AI Agent did: Returned the auth layout to natural page height and scrolling, restored generous spacing and form controls, and gave mobile screens a proportionate coastal image panel rather than a narrow cropped strip. Preserved the existing account-cap, authentication, and return-destination behavior.
+- AI output accepted/changed/rejected: Accepted the user's preference for the spacious auth presentation; removed the viewport-locked card and mobile-only compression rules from the page layout.
+- Verification/evidence: React production build, ESLint, and all 4 web tests passed; UI integration validation passed; `git diff --check` passed. Browser screenshot capture remained unavailable because the computer-use runtime could not create its kernel assets and local headless Edge failed during GPU startup.
+
+## 2026-09-24 — Scope account sign-out and secure Profile actions
+
+- Date/time or time range: 2026-09-24 16:00–16:25 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Node.js and Python, .NET SDK, Dart SDK
+- AI Model: GPT-6
+- Summary of the user's request: Move the desktop Profile/Dashboard navigation to a full-height left rail, prevent long names from overflowing mobile account/profile layouts, protect account pages from guests, restrict sign-out to one account at a time, require password verification for remote or all-device session termination, remove the footer session link, correct the password icon, and add confirmed self-service account deletion while blocking system-role accounts.
+- Summary of what the AI Agent did: Updated the React header, private routes, Profile/Dashboard layout, responsive text wrapping, footer, and account/session dialogs; implemented account-scoped sign-out and server-side password verification for remote/all-device revocation; enforced that a user cannot sign out another account on the same device; exposed the existing system-role self-delete guard in the Profile UI; added equivalent Flutter Auth/Profile actions; updated API/UI contracts and the endpoint catalog; added integration and client request tests; and appended this contribution entry.
+- AI output accepted/changed/rejected: Kept the existing account limit and coastal UI styling, reused the server's system-role deletion restriction, and changed prior tests that encoded browser-wide logout or password-free remote logout after the user approved those test updates.
+- Verification/evidence: Auth build and all 72 Auth tests passed; React production build, ESLint and all 6 Web tests passed; endpoint-catalog and UI-integration validators passed; Dart formatting and `git diff --check` passed. Flutter analysis could not resolve `http`, `flutter_secure_storage` or Flutter test packages from the local package configuration, and `flutter test --no-pub` did not start because the local Flutter SDK command remained blocked on its SDK lock. No Flutter test result is claimed.
+
+## 2026-09-24 — Organize React Web source and routing
+
+- Date/time or time range: 2026-09-24 16:32–16:43 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, npm, Node.js and Python
+- AI Model: GPT-6
+- Summary of the user's request: Organize the React Web source into sensible subfolders and use React Router for application routing.
+- Summary of what the AI Agent did: Grouped routes, pages, shared layout/account components, Auth feature files, tests, coastal assets, styles and design documentation; installed React Router; replaced pathname-based route selection and full-page internal navigation with `BrowserRouter`, declarative routes, router links and navigation hooks; preserved the existing URLs and safe post-auth destination behavior; updated route catalogs and the web README; and removed unused starter artwork.
+- AI output accepted/changed/rejected: Accepted React Router declarative routing and the proposed source boundaries; retained the five existing public page paths and reworked route links and post-auth redirects to stay within the SPA. No requested behavior was rejected.
+- Verification/evidence: Web build and ESLint passed; all 9 web tests passed, including 3 safe-navigation tests; endpoint catalog validation passed for 33 public endpoints and 10 frontend routes; UI integration validation and all 33 validator tests passed; `git diff --check` reported no whitespace errors. Updated route sources are in `apps/web/src/app/routes.tsx`, with folder guidance in `apps/web/README.md`.
+
+## 2026-09-24 — Refresh account views and bound account navigation
+
+- Date/time or time range: 2026-09-24 18:33 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Node.js and Python, .NET SDK
+- AI Model: GPT-6
+- Summary of the user's request: Fix stale content and missing redirects after login or account switching; reload the full page for account changes; constrain the desktop Profile/Dashboard navigation between the shared header and footer; correct Login and Registration ordering across desktop and mobile; set suitable cursors; and name only the protected system roles assigned to an account when deletion is denied.
+- Summary of what the AI Agent did: Added a shared authenticated-user update to the React Auth session, persisted the selected account before routing and reloading, made new registration return to Profile, reset the app view on identity changes, and added document reloads after account switches and sign-out actions. Reworked the Profile/Dashboard rail as a sticky child of the main section, clarified responsive auth ordering, fixed the active account cursor, and kept the system-role deletion explanation in the red confirmation dialog after denial. Added Auth deletion tests, updated endpoint documentation and the client workflow guidance, and appended this entry.
+- AI output accepted/changed/rejected: Followed the requested full-page refresh while keeping route changes in React Router and preserving the selected account for restoration. Kept deletion policy server-authoritative and included only system role names assigned to the target account.
+- Verification/evidence: React production build and ESLint passed; all 9 Web tests passed; all 75 Auth tests passed, including 3 new account-deletion tests; all 33 UI validator tests passed; UI integration and endpoint catalog validation passed (33 public endpoints, 10 frontend routes); all 23 repository agent skills validated; `git diff --check` passed. The global npm command shim pointed to a missing CLI, so Web checks were run with the installed local TypeScript/Vite/ESLint binaries and the bundled Node runtime.
+
+## 2026-09-24 — Add permission-aware administration and rename sign-in routes
+
+- Date/time or time range: 2026-09-24 19:55 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, .NET SDK, Flutter/Dart SDK, bundled Node.js and Python
+- AI Model: GPT-6
+- Summary of the user's request: Rename the React auth routes to `/signin` and `/signup`, remove registration return destinations, show assigned roles in Profile, add permission-aware role and user administration to both clients, enforce combined read/action permissions on the server, and update this contribution log.
+- Summary of what the AI Agent did: Added granular create/update/delete permission codes with compatibility for existing manage grants; resolved each request against the active user’s current database role assignments; enforced combined permission checks in Auth controllers and service methods; added role and user administration pages/navigation in React and Flutter; displayed assigned roles in Profile; updated routes, API/UI contracts and endpoint documentation; and replaced the obsolete Flutter counter smoke test with a BLUEVERSE home/navigation test after approval.
+- AI output accepted/changed/rejected: Kept the application permission catalogue read-only and implemented adding/removing permission grants through role assignments. Updated existing Auth and validator tests with the user’s approval, and replaced the stale Flutter starter test with a project-specific test.
+- Verification/evidence: Auth tests passed (77); React TypeScript build, production Vite build, ESLint and all 13 Web tests passed; Flutter analysis reported no issues and the full Flutter test suite passed; endpoint catalog validation passed (33 public endpoints, 18 frontend routes); UI integration validation and all 35 validator tests passed; all 23 repository agent resources validated; `git diff --check` passed.
+
+## 2026-09-24 — Add animated backend loading screen
+
+- Date/time or time range: 2026-09-24 22:49 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Node.js and Python
+- AI Model: GPT-6
+- Summary of the user's request: Show an engaging BLUEVERSE-branded loading screen during backend fetches, using the existing SVG logo with natural coastal color movement and a gentle pulse.
+- Summary of what the AI Agent did: Added a shared full-screen loading overlay that uses the existing favicon mark, a rotating blue-teal gradient ring, a rising water-color fill, a calm pulse and reduced-motion support. Added a delayed, reference-counted request tracker and connected all React Auth and administration API calls so overlapping requests share one loader without flicker. Kept endpoint paths literal for the repository contract validator and added loading-state tests.
+- AI output accepted/changed/rejected: Used the existing circular wave-and-sun logo as requested and tuned animation and background colors to BLUEVERSE's coastal palette. Reworked the initial shared request wrapper to preserve literal `fetch` targets required by repository validation.
+- Verification/evidence: React TypeScript/Vite production build and ESLint passed; all 15 Web tests passed, including `WEB-LOADING-001` and `WEB-LOADING-002`; UI integration contract validation passed; all 35 UI validator tests passed; `git diff --check` passed.
+
+## 2026-09-25 — Use the BLUEVERSE loading screen across all loading states
+
+- Date/time or time range: 2026-09-25 00:18 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Flutter/Dart SDK, Node.js and Python
+- AI Model: GPT-6
+- Summary of the user's request: Use the animated BLUEVERSE loading screen wherever the React Web or Flutter Mobile app is loading.
+- Summary of what the AI Agent did: Centralized the overlay across both clients. React now shows it during auth-session restoration and every Auth and administration API request. Flutter now shows the same coastal loading treatment during auth restoration, sign-in/registration, account/profile/session work, and administration fetches and mutations. Removed competing inline progress displays, preserved reduced-motion support, and added overlap and lifecycle tests for both clients.
+- AI output accepted/changed/rejected: Extended the React backend-fetch loader to auth restoration and all mobile loading paths. Flutter draws the same BLUEVERSE wave-and-sun mark with CustomPainter because the app has no SVG renderer dependency; kept the requested rotating blue-teal color and water-fill motion.
+- Verification/evidence: All 15 Web tests passed; ESLint, TypeScript build and Vite production build passed; Flutter analysis reported no issues and the complete Flutter test suite passed; UI integration contract validation passed; Dart format reported no changes; `git diff --check` passed (Git emitted existing line-ending conversion notices).
+
+## 2026-09-25 — Add slow-load transitions and global recovery pages
+
+- Date/time or time range: 2026-09-25 00:18–01:44 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Node.js, Flutter/Dart SDK and Python
+- AI Model: GPT-6
+- Summary of the user's request: Add a wave reveal after longer loading operations, provide clear loading transitions for authentication actions, create coastal BLUEVERSE 404 and 500 recovery pages, and configure Nginx fallbacks where appropriate.
+- Summary of what the AI Agent did: Added a two-second slow-load threshold and wave wash-away animation to the shared React and Flutter loaders, with tailored Auth messages and reduced-motion handling. Added creative 404/500 experiences for both clients, React render-error recovery, unknown-route handling in Flutter, and static browser error fallbacks in frontend and edge Nginx. Mounted the edge fallback assets read-only, kept `/api/` errors unintercepted, registered routes in the shared UI and endpoint catalogs, updated deployment/web docs, and extended the client-contract skill with the loading and recovery conventions.
+- AI output accepted/changed/rejected: Used the selected two-second threshold; implemented the web reveal with CSS and the Flutter reveal with a custom wave clipper; retained separate API error handling and did not replace structured API responses. No requested behavior was rejected.
+- Verification/evidence: React ESLint, TypeScript build, Vite production build and all 17 Web tests passed. Flutter analysis reported no issues and all 32 Flutter tests passed. UI integration validation and endpoint-catalog validation passed (33 public endpoints and 22 frontend routes); all 35 UI validator tests and all 23 repository agent-resource checks passed; `git diff --check` passed. Docker and Nginx executables were unavailable in this environment, so container-level Nginx/Compose validation was not run; both built static fallback files are present in the Vite output.
+
+## 2026-09-25 — Keep authentication loaders visible and preserve error routes
+
+- Date/time or time range: 2026-09-25 01:44–02:25 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Node.js, Flutter/Dart SDK and Python
+- AI Model: GPT-6
+- Summary of the user's request: Make the authentication-specific loading screen visible during sign-in and related account actions, and show global error pages without redirecting unknown paths to Home or exposing `.html` in browser URLs.
+- Summary of what the AI Agent did: Kept Auth transition messages visible for at least 850 ms, carried their context through intentional document reloads using one-time session storage, and prioritized the requested sign-in/registration/security transition over background account restoration. Kept React's catch-all route on the original unknown URL and rendered its 404/500 content between the shared header and footer. Configured both Nginx layers to use extensionless internal error URIs mapped to the static recovery assets, redirected direct asset-file URLs to extensionless app routes, and kept `/api/` errors unintercepted. Updated deployment docs, route contracts, endpoint catalog and client-contract guidance, and added Web and Flutter loading/recovery checks.
+- AI output accepted/changed/rejected: Kept the BLUEVERSE logo animation, coastal wave reveal and reduced-motion behavior. Changed the initial loader selection after review showed background account activation could replace the carried Auth message; it now retains the user-requested transition through restoration. Preserved `/signsin` in the browser location rather than routing the user to Home or a file-named error URL.
+- Verification/evidence: All 21 Web tests, including server-rendered `/signsin` and `/500` shell/path assertions, ESLint, TypeScript build and Vite production build passed; Flutter analysis and the complete Flutter test suite passed; endpoint catalog validation passed (33 public endpoints and 22 frontend routes); UI integration validation and all 35 validator tests passed; all 23 repository agent resources validated; `git diff --check` passed. Vite served `/signsin` without a redirect and retained the requested path; built `404.html` and `500.html` assets exist. Docker and Nginx executables were unavailable, so container-level config and gateway behavior could not be exercised.
+
+## 2026-09-25 — Keep authentication loading focused through page handoff
+
+- Date/time or time range: 2026-09-25 02:25–02:51 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Node.js, Flutter/Dart SDK
+- AI Model: GPT-6
+- Summary of the user's request: Stop authentication loading screens from flashing as separate, unrelated states while account restoration and initial page data load; remove the semicolon from the 404 message.
+- Summary of what the AI Agent did: Kept the highest-priority authentication message visible across overlapping restore and initial-route requests in React and Flutter. Started React's session loader before first paint, changed unspecified Auth requests to use neutral coastal loading copy, aligned the client guidance, and updated the 404 wording in React, static fallback and Flutter.
+- AI output accepted/changed/rejected: Preserved specific sign-in, registration and account transition messages; changed the handoff behavior so lower-priority background requests cannot replace the active transition message. Replaced the 404 semicolon with a comma and "so" for a more natural sentence.
+- Verification/evidence: All 21 Web tests passed, including the loading handoff and 404 copy assertions; ESLint, TypeScript project build, Vite production build, Dart formatting and `git diff --check` passed. Flutter analyze and widget tests could not be completed because Dart telemetry initialization was denied access to the user-level config outside the workspace; a retry with telemetry disabled and a temporary app-data location continued to hang without output.
+
+## 2026-09-25 — Remove the unused pnpm store
+
+- Date/time or time range: 2026-09-25 09:56 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell
+- AI Model: GPT-6
+- Summary of the user's request: Remove `.pnpm-store`, preserve any recently updated web app files, and use npm only.
+- Summary of what the AI Agent did: Inspected the root `.pnpm-store` and confirmed it held only pnpm store metadata (three SQLite index/WAL files) and a junction to `apps/web`; unlinked the junction without traversing it and removed the store. Confirmed `apps/web` and its npm `package.json` and `package-lock.json` remained. No source files needed copying.
+- AI output accepted/changed/rejected: Removed the requested cache; left existing npm app files intact and did not change unrelated workspace edits.
+- Verification/evidence: PowerShell verified `.pnpm-store` no longer exists and `apps/web`, `apps/web/package.json`, and `apps/web/package-lock.json` remain. Repository search found only inert `pnpm-debug.log` ignore patterns outside the removed cache. No tests were run because no tracked app code or configuration changed.
+
+## 2026-09-25 — Document the BLUEVERSE visual system
+
+- Date/time or time range: 2026-09-25 (prior turn; exact time not captured, Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell
+- AI Model: GPT-6
+- Summary of the user's request: Lock in the visual style and theme already used by React Web, update related styling/UI documentation, and create a complete professional `DESIGN.md`.
+- Summary of what the AI Agent did: Inspected the React stylesheet and representative UI components, documented the coastal visual direction, eleven palette roles, typography, component patterns, photography, interaction/accessibility and responsive layout guidance, and linked the design guide from the relevant client and project documentation.
+- AI output accepted/changed/rejected: Retained source-derived BLUEVERSE colors and visual patterns. Documented Manrope and Sora as intended font stacks with system fallback because the app does not bundle those fonts. No requested behavior was rejected.
+- Verification/evidence: Checked the local Markdown links and confirmed all eleven documented colors match `apps/web/src/styles/index.css`; `git diff --check` passed. No tests were run for the documentation-only work.
+
+## 2026-09-25 — Apply the shared design system to Flutter onboarding
+
+- Date/time or time range: 2026-09-25 10:03–10:17 (Asia/Colombo; implementation and validation)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Flutter/Dart SDK and bundled Python
+- AI Model: GPT-6
+- Summary of the user's request: Apply the existing design system to Flutter Mobile, create a photo-led onboarding carousel with the specified navigation and final Sign in/Sign up actions, restore authenticated users to Dashboard at launch, return signed-out users to onboarding, and update related documentation including AI usage.
+- Summary of what the AI Agent did: Added a Flutter theme mapped to the shared eleven-color palette; built the full-screen, swipeable four-slide coastal onboarding UI using bundled existing photos; added arrows, Back/Next, Skip and final account actions; added startup session routing and fresh sign-in navigation; synchronized the shared design, mobile, workflow and endpoint-catalog documentation; and appended this record.
+- AI output accepted/changed/rejected: Kept the existing saved-account/session behavior and API routes. Used native Flutter Material styling with the shared visual tokens, and kept successful registration on its existing Profile destination. No requested behavior was rejected.
+- Verification/evidence: Dart analysis of the six changed Flutter source files reported no issues. UI integration validation passed; endpoint catalog validation passed for 33 public endpoints and 22 frontend routes; changed-document link, palette and onboarding-asset checks passed; `git diff --check` passed. The Flutter CLI `analyze --no-pub` process produced no output and was interrupted; no test suites were run.
+
+## 2026-09-25 — Move the shared design guide to the repository root
+
+- Date/time or time range: 2026-09-25 10:42–10:43 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and bundled Python
+- AI Model: GPT-6
+- Summary of the user's request: Move the shared `DESIGN.md` out of `apps/web` to a common repository location and document the React Web and Flutter Mobile implementations in their respective app contexts.
+- Summary of what the AI Agent did: Moved the canonical guide to the repository root, added explicit React and Flutter implementation sections, updated root and client READMEs plus project and v0 documentation to link to it, and removed references to the old location.
+- AI output accepted/changed/rejected: Kept one root-level shared guide and separated shared visual rules from React/Tailwind and Flutter/Material implementation guidance. No requested behavior was rejected.
+- Verification/evidence: Confirmed the root guide exists and the former `apps/web/docs/DESIGN.md` path is gone; checked local links in ten updated documents and searched for stale links; `git diff --check` passed. No tests were run because this change only reorganizes documentation.
+
+## 2026-09-25 — Complete Flutter Mobile test coverage and test documents
+
+- Date/time or time range: 2026-09-25 13:16 (Asia/Colombo; final validation; work began earlier in this conversation)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and Flutter/Dart SDK
+- AI Model: GPT-6
+- Summary of the user's request: Implement the applicable Flutter Mobile tests and finalize the test documentation.
+- Summary of what the AI Agent did: Added reusable Flutter test support and API-contract, view-model, onboarding/Auth form, dashboard/profile/session and role/user administration tests with stable case IDs. Fixed the empty password-confirmation validation and compact onboarding layout, added explicit administration form validation, and kept dialog controllers alive until route exit completes. Updated the Flutter coverage and execution evidence in the testing strategy, implementation plan and test matrix.
+- AI output accepted/changed/rejected: Retained deterministic in-memory fixtures and public-API boundary checks; revised assertions when execution exposed incorrect assumptions, then corrected the underlying empty-confirmation and administration validation behavior. Left the pre-existing locally modified `apps/mobile/test/widget_test.dart` unchanged pending the required approval to migrate it.
+- Verification/evidence: `flutter test --no-pub --concurrency=1` passed 86 tests across all mobile test files except the protected `widget_test.dart`; `flutter analyze --no-pub lib` reported no issues. Full analysis still identifies the existing test's undefined `MyHomePage` reference. No integration-device suite is checked in.
+
+## 2026-09-25 — Finalize Flutter test evidence and audit case IDs
+
+- Date/time or time range: 2026-09-25 13:24 (Asia/Colombo; final rerun and documentation update)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and Flutter/Dart SDK
+- AI Model: GPT-6
+- Summary of the user's request: Resume the interrupted Flutter Mobile test work, finalize the runnable tests and make the test documents reflect current evidence and remaining gaps.
+- Summary of what the AI Agent did: Re-ran all runnable mobile package tests with per-file counts, revalidated the added Auth/Admin API contract tests, audited mobile test IDs, corrected the new API test group's redundant ID labels, and clarified the 12-file/86-test evidence and unresolved existing-test items in the strategy, implementation plan and matrix.
+- AI output accepted/changed/rejected: Retained the approved 86-test evidence and production-source analysis result; documented the stale `widget_test.dart` and three duplicate Auth API test IDs as pending because they are existing test changes that require approval. No existing test was changed.
+- Verification/evidence: All 86 tests passed across 12 runnable Flutter test files; the rechecked API contract file passed 10/10; `flutter analyze --no-pub lib` found no issues. Full package analysis reports only the existing undefined `MyHomePage` reference in `test/widget_test.dart:49`. ID audit found duplicate `MOB-AUTH-011`, `MOB-AUTH-012` and `MOB-AUTH-013` labels in `test/auth_api_service_test.dart`; `git diff --check` passed. No device integration suite is checked in.
+
+## 2026-09-25 — Complete React Web test coverage and documentation
+
+- Date/time or time range: 2026-09-25 (test implementation in the preceding turn; final verification 13:09–13:18, Asia/Colombo; exact initial time not captured)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Node.js 24 and npm
+- AI Model: GPT-6
+- Summary of the user's request: Implement the applicable React Web tests, then finalize the suite and its test documentation.
+- Summary of what the AI Agent did: Added React test dependencies and a JSDOM/React Testing Library harness; implemented public Auth/Admin request, session, page, navigation, profile, authorization, protected-route, loading, footer and scrolling tests; aligned test lint globals; and updated the web README, test matrix, testing strategy and implementation plan.
+- AI output accepted/changed/rejected: Retained the package's Node `node:test` runner and CI discovery. Refined authored route fixtures to use registered workflow routes, corrected authored assertions to match the intended contract, and wrapped timed React loading assertions in `act`. No existing test assertions were weakened or removed.
+- Verification/evidence: CI-style JUnit run passed 157 tests with zero failures, errors or skips; `npm run lint` and `npm run build` passed; shared UI integration validation passed; `git diff --check` passed. Real-browser/deployed-gateway end-to-end checks and coverage instrumentation remain separate, documented work. Relevant files: `apps/web/package.json`, `apps/web/src/testSupport/reactTestHarness.js`, React test suites, `apps/web/README.md`, and `docs/testing/{test-matrix,strategy,implementation-plan}.md`.
+
+## 2026-09-25 — Reconcile repository documentation with current implementation
+
+- Date/time or time range: 2026-09-25 14:36 (Asia/Colombo; final documentation audit and validation)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and bundled Python
+- AI Model: GPT-6
+- Summary of the user's request: Finalize the repository documentation to reflect the work completed so far.
+- Summary of what the AI Agent did: Compared current documentation with the checked-in routes, account/session behavior, UI registry, CI workflows and release scope. Updated the route and workflow descriptions, corrected account-scoped logout and password-verification semantics, refreshed the generated endpoint catalog, clarified current testing evidence and gaps, aligned Docker workflow documentation, and documented Python 3 as a prerequisite for host-side repository validators.
+- AI output accepted/changed/rejected: Accepted the current implementation and contract as documentation sources; corrected stale paths and behavior descriptions. No code or test changes were made, and no test suites were run.
+- Verification/evidence: Endpoint catalog validation passed for 33 public endpoints and 22 frontend routes; UI integration validation passed; agent-resource validation passed with 23 skills; local Markdown link/anchor audit checked 467 links across 201 files with no issues; `git diff --check` passed. Relevant files include `README.md`, `PROJECT_REQUIREMENTS.md`, the React/Flutter READMEs, API and v0 guides, `docs/development/ui-integration.md`, `docs/project/foundation-gap-analysis.md`, and `infrastructure/docker/README.md`.
+
+## 2026-09-25 — Finalize v1 component and agent contracts
+
+- Date/time or time range: 2026-09-25 17:10 (Asia/Colombo; documentation update and validation)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Python and Poppler
+- AI Model: GPT-6
+- Summary of the user's request: Analyze the supplied BLUEVERSE Simplified Team Guide against repository documentation and finalize components readable to both people and coding agents.
+- Summary of what the AI Agent did: Extracted all 21 PDF pages and visually reviewed representative pages; aligned the four v1 business-component and four agent contracts with the requirements and repository status; added stable contract identifiers and implementation-status metadata; completed cross-client capability, dependency, tool, safety and acceptance details; and reconciled the guide's Flutter gateway warning with the current source and setup documentation.
+- AI output accepted/changed/rejected: Used the PDF as a dated orientation snapshot, not as an instruction that overrides the request or current repository evidence. Retained the member-number warning and v1 scope, clarified incomplete implementation status and the separate biodiversity ML boundary, and documented the unresolved mobile HTTPS/fixed-port configuration gap. No source code or tests were changed.
+- Verification/evidence: Extracted text from all 21 PDF pages and rendered the document for visual review. Checked local links and whitespace across 14 updated documents; validated metadata, unique IDs and related-contract links in all eight v1 contracts; `git diff --check` passed with Git line-ending conversion warnings only. No test suites were run because this was a documentation-only change.
+
+## 2026-09-25 — Expand v1 component and agent documentation
+
+- Date/time or time range: 2026-09-25 18:00–18:12 (Asia/Colombo; v1 contract expansion and final documentation review)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Python
+- AI Model: GPT-6
+- Summary of the user's request: Expand each v1 member component Markdown into a complete, detailed description for people and agents, using the supplied guide and repository documentation while distinguishing document content from instructions.
+- Summary of what the AI Agent did: Expanded the four business-component contracts and their four paired Agentic AI contracts with domain concepts, full user/workflow behavior, logical inputs/outputs, tool boundaries, invariants, cross-component handoffs, client parity, failures, security, acceptance evidence and implementation decisions that remain open. Updated the v1 index to map all eight contracts, explain source authority and clarify that the supplied PDF is reference content rather than governing instructions.
+- AI output accepted/changed/rejected: Accepted the repository requirements and implementation evidence as authoritative; used the PDF as a dated orientation source only. Left API paths, DTO schemas, permission codes, lifecycle enums, safety thresholds and other unfinalized technical choices explicitly open rather than inventing them. No code or tests were changed.
+- Verification/evidence: A local documentation check passed for 12 v1 Markdown files, 121 links, all eight unique contract IDs, required metadata/status and whitespace. `git diff --check` reported no whitespace errors (Git emitted only its LF-to-CRLF working-copy warning). No test suites were run because this was documentation-only work. Updated `docs/v1/README.md`, four files under `docs/v1/components/`, four files under `docs/v1/agents/`, and this contribution log.
+
+## 2026-09-25 — Recheck v1 member and Agentic AI development contracts
+
+- Date/time or time range: 2026-09-25 18:50 (Asia/Colombo; final documentation audit)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and bundled Python
+- AI Model: GPT-6
+- Summary of the user's request: Recheck every v1 member component and Agentic AI development contract first against repository documentation, then against the supplied team guide and formal assignment guideline, so people and agents can use the documents to complete v1.
+- Summary of what the AI Agent did: Audited the four component and four agent contracts against the frozen requirements, current architecture, source/route evidence and both PDFs. Added a linked requirements-coverage and readiness map, explicit Agentic AI runtime/control traceability and open decisions. Clarified tool-call timing, external-data minimization, cross-client parity, real-data reporting, Git/owner evidence and evaluation release gates; corrected a broken requirements link and booking-scope wording.
+- AI output accepted/changed/rejected: Retained the detailed target contracts and the repository's current-implementation distinction. Revised wording where the assignment added evidence requirements or where prose could imply unrequired booking capability. Rejected invented API routes, schemas, safety thresholds, runtime choices and implementation claims; these remain documented decisions for the owning implementation work.
+- Verification/evidence: Reviewed all eight v1 contracts, shared v1/Agentic AI docs and both PDF baselines. Endpoint catalog validation passed (33 public endpoints, 22 frontend routes, no implemented AI endpoints); UI integration validation and agent-resource validation passed (23 skills). A local documentation scan checked 76 Markdown files, 400 links, eight unique contract IDs and whitespace without findings; `git diff --check` passed with line-ending warnings only. No application test suites were run for this documentation audit.
+
+## 2026-09-25 — Commit the finalized component guide bundle
+
+- Date/time or time range: 2026-09-25 19:04 (Asia/Colombo; documentation staging and commit preparation)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Python and Git
+- AI Model: GPT-6
+- Summary of the user's request: Finalize and commit the v1 component and agent development guides.
+- Summary of what the AI Agent did: Prepared a focused documentation bundle containing the expanded requirements baseline, v0 and v1 guides, shared Agentic AI contracts, relevant ADRs, roadmap and design guide. Updated the readiness guide to avoid fixed route-count claims and point the known mobile transport and CI gaps to their owning source files. Staged only documentation and this AI-use record; left application code and tests untouched.
+- AI output accepted/changed/rejected: Retained the detailed v1 contracts and source hierarchy; revised time-sensitive status wording for use after commit. Rejected adding unrelated dirty application files to this documentation commit. Existing links from v0/design guides to local, uncommitted UI sources remain source pointers and are not implementation evidence in this commit.
+- Verification/evidence: `git diff --cached --check` passed. The working-tree documentation scan checked 77 Markdown files, 411 local links and eight unique v1 contract IDs without findings; endpoint catalog, UI-integration and agent-resource validators passed. The staged-tree link audit found that v1 guide links are present, while v0/design guides refer to UI files still uncommitted in the working tree; those source changes require a separate commit. No application test suites were run for this documentation-only commit.

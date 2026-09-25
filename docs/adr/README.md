@@ -19,5 +19,9 @@ ADRs capture significant architectural decisions and their rationale.
 13. `ADR-0013-auth-token-lifecycle.md`
 14. `ADR-0014-active-session-archive.md`
 15. `ADR-0015-cross-platform-role-coverage-and-ui-experience.md`
+16. `ADR-0016-equal-client-capability-for-all-roles.md`
 
 Some decisions remain **Proposed / Pending implementation choice** because the foundation does not invent decisions that have not yet been made.
+
+ADR-0016 is the current equal-client-capability decision. ADR-0015 remains
+available as historical context and is superseded.
