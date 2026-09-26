@@ -17,9 +17,9 @@ This review compares the checked-in repository with the implementation plan from
 | Permission authorization | Implemented for Auth | Permission policies use role-derived claims, unknown assignments are rejected, and system roles are protected by a dedicated permission. |
 | Agentic AI | Four v1 agents specified, no executable service | Separate contracts for the Planning & Coordination, Marine Conditions Intelligence, Coastal Experience & Biodiversity, and Safety & Operations agents are under `docs/v1/agents/`. No executable agent workflow is present yet. |
 | ML biodiversity capability | v1 integration target, not implemented | The separate IT3091 workstream supplies the initial trained model. BLUEVERSE v1 must integrate genuine internal inference when available and handle temporary failure without fabricating predictions. No inference implementation is checked in. |
-| Testing | Auth/client foundation coverage present; device and domain evidence remains open | The 2026-09-25 run record is historical and reports 21 API cases, 67 default Auth cases, 157 React cases, and 86 Flutter tests across 12 runnable files. The current Auth source defines 77 default cases; this documentation audit did not rerun tests. The opt-in PostgreSQL session/concurrency smoke test remains separate. Full Flutter package analysis still reports the existing `test/widget_test.dart` reference to removed `MyHomePage`, and the existing Auth API suite has duplicate case IDs; both are documented as pending. No device `integration_test` suite or v1 domain coverage is present. |
+| Testing | Auth/client foundation coverage present; device and domain evidence remains open | The 2026-09-25 run record is historical and reports 21 API cases, 67 default Auth cases, 157 React cases, and 86 Flutter tests across 12 then-runnable files. The current Auth source defines 77 default cases; this documentation audit did not rerun application suites. The opt-in PostgreSQL session/concurrency smoke test remains separate. The formerly failing Flutter `test/widget_test.dart` reference to removed `MyHomePage` was corrected on 2026-09-26 with `MOB-LAUNCH-001`; this audit confirmed the stale reference is absent and Dart formatting is clean, but local Flutter analysis/tests could not run because the sandbox cannot write the SDK cache lockfile under `Program Files`. The existing Auth API suite still has duplicate case IDs and requires separate approved correction. No device `integration_test` suite or v1 domain coverage is present. |
 | CI/CD | Source, client, Docker and UI-contract foundations present; main-branch trigger gap | `web-ci.yml` and `mobile-ci.yml` run the shared UI integration validator; `web-tests.yml`, `mobile-tests.yml` and `backend-tests.yml` discover and report their current suites; `ui-integration.yml` rechecks the registry when either client, backend, gateway or contract changes. The Docker stack check probes health and public API/Auth Swagger routes. Local Compose, Auth/database health and Swagger were verified on 2026-09-23; Android device/emulator and hosted CI run evidence remain to be recorded. `backend-tests.yml` has path filters, so it does not run for every push or pull request to `main` as the assignment specifies. |
-| Agent resources | Finalized and validated | `.agents/` contains eight BLUEVERSE-owned workflows, fourteen pinned supplementary skills, PostgreSQL/EF Core data-access guidance, registry/provenance metadata, a portable .NET overlay, routing evaluations and a dependency-free validator enforced by `repository-ci.yml`. |
+| Agent resources | Finalized and validated | `.agents/` contains eight BLUEVERSE-owned workflows and fifteen pinned supplementary skills (23 validated in total), PostgreSQL/EF Core data-access guidance, registry/provenance metadata, a portable .NET overlay, routing evaluations and a dependency-free validator enforced by `repository-ci.yml`. |
 | Deployment | Configuration present, evidence pending | Render API/Auth/PostgreSQL and Vercel documentation exist; live URLs, migrations and deployment evidence must be recorded before submission. |
 | Submission package | Requirements documented, evidence pending | The group still needs the single consolidated PDF with Group and Individual Report sections, each student's own reflection and signed declaration, a runnable APK, accessible ten-minute demonstration video, evaluator links and secure test-account instructions. Submitted links and services must remain accessible through 21 October 2026. |
 | Git/GitHub | Repository present | Git metadata and branch history are present in the reviewed checkout. Continue using focused commits, pull requests and contribution evidence. |
@@ -48,11 +48,12 @@ member branches.
 
 The v1 scope and documents are ready to plan and begin, but final acceptance
 still has known work: the backend tests workflow is path-filtered despite the
-guideline's every-push/every-pull-request-to-`main` requirement; the existing
-Flutter widget-test reference and duplicate Auth test IDs need an approved
-baseline correction; hosted Flutter HTTPS/device evidence and deployment and
-submission artifacts remain outstanding. These are tracked as later delivery
-gates, not reasons to serialize the four component branches.
+guideline's every-push/every-pull-request-to-`main` requirement; the corrected
+Flutter launch test needs a green CI run, duplicate Auth test IDs need a
+separately approved baseline correction, and hosted Flutter HTTPS/device
+evidence plus deployment and submission artifacts remain outstanding. These
+are tracked as later delivery gates, not reasons to serialize the four
+component branches.
 
 ## Guideline-critical work still required
 

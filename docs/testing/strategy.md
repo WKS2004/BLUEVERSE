@@ -46,17 +46,19 @@ evidence.
   production build and shared UI integration validation are separate gates.
   Real-browser and deployed-gateway workflows remain separate integration
   evidence.
-- Flutter: 86 selected package tests pass across 12 runnable files, covering the
-  API boundary, credential/session state, onboarding and Auth forms,
-  dashboard/profile/security/session UI,
-  permission-aware role/user administration, loading/error screens and gateway
-  configuration. `flutter analyze --no-pub lib` passes. The run excluded the
-  pre-existing modified `apps/mobile/test/widget_test.dart`, which still
-  references the removed `MyHomePage`; migration awaits the user approval
-  required for existing tests. `apps/mobile/test/auth_api_service_test.dart`
-  also contains duplicate labels for `MOB-AUTH-011`, `MOB-AUTH-012` and
-  `MOB-AUTH-013`; existing test names remain unchanged pending approval. No
-  `integration_test` directory is checked in.
+- Flutter: historical local evidence from 2026-09-25 records 86 package tests
+  passing across 12 then-runnable files and `flutter analyze --no-pub lib`
+  passing. The previously excluded `apps/mobile/test/widget_test.dart` was
+  corrected on 2026-09-26 to use `MobileLaunchPage` and stable case ID
+  `MOB-LAUNCH-001`; it verifies the signed-out launch transitions to onboarding.
+  The final documentation audit confirmed clean Dart formatting and no
+  remaining `MyHomePage` reference in `apps/mobile`, but Flutter analysis and
+  tests could not run locally because the sandbox cannot write the SDK cache
+  lockfile under `Program Files`; a green CI run is still required to confirm
+  the corrected test. `apps/mobile/test/auth_api_service_test.dart` still
+  contains duplicate labels for `MOB-AUTH-011`, `MOB-AUTH-012` and
+  `MOB-AUTH-013`; changing those existing test names requires separate user
+  approval. No `integration_test` directory is checked in.
 - ASP.NET/API: `services/api` and its foundation test project are checked in;
   the current test source defines 21 cases covering health, OpenAPI/Swagger,
   CORS, forwarded headers, safe gateway errors, YARP forwarding/failure

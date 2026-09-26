@@ -34,7 +34,7 @@ Agentic AI runtime remain implementation work.
 | G00 shared contract freeze | Pending; required before component coding | Named owners and branch assignments are confirmed in the [canonical owner map](../project/ai-team-members.md). Settle the shared contracts listed below, record decisions in their owning contracts, and mark G00 accepted in the [branch tracker](member-branch-workflow.md#component-branch-status). |
 | External integrations and device behavior | Interfaces can be planned at G00; live decisions are owner gates | Agree cross-member data contracts and adapter boundaries before parallel work. Select and verify the map provider, Open-Meteo data policy, IT3091 wire/auth contract and Wanshaja Sooriyabandara (Member 4) image storage policy before accepting each live integration. |
 | Executable Agentic AI | Correctly deferred; prohibited before G07 | Member branches prepare only their business workflow and typed, bounded, unavailable-aware AI integration seams. Start executable agents, tools, orchestration, model calls and AI-owned state on `agentic-ai/**` only after all four components pass G07. |
-| Full assessment and release | Not ready | The backend test workflow's path filters do not satisfy the guideline's every-push/every-pull-request-to-`main` requirement. The known Flutter widget-test reference to removed `MyHomePage`, duplicate Auth test IDs, hosted mobile HTTPS configuration and release evidence also remain open; see [foundation gaps](../project/foundation-gap-analysis.md). |
+| Full assessment and release | Not ready | The backend test workflow's path filters do not satisfy the guideline's every-push/every-pull-request-to-`main` requirement. The former Flutter widget-test reference to removed `MyHomePage` is corrected as `MOB-LAUNCH-001`; a green CI run is still needed because local Flutter analysis/tests were blocked by sandbox write access to the SDK lockfile. Duplicate Auth test IDs, hosted mobile HTTPS configuration and release evidence also remain open; see [foundation gaps](../project/foundation-gap-analysis.md). |
 
 ### G00 exit criteria
 
@@ -113,12 +113,16 @@ setup.
 
 On 2026-09-26, endpoint-catalog validation passed (33 public endpoints, 22
 frontend routes, no AI endpoints implemented), the UI-integration validator
-passed, and all 23 repository agent skills validated. Markdown links and
-`git diff --check` are rechecked after this documentation update. Application
-tests, builds, Android/device checks, live provider calls, hosted CI and
-runtime deployment were not run as part of this final documentation audit.
-Passing static contract validators confirms registry consistency only; it
-does not establish runtime readiness.
+passed, and all 23 repository agent skills validated. The 35 endpoint/UI
+validator unit tests passed. The former stale Flutter `MyHomePage` test
+reference was corrected as `MOB-LAUNCH-001`; this audit confirmed no remaining
+source reference and clean Dart formatting. Flutter analysis and widget tests
+could not run locally because the sandbox cannot write the SDK cache lockfile
+under `Program Files`, so a green CI run is still required. Application tests
+beyond the 35 contract-validator tests, builds, Android/device checks, live
+provider calls, hosted CI and runtime deployment were not run as part of this
+documentation audit. Passing static contract validators confirms registry
+consistency only; it does not establish runtime readiness.
 
 ## Source order and status
 

@@ -1515,3 +1515,16 @@ runtime lacks PyYAML.
 - Summary of what the AI Agent did: Replaced the obsolete starter-page test with a stable-ID widget test for the current `MobileLaunchPage` signed-out launch and onboarding flow. Kept the API 401 fixture deterministic and asserted splash-to-onboarding state and expected controls. No production code changed.
 - AI output accepted/changed/rejected: Accepted the CI output identifying the removed widget reference as the compiler/analyzer failure. Changed the test to use the current launch page and verify the current onboarding state; rejected the stale home-page and sample-route assumptions.
 - Verification/evidence: Dart formatting completed and a repeat check reported 0 changed files; `git diff --check` passed; repository search found no remaining `MyHomePage` reference in `apps/mobile`. Flutter analysis and widget tests could not run locally because the sandbox cannot write Flutter's SDK cache lockfile under `D:\Program Files\Flutter\flutter`; the reported package update notices were informational. See `apps/mobile/test/widget_test.dart`.
+
+## 2026-09-26 — Final repository and documentation readiness audit
+
+- Date/time or time range: 2026-09-26 19:28 (Asia/Colombo; final v1 start-readiness review)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Python, pypdf and Git
+- AI Model: GPT-6
+- Summary of the user's request: Recheck and finalize `.agents` and repository documentation before merging to `dev` and beginning official v1 implementation.
+- Summary of what the AI Agent did: Compared agent guidance and the v0/v1 documentation against repository source, the frozen project requirements, the formal SE3090 assignment specification and the dated Simplified Team Guide. Corrected five current test/readiness documents that still described the removed `MyHomePage` reference and approval as pending. Confirmed the G00/G07 gates, member/service ownership, equal React/Flutter scope, provider/device assignments and GitHub Action boundaries. No application, test, CI or workflow source was changed.
+- AI output accepted/changed/rejected: Accepted the existing G00 conditional-start decision and G07 deferral of executable Agentic AI; changed only stale current-state test claims and audit evidence. Preserved historical contribution records and the separate duplicate Auth test-ID, backend CI path-filter, hosted-mobile and submission gaps.
+- Verification/evidence: Agent-resource validation passed for 23 repository skills; endpoint-catalog validation passed with 33 public endpoints, 22 frontend routes and no implemented AI endpoints; UI integration validation passed; all 35 contract-validator unit tests passed; local Markdown file-target check passed for 216 files and 981 links; `git diff --check` passed. Flutter analysis/tests, application builds, hosted CI and runtime deployments were not run. Local Flutter execution remains blocked because the sandbox cannot write the SDK cache lockfile under `D:\Program Files\Flutter\flutter`. Five documentation files were updated; no commit or push was made.

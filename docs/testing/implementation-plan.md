@@ -217,12 +217,18 @@ The checked-in suite now covers:
   role/permission assignment, system-role protections and invalid forms;
 - loading/error/404/500 behavior and dependency-failure recovery.
 
-Current local evidence: 86 tests passed across the 12 runnable mobile test
-files. The pre-existing, locally modified `test/widget_test.dart` still
-references the removed `MyHomePage`. `flutter analyze --no-pub lib` reports no
-issues. `test/auth_api_service_test.dart` also reuses the IDs
-`MOB-AUTH-011`, `MOB-AUTH-012` and `MOB-AUTH-013`; existing test changes require
-user approval. No `integration_test` suite exists yet.
+Historical local evidence from 2026-09-25: 86 tests passed across the 12 then-
+runnable mobile test files, and `flutter analyze --no-pub lib` reported no
+issues. The formerly failing `test/widget_test.dart` reference to removed
+`MyHomePage` was replaced on 2026-09-26 with `MOB-LAUNCH-001`, covering the
+current signed-out `MobileLaunchPage` to onboarding transition. The final
+documentation audit confirmed the stale symbol is absent and Dart formatting
+is clean, but could not run Flutter analysis or tests because the sandbox
+cannot write the Flutter SDK cache lockfile under `Program Files`; CI must
+confirm the revised test. `test/auth_api_service_test.dart` still reuses the
+IDs `MOB-AUTH-011`, `MOB-AUTH-012` and `MOB-AUTH-013`; changing those existing
+test names requires separate user approval. No `integration_test` suite exists
+yet.
 
 Future device or domain workflows should add applicable GPS/location
 permission-denial and unavailable-location cases, camera/evidence capture
