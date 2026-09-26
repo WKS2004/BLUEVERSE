@@ -1,0 +1,6 @@
+@Blueverse.ExperienceBiodiversity_HostAddress = http://localhost:5298
+
+GET {{Blueverse.ExperienceBiodiversity_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

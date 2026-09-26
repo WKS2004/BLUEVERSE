@@ -395,20 +395,27 @@ requirements, not from the current implementation.
 
 ## 12. Decisions to finalize during implementation
 
-The following choices are deliberately not invented here: final entity/table
-and DTO names; exact endpoints and permission codes; destination coordinate
-and search-radius semantics; publication and availability state machines;
-schedule time-zone representation; whether favourites can target each
-conceptual item type; map provider/vendor and exact feature scope (display,
-tiles, place search, geocoding, directions or other functions); whether its
-terms support the required ASP.NET-mediated access and chosen client-rendering
-approach; key restrictions, attribution, quotas, caching, timeouts and failure
-fallback; biodiversity request granularity, caching and retention; and
-audit-history retention. Do not ship direct client-to-provider calls under
-the current architecture. Each decision that changes architecture or a
-public contract must be documented in the owning API/database/ADR material,
-then reflected in implementation and tests. The map-provider ownership and
-ASP.NET Core boundary are recorded in
+The Member 1 G00 contract input and its pending shared-owner decisions are
+recorded in the [Experience & Biodiversity G00 proposal](../g00/member-1-experience-biodiversity.md).
+It remains a proposal until all four owners agree; the shared G00 gate is
+still pending.
+
+The following choices are not settled by this component contract: final
+entity/table and DTO names; exact endpoints and permission codes; destination
+coordinate and search-radius semantics; publication and availability state
+machines; schedule time-zone representation; whether favourites can target
+each conceptual item type; map provider/vendor and exact feature scope
+(display, tiles, place search, geocoding, directions or other functions);
+whether its terms support the required ASP.NET-mediated access and chosen
+client-rendering approach; key restrictions, attribution, quotas, caching,
+timeouts and failure fallback; biodiversity request granularity, caching and
+retention; and audit-history retention. The linked G00 proposal lists
+Member 1 candidates where a shared decision is needed; they remain proposals
+until all affected owners agree. Do not ship direct client-to-provider calls
+under the current architecture. Each accepted decision that changes
+architecture or a public contract must be documented in the owning
+API/database/ADR material, then reflected in implementation and tests. The
+map-provider ownership and ASP.NET Core boundary are recorded in
 [ADR-0017](../../adr/ADR-0017-map-provider-integration-boundary.md). ML
 adapter ownership and the Ushan Srinuka (Member 1) consumer boundary are recorded in
 [ADR-0019](../../adr/ADR-0019-biodiversity-inference-integration-ownership.md).
@@ -419,4 +426,5 @@ adapter ownership and the Ushan Srinuka (Member 1) consumer boundary are recorde
 - Paired AI role: [Coastal Experience & Biodiversity Agent](../agents/member-1-coastal-experience-biodiversity-agent.md).
 - Component work areas on one member branch: [Ushan Srinuka (Member 1) phase plan](../phases/member-1-phase-plan.md); producer/consumer relationships: [component relationship map](../component-relationships.md); PR and G07 process: [member branch workflow](../member-branch-workflow.md).
 - Related shared contracts: [v1 workflows](../workflows.md), [member Agentic AI integration boundary](../agentic-ai-integration-boundary.md), [permissions and client parity](../cross-platform-and-permissions.md), [quality and delivery](../quality-and-delivery.md), [requirements coverage and readiness](../requirements-coverage-and-readiness.md), [Agentic AI safety](../../agentic-ai/safety.md), [endpoint catalog](../../api/endpoint-catalog.md), [UI integration](../../contracts/ui-integration.json).
+- G00 decision input: [Member 1 Experience & Biodiversity proposal](../g00/member-1-experience-biodiversity.md); it is not team acceptance.
 - Device/location contract: [v1 device capabilities](../device-capabilities.md) defines one-time Flutter GPS use, React's equivalent location input, manual fallback, consent and data-minimization behavior.
