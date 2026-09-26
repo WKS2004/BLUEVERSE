@@ -1,6 +1,10 @@
-# Member 3 phase plan — Smart Coastal Planner & Itinerary Management
+# Adithya Gunawardana (Member 3) phase plan — Smart Coastal Planner & Itinerary Management
 
-This plan divides the [Member 3 component contract](../components/member-3-smart-coastal-planner-itinerary-management.md)
+**Assigned owner:** Adithya Gunawardana (`@AdithyaGunawardana`). Feature
+branch: `features/coastal-planner`; Agentic AI branch after G07:
+`agentic-ai/planning-coordination`.
+
+This plan divides the [Adithya Gunawardana (Member 3) component contract](../components/member-3-smart-coastal-planner-itinerary-management.md)
 into work areas for one complete component branch. The
 [component relationship map](../component-relationships.md) describes its
 producer/consumer contracts, and the
@@ -10,15 +14,15 @@ branches or PRs and do not schedule other members.
 
 The [shared foundation and file-ownership rules](../member-branch-workflow.md#shared-foundation-and-file-ownership)
 apply to every phase: keep this component additive, preserve existing API/Auth
-flows, implement Member 3's business logic in its own `services/` microservice,
+flows, implement Adithya Gunawardana's business logic in its own `services/` microservice,
 and limit `services/api` to integration code. Minimize shared React, Flutter,
 route-registry and infrastructure edits.
 
-Member 3 owns planning requests, workflow/result identity, personalization
+Adithya Gunawardana (Member 3) owns planning requests, workflow/result identity, personalization
 constraints, deterministic recommendation assembly, persisted itineraries,
 re-evaluation and BLUEVERSE's backend-mediated adapter/public result contract
-for the separately supplied IT3091 biodiversity inference service. Member 1
-owns the experience-facing presentation and consumes the validated Member 3
+for the separately supplied IT3091 biodiversity inference service. Ushan Srinuka (Member 1)
+owns the experience-facing presentation and consumes the validated Adithya Gunawardana (Member 3)
 contract. The component includes ordinary application workflow state and ML
 service integration; its LLM plan generation, delegation, tool use and
 Agentic AI orchestration are deferred until after all four business
@@ -35,8 +39,8 @@ components pass G07.
 | 5 | Agentic backend boundary, component acceptance and handoff |
 
 Use the single branch `features/coastal-planner` for all five work areas and
-submit one complete feature PR to `dev`. Agree the Member 1 catalogue and
-availability, Member 2 suitability, and Member 4 status contracts at G00.
+submit one complete feature PR to `dev`. Agree the Ushan Srinuka (Member 1) catalogue and
+availability, Sanuda Abeysinghe (Member 2) suitability, and Wanshaja Sooriyabandara (Member 4) status contracts at G00.
 Develop consumers against those contracts and controlled test doubles while
 all component branches are in progress. Verify real provider/consumer
 behavior on `dev` after the component PRs merge; fixtures alone are not
@@ -52,13 +56,13 @@ see cross-member producer/consumer dependencies.
 
 **Starts after:** the team agrees the shared workflow, resource and status
 contracts at G00. Build the request/workflow/itinerary foundation on this
-branch while Member 1, Member 2 and Member 4 implement their own components.
+branch while Ushan Srinuka (Member 1), Sanuda Abeysinghe (Member 2) and Wanshaja Sooriyabandara (Member 4) implement their own components.
 
 **Implement:**
 
 - persisted planning request, validated objective/preferences/constraints,
   workflow ID/type/status, result version and timestamps;
-- itinerary and item references to Member 1's canonical IDs, with
+- itinerary and item references to Ushan Srinuka's canonical IDs, with
   user/resource ownership and server-side permission semantics;
 - public API contract for request creation, status/result retrieval and
   itinerary retrieval/initial management, including the future private
@@ -68,7 +72,7 @@ branch while Member 1, Member 2 and Member 4 implement their own components.
 - one workflow identity that React and Flutter can both use to retrieve the
   same authorized status and result.
 
-This is ordinary Member 3 component-service behavior exposed through the
+This is ordinary Adithya Gunawardana (Member 3) component-service behavior exposed through the
 public API. It does not invoke an LLM, specialist agent, external provider, or
 free-form model output. The service adapter and availability result prepare
 access to the future planner;
@@ -78,25 +82,25 @@ documentation. Keep the member-owned business request/status distinct from
 the later Agentic AI plan/step execution state.
 
 **Handoff:** stable request, status/result and itinerary reference schemas
-that Member 4 can link to assessment records and both clients can retrieve.
+that Wanshaja Sooriyabandara (Member 4) can link to assessment records and both clients can retrieve.
 
 ## Phase 2 — Deterministic candidate eligibility and recommendation
 
 **Local dependencies and shared contracts:** build on work area 1 and use the
-Member 1 effective-availability, Member 2 deterministic-suitability and
-Member 4 operational-status contracts agreed at G00. Implement with
+Ushan Srinuka (Member 1) effective-availability, Sanuda Abeysinghe (Member 2) deterministic-suitability and
+Wanshaja Sooriyabandara (Member 4) operational-status contracts agreed at G00. Implement with
 contract-level test doubles while provider branches are in progress; verify
 actual provider APIs after PRs merge to `dev`.
 
 **Implement:**
 
 - validate objective, preferences and constraints on the server;
-- obtain candidates only from Member 1's published, valid and available
+- obtain candidates only from Ushan Srinuka's published, valid and available
   destination/activity/offering results;
-- preserve Member 2's deterministic result and exclude `UNSUITABLE`; express
+- preserve Sanuda Abeysinghe's deterministic result and exclude `UNSUITABLE`; express
   `UNKNOWN`, stale and missing required evidence as uncertainty or exclusion
   under the accepted policy;
-- apply Member 4's authoritative current operational restrictions;
+- apply Wanshaja Sooriyabandara's authoritative current operational restrictions;
 - document deterministic ranking, tie behavior and reason/source references;
 - ensure retries, client formatting or later prose cannot reintroduce an
   excluded candidate; and
@@ -119,7 +123,7 @@ result contracts.
 - create an itinerary from an accepted recommendation or eligible selected
   items;
 - add, remove, reorder and edit permitted schedule/context without replacing
-  Member 1/2/4 source-of-truth data;
+  Ushan Srinuka, Sanuda Abeysinghe and Wanshaja Sooriyabandara source-of-truth data;
 - provide accessible React date/time inputs and Flutter native date/time
   pickers for planning preferences and itinerary schedule edits; agree date,
   local time, duration, time-zone, daylight-saving and API serialization
@@ -145,16 +149,16 @@ itinerary outcome from either client through the public API.
 
 ## Phase 4 — Backend-mediated biodiversity ML adapter and public result contract
 
-**Starts after:** the G00 decision defines the Member 1 canonical location
-reference and consumer need, Member 3's public/private boundaries, and the
-IT3091 service request/result contract. Member 1 can implement its user-facing
+**Starts after:** the G00 decision defines the Ushan Srinuka (Member 1) canonical location
+reference and consumer need, Adithya Gunawardana's public/private boundaries, and the
+IT3091 service request/result contract. Ushan Srinuka (Member 1) can implement its user-facing
 presentation against the agreed result schema and controlled available/
 unavailable fixtures while this adapter is in progress.
 
-**Implement inside Member 3's component service, with only the required
+**Implement inside Adithya Gunawardana's component service, with only the required
 public route/authorization integration in `services/api`, before G07:**
 
-- a typed private adapter in Member 3's .NET service calls the IT3091
+- a typed private adapter in Adithya Gunawardana's .NET service calls the IT3091
   inference service; no client or agent receives its private host or
   credentials;
 - validate the minimum location/species/context needed for the query and
@@ -168,13 +172,13 @@ public route/authorization integration in `services/api`, before G07:**
 - bound connection/read timeouts and retry policy, avoid unapproved cache or
   retention, minimize location precision and keep provider details/secrets
   server-side;
-- expose the validated result through a Member 3 public API capability that
-  Member 1 can consume for its destination/activity experience. Name and
+- expose the validated result through Adithya Gunawardana's (Member 3) public API capability that
+  Ushan Srinuka (Member 1) can consume for its destination/activity experience. Name and
   register exact routes/DTOs only when implemented; do not add target routes
   to the live catalog in advance; and
 - keep prediction context optional. It may enrich an experience or planning
   report, but cannot decide safety, eligibility, operational status or
-  approval and cannot override Member 1/2/4 authoritative data.
+  approval and cannot override Ushan Srinuka, Sanuda Abeysinghe and Wanshaja Sooriyabandara authoritative data.
 
 This adapter is not an AI agent and does not implement an LLM, RAG pipeline,
 prompt, agent tool execution or AI-owned workflow state. IT3091 supplies the
@@ -183,9 +187,9 @@ return a genuine model-backed result when that service is available;
 fixtures provide deterministic contract and failure evidence but do not
 replace the integration.
 
-**Handoff:** Member 3 provides validated sourced prediction context or the
-documented unavailable/invalid state. Member 1 renders the public contract;
-the future Member 1 agent may consume it only through a separately approved,
+**Handoff:** Adithya Gunawardana (Member 3) provides validated sourced prediction context or the
+documented unavailable/invalid state. Ushan Srinuka (Member 1) renders the public contract;
+the future Ushan Srinuka (Member 1) agent may consume it only through a separately approved,
 allowlisted integration after G07.
 
 ## Phase 5 — Agentic backend boundary, component acceptance and handoff
@@ -195,11 +199,11 @@ branch and use the shared Agentic integration contract agreed at G00.
 
 **Verify the Agentic AI connection boundary:**
 
-- authorized workflow initiation/status/results use the Member 3 public API;
+- authorized workflow initiation/status/results use the Adithya Gunawardana (Member 3) public API;
 - the private planner/orchestration adapter has server-side configuration,
   a bounded availability check and correlated dispatch outcome;
 - the ordinary IT3091 prediction adapter and public result contract remain a
-  separate Member 3 service integration and are not used as the Agentic
+  separate Adithya Gunawardana (Member 3) service integration and are not used as the Agentic
   runtime's health signal;
 - an absent or unreachable runtime is reported as not connected/unavailable
   without fabricating a plan, while deterministic recommendations and
@@ -223,16 +227,16 @@ for the shared status, readiness and safe-failure contract.
 - catalog/UI registry, OpenAPI, database/ER documentation, tests and Git/PR
   evidence.
 
-**Member 3 exit:** deterministic domain behavior and the genuine IT3091
+**Adithya Gunawardana (Member 3) exit:** deterministic domain behavior and the genuine IT3091
 integration are accepted at G07. The Planning & Coordination Agent begins
 only after all four member components pass G07; its schema and orchestration
-work follow the post-gate `agentic-ai/**` queue.
+work follow its assigned `agentic-ai/planning-coordination` branch.
 
 ## Progress record
 
-Update the Member 3 row in the
+Update the Adithya Gunawardana (Member 3) row in the
 [component branch status tracker](../member-branch-workflow.md#component-branch-status)
 with branch/PR/merge status and integration evidence. Record work-area
-milestones in the PR or the team's agreed contribution record. Do not
-attribute Member 3 to a named person without a confirmed team ownership
-record.
+milestones in the PR or the team's agreed contribution record. The canonical
+[owner map](../../project/ai-team-members.md) records the exact identity and
+branches.

@@ -68,10 +68,10 @@ React / Flutter
       |
       v
 edge-nginx -> public services/api ──┬-> internal Auth ─────────────> PostgreSQL
-                                   ├-> private Member 1 service ─┐
-                                   ├-> private Member 2 service ─┤
-                                   ├-> private Member 3 service ─┼-> PostgreSQL
-                                   └-> private Member 4 service ─┘
+                                   ├-> private Ushan Srinuka (Member 1) service ─┐
+                                   ├-> private Sanuda Abeysinghe (Member 2) service ─┤
+                                   ├-> private Adithya Gunawardana (Member 3) service ─┼-> PostgreSQL
+                                   └-> private Wanshaja Sooriyabandara (Member 4) service ─┘
 ```
 
 The API remains the only client entry point and changes only to integrate the
@@ -124,7 +124,7 @@ The member service validates and persists business state, handles the
 pre-G07 not-connected/unavailable behavior, and revalidates any protected
 operation after an authorized human decision. The runtime and tools never
 connect directly to PostgreSQL or Auth. The separate IT3091 inference adapter
-is owned by Member 3's service. Exact private tool transport is a G00/Agentic
+is owned by Adithya Gunawardana's service. Exact private tool transport is a G00/Agentic
 AI design decision. See the [Agentic AI architecture](../agentic-ai/architecture.md)
 and [ADR-0020](../adr/ADR-0020-member-component-service-boundaries.md).
 

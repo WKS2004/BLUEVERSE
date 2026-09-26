@@ -33,7 +33,7 @@ views must also be available in both clients.
    period, enters an operational objective, and may attach optional image
    evidence to the assessment.
 2. `services/api` authenticates the caller, applies the existing permission
-   contract and routes the operation to Member 4's private service. The Member
+   contract and routes the operation to Wanshaja Sooriyabandara's private service. The Member
    4 service validates the domain request and optional image evidence,
    persists the objective and creates the business workflow ID. Attachment
    bytes remain private and are exposed only through authorized public API
@@ -47,8 +47,8 @@ views must also be available in both clients.
    returns sourced weather and marine context with time, freshness and missing
    data. The [Coastal Experience & Biodiversity Agent](agents/member-1-coastal-experience-biodiversity-agent.md)
    returns offering, schedule and optional biodiversity context.
-   When that context needs a prediction, the Member 1 agent obtains it through
-   Member 3's validated public/typed contract; only Member 3's private
+   When that context needs a prediction, the Ushan Srinuka (Member 1) agent obtains it through
+   Adithya Gunawardana's validated public/typed contract; only Adithya Gunawardana's private
    backend adapter calls IT3091.
 5. The [Safety & Operations Agent](agents/member-4-safety-operations-agent.md)
    proposes a structured outcome and any operational action.
@@ -58,7 +58,7 @@ views must also be available in both clients.
 7. A high-impact proposal pauses for an authorized reviewer to approve,
    reject or request revision. Rejection and revision record a decision but do
    not execute the proposed protected action.
-8. For an eligible approval, the Member 4 service rechecks current business
+8. For an eligible approval, the Wanshaja Sooriyabandara (Member 4) service rechecks current business
    rules and state, performs the permitted transactional change and records
    audit history after the public API has authenticated and authorized the
    operation.
@@ -96,7 +96,7 @@ Include structured outcomes, bounded retries and elapsed time where required
 for audit, recovery and performance evidence. Never store hidden model
 reasoning, tokens or secrets.
 
-The Member 3/4 business request, assessment, proposal and reviewer-decision
+The Adithya Gunawardana and Wanshaja Sooriyabandara business request, assessment, proposal and reviewer-decision
 records may exist before G07 and must remain distinguishable from the later
 Agentic AI plan, step and tool-execution state. If the private Agentic AI
 dependency is absent or unavailable, persist and return the defined safe

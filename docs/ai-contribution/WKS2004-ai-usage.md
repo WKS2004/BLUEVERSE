@@ -1450,3 +1450,29 @@ runtime lacks PyYAML.
 - Summary of what the AI Agent did: Compared the v1 readiness and foundation-gap guides with the service inventory, API/UI registries, member branch workflow, G00/G07 boundaries, backend CI triggers, local PostgreSQL setup and known release gaps. Added a clear GO-for-G00, conditional-GO-for-component-coding decision, a shared G00 exit checklist, later acceptance gates and current evidence limits; linked that decision from the v1 index, branch tracker and foundation-gap analysis.
 - AI output accepted/changed/rejected: Retained the agreed one-complete-branch-per-member parallel implementation approach after G00 and the rule that executable Agentic AI starts only after G07. Classified unresolved shared contracts as G00 blockers, provider-specific details as owner integration gates, and CI/mobile/test-baseline items as later assessment or release gates. No source behavior, tests, Compose configuration or agent guidance was changed.
 - Verification/evidence: Endpoint catalog validator passed (33 public endpoints, 22 frontend routes, no Agentic AI endpoints); UI integration validator passed; all 23 repository agent skills validated; all 749 local Markdown file-link targets across 215 tracked Markdown files exist and all three new cross-document anchors resolve; `git diff --check` passed. Application builds, test suites, device checks, hosted CI and live integrations were not run.
+
+## 2026-09-26 — Remove automated commits and finalize v1 owner mapping
+
+- Date/time or time range: 2026-09-26 17:43 (Asia/Colombo; documentation and workflow update)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Python and Git
+- AI Model: GPT-6
+- Summary of the user's request: Check for GitHub auto-commit behavior and remove it if present; update the repository documentation with each member's actual full name, GitHub account and assigned feature/Agentic AI branches.
+- Summary of what the AI Agent did: Removed the GitHub configuration sync workflow that created sync commits, pull requests and queued auto-merges; removed its reserved branch prefix and documentation. Changed the dev-backup recovery behavior to preserve an existing commit SHA on a recovery ref without synthesizing a commit. Updated the canonical roster, requirements ownership section, component and agent contracts, phase plans, branch workflow, architecture/ADR/index references and root README with the agreed owners and branch names.
+- AI output accepted/changed/rejected: Accepted the four assignments and exact usernames in the repository account map. Used the mapped spelling Adithya Gunawardana / `AdithyaGunawardana` for Member 3. Retained Member 1–4 only as stable requirements trace labels and kept auto-updating the `dev-backup` ref distinct from authoring a commit.
+- Verification/evidence: Endpoint catalog validation passed (33 public endpoints, 22 frontend routes, no Agentic AI endpoints); UI integration validation passed; tracked documentation/workflow search found no remaining config-sync, auto-merge or auto-commit implementation; old component branch names were absent; `git diff --check` passed. Reviewed the changed workflow and documentation; no application tests were run.
+
+## 2026-09-26 — Restore dev-backup rescue branch behavior
+
+- Date/time or time range: 2026-09-26 17:58 (Asia/Colombo; workflow clarification and documentation correction)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Python, Git Bash and Git
+- AI Model: GPT-6
+- Summary of the user's request: Restore the prior `dev-backup` recovery setup so mistaken commits are preserved on a newly created rescue branch and the `dev-backup` ref is automatically reset to match `dev`.
+- Summary of what the AI Agent did: Restored the previous `dev-backup.yml` recovery workflow, including its timestamped rescue branch and merge-commit preservation logic, then aligned the README and CI/Git workflow guides with that behavior. Kept the separate GitHub configuration sync and auto-merge workflow removed.
+- AI output accepted/changed/rejected: Accepted the user's clarification that backup divergence must create a recoverable rescue branch before synchronizing `dev-backup` to the exact `dev` SHA. Preserved the prior `-X theirs` merge and fallback history-preserving merge behavior.
+- Verification/evidence: The embedded Bash passed `bash -n`; checked that `dev-backup.yml` matches the pre-change tracked version; documentation describes the rescue merge and force-with-lease reset; `git diff --check` passed. No application tests were run.

@@ -18,12 +18,12 @@ tool such as document retrieval or RAG.
 
 The candidate `biodiversity_prediction_lookup` belongs to the post-G07
 Coastal Experience & Biodiversity Agent. Its backend handler may call only
-the validated Member 3 prediction contract; Member 3 owns the ordinary v1
+the validated Adithya Gunawardana (Member 3) prediction contract; Adithya Gunawardana (Member 3) owns the ordinary v1
 IT3091 service adapter on its `features/**` branch. The agent and tool do not
 call the private IT3091 service directly. Keep prediction unavailability,
 invalidity, provenance and uncertainty explicit. See
 [ADR-0019](../adr/ADR-0019-biodiversity-inference-integration-ownership.md)
-and the [Member 1 agent contract](../v1/agents/member-1-coastal-experience-biodiversity-agent.md).
+and the [Ushan Srinuka (Member 1) agent contract](../v1/agents/member-1-coastal-experience-biodiversity-agent.md).
 
 For every tool actually introduced, document its purpose, authorized
 agent(s), typed input, structured output, source or owning service,
@@ -45,7 +45,7 @@ or business validation. No agent tool directly publishes, suspends,
 cancels or modifies a protected BLUEVERSE record. The owning member service
 owns authorized business execution after the public API's authentication and
 permission integration, deterministic validation and required human
-approval. For Member 4 protected operations, that means the Member 4 service.
+approval. For Wanshaja Sooriyabandara (Member 4) protected operations, that means the Wanshaja Sooriyabandara (Member 4) service.
 
 See the [four agent contracts](../v1/README.md),
 [safety controls](safety.md) and

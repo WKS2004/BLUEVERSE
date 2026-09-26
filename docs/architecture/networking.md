@@ -39,7 +39,7 @@ are agreed at G00. The current Compose networks above describe the implemented
 v0 stack only. See [ADR-0020](../adr/ADR-0020-member-component-service-boundaries.md)
 and the [member service boundaries](service-boundaries.md).
 
-The selected map API is an outbound dependency of Member 1's private service,
+The selected map API is an outbound dependency of Ushan Srinuka's private service,
 not of `services/api`, a host route or a client network target. Its provider
 and egress policy are not configured in the current stack; see
 [ADR-0017](../adr/ADR-0017-map-provider-integration-boundary.md). React and

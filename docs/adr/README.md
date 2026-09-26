@@ -30,19 +30,19 @@ Some decisions remain **Proposed / Pending implementation choice** because the f
 ADR-0016 is the current equal-client-capability decision. ADR-0015 remains
 available as historical context and is superseded.
 
-ADR-0017 assigns the v1 map-provider adapter to Member 1 and preserves the
+ADR-0017 assigns the v1 map-provider adapter to Ushan Srinuka (Member 1) and preserves the
 ASP.NET Core boundary. Its provider and exact feature scope remain open.
 
-ADR-0018 assigns optional operational-assessment image evidence to Member 4
+ADR-0018 assigns optional operational-assessment image evidence to Wanshaja Sooriyabandara (Member 4)
 and keeps its upload/retrieval path private and API-mediated. The storage
 provider, limits and retention/sanitization details remain pre-implementation
 decisions.
 
 ADR-0019 assigns the BLUEVERSE IT3091 biodiversity inference adapter and
-validated public result contract to Member 3, while Member 1 owns
+validated public result contract to Adithya Gunawardana (Member 3), while Ushan Srinuka (Member 1) owns
 experience-facing consumption. The separate ML service is ordinary member
-feature work before G07; the future agent tool uses the Member 3 contract only
-after G07. Member 2's condition period remains ordinary query input with no
+feature work before G07; the future agent tool uses the Adithya Gunawardana (Member 3) contract only
+after G07. Sanuda Abeysinghe's condition period remains ordinary query input with no
 separate device-feature assignment.
 
 ADR-0020 assigns one internal .NET microservice under `services/` to each v1

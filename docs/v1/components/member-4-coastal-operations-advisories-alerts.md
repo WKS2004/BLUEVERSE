@@ -4,17 +4,23 @@ contract_type: business_component
 release: v1
 implementation_status: target_not_implemented
 owner_label: member_4
+owner_full_name: "Wanshaja Sooriyabandara"
+owner_github_username: "WKS2004"
+feature_branch: "features/coastal-operations"
+agentic_ai_branch: "agentic-ai/safety-operations"
 requirements: "PROJECT_REQUIREMENTS.md sections 18, 19, 20-27, 40, 41, 53"
 non_crud_operation: approval_decision_and_controlled_execution
 minimum_meaningful_public_api_endpoints: 4
 agent_contract: "../agents/member-4-safety-operations-agent.md"
 ---
 
-# Member 4 — Coastal Operations, Advisories & Alerts
+# Wanshaja Sooriyabandara (Member 4) — Coastal Operations, Advisories & Alerts
 
 **Contract status:** v1 target specification; the complete business workflow
-is not present in the current foundation. **Ownership label:** Member 4 from
-the frozen requirements, not an individual or account identity.
+is not present in the current foundation. **Assigned owner:** Wanshaja
+Sooriyabandara (`@WKS2004`) — frozen-requirements trace label Member 4.
+Feature branch: `features/coastal-operations`; paired Agentic AI branch:
+`agentic-ai/safety-operations`.
 
 ## 1. Purpose and user outcome
 
@@ -40,10 +46,10 @@ make pending, rejected, revised, executed and failed outcomes distinguishable.
 | **Universal product idea** | Own the BLUEVERSE-managed operational-assessment and review lifecycle: operator request, evidence/proposal, deterministic validation, authorized human decision, revalidation, permitted managed-state action, advisory/alert and audit history. The workflow is decision support for BLUEVERSE-managed records only; it does not issue government closures or emergency orders. Before G07 the business workflow exists, but no production AI proposal generator exists. |
 | **React Web** | Provide every authorized operator and reviewer action also available in Flutter: initiate/monitor, inspect evidence, decide approve/reject/request-revision, and view execution/alert/history state. Use React 19/TypeScript/Vite/React Router, reusable pages/components, Tailwind utilities and existing request/state separation. The browser never authorizes or executes a decision locally. See the [React component contract](../../v0/components/react-web-client.md), [UI integration guide](../../development/ui-integration.md), and [React state ADR](../../adr/ADR-0005-react-state-management.md). |
 | **Flutter Mobile** | Provide the same authorized initiation, monitoring, review/decision and outcome behavior using native Dart/Material UI, the existing UI/logic/data layers, repository/API service and view-model pattern. Layout may suit mobile, but reviewer permissions, evidence requirements, validation and result must match React. See the [Flutter component contract](../../v0/components/flutter-client.md), [UI integration guide](../../development/ui-integration.md), and [Flutter state ADR](../../adr/ADR-0006-flutter-state-management.md). |
-| **Member 4 .NET service and data** | A separate internal ASP.NET Core service in Member 4's own `services/<component-service>/` subfolder owns assessment/proposal/decision state, deterministic policy, target revalidation, authorized human-review outcomes, eligible protected mutations and audit/history. Its EF Core/PostgreSQL records are owned by this service. The existing `services/api` receives only authentication/permission and route/forwarding integration needed to expose public `/api/...` operations; it contains none of Member 4's operational business logic or persistence. The service is private; neither clients nor agents connect to its database or internal routes. Agree identifiers, route/DTO mapping, actor/permission propagation and data ownership at G00. |
-| **Third-party integration** | No external alert publisher or government/emergency integration is assumed by this v1 component. It consumes Member 1 managed experience/location/availability, Member 2 sourced marine/suitability evidence and Member 3 business workflow identity. The map provider, Open-Meteo and biodiversity inference stay behind their owning backend components: Member 1 owns map integration, Member 2 owns Open-Meteo, and Member 3 owns the IT3091 inference adapter. Member 4 may consume biodiversity only as optional contextual information under an accepted contract; it is never safety evidence or operational authority. Member 4 consumes canonical Member 1 location data and never uses map results as operational authority. Optional assessment images use a private backend storage adapter, not a client-side provider integration; the provider/configuration is open under [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md). Any future external notification/delivery provider needs an explicit requirement, privacy/security contract and ADR before becoming part of scope. |
-| **Paired Agentic AI role** | The future Safety & Operations Agent receives validated context through read-only allowlisted tools and proposes a structured recommendation/action. Before G07, the Member 4 service implements the business contract, typed private dispatch seam and safe not-connected/unavailable state. After G07, the agent still has no approve, publish, suspend, cancel or execute tool; the authorized reviewer decides and the Member 4 service enforces and executes the permitted action after the public API authenticates/authorizes the caller. |
-| **Component relationships** | Member 4 consumes Member 1 identity/schedule/availability, Member 2 source-timed conditions and deterministic suitability, and Member 3 workflow identity/objective/status. Member 4 is authoritative for BLUEVERSE operational restrictions and returns current status to Members 1 and 3. Every source fact stays owned by its producer. See the [producer/consumer relationship map](../component-relationships.md#producer-consumer-and-authority-map). |
+| **Wanshaja Sooriyabandara (Member 4) .NET service and data** | A separate internal ASP.NET Core service in Wanshaja Sooriyabandara's own `services/<component-service>/` subfolder owns assessment/proposal/decision state, deterministic policy, target revalidation, authorized human-review outcomes, eligible protected mutations and audit/history. Its EF Core/PostgreSQL records are owned by this service. The existing `services/api` receives only authentication/permission and route/forwarding integration needed to expose public `/api/...` operations; it contains none of Wanshaja Sooriyabandara's operational business logic or persistence. The service is private; neither clients nor agents connect to its database or internal routes. Agree identifiers, route/DTO mapping, actor/permission propagation and data ownership at G00. |
+| **Third-party integration** | No external alert publisher or government/emergency integration is assumed by this v1 component. It consumes Ushan Srinuka (Member 1) managed experience/location/availability, Sanuda Abeysinghe (Member 2) sourced marine/suitability evidence and Adithya Gunawardana (Member 3) business workflow identity. The map provider, Open-Meteo and biodiversity inference stay behind their owning backend components: Ushan Srinuka (Member 1) owns map integration, Sanuda Abeysinghe (Member 2) owns Open-Meteo, and Adithya Gunawardana (Member 3) owns the IT3091 inference adapter. Wanshaja Sooriyabandara (Member 4) may consume biodiversity only as optional contextual information under an accepted contract; it is never safety evidence or operational authority. Wanshaja Sooriyabandara (Member 4) consumes canonical Ushan Srinuka (Member 1) location data and never uses map results as operational authority. Optional assessment images use a private backend storage adapter, not a client-side provider integration; the provider/configuration is open under [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md). Any future external notification/delivery provider needs an explicit requirement, privacy/security contract and ADR before becoming part of scope. |
+| **Paired Agentic AI role** | The future Safety & Operations Agent receives validated context through read-only allowlisted tools and proposes a structured recommendation/action. Before G07, the Wanshaja Sooriyabandara (Member 4) service implements the business contract, typed private dispatch seam and safe not-connected/unavailable state. After G07, the agent still has no approve, publish, suspend, cancel or execute tool; the authorized reviewer decides and the Wanshaja Sooriyabandara (Member 4) service enforces and executes the permitted action after the public API authenticates/authorizes the caller. |
+| **Component relationships** | Wanshaja Sooriyabandara (Member 4) consumes Ushan Srinuka (Member 1) identity/schedule/availability, Sanuda Abeysinghe (Member 2) source-timed conditions and deterministic suitability, and Adithya Gunawardana (Member 3) workflow identity/objective/status. Wanshaja Sooriyabandara (Member 4) is authoritative for BLUEVERSE operational restrictions and returns current status to Ushan Srinuka and Adithya Gunawardana. Every source fact stays owned by its producer. See the [producer/consumer relationship map](../component-relationships.md#producer-consumer-and-authority-map). |
 
 All client workflows use the shared API, role-to-permission model, workflow
 IDs and [UI integration registry](../../contracts/ui-integration.json).
@@ -53,7 +59,7 @@ freeze unresolved policy values.
 
 Implement this component within the [v1 shared-foundation and file-ownership
 rules](../member-branch-workflow.md#shared-foundation-and-file-ownership):
-keep Member 4's business behavior in its own internal service, preserve
+keep Wanshaja Sooriyabandara's business behavior in its own internal service, preserve
 existing API/Auth flows, and limit `services/api`, shared client, registry and
 infrastructure edits to the exact integration entries this component needs.
 
@@ -63,7 +69,7 @@ requirements for this component's paired agent.
 
 ## 2. Ownership and legal/operational boundary
 
-Member 4 owns:
+Wanshaja Sooriyabandara (Member 4) owns:
 
 - operational assessment records and their workflow linkage;
 - proposed operational recommendations and affected BLUEVERSE object;
@@ -74,7 +80,7 @@ Member 4 owns:
 - transactional application of an eligible approved change; and
 - operational history/audit of proposal, decision and execution.
 
-It consumes source information owned by Members 1–3, but it does not rewrite
+It consumes source information owned by Ushan Srinuka, Sanuda Abeysinghe and Adithya Gunawardana, but it does not rewrite
 their catalogue, environmental measurements or planner results. It does not
 claim the authority to close a public beach, issue governmental/legal
 emergency orders, control navigation, dispatch emergency services, or replace
@@ -113,9 +119,9 @@ table or wire names.
 
 | Concept | Meaning |
 |---|---|
-| Operational assessment | A Member 4 business workflow initiated for a BLUEVERSE-managed destination/activity/offering/session and time, with validated objective, initiator, current-state reference and evidence context. It has a business workflow ID/status whether or not an AI run occurs. |
-| Assessment image evidence | Optional image evidence captured or selected by an authorized operator and attached to a particular assessment version. Member 4 owns its permissions, metadata, private storage reference, reviewer access and audit lifecycle; the image supplements rather than overrides authoritative Member 1/2 evidence or deterministic validation. |
-| Business workflow | The durable assessment, review and decision record owned by Member 4, linked to the shared workflow ID and Member 3 request where applicable. It tracks business status and proposal/decision references; it is distinct from post-G07 Agentic plan/step/tool execution state. |
+| Operational assessment | A Wanshaja Sooriyabandara (Member 4) business workflow initiated for a BLUEVERSE-managed destination/activity/offering/session and time, with validated objective, initiator, current-state reference and evidence context. It has a business workflow ID/status whether or not an AI run occurs. |
+| Assessment image evidence | Optional image evidence captured or selected by an authorized operator and attached to a particular assessment version. Wanshaja Sooriyabandara (Member 4) owns its permissions, metadata, private storage reference, reviewer access and audit lifecycle; the image supplements rather than overrides authoritative Ushan Srinuka and Sanuda Abeysinghe evidence or deterministic validation. |
+| Business workflow | The durable assessment, review and decision record owned by Wanshaja Sooriyabandara (Member 4), linked to the shared workflow ID and Adithya Gunawardana (Member 3) request where applicable. It tracks business status and proposal/decision references; it is distinct from post-G07 Agentic plan/step/tool execution state. |
 | Proposal | The target structured recommendation from the future Safety & Operations Agent or a validated proposal input, with factors, affected object, proposed outcome/action, optional alert/advisory, uncertainty and supporting evidence. It is not an executed change and is not generated by a production fixture before G07. |
 | Validation result | Application-owned result checking schema, required evidence, configured safety rules, freshness, availability, current operation state, legal state transition, permission and approval requirement. |
 | Approval decision | A permission-checked reviewer decision: approve, reject, or request revision, with actor, time, referenced proposal/version and optional allowed explanation. |
@@ -133,8 +139,8 @@ status must not merge them into one ambiguous badge.
    offering/session and relevant period, adds a constrained objective, may
    attach optional image evidence, and submits through React or Flutter.
 2. **Establish authority.** `services/api` authenticates the caller, applies
-   the permission integration and routes to the private Member 4 service. The
-   Member 4 service checks component resource eligibility, validates domain
+   the permission integration and routes to the private Wanshaja Sooriyabandara (Member 4) service. The
+   Wanshaja Sooriyabandara (Member 4) service checks component resource eligibility, validates domain
    fields, stores the objective and creates a shared workflow ID. Clients
    never call agents or internal services directly.
 3. **Plan.** The Planning & Coordination Agent persists a structured plan
@@ -162,7 +168,7 @@ status must not merge them into one ambiguous badge.
    starts or resumes a constrained analysis path without erasing prior
    decision history.
 9. **Revalidate and execute.** The public API authenticates and authorizes the
-   decision request. For an eligible approval, the Member 4 service
+   decision request. For an eligible approval, the Wanshaja Sooriyabandara (Member 4) service
    re-checks freshness/eligibility as required, current state, transition
    legality and proposal applicability. It performs the permitted change
    transactionally where needed and writes audit/history. The agent never
@@ -204,7 +210,7 @@ this target document.
 ### Stale, duplicate and concurrent decisions
 
 Approval is valid only for the proposal and state the reviewer inspected.
-Immediately before execution, the Member 4 service revalidates the target's
+Immediately before execution, the Wanshaja Sooriyabandara (Member 4) service revalidates the target's
 current state, proposal version/applicability and transition after the public
 API has authenticated/authorized the caller. Duplicate
 decisions must be handled idempotently or rejected as a conflict under a
@@ -278,13 +284,13 @@ React and Flutter can lay out queue, evidence and approval controls differently.
 They cannot differ in who may act, which evidence is required, the result of
 the action, or the source-of-truth status. A hidden/disabled button is not
 authorization: the public API applies its existing caller authentication and
-permission integration, while the Member 4 service validates the current
+permission integration, while the Wanshaja Sooriyabandara (Member 4) service validates the current
 proposal, decision eligibility and execution preconditions.
 
 The operator may capture/select and upload optional image evidence in Flutter
 or choose an image file in React. Reviewers in either client see the same
 authorized attachment metadata and content through the public API, which
-routes to Member 4's private service. A submitted
+routes to Wanshaja Sooriyabandara's private service. A submitted
 assessment version's evidence is immutable; additions/corrections are
 separately authorized and audited. The format/count/size limits, private
 storage provider, inspection/sanitization method and retention policy must be
@@ -294,14 +300,14 @@ Agentic AI agent receives no raw image or storage URL.
 
 ## 10. Cross-component and AI relationships
 
-| Owner | Information Member 4 consumes or returns |
+| Owner | Information Wanshaja Sooriyabandara (Member 4) consumes or returns |
 |---|---|
-| Member 1 | Destination/activity/offering identity, publication, schedule, availability and experience constraints. |
-| Member 2 | Source-timed condition report, data gaps and deterministic activity suitability. The operational proposal cannot turn `UNSUITABLE` into a permissive result. |
-| Member 3 | Objective, structured plan, dependency status, itinerary/recommendation context where relevant. |
+| Ushan Srinuka (Member 1) | Destination/activity/offering identity, publication, schedule, availability and experience constraints. |
+| Sanuda Abeysinghe (Member 2) | Source-timed condition report, data gaps and deterministic activity suitability. The operational proposal cannot turn `UNSUITABLE` into a permissive result. |
+| Adithya Gunawardana (Member 3) | Objective, structured plan, dependency status, itinerary/recommendation context where relevant. |
 | Planning & Coordination Agent | Plan and delegation. It cannot change operational state or approval. |
 | Safety & Operations Agent | Structured assessment factors, recommendation, proposed action/affected object, alert proposal, uncertainty and suggested approval need. Application logic independently decides validation and actual approval requirements. |
-| Member 4 internal service | Deterministic checks, reviewer decision state, revalidation, protected mutation, transaction and audit after the public API's existing authentication/permission checks. This is the only execution authority. |
+| Wanshaja Sooriyabandara (Member 4) internal service | Deterministic checks, reviewer decision state, revalidation, protected mutation, transaction and audit after the public API's existing authentication/permission checks. This is the only execution authority. |
 
 See the paired [Safety & Operations Agent contract](../agents/member-4-safety-operations-agent.md)
 and [canonical workflow](../workflows.md). The LLM is a decision-support
@@ -338,7 +344,7 @@ evaluation under [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-bound
 ## 12. Acceptance and evidence checklist
 
 - the canonical operator → four distinct agent roles → deterministic
-  validation → reviewer → Member 4 service execution → shared status flow is demonstrated;
+  validation → reviewer → Wanshaja Sooriyabandara (Member 4) service execution → shared status flow is demonstrated;
 - only permitted users can initiate, inspect protected details, decide,
   execute or manage alerts;
 - all required evidence and validation are visible before a high-impact
@@ -366,7 +372,7 @@ evaluation under [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-bound
 - endpoint catalog, UI registry, permissions, state machine, migrations,
   tests and operational documentation agree.
 
-The Member 4 owner must retain attributable ASP.NET Core, PostgreSQL/EF Core,
+The Wanshaja Sooriyabandara (Member 4) owner must retain attributable ASP.NET Core, PostgreSQL/EF Core,
 React, Flutter, agent, test, documentation and Git/PR evidence. That evidence
 must show the non-CRUD reviewer decision, a protected action applied only
 after eligible approval, and the corresponding database/audit transition.
@@ -387,6 +393,6 @@ in this document are not implemented authority.
 
 - Requirements: [sections 18–27, 40, 41 and 53](../../../PROJECT_REQUIREMENTS.md).
 - Paired AI role: [Safety & Operations Agent](../agents/member-4-safety-operations-agent.md).
-- Component work areas on one member branch: [Member 4 phase plan](../phases/member-4-phase-plan.md); producer/consumer relationships: [component relationship map](../component-relationships.md); PR and G07 process: [member branch workflow](../member-branch-workflow.md).
+- Component work areas on one member branch: [Wanshaja Sooriyabandara (Member 4) phase plan](../phases/member-4-phase-plan.md); producer/consumer relationships: [component relationship map](../component-relationships.md); PR and G07 process: [member branch workflow](../member-branch-workflow.md).
 - Device and evidence media: [v1 device-capability contract](../device-capabilities.md) and [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md).
 - Related contracts: [v1 workflows](../workflows.md), [member Agentic AI integration boundary](../agentic-ai-integration-boundary.md), [permissions and parity](../cross-platform-and-permissions.md), [quality and delivery](../quality-and-delivery.md), [requirements coverage and readiness](../requirements-coverage-and-readiness.md), [Agentic AI safety](../../agentic-ai/safety.md), [tool catalog](../../agentic-ai/tools.md), [endpoint catalog](../../api/endpoint-catalog.md), [UI integration](../../contracts/ui-integration.json).

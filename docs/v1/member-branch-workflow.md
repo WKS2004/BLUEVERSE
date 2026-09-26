@@ -8,18 +8,19 @@ order.
 
 ## Member component branches
 
-| Owner | One branch for the complete component | Pull request target |
+| Assigned owner and exact GitHub account | One branch for the complete component | Pull request target |
 |---|---|---|
-| Member 1 | `features/coastal-experience-biodiversity` | `dev` |
-| Member 2 | `features/marine-conditions-safety` | `dev` |
-| Member 3 | `features/coastal-planner` | `dev` |
-| Member 4 | `features/coastal-operations` | `dev` |
+| Ushan Srinuka (Member 1, `@Ushan-Srinuka`) | `features/experience-biodiversity` | `dev` |
+| Sanuda Abeysinghe (Member 2, `@sanudaabey`) | `features/marine-safety` | `dev` |
+| Adithya Gunawardana (Member 3, `@AdithyaGunawardana`) | `features/coastal-planner` | `dev` |
+| Wanshaja Sooriyabandara (Member 4, `@WKS2004`) | `features/coastal-operations` | `dev` |
 
-At G00, complete the shared
+Owner names and branch assignments are confirmed in the
+[canonical owner map](../project/ai-team-members.md). At G00, complete the shared
 [start-readiness exit criteria](requirements-coverage-and-readiness.md#g00-exit-criteria):
-agree the named owners, shared IDs, source-of-truth ownership, contract
-schemas, permissions, error/status semantics, timestamps, service identities,
-delivery contracts and shared workflow identity against the
+agree shared IDs, source-of-truth ownership, contract schemas, permissions,
+error/status semantics, timestamps, service identities, delivery contracts
+and shared workflow identity against the
 [relationship map](component-relationships.md). Record the agreement before
 component coding, then create all four branches from the same agreed `dev`
 baseline. Each owner implements one new .NET service in
@@ -35,8 +36,9 @@ another member's full component.
 
 The GPS/location, planner date/time and operations evidence-media capabilities
 in the [device-capability contract](device-capabilities.md) are included in
-Members 1, 3 and 4's complete component branches respectively. They do not
-create separate device-feature branches.
+the complete component branches owned by Ushan Srinuka (Member 1), Adithya
+Gunawardana (Member 3) and Wanshaja Sooriyabandara (Member 4), respectively.
+They do not create separate device-feature branches.
 
 ## Shared foundation and file ownership
 
@@ -139,14 +141,15 @@ checks both clients against the merged contracts.
    behavior is preserved. It must include the applicable route/catalog and
    client validation evidence.
 2. Merge the four PRs one at a time. There is **no prescribed member or PR
-   order**. The repository maintainer personally resolves merge conflicts,
+   order**. Wanshaja Sooriyabandara (`@WKS2004`) personally resolves merge conflicts,
    preserving each component's accepted contract, behavior, permissions and
    evidence.
 3. Once the feature PRs are merged, check the real provider/consumer paths
-   together on `dev`: Member 4 status with Member 1 availability; Member 1
-   availability, Member 2 suitability and Member 4 restrictions with Member
-   3 recommendations; and Member 1/2 evidence plus Member 3 workflow identity
-   with Member 4 assessment and review.
+   together on `dev`: Wanshaja Sooriyabandara (Member 4) status with Ushan
+   Srinuka (Member 1) availability; Ushan's availability, Sanuda Abeysinghe
+   (Member 2) suitability and Wanshaja's restrictions with Adithya
+   Gunawardana (Member 3) recommendations; and Ushan's and Sanuda's evidence
+   plus Adithya's workflow identity with Wanshaja's assessment and review.
 4. Record incompatibilities found on the merged `dev` baseline and correct
    them there in focused changes, using a PR when required by repository
    branch protection. Update shared API/UI catalogs and validators if the
@@ -163,14 +166,14 @@ Update this table as each owner starts work, opens a PR, merges, and completes
 the `dev` compatibility check. It tracks status only; it does not assign a
 turn-taking order.
 
-| Component | Owner label | Initial status | Branch | PR, merge and integration evidence |
-|---|---|---|---|---|
-| G00 — Shared contract freeze | All members | Pending | `dev` | — |
-| Member 1 — Experience and Biodiversity | Member 1 | Planned | `features/coastal-experience-biodiversity` | — |
-| Member 2 — Marine Conditions and Safety | Member 2 | Planned | `features/marine-conditions-safety` | — |
-| Member 3 — Planner and Itineraries | Member 3 | Planned | `features/coastal-planner` | — |
-| Member 4 — Coastal Operations | Member 4 | Planned | `features/coastal-operations` | — |
-| G07 — Integrated component acceptance | All members | Planned | `dev` | — |
+| Component | Assigned owner (full name) | GitHub account | Initial status | Branch | PR, merge and integration evidence |
+|---|---|---|---|---|---|
+| G00 — Shared contract freeze | All four assigned owners | — | Pending | `dev` | — |
+| Ushan Srinuka (Member 1) — Experience and Biodiversity | Ushan Srinuka | `Ushan-Srinuka` | Planned | `features/experience-biodiversity` | — |
+| Sanuda Abeysinghe (Member 2) — Marine Conditions and Safety | Sanuda Abeysinghe | `sanudaabey` | Planned | `features/marine-safety` | — |
+| Adithya Gunawardana (Member 3) — Planner and Itineraries | Adithya Gunawardana | `AdithyaGunawardana` | Planned | `features/coastal-planner` | — |
+| Wanshaja Sooriyabandara (Member 4) — Coastal Operations | Wanshaja Sooriyabandara | `WKS2004` | Planned | `features/coastal-operations` | — |
+| G07 — Integrated component acceptance | All four assigned owners | — | Planned | `dev` | — |
 
 This process deliberately distinguishes relationship dependencies from work
 scheduling: the graph identifies the producer contracts each consumer needs;
@@ -190,14 +193,14 @@ G07 passes may members begin the actual Agentic AI components. Keep that code
 on branches under `agentic-ai/**`, separate from `features/**`. A suggested
 post-G07 work sequence is:
 
-| Work | Branch | Relationship/dependency |
-|---|---|---|
-| AI-00 — Runtime, shared schemas, persistence/safety decisions and evaluation gates | `agentic-ai/runtime-foundation` | Starts after G07 and accepted runtime/tool/state contracts. |
-| AI-01a — Member 1 Experience & Biodiversity Agent | `agentic-ai/member-1-experience-biodiversity` | Starts after AI-00 and the Member 1 component is accepted. |
-| AI-01b — Member 2 Marine Conditions Agent | `agentic-ai/member-2-marine-conditions` | Starts after AI-00 and the Member 2 component is accepted; may run with AI-01a. |
-| AI-02 — Member 3 Planning & Coordination Agent | `agentic-ai/member-3-planning-coordination` | Consumes the validated Member 1/2 agent reports. |
-| AI-03 — Member 4 Safety & Operations Agent | `agentic-ai/member-4-safety-operations` | Consumes planner/evidence output and submits a proposal through Member 4; it cannot approve or execute. |
-| AI-04 — Golden workflow and evaluations | `agentic-ai/golden-flow-evaluation` | Exercises all four roles, deterministic validation, human approval, protected execution, audit and safe failure. |
+| Work | Assigned owner and account | Branch | Relationship/dependency |
+|---|---|---|---|
+| AI-00 — Runtime, shared schemas, persistence/safety decisions and evaluation gates | All four owners | `agentic-ai/runtime-foundation` | Starts after G07 and accepted runtime/tool/state contracts. |
+| AI-01a — Ushan Srinuka (Member 1) Experience & Biodiversity Agent | Ushan Srinuka (`@Ushan-Srinuka`) | `agentic-ai/experience-biodiversity` | Starts after AI-00 and Ushan's component is accepted. |
+| AI-01b — Sanuda Abeysinghe (Member 2) Marine Conditions Agent | Sanuda Abeysinghe (`@sanudaabey`) | `agentic-ai/marine-conditions` | Starts after AI-00 and Sanuda's component is accepted; may run with AI-01a. |
+| AI-02 — Adithya Gunawardana (Member 3) Planning & Coordination Agent | Adithya Gunawardana (`@AdithyaGunawardana`) | `agentic-ai/planning-coordination` | Consumes the validated Ushan and Sanuda agent reports. |
+| AI-03 — Wanshaja Sooriyabandara (Member 4) Safety & Operations Agent | Wanshaja Sooriyabandara (`@WKS2004`) | `agentic-ai/safety-operations` | Consumes planner/evidence output and submits a proposal through Wanshaja's component; it cannot approve or execute. |
+| AI-04 — Golden workflow and evaluations | All four owners | `agentic-ai/golden-flow-evaluation` | Exercises all four roles, deterministic validation, human approval, protected execution, audit and safe failure. |
 
 This sequence applies only to Agentic AI implementation after the domain gate.
 It does not impose an order on the four member feature branches.

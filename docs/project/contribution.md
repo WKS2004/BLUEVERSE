@@ -12,10 +12,10 @@ SE3090 requires each student to have primary ownership of a substantial business
 - Agentic AI
 
 Each v1 component has a separate [member document](../v1/README.md) and a
-distinct Agentic AI contribution. Member 1 owns Coastal Experience &
-Biodiversity Discovery; Member 2 owns Marine Conditions & Safety
-Intelligence; Member 3 owns Smart Coastal Planner & Itinerary Management;
-Member 4 owns Coastal Operations, Advisories & Alerts. These labels are not
+distinct Agentic AI contribution. Ushan Srinuka (Member 1) owns Coastal Experience &
+Biodiversity Discovery; Sanuda Abeysinghe (Member 2) owns Marine Conditions & Safety
+Intelligence; Adithya Gunawardana (Member 3) owns Smart Coastal Planner & Itinerary Management;
+Wanshaja Sooriyabandara (Member 4) owns Coastal Operations, Advisories & Alerts. These labels are not
 an assertion about which named team member owns each component; record the
 person-to-component mapping explicitly before attributing contributions.
 

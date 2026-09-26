@@ -4,23 +4,31 @@ contract_type: agent_role
 release: v1
 implementation_status: target_not_implemented
 owner_label: member_1
+owner_full_name: "Ushan Srinuka"
+owner_github_username: "Ushan-Srinuka"
+feature_branch: "features/experience-biodiversity"
+agentic_ai_branch: "agentic-ai/experience-biodiversity"
 requirements: "PROJECT_REQUIREMENTS.md sections 13, 20-30, 40"
 business_component: "../components/member-1-coastal-experience-biodiversity-discovery.md"
 ---
 
-# Member 1 — Coastal Experience & Biodiversity Agent
+# Ushan Srinuka (Member 1) — Coastal Experience & Biodiversity Agent
 
 **Target status:** no executable v1 agent/runtime/tool implementation is
 present in the current foundation. This is a specification for a distinct
 Agentic AI responsibility, not an assertion that an inference model or agent
 exists.
 
+**Assigned owner:** Ushan Srinuka (`@Ushan-Srinuka`), requirement trace label
+Member 1. Component branch: `features/experience-biodiversity`; actual agent
+branch, after G07: `agentic-ai/experience-biodiversity`.
+
 **Owning business component:** [Coastal Experience & Biodiversity Discovery](../components/member-1-coastal-experience-biodiversity-discovery.md).
 
 **Implementation sequence:** do not implement an executable agent, model
 call or tool before all four business components pass G07. After that gate,
 follow the post-G07 sequence in the [member branch and integration workflow](../member-branch-workflow.md).
-Before G07, the owning Member 1 feature branch prepares only the public
+Before G07, the owning Ushan Srinuka (Member 1) feature branch prepares only the public
 workflow contract, private backend adapter and not-connected/unavailable
 behavior defined in the [member integration boundary](../agentic-ai-integration-boundary.md).
 Implement this actual agent on an `agentic-ai/**` branch after G07.
@@ -45,7 +53,7 @@ four-agent architecture.
 
 The private orchestrator invokes the agent only for a validated workflow step
 whose plan identifies experience context as needed. The public API has applied
-its existing authentication and permission checks, and Member 1's private
+its existing authentication and permission checks, and Ushan Srinuka's private
 service has validated and persisted the workflow before invocation. The agent
 receives only the minimum context required for its assigned step; it does not
 receive passwords, access tokens or unrestricted identity data.
@@ -73,9 +81,9 @@ public API routes or permission grants. Tool registration is centralized in
 the [tool contract](../../agentic-ai/tools.md). Tools return data through
 server-owned services; the agent must not call arbitrary URLs or internal
 hostnames directly. The selected map API is not a direct agent dependency:
-map-assisted discovery/presentation belongs to Member 1's business component,
+map-assisted discovery/presentation belongs to Ushan Srinuka's business component,
 and this agent receives only validated destination/location context returned
-by its Member 1 tools. A future map tool requires a separate approved
+by its Ushan Srinuka (Member 1) tools. A future map tool requires a separate approved
 allowlist, contract and evaluation; it is not implied by the map integration.
 
 | Candidate tool | Purpose | Agent must preserve |
@@ -84,7 +92,7 @@ allowlist, contract and evaluation; it is not implied by the map integration.
 | `activity_lookup` | Read an activity's coastal type and relevant experience constraints. | Source-owned activity identity, status and non-invented attributes. |
 | `offering_lookup` | Read the offering that links a destination and activity. | Authoritative operational/availability status where supplied; this agent cannot change it. |
 | `schedule_lookup` | Read relevant offering schedule and time-specific availability. | Requested timezone/period, source time, missing/closed/unavailable distinctions. |
-| `biodiversity_prediction_lookup` | When relevant, request prediction context through the validated Member 3 public/typed backend capability. The tool handler uses Member 3's server-side IT3091 adapter; this agent never calls IT3091 or a private host directly. | Explicit not-requested/available/unavailable/invalid state and, only for a genuine validated result, focal species, query location, probability or habitat-suitability interpretation, model/version, prediction time, uncertainty and limitations where supplied. |
+| `biodiversity_prediction_lookup` | When relevant, request prediction context through the validated Adithya Gunawardana (Member 3) public/typed backend capability. The tool handler uses Adithya Gunawardana's server-side IT3091 adapter; this agent never calls IT3091 or a private host directly. | Explicit not-requested/available/unavailable/invalid state and, only for a genuine validated result, focal species, query location, probability or habitat-suitability interpretation, model/version, prediction time, uncertainty and limitations where supplied. |
 
 Each implemented tool contract defines exact typed arguments/results,
 authorized agent, source service, validation, timeout, bounded retry, error
@@ -94,10 +102,10 @@ are read-only. There is no publish, archive, availability mutation or
 operational-state mutation tool.
 
 The biodiversity tool is a post-G07 Agentic AI capability; it does not own
-the ML integration. Member 3's ordinary feature branch implements and
+the ML integration. Adithya Gunawardana's ordinary feature branch implements and
 validates the real IT3091 request/response adapter and public result contract
 before G07. After G07, the tool is allowlisted and typed, and its backend
-handler invokes only that Member 3 contract. It must preserve the contract's
+handler invokes only that Adithya Gunawardana (Member 3) contract. It must preserve the contract's
 unavailable/invalid state and provenance and must not present a prediction as
 observed presence, safety evidence or operational authority. See
 [ADR-0019](../../adr/ADR-0019-biodiversity-inference-integration-ownership.md).
@@ -131,7 +139,7 @@ duplicating model text or storing hidden reasoning.
    availability. Each status is sourced from the owning component.
 2. An invalid, unpublished, unavailable or operationally restricted offering
    is not made recommendable by a natural-language summary.
-3. Consume Member 4's authoritative operational status where the workflow
+3. Consume Wanshaja Sooriyabandara's authoritative operational status where the workflow
    contract makes it relevant. Do not maintain or predict a substitute state.
 4. Biodiversity intelligence is enrichment/context only. An occurrence
    probability is not confirmed presence; habitat suitability is not a
@@ -226,5 +234,5 @@ invent response property names, or set numeric model-confidence thresholds.
 
 - Requirements: [sections 13, 20–30 and 40](../../../PROJECT_REQUIREMENTS.md).
 - Owning component: [Coastal Experience & Biodiversity Discovery](../components/member-1-coastal-experience-biodiversity-discovery.md).
-- Biodiversity adapter ownership: [Member 3 component](../components/member-3-smart-coastal-planner-itinerary-management.md) and [ADR-0019](../../adr/ADR-0019-biodiversity-inference-integration-ownership.md).
+- Biodiversity adapter ownership: [Adithya Gunawardana (Member 3) component](../components/member-3-smart-coastal-planner-itinerary-management.md) and [ADR-0019](../../adr/ADR-0019-biodiversity-inference-integration-ownership.md).
 - Shared behavior: [canonical workflows](../workflows.md), [requirements coverage and readiness](../requirements-coverage-and-readiness.md), [Agentic AI architecture](../../agentic-ai/architecture.md), [implementation blueprint](../../agentic-ai/implementation-blueprint.md), [tools](../../agentic-ai/tools.md), [safety](../../agentic-ai/safety.md), [evaluation](../../agentic-ai/evaluation.md).

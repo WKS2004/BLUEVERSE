@@ -11,8 +11,8 @@ Most validation workflows use `contents: read`. The workflows that mutate
 repository state are intentionally limited to the permissions they need:
 
 - `branch-policy.yml` can delete a newly created invalid branch;
-- `dev-backup.yml` can create the backup/rescue refs and update `dev-backup`;
-- `github-config-sync.yml` can create sync branches and pull requests.
+- `dev-backup.yml` can create backup/rescue refs, create a rescue merge commit
+  and force-update `dev-backup`;
 
 Configure the following repository secrets before expecting Docker checks to
 pass:
@@ -41,14 +41,13 @@ pulled.
 | `backend-tests.yml` | Supported work branches; service, catalog, helper or test-workflow paths | Runs every discovered backend test project with aggregate and per-service evidence. |
 | `agentic-ai-tests.yml` | Supported work branches; Agentic AI, helper or AI-test workflow paths | Runs every discovered AI test suite with aggregate and per-service evidence. |
 | `branch-policy.yml` | Branch creation | Enforces lowercase approved branch names and deletes invalid branches. |
-| `dev-backup.yml` | Pushes to `dev` or `dev-backup` | Creates and synchronizes the exact `dev-backup` ref while preserving mistaken history. |
-| `github-config-sync.yml` | `.github/**` pushes | Creates focused `.github`-only pull requests for other branches and queues auto-merge. |
+| `dev-backup.yml` | Pushes to `dev` or `dev-backup` | On divergence, creates a timestamped rescue branch containing the mistaken history in a merge commit, then force-with-lease synchronizes `dev-backup` to the exact `dev` SHA. |
 
 The supported active work families are `features/**`, `agentic-ai/**`,
 `claude/**`, `codex/**`, `antigravity/**`, `gemini/**`, `maintenance/**` and
-`bug-fixes/**`. Automation branches such as `github-sync/**`,
-`docker-workflow-changes/**` and `dev-backup-mistaken-commits/**` are excluded
-from normal source/test workflow triggers.
+`bug-fixes/**`. Recovery branches such as
+`dev-backup-mistaken-commits/**` are excluded from normal source/test workflow
+triggers.
 
 ## Branch and path-aware behavior
 
@@ -176,24 +175,6 @@ those runs to succeed, and then checks out the exact commit. It validates
 checks `/health`, `/api/health`, the Swagger UI and both API/Auth OpenAPI documents,
 and each discovered backend `/api/<service-name>/health`, prints Compose diagnostics on failure and always
 tears the stack down.
-
-## GitHub configuration synchronization
-
-When a push changes `.github/**`, `github-config-sync.yml` copies only that
-folder from the source branch onto each durable development branch except
-`main` and `dev-backup`, using a temporary `github-sync/<target>/<run-id>`
-branch. Its own `github-sync/**`, `docker-workflow-changes/**` and
-`dev-backup-mistaken-commits/**` automation branches are excluded as sources
-and targets because they are temporary or recovery refs. The workflow creates
-a focused pull request, requests automatic squash merging and asks GitHub to
-delete the temporary branch after merge. Existing open PRs for the same
-temporary branch are reused on a retry. Pushes created by the standard sync
-commit title are ignored to prevent a propagation loop.
-
-For this to work, repository settings must permit GitHub Actions to create pull
-requests and queue automatic merges. Required checks or review rules can still
-leave a sync PR open; the workflow reports that condition rather than changing
-branch protections.
 
 ## Local validation
 

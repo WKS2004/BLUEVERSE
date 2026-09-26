@@ -19,21 +19,23 @@ dependency check. The canonical [member integration boundary](../v1/agentic-ai-i
 defines that preparation. No executable agent, prompt/model call, tool
 execution, orchestration or agent-owned execution state is built until all
 four feature PRs are merged, compatibility is accepted on `dev`, and the team
-passes G07. Test-only proposal fixtures may exercise Member 4's boundary;
-they are not a production AI substitute. After G07, implement the actual
-runtime and agents through `agentic-ai/**` branches: build the Member 1 and
-Member 2 specialist agents in parallel, integrate them through Member 3's
-planner, then add Member 4's read-only proposal agent and the complete
-evaluations.
+passes G07. Test-only proposal fixtures may exercise Wanshaja Sooriyabandara's
+boundary; they are not a production AI substitute. After G07, implement the
+actual runtime and agents through the assigned `agentic-ai/**` branches: build
+the Ushan Srinuka (Member 1) and Sanuda Abeysinghe (Member 2) specialist agents
+in parallel, integrate them through Adithya Gunawardana's (Member 3) planner,
+then add Wanshaja Sooriyabandara's (Member 4) read-only proposal agent and the
+complete evaluations. The exact accounts and branch names are in the
+[canonical owner map](../project/ai-team-members.md).
 
 ## Four distinct responsibilities
 
 | Owner | Agent | Responsibility |
 |---|---|---|
-| Member 3 | [Planning & Coordination](../v1/agents/member-3-planning-coordination-agent.md) | Interpret the objective, persist a structured plan, delegate, track dependencies and assemble validated information. |
-| Member 2 | [Marine Conditions Intelligence](../v1/agents/member-2-marine-conditions-intelligence-agent.md) | Return sourced and time-aware weather/marine context with freshness and gaps. |
-| Member 1 | [Coastal Experience & Biodiversity](../v1/agents/member-1-coastal-experience-biodiversity-agent.md) | Return destination, offering, schedule and optional biodiversity context. |
-| Member 4 | [Safety & Operations](../v1/agents/member-4-safety-operations-agent.md) | Produce a structured operational recommendation and proposed action. |
+| Adithya Gunawardana (Member 3) | [Planning & Coordination](../v1/agents/member-3-planning-coordination-agent.md) | Interpret the objective, persist a structured plan, delegate, track dependencies and assemble validated information. |
+| Sanuda Abeysinghe (Member 2) | [Marine Conditions Intelligence](../v1/agents/member-2-marine-conditions-intelligence-agent.md) | Return sourced and time-aware weather/marine context with freshness and gaps. |
+| Ushan Srinuka (Member 1) | [Coastal Experience & Biodiversity](../v1/agents/member-1-coastal-experience-biodiversity-agent.md) | Return destination, offering, schedule and optional biodiversity context. |
+| Wanshaja Sooriyabandara (Member 4) | [Safety & Operations](../v1/agents/member-4-safety-operations-agent.md) | Produce a structured operational recommendation and proposed action. |
 
 A distinct agent needs an identifiable responsibility, validated input,
 structured output, controlled tool permissions and visible participation.
@@ -48,7 +50,7 @@ owns business workflow persistence and, after G07, dispatches the private
 Agentic AI runtime. The planner delegates to the marine and experience agents;
 the safety agent consumes their structured results for operational
 assessment. The owning member service performs deterministic validation. A
-high-impact proposal pauses for authorized human approval; the Member 4
+high-impact proposal pauses for authorized human approval; the Wanshaja Sooriyabandara (Member 4)
 service revalidates and executes an eligible approved action and records its
 business/audit history.
 

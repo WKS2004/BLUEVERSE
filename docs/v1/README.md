@@ -54,9 +54,9 @@ must define actual contracts before shipping.
 
 `target_not_implemented` means the requirement is specified but no executable
 v1 business implementation is present in the current foundation. Update that
-status only when source and tests provide evidence. The member numbers below
-are responsibility labels from the requirements; they do not identify a
-person or GitHub account.
+status only when source and tests provide evidence. The member numbers are
+stable trace labels; the assigned people and accounts are listed in the
+[canonical owner map](../project/ai-team-members.md).
 
 ## Implementation start gate
 
@@ -86,19 +86,21 @@ capability coverage. See
 
 Each row links the complete business-component contract and the paired,
 separate AI-agent contract. Read both for work that crosses the agent/API
-boundary. Member numbers are ownership labels only; use the confirmed account
-mapping for contribution records.
+boundary. The `Member 1`–`Member 4` identifiers remain stable requirement
+trace labels. The canonical [owner and account map](../project/ai-team-members.md)
+records each assigned full name, exact GitHub username, feature branch and
+post-G07 Agentic AI branch.
 
-| Member label | Component contract | Work-area plan / single branch | Core responsibility | Required business operation | Paired agent contract and responsibility |
+| Requirement label and assigned owner | Component contract | Work-area plan / feature and Agentic AI branches | Core responsibility | Required business operation | Paired agent contract and responsibility |
 |---|---|---|---|---|---|
-| 1 (`v1.component.experience-biodiversity`) | [Coastal Experience & Biodiversity Discovery](components/member-1-coastal-experience-biodiversity-discovery.md) | [Member 1 work areas](phases/member-1-phase-plan.md) · `features/coastal-experience-biodiversity` | Destinations, activities, offerings, schedules/availability, discovery, favourites, selected map-provider integration and the user-facing biodiversity context surface | Publication and availability evaluation | [Coastal Experience & Biodiversity Agent](agents/member-1-coastal-experience-biodiversity-agent.md): sourced experience context and optional, uncertainty-aware biodiversity context |
-| 2 (`v1.component.marine-safety`) | [Marine Conditions & Safety Intelligence](components/member-2-marine-conditions-safety-intelligence.md) | [Member 2 work areas](phases/member-2-phase-plan.md) · `features/marine-conditions-safety` | Backend-mediated weather/marine data, provenance/freshness, activity safety profiles and deterministic suitability; period is an ordinary query input, with no separately assigned device capability | Activity/location/time suitability assessment | [Marine Conditions Intelligence Agent](agents/member-2-marine-conditions-intelligence-agent.md): sourced, time-aware marine context; no invented thresholds or authority |
-| 3 (`v1.component.coastal-planner`) | [Smart Coastal Planner & Itinerary Management](components/member-3-smart-coastal-planner-itinerary-management.md) | [Member 3 work areas](phases/member-3-phase-plan.md) · `features/coastal-planner` | Coastal recommendation requests, planning/delegation, Member 3's backend-mediated IT3091 biodiversity inference adapter, date/time selection, assembly, itineraries and re-evaluation | Itinerary re-evaluation | [Planning & Coordination Agent](agents/member-3-planning-coordination-agent.md): structured workflow plan, specialist delegation, dependency tracking and assembly |
-| 4 (`v1.component.coastal-operations`) | [Coastal Operations, Advisories & Alerts](components/member-4-coastal-operations-advisories-alerts.md) | [Member 4 work areas](phases/member-4-phase-plan.md) · `features/coastal-operations` | Operational assessment/state, optional image evidence, approval, alerts/advisories and execution history | Approve, reject or request revision, followed by controlled execution where eligible | [Safety & Operations Agent](agents/member-4-safety-operations-agent.md): structured recommendation/proposal; read-only and never the executor |
+| Member 1 — Ushan Srinuka (`@Ushan-Srinuka`) (`v1.component.experience-biodiversity`) | [Coastal Experience & Biodiversity Discovery](components/member-1-coastal-experience-biodiversity-discovery.md) | [Ushan's work areas](phases/member-1-phase-plan.md) · `features/experience-biodiversity` · `agentic-ai/experience-biodiversity` | Destinations, activities, offerings, schedules/availability, discovery, favourites, selected map-provider integration and the user-facing biodiversity context surface | Publication and availability evaluation | [Ushan's Coastal Experience & Biodiversity Agent](agents/member-1-coastal-experience-biodiversity-agent.md): sourced experience context and optional, uncertainty-aware biodiversity context |
+| Member 2 — Sanuda Abeysinghe (`@sanudaabey`) (`v1.component.marine-safety`) | [Marine Conditions & Safety Intelligence](components/member-2-marine-conditions-safety-intelligence.md) | [Sanuda's work areas](phases/member-2-phase-plan.md) · `features/marine-safety` · `agentic-ai/marine-conditions` | Backend-mediated weather/marine data, provenance/freshness, activity safety profiles and deterministic suitability; period is an ordinary query input, with no separately assigned device capability | Activity/location/time suitability assessment | [Sanuda's Marine Conditions Intelligence Agent](agents/member-2-marine-conditions-intelligence-agent.md): sourced, time-aware marine context; no invented thresholds or authority |
+| Member 3 — Adithya Gunawardana (`@AdithyaGunawardana`) (`v1.component.coastal-planner`) | [Smart Coastal Planner & Itinerary Management](components/member-3-smart-coastal-planner-itinerary-management.md) | [Adithya's work areas](phases/member-3-phase-plan.md) · `features/coastal-planner` · `agentic-ai/planning-coordination` | Coastal recommendation requests, planning/delegation, Adithya's backend-mediated IT3091 biodiversity inference adapter, date/time selection, assembly, itineraries and re-evaluation | Itinerary re-evaluation | [Adithya's Planning & Coordination Agent](agents/member-3-planning-coordination-agent.md): structured workflow plan, specialist delegation, dependency tracking and assembly |
+| Member 4 — Wanshaja Sooriyabandara (`@WKS2004`) (`v1.component.coastal-operations`) | [Coastal Operations, Advisories & Alerts](components/member-4-coastal-operations-advisories-alerts.md) | [Wanshaja's work areas](phases/member-4-phase-plan.md) · `features/coastal-operations` · `agentic-ai/safety-operations` | Operational assessment/state, optional image evidence, approval, alerts/advisories and execution history | Approve, reject or request revision, followed by controlled execution where eligible | [Wanshaja's Safety & Operations Agent](agents/member-4-safety-operations-agent.md): structured recommendation/proposal; read-only and never the executor |
 
-These member numbers are the labels in the requirements baseline. The
-requirements do not map them to actual names or GitHub accounts; ownership
-records must use an explicitly confirmed mapping.
+The numbered labels preserve traceability to the requirements. Full names,
+exact GitHub usernames and branch assignments are confirmed in the
+[canonical owner map](../project/ai-team-members.md).
 
 The four component contracts describe purpose and non-goals, users and
 permission behavior, conceptual data, end-to-end journeys, business
@@ -155,15 +157,16 @@ plans group the full scope into work areas.
 - [Cross-platform and permissions](cross-platform-and-permissions.md) defines
   equal React/Flutter capability and server-side permission boundaries.
 - [Device capabilities and evidence media](device-capabilities.md) assigns
-  Flutter GPS/React location-aware discovery to Member 1, planner date/time
-  selection to Member 3, and optional assessment image evidence to Member 4.
-  Member 2 has no separate device feature; its condition period is an ordinary
-  query input. These are target requirements for the owner branches, not
-  claims about the current v0 clients.
+  Flutter GPS/React location-aware discovery to Ushan Srinuka (Member 1),
+  planner date/time selection to Adithya Gunawardana (Member 3), and optional
+  assessment image evidence to Wanshaja Sooriyabandara (Member 4). Sanuda
+  Abeysinghe (Member 2) has no separate device feature; the requested condition
+  period is an ordinary query input. These are target requirements for the
+  owner branches, not claims about the current v0 clients.
 - [ADR-0018](../adr/ADR-0018-assessment-evidence-storage-boundary.md) keeps
-  Member 4's optional image evidence private, API-mediated, versioned and
-  outside raw Agentic AI input; its storage provider and limits must be
-  finalized before implementation.
+  Wanshaja Sooriyabandara's optional image evidence private, API-mediated,
+  versioned and outside raw Agentic AI input; its storage provider and limits
+  must be finalized before implementation.
 - [Agentic AI architecture](../agentic-ai/architecture.md) explains planning,
   delegation, controlled tools, deterministic validation and human approval.
 - [Agentic AI implementation blueprint](../agentic-ai/implementation-blueprint.md)
@@ -180,11 +183,12 @@ plans group the full scope into work areas.
 ## Scope boundary
 
 The [v0 guide](../v0/README.md) documents the shared foundation. v1 delivers
-coastal tourism and operations, including Member 1's map-provider integration,
-Member 2's Open-Meteo weather/marine integration, and Member 3's consumer
-integration with the separate IT3091 biodiversity inference service. Member 1
-owns the user-facing experience for biodiversity context and obtains validated
-prediction results through the Member 3 API contract.
+coastal tourism and operations, including Ushan Srinuka's map-provider
+integration, Sanuda Abeysinghe's Open-Meteo weather/marine integration, and
+Adithya Gunawardana's consumer integration with the separate IT3091
+biodiversity inference service. Ushan Srinuka (Member 1) owns the user-facing
+experience for biodiversity context and obtains validated prediction results
+through the Adithya Gunawardana (Member 3) API contract.
 Map-provider choice and exact map feature scope remain open; external map
 access follows the ASP.NET Core boundary in
 [ADR-0017](../adr/ADR-0017-map-provider-integration-boundary.md).

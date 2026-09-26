@@ -4,22 +4,30 @@ contract_type: agent_role
 release: v1
 implementation_status: target_not_implemented
 owner_label: member_2
+owner_full_name: "Sanuda Abeysinghe"
+owner_github_username: "sanudaabey"
+feature_branch: "features/marine-safety"
+agentic_ai_branch: "agentic-ai/marine-conditions"
 requirements: "PROJECT_REQUIREMENTS.md sections 15, 20-27, 31, 40"
 business_component: "../components/member-2-marine-conditions-safety-intelligence.md"
 ---
 
-# Member 2 — Marine Conditions Intelligence Agent
+# Sanuda Abeysinghe (Member 2) — Marine Conditions Intelligence Agent
 
 **Target status:** the repository does not contain an executable v1 agent,
 runtime or allowlisted provider tools. This file defines its target role and
 hand-off; it does not claim that provider integration or AI inference exists.
+
+**Assigned owner:** Sanuda Abeysinghe (`@sanudaabey`), requirement trace label
+Member 2. Component branch: `features/marine-safety`; actual agent branch,
+after G07: `agentic-ai/marine-conditions`.
 
 **Owning business component:** [Marine Conditions & Safety Intelligence](../components/member-2-marine-conditions-safety-intelligence.md).
 
 **Implementation sequence:** do not implement an executable agent, model
 call or tool before all four business components pass G07. After that gate,
 follow the post-G07 sequence in the [member branch and integration workflow](../member-branch-workflow.md).
-Before G07, the owning Member 2 feature branch prepares only the public
+Before G07, the owning Sanuda Abeysinghe (Member 2) feature branch prepares only the public
 workflow contract, private backend adapter and not-connected/unavailable
 behavior defined in the [member integration boundary](../agentic-ai-integration-boundary.md).
 Implement this actual agent on an `agentic-ai/**` branch after G07.
@@ -35,7 +43,7 @@ This agent is an evidence summarizer and specialist, not:
 
 - the Open-Meteo provider client (backend-owned service and tools make calls);
 - the deterministic suitability evaluator (application/business logic owned
-  by Member 2);
+  by Sanuda Abeysinghe (Member 2));
 - a professional navigator, weather authority or operational approver; or
 - the operations agent that recommends a managed state change.
 
@@ -122,14 +130,14 @@ cannot replace raw structured evidence needed by deterministic validation.
 4. Do not combine values from different locations, periods, sources or units
    without an explicit, tested deterministic normalization rule.
 5. Do not invent a surfing, snorkeling, diving, boating or other physical
-   safety limit. Thresholds belong to the configured Member 2 activity
+   safety limit. Thresholds belong to the configured Sanuda Abeysinghe (Member 2) activity
    profiles and deterministic evaluator.
 6. Do not assign or override `SUITABLE`, `CAUTION`, `UNSUITABLE` or `UNKNOWN`.
    If the workflow includes an existing deterministic result, report it as
    that result and do not contradict it.
 7. Do not authorize operation continuation, suspension, cancellation or alert
    publication. Those belong to deterministic validation, human approval and
-   the Member 4 service execution flow through the public API.
+   the Wanshaja Sooriyabandara (Member 4) service execution flow through the public API.
 8. Explain that conditions are decision support and not professional marine
    navigation guidance.
 

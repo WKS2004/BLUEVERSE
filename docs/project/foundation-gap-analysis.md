@@ -34,8 +34,9 @@ the shared contract-freeze work. The source inventory still contains only
 client workflows and the executable Agentic AI runtime remain to be
 implemented.
 
-The team must record named component owners and agree the shared public and
-private contracts, cross-component IDs/data ownership, persistence strategy,
+The named owners and their feature/Agentic AI branches are now recorded in the
+[canonical owner map](ai-team-members.md). The team must still agree the
+shared public and private contracts, cross-component IDs/data ownership, persistence strategy,
 service/container/network identities, authorization and failure semantics,
 health/readiness behavior, test/CI discovery and shared UI/catalog edits
 before starting the four concurrent component implementations. The complete

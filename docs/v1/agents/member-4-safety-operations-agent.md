@@ -4,16 +4,24 @@ contract_type: agent_role
 release: v1
 implementation_status: target_not_implemented
 owner_label: member_4
+owner_full_name: "Wanshaja Sooriyabandara"
+owner_github_username: "WKS2004"
+feature_branch: "features/coastal-operations"
+agentic_ai_branch: "agentic-ai/safety-operations"
 requirements: "PROJECT_REQUIREMENTS.md sections 19-27, 40-41"
 business_component: "../components/member-4-coastal-operations-advisories-alerts.md"
 ---
 
-# Member 4 — Safety & Operations Agent
+# Wanshaja Sooriyabandara (Member 4) — Safety & Operations Agent
 
 **Target status:** there is no executable v1 Safety & Operations agent/runtime
 in the current foundation. This contract describes recommendation behavior;
 it does not claim the operations service, approval workflow or tool set is
 implemented.
+
+**Assigned owner:** Wanshaja Sooriyabandara (`@WKS2004`), requirement trace
+label Member 4. Component branch: `features/coastal-operations`; actual agent
+branch, after G07: `agentic-ai/safety-operations`.
 
 **Owning business component:** [Coastal Operations, Advisories & Alerts](../components/member-4-coastal-operations-advisories-alerts.md).
 
@@ -22,7 +30,7 @@ call or tool before all four business components pass G07. After that gate,
 follow the post-G07 sequence in the [member branch and integration workflow](../member-branch-workflow.md); this
 agent consumes validated planner/specialist evidence and never approves or
 executes its own proposal.
-Before G07, the owning Member 4 feature branch prepares only the public
+Before G07, the owning Wanshaja Sooriyabandara (Member 4) feature branch prepares only the public
 assessment/proposal contract, private backend adapter and
 not-connected/unavailable behavior defined in the [member integration boundary](../agentic-ai-integration-boundary.md).
 Implement this actual proposal agent on an `agentic-ai/**` branch after G07.
@@ -49,7 +57,7 @@ and biodiversity context.
 
 The private orchestrator invokes the role only for a validated operational
 assessment plan step. The public API has applied its existing authentication
-and permission checks, and Member 4's private service has validated the
+and permission checks, and Wanshaja Sooriyabandara's private service has validated the
 objective, assigned the workflow ID and persisted workflow state.
 
 The minimum logical input is:
@@ -58,9 +66,9 @@ The minimum logical input is:
 |---|---|
 | Workflow/step correlation | Shared workflow ID/type, plan step and report schema expected. |
 | Objective and scope | Validated reason, destination/location, activity/offering/session reference and relevant time. Free text remains untrusted data. |
-| Experience report | Validated Member 1 report for the affected object, publication, schedule, availability and applicable experience constraints; optional biodiversity status remains contextual. |
-| Marine report | Validated Member 2 factors with source, period, freshness and missing data. Preserve its deterministic suitability result and do not replace it. |
-| Current operational state | Authoritative Member 4 managed state and permitted transition context as read by the application/tool. |
+| Experience report | Validated Ushan Srinuka (Member 1) report for the affected object, publication, schedule, availability and applicable experience constraints; optional biodiversity status remains contextual. |
+| Marine report | Validated Sanuda Abeysinghe (Member 2) factors with source, period, freshness and missing data. Preserve its deterministic suitability result and do not replace it. |
+| Current operational state | Authoritative Wanshaja Sooriyabandara (Member 4) managed state and permitted transition context as read by the application/tool. |
 | Deterministic profile/result | Configured safety profile and the application-owned environmental assessment/evidence relevant to the objective. |
 | Active notices | Relevant active alerts, restrictions or operational constraints from their authoritative source. |
 | Policy envelope | Allowed recommendations/actions, output schema, tool allowlist and approval policy context; cannot be modified by the model. |
@@ -136,10 +144,10 @@ Application/business code independently evaluates the proposal against:
 The model cannot change an `UNSUITABLE`, `UNKNOWN` or blocked result, invent a
 threshold, mark a stale report fresh, or turn missing evidence into a positive
 assessment. A high-impact proposal enters a pending-approval workflow. The
-authorized human decision belongs to the Member 4 service workflow exposed
+authorized human decision belongs to the Wanshaja Sooriyabandara (Member 4) service workflow exposed
 through the public API, not to the agent. Rejection/revision is recorded and
 has no protected side effect. The public API applies its existing caller
-authentication/permission checks; the Member 4 service rechecks current state
+authentication/permission checks; the Wanshaja Sooriyabandara (Member 4) service rechecks current state
 and proposal applicability before transactional execution.
 
 High-impact examples include suspension of a BLUEVERSE-managed offering,
@@ -182,7 +190,7 @@ Never fill gaps with invented facts or default to a permissive action.
 After safe failure, invalid output, blocked validation, lost authorization,
 rejection, revision or stale target, the proposed protected action must not
 execute. No retry may bypass a human decision, reuse obsolete evidence as
-current or create duplicate side effects. The Member 4 service—not the
+current or create duplicate side effects. The Wanshaja Sooriyabandara (Member 4) service—not the
 agent—owns final business revalidation and idempotency/concurrency behavior
 behind the public API's authentication/permission boundary.
 

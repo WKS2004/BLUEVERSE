@@ -97,10 +97,10 @@ Agentic AI client seam as required by its component contract.
 
 | Owner | Service-owned responsibilities |
 |---|---|
-| Member 1 | Coastal catalogue/discovery, availability, favourites and the backend map-provider adapter |
-| Member 2 | Open-Meteo acquisition, normalized marine conditions, safety profiles and deterministic suitability |
-| Member 3 | Planning, recommendations, itineraries and the IT3091 biodiversity inference adapter/public result contract |
-| Member 4 | BLUEVERSE-managed operational assessments, decisions, restrictions, alerts, audit and controlled execution |
+| Ushan Srinuka (Member 1) | Coastal catalogue/discovery, availability, favourites and the backend map-provider adapter |
+| Sanuda Abeysinghe (Member 2) | Open-Meteo acquisition, normalized marine conditions, safety profiles and deterministic suitability |
+| Adithya Gunawardana (Member 3) | Planning, recommendations, itineraries and the IT3091 biodiversity inference adapter/public result contract |
+| Wanshaja Sooriyabandara (Member 4) | BLUEVERSE-managed operational assessments, decisions, restrictions, alerts, audit and controlled execution |
 
 The services remain private on the approved Docker network. React and Flutter
 never call them directly; the public API authenticates/authorizes and routes
@@ -127,10 +127,10 @@ executes approved protected changes.
 ## v1 ML inference target
 
 The separate IT3091 workstream supplies the initial biodiversity model and
-inference service. Member 3 owns BLUEVERSE's validated public result contract
+inference service. Adithya Gunawardana (Member 3) owns BLUEVERSE's validated public result contract
 and private-service adapter; its component service calls the inference
 boundary.
-Member 1 owns experience-facing presentation and consumes the Member 3
+Ushan Srinuka (Member 1) owns experience-facing presentation and consumes the Adithya Gunawardana (Member 3)
 contract. A missing service yields an explicit unavailable result. The
 adapter, model and inference service are not implemented in this repository
 today. The BLUEVERSE adapter is ordinary member-feature ML/API integration,
@@ -139,9 +139,9 @@ separate from post-G07 Agentic AI work; see
 
 ## v1 map-provider target
 
-Member 1 owns the BLUEVERSE adapter for the selected map API as part of
+Ushan Srinuka (Member 1) owns the BLUEVERSE adapter for the selected map API as part of
 location-aware destination and activity discovery. React and Flutter reach
-map capabilities only through the public API and Member 1's private component
+map capabilities only through the public API and Ushan Srinuka's private component
 service; provider credentials and outbound requests remain server-side.
 Provider-returned place
 or map data is untrusted discovery/display context and does not own canonical

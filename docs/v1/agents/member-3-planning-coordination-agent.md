@@ -4,23 +4,31 @@ contract_type: agent_role
 release: v1
 implementation_status: target_not_implemented
 owner_label: member_3
+owner_full_name: "Adithya Gunawardana"
+owner_github_username: "AdithyaGunawardana"
+feature_branch: "features/coastal-planner"
+agentic_ai_branch: "agentic-ai/planning-coordination"
 requirements: "PROJECT_REQUIREMENTS.md sections 17, 20-27, 40-41"
 business_component: "../components/member-3-smart-coastal-planner-itinerary-management.md"
 ---
 
-# Member 3 — Planning & Coordination Agent
+# Adithya Gunawardana (Member 3) — Planning & Coordination Agent
 
 **Target status:** no executable v1 planner, orchestration runtime or agent
 tools are present in the current foundation. This is the workflow coordinator
 contract, not an implementation claim.
+
+**Assigned owner:** Adithya Gunawardana (`@AdithyaGunawardana`), requirement
+trace label Member 3. Component branch: `features/coastal-planner`; actual
+agent branch, after G07: `agentic-ai/planning-coordination`.
 
 **Owning business component:** [Smart Coastal Planner & Itinerary Management](../components/member-3-smart-coastal-planner-itinerary-management.md).
 
 **Implementation sequence:** do not implement an executable agent, model
 call or tool before all four business components pass G07. After that gate,
 follow the post-G07 sequence in the [member branch and integration workflow](../member-branch-workflow.md),
-including the validated specialist-output handoff from Members 1 and 2.
-Before G07, the owning Member 3 feature branch prepares only the public
+including the validated specialist-output handoff from Ushan Srinuka and Sanuda Abeysinghe.
+Before G07, the owning Adithya Gunawardana (Member 3) feature branch prepares only the public
 business workflow, private backend adapter and not-connected/unavailable
 behavior defined in the [member integration boundary](../agentic-ai-integration-boundary.md).
 Implement this actual planner agent on an `agentic-ai/**` branch after G07.
@@ -43,7 +51,7 @@ ways is not four agents.
 
 React and Flutter call only the public ASP.NET Core API. Before private
 orchestration starts, the API applies the existing caller authentication and
-permission checks, then routes the operation to Member 3's private component
+permission checks, then routes the operation to Adithya Gunawardana's private component
 service. That service validates the domain request, persists the allowed
 objective and creates the durable workflow ID. The planner receives the
 minimum validated step context required to coordinate that workflow; it does
@@ -82,7 +90,7 @@ Produce a typed, application-validated plan whose meaning includes:
 | Dependencies | Which validated outputs must exist before another step can start. Unmet required dependency blocks downstream use. |
 | Required tools | Only tools already allowed for the selected assigned agent and step. A plan is rejected if it asks for any other tool. |
 | Expected output | Specific structured report type/schema expected from each step and how the next application stage consumes it. |
-| Status/progress | Current/complete/blocked steps, dependency outcomes and the reason a step is incomplete. The Member 3 component service owns final durable business workflow state; post-G07 Agentic AI execution state has a separate owner. |
+| Status/progress | Current/complete/blocked steps, dependency outcomes and the reason a step is incomplete. The Adithya Gunawardana (Member 3) component service owns final durable business workflow state; post-G07 Agentic AI execution state has a separate owner. |
 | Error/recovery | Structured tool/agent failure reference and a bounded next action if allowed; no open-ended retry loop. |
 
 An illustrative operational plan retrieves experience and marine context,
@@ -145,7 +153,7 @@ errors/retries, approval decision, final result and timestamps where
 relevant. Never persist hidden reasoning, chain-of-thought,
 API keys, passwords, bearer tokens or unrelated personal data.
 
-The Member 3 service's durable workflow store and public API, not an in-memory
+The Adithya Gunawardana (Member 3) service's durable workflow store and public API, not an in-memory
 prompt transcript, are the source of truth for status. The exact workflow state machine must be designed
 and tested. At minimum, states must distinguish a created/active workflow,
 work in progress, a dependency/error blockage, pending approval, completion,

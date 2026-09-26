@@ -34,7 +34,7 @@ React Web / Flutter Mobile
               ▼
      Public ASP.NET Core API
         ├──> Auth service ───────────────> PostgreSQL
-        └──> Private Member 1–4 services ─> PostgreSQL
+        └──> Private component services owned by the four assigned members ─> PostgreSQL
                       └──> Private Agentic AI runtime (after G07)
 ```
 
@@ -63,7 +63,9 @@ The [v0 foundation guide](docs/v0/README.md) maps the implemented technical
 components and their integration path. The
 [v1 documentation index](docs/v1/README.md) links the separate member
 component and agent documents, shared workflows and acceptance requirements.
-The full baseline is [PROJECT_REQUIREMENTS.md](PROJECT_REQUIREMENTS.md).
+The [v1 owner map](docs/project/ai-team-members.md) records each component
+owner's full name, exact GitHub account and feature/Agentic AI branch. The
+full baseline is [PROJECT_REQUIREMENTS.md](PROJECT_REQUIREMENTS.md).
 
 Every new, generated or updated UI is a cross-layer change. Register its
 shared workflow ID, React route, Flutter route and public `/api/...` endpoint
@@ -393,11 +395,10 @@ builds the other ASP.NET service directories, including the internal Auth
 service. The backend test workflow fails if a service source project has no
 discovered service-local test project.
 
-`github-config-sync.yml` copies only `.github/**` into focused pull requests
-for every branch except `main` and `dev-backup`, then queues automatic squash
-merges when repository settings allow GitHub Actions to do so. `branch-policy.yml`
-enforces lowercase approved names, while `dev-backup.yml` preserves mistaken
-backup commits before synchronizing the backup ref to the exact `dev` commit.
+`branch-policy.yml` enforces lowercase approved names. When a mistaken commit
+lands on `dev-backup`, `dev-backup.yml` creates a timestamped rescue branch with
+the backup history, then force-resets the `dev-backup` ref to the exact `dev`
+commit.
 
 See [Docker CI Workflows](docs/development/ci.md) for the complete workflow behavior and service conventions.
 

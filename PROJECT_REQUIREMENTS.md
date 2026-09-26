@@ -2709,12 +2709,21 @@ means:
 
 # 53. Final Team Ownership
 
-Member numbers below identify v1 business-component and agent
-responsibilities. They do not establish a person's GitHub identity. The
-shared v0 technical foundation is a cross-team dependency, and contribution
-evidence must use the confirmed team account mapping.
+The member numbers below are stable trace labels for the frozen requirements.
+The actual owners, exact GitHub accounts and agreed branch names are:
 
-## Member 1
+| Trace label | Full name | GitHub account | Feature branch | Agentic AI branch |
+|---|---|---|---|---|
+| Member 1 | Ushan Srinuka | `Ushan-Srinuka` | `features/experience-biodiversity` | `agentic-ai/experience-biodiversity` |
+| Member 2 | Sanuda Abeysinghe | `sanudaabey` | `features/marine-safety` | `agentic-ai/marine-conditions` |
+| Member 3 | Adithya Gunawardana | `AdithyaGunawardana` | `features/coastal-planner` | `agentic-ai/planning-coordination` |
+| Member 4 | Wanshaja Sooriyabandara | `WKS2004` | `features/coastal-operations` | `agentic-ai/safety-operations` |
+
+This mapping is also maintained in the [canonical owner map](docs/project/ai-team-members.md).
+The shared v0 technical foundation is a cross-team dependency. Contribution
+evidence must use the exact account mapping above.
+
+## Member 1 — Ushan Srinuka (`@Ushan-Srinuka`)
 
 **Business Component**
 
@@ -2741,7 +2750,7 @@ Coastal Experience & Biodiversity Agent
 
 ---
 
-## Member 2
+## Member 2 — Sanuda Abeysinghe (`@sanudaabey`)
 
 **Business Component**
 
@@ -2762,7 +2771,7 @@ Marine Conditions Intelligence Agent
 
 ---
 
-## Member 3
+## Member 3 — Adithya Gunawardana (`@AdithyaGunawardana`)
 
 **Business Component**
 
@@ -2786,7 +2795,7 @@ Planning & Coordination Agent
 
 ---
 
-## Member 4
+## Member 4 — Wanshaja Sooriyabandara (`@WKS2004`)
 
 **Business Component**
 

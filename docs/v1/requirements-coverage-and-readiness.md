@@ -31,8 +31,8 @@ Agentic AI runtime remain implementation work.
 | v0 foundation and shared contracts | Ready as the starting baseline | Existing API/Auth, React/Flutter, Docker/Compose, role-to-permission model, endpoint catalog, UI registry and agent resources are present. Static catalog, UI-integration and agent-resource validators passed on this audit. This does not assert that application builds, tests or live infrastructure were rerun. |
 | v1 requirements and member plans | Ready as implementation specifications | Four complete member contracts, four paired-agent contracts, work-area plans, relationship map, workflow, device, integration, quality and branch guides link the scope. These are target contracts, not implementation evidence. |
 | Four member services and workflows | Not implemented; expected before kickoff | `services/` currently contains only `api` and `auth`. Each new private component service, its persistence, public API integration, React and Flutter workflow, provider adapters and tests must be built on its assigned feature branch. |
-| G00 shared contract freeze | Pending; required before component coding | Assign named member owners and settle the shared contracts listed below. Record decisions in their owning contracts and mark G00 accepted in the [branch tracker](member-branch-workflow.md#component-branch-status). |
-| External integrations and device behavior | Interfaces can be planned at G00; live decisions are owner gates | Agree cross-member data contracts and adapter boundaries before parallel work. Select and verify the map provider, Open-Meteo data policy, IT3091 wire/auth contract and Member 4 image storage policy before accepting each live integration. |
+| G00 shared contract freeze | Pending; required before component coding | Named owners and branch assignments are confirmed in the [canonical owner map](../project/ai-team-members.md). Settle the shared contracts listed below, record decisions in their owning contracts, and mark G00 accepted in the [branch tracker](member-branch-workflow.md#component-branch-status). |
+| External integrations and device behavior | Interfaces can be planned at G00; live decisions are owner gates | Agree cross-member data contracts and adapter boundaries before parallel work. Select and verify the map provider, Open-Meteo data policy, IT3091 wire/auth contract and Wanshaja Sooriyabandara (Member 4) image storage policy before accepting each live integration. |
 | Executable Agentic AI | Correctly deferred; prohibited before G07 | Member branches prepare only their business workflow and typed, bounded, unavailable-aware AI integration seams. Start executable agents, tools, orchestration, model calls and AI-owned state on `agentic-ai/**` only after all four components pass G07. |
 | Full assessment and release | Not ready | The backend test workflow's path filters do not satisfy the guideline's every-push/every-pull-request-to-`main` requirement. The known Flutter widget-test reference to removed `MyHomePage`, duplicate Auth test IDs, hosted mobile HTTPS configuration and release evidence also remain open; see [foundation gaps](../project/foundation-gap-analysis.md). |
 
@@ -41,10 +41,12 @@ Agentic AI runtime remain implementation work.
 Before any member starts component coding, record agreement on all of the
 following in the linked contracts or a reviewable G00 decision record:
 
-1. **Named owners and branches:** map each Member 1–4 label to a confirmed
-   teammate, assign the four `features/<component>` branches and PR owners,
-   and identify the maintainer for sequential merges and shared-file
-   reconciliation. Member labels alone are not a person assignment.
+1. **Use the confirmed owner and branch assignments:** the canonical map
+   records each full name, exact GitHub username, feature branch and
+   post-G07 Agentic AI branch. Wanshaja Sooriyabandara (`@WKS2004`) is the
+   agreed maintainer for sequential merges and conflict resolution. These
+   assignments are settled; keep the frozen `Member N` labels for requirement
+   traceability.
 2. **Shared business identities and data authority:** freeze canonical IDs,
    workflow identity, source-of-truth ownership, producer/consumer payloads,
    status meanings and cross-component references shown in the
@@ -158,10 +160,10 @@ relevant sections are listed for assessment traceability.
 
 | Owner | Repository baseline | Simplified guide / formal assignment | Contract coverage |
 |---|---|---|---|
-| Member 1 | Requirements §§11–13, 28–30, 53 | Guide pp. 7, 11–14, 17; assignment §§3, 5–9, 11–12 | [Experience and biodiversity component](components/member-1-coastal-experience-biodiversity-discovery.md) and [agent](agents/member-1-coastal-experience-biodiversity-agent.md): catalogue, publication/availability, location, favourites, selected map-provider adapter, user-facing biodiversity context consuming Member 3's prediction contract, read-only tools, uncertainty and explicit unavailable states. |
-| Member 2 | Requirements §§14–15, 21, 31, 53 | Guide pp. 8, 11–12, 14–15, 17; assignment §§3, 5–6, 9, 11–12 | [Marine and safety component](components/member-2-marine-conditions-safety-intelligence.md) and [agent](agents/member-2-marine-conditions-intelligence-agent.md): Open-Meteo acquisition, source/time/freshness, ordinary period query input (no separately assigned device feature), configured profiles, deterministic suitability and sourced AI report. |
-| Member 3 | Requirements §§16–17, 20–27, 28–30, 53 | Guide pp. 9, 11–13, 17; assignment §§3, 5, 9–10, 11–12 | [Planner and itinerary component](components/member-3-smart-coastal-planner-itinerary-management.md) and [agent](agents/member-3-planning-coordination-agent.md): constraints, recommendations, itinerary changes/re-evaluation, backend-mediated IT3091 inference adapter, structured plan, delegation, safe assembly and cross-client date/time selection. |
-| Member 4 | Requirements §§18–19, 21–27, 53 | Guide pp. 10–13, 15, 17; assignment §§3, 5, 9–10, 12 | [Operations component](components/member-4-coastal-operations-advisories-alerts.md) and [agent](agents/member-4-safety-operations-agent.md): assessments, optional private image evidence, managed state, proposals, reviewer decisions, alerts, read-only recommendation, revalidation, execution and audit. |
+| Ushan Srinuka (Member 1) | Requirements §§11–13, 28–30, 53 | Guide pp. 7, 11–14, 17; assignment §§3, 5–9, 11–12 | [Experience and biodiversity component](components/member-1-coastal-experience-biodiversity-discovery.md) and [agent](agents/member-1-coastal-experience-biodiversity-agent.md): catalogue, publication/availability, location, favourites, selected map-provider adapter, user-facing biodiversity context consuming Adithya Gunawardana's prediction contract, read-only tools, uncertainty and explicit unavailable states. |
+| Sanuda Abeysinghe (Member 2) | Requirements §§14–15, 21, 31, 53 | Guide pp. 8, 11–12, 14–15, 17; assignment §§3, 5–6, 9, 11–12 | [Marine and safety component](components/member-2-marine-conditions-safety-intelligence.md) and [agent](agents/member-2-marine-conditions-intelligence-agent.md): Open-Meteo acquisition, source/time/freshness, ordinary period query input (no separately assigned device feature), configured profiles, deterministic suitability and sourced AI report. |
+| Adithya Gunawardana (Member 3) | Requirements §§16–17, 20–27, 28–30, 53 | Guide pp. 9, 11–13, 17; assignment §§3, 5, 9–10, 11–12 | [Planner and itinerary component](components/member-3-smart-coastal-planner-itinerary-management.md) and [agent](agents/member-3-planning-coordination-agent.md): constraints, recommendations, itinerary changes/re-evaluation, backend-mediated IT3091 inference adapter, structured plan, delegation, safe assembly and cross-client date/time selection. |
+| Wanshaja Sooriyabandara (Member 4) | Requirements §§18–19, 21–27, 53 | Guide pp. 10–13, 15, 17; assignment §§3, 5, 9–10, 12 | [Operations component](components/member-4-coastal-operations-advisories-alerts.md) and [agent](agents/member-4-safety-operations-agent.md): assessments, optional private image evidence, managed state, proposals, reviewer decisions, alerts, read-only recommendation, revalidation, execution and audit. |
 | Shared system | Requirements §§4–11, 20–27, 32–48, 54–55; accepted ADR-0016 | Guide pp. 2–5, 11–18, 21; assignment §§1–14, 17 | [Workflows](workflows.md), [client parity and permissions](cross-platform-and-permissions.md), [device capabilities](device-capabilities.md), [quality and delivery](quality-and-delivery.md), [Agentic AI architecture](../agentic-ai/architecture.md), [implementation blueprint](../agentic-ai/implementation-blueprint.md), [tools](../agentic-ai/tools.md), [safety](../agentic-ai/safety.md) and [evaluation](../agentic-ai/evaluation.md) cover common API, device, media, data, security, cross-client, test and assessed-flow rules. |
 
 The formal assignment's web/mobile “primarily” wording describes suggested
@@ -172,9 +174,9 @@ the different user experiences. Flutter GPS and a React location input are
 the concrete v1 example.
 
 The selected device interactions are target requirements, not current
-implementation claims: Member 1 owns one-time GPS/location discovery, Member 3
-owns date/time selection for itinerary inputs, and Member 4 owns optional
-image evidence on operations assessments. Member 2's time period remains a
+implementation claims: Ushan Srinuka (Member 1) owns one-time GPS/location discovery, Adithya Gunawardana (Member 3)
+owns date/time selection for itinerary inputs, and Wanshaja Sooriyabandara (Member 4) owns optional
+image evidence on operations assessments. Sanuda Abeysinghe's time period remains a
 normal marine-query field and is not treated as a separate device feature. See
 the complete
 [device-capability contract](device-capabilities.md). The v1 client routes and
@@ -197,8 +199,8 @@ none is complete merely because an agent description exists.
 | Approval and protected execution | Requirements §§18–19, 22, 26–27, 41; assignment §§9–10 | The [operations component](components/member-4-coastal-operations-advisories-alerts.md), [Safety & Operations agent](agents/member-4-safety-operations-agent.md) and [canonical flow](workflows.md) require proposal, pause, authorized approve/reject/revise, revalidation, transactional execution and audit. Agent tools never perform the protected change. |
 | Recovery and injection resistance | Requirements §§25–27, 40, 55; assignment §§9–10 | [Safety](../agentic-ai/safety.md) and [evaluation](../agentic-ai/evaluation.md) require invalid/malicious input, unavailable dependencies, finite retries, failure state and proof of no forbidden side effect. |
 | Member feature access and dependency availability | Requirements §§20–27, 40, 53, 55; assignment §9 | The [member integration boundary](agentic-ai-integration-boundary.md) requires each `features/**` component to prepare its authorized public workflow contract, typed private Agentic AI adapter, server-side availability check and explicit not-connected/unavailable behavior before G07. This is integration scaffolding, not agent/runtime implementation. |
-| Third-party map API | Assignment §11; location-aware discovery in the v1 requirements and team guide pp. 3, 7 | Member 1's private component service owns the BLUEVERSE map-provider adapter and discovery contract; `services/api` exposes it through the public boundary. Provider choice, precise feature scope, rendering compatibility, terms/attribution, quotas, key handling, caching and failure policy remain explicit implementation decisions. |
-| ML and external-data boundaries | Requirements §§28–31; assignment §11 | [Member 3's planner component](components/member-3-smart-coastal-planner-itinerary-management.md) owns the BLUEVERSE IT3091 inference-service consumer adapter; IT3091 supplies the private model/service. [Member 1's experience component](components/member-1-coastal-experience-biodiversity-discovery.md) owns the user-facing biodiversity context surface and consumes the validated Member 3 contract. The paired Member 1 agent may request prediction context only through that backend contract. Member 2 separately owns Open-Meteo, and Member 1 owns the map adapter. These remain distinct from Agentic AI, with provenance, minimal location data, uncertainty and explicit unavailability. |
+| Third-party map API | Assignment §11; location-aware discovery in the v1 requirements and team guide pp. 3, 7 | Ushan Srinuka's private component service owns the BLUEVERSE map-provider adapter and discovery contract; `services/api` exposes it through the public boundary. Provider choice, precise feature scope, rendering compatibility, terms/attribution, quotas, key handling, caching and failure policy remain explicit implementation decisions. |
+| ML and external-data boundaries | Requirements §§28–31; assignment §11 | [Adithya Gunawardana's planner component](components/member-3-smart-coastal-planner-itinerary-management.md) owns the BLUEVERSE IT3091 inference-service consumer adapter; IT3091 supplies the private model/service. [Ushan Srinuka's experience component](components/member-1-coastal-experience-biodiversity-discovery.md) owns the user-facing biodiversity context surface and consumes the validated Adithya Gunawardana (Member 3) contract. The paired Ushan Srinuka (Member 1) agent may request prediction context only through that backend contract. Sanuda Abeysinghe (Member 2) separately owns Open-Meteo, and Ushan Srinuka (Member 1) owns the map adapter. These remain distinct from Agentic AI, with provenance, minimal location data, uncertainty and explicit unavailability. |
 | Evaluation and release evidence | Requirements §§39–42, 55; assignment §§9, 12–13, 16–17 | [Evaluation](../agentic-ai/evaluation.md) and [quality and delivery](quality-and-delivery.md) require the executed four-agent golden case, deterministic negative/recovery cases, full assertions, actual timing/performance measurements, CI and reviewer-visible results. |
 
 ## Decisions the contracts cannot infer
@@ -211,15 +213,14 @@ contracts in the same work.
 
 | Decision area | Owner and required output before the feature is called ready |
 |---|---|
-| Named ownership | The four “Member” labels have no confirmed mapping to named people. Record that mapping through the team process before attributing component work; the [account map](../project/ai-team-members.md) identifies AI-log accounts, not component ownership. |
 | Service/API ownership and integration | Each owner creates one internal .NET microservice in its own `services/<component-service>/` subfolder. The service owns its public-operation behavior and domain logic. `services/api` receives only public route/authentication/permission integration and private service routing/forwarding; Auth is reused. Keep all component services private and expose their operations only under public `/api/...` paths. See [ADR-0020](../adr/ADR-0020-member-component-service-boundaries.md). |
 | Public APIs and permissions | Each owner defines at least four meaningful public operations, exact methods/paths, DTOs, validation/error responses, permission codes and resource scope. The member service implements them; the existing API integrates/routes them without owning member business logic. Register only implemented public and private routes in the [endpoint catalog](../api/endpoint-catalog.md); public paths stay under `/api/...` without a path-version segment. The public API also needs workflow initiation, status, execution summaries and reviewer decisions where applicable. |
 | Database and audit | Each service owner defines normalized entities, keys, relationships, constraints, indexes, suitable PostgreSQL types, EF Core migrations, audit fields, useful seed data and transaction/concurrency rules. Complete the [schema/ER documentation](../database/schema.md) and obtain real PostgreSQL evidence for provider-specific behavior. Agree shared PostgreSQL and component schema ownership at G00. |
-| Member 1 catalogue, maps and biodiversity presentation | Finalize catalogue states/transitions, schedule time-zone and availability rules, nearby-query semantics, favourite targets/ownership, and how sourced Member 3 biodiversity results are presented in destination/activity contexts. Select a map provider and supported functions; verify its terms support ASP.NET-mediated access and the chosen display approach; define credential restrictions, attribution, quota/rate behavior, cache/retention and fallback. Member 1 consumes the Member 3 public contract and does not implement the ML adapter. |
-| Member 2 environmental policy | Select only needed Open-Meteo variables; define unit/time normalization, source/freshness limits, activity profile criteria and defensible threshold provenance, profile changes, missing-data/`UNKNOWN` behavior and provider retry/rate handling. The LLM does not choose these values. |
-| Member 3 planner and ML integration | Define recommendation eligibility/ranking and missing-evidence behavior, itinerary ownership/ordering/duplicates, re-evaluation triggers and comparison/confirmation semantics, plus workflow-status and result-version contracts. Resolve the private IT3091 request/result schema, authentication, timeouts, finite retries, location minimization, provenance/freshness, caching/retention and explicit unavailable/invalid outcomes. A deterministic `UNSUITABLE` result must remain excluded after AI assembly; a biodiversity prediction is contextual and never an automatic safety/operations decision. |
-| Member 4 operations and approval | Define operational and proposal/decision state machines, permitted transitions, high-impact policy, alert severity/lifecycle, reviewer permission and separation of duties, proposal version/expiry, revision, stale/duplicate/concurrent decision behavior, revalidation, transaction and audit. No agent may execute a protected change. |
-| Member 4 image evidence | Before implementation, select accepted image formats and limits, private storage provider/configuration, content inspection/sanitization, attachment/version lifecycle, reviewer access, deletion/retention and failure behavior. Keep storage private behind the public API and Member 4 service; raw media is not a Safety & Operations Agent input. Follow [ADR-0018](../adr/ADR-0018-assessment-evidence-storage-boundary.md). |
+| Ushan Srinuka (Member 1) catalogue, maps and biodiversity presentation | Finalize catalogue states/transitions, schedule time-zone and availability rules, nearby-query semantics, favourite targets/ownership, and how sourced Adithya Gunawardana (Member 3) biodiversity results are presented in destination/activity contexts. Select a map provider and supported functions; verify its terms support ASP.NET-mediated access and the chosen display approach; define credential restrictions, attribution, quota/rate behavior, cache/retention and fallback. Ushan Srinuka (Member 1) consumes the Adithya Gunawardana (Member 3) public contract and does not implement the ML adapter. |
+| Sanuda Abeysinghe (Member 2) environmental policy | Select only needed Open-Meteo variables; define unit/time normalization, source/freshness limits, activity profile criteria and defensible threshold provenance, profile changes, missing-data/`UNKNOWN` behavior and provider retry/rate handling. The LLM does not choose these values. |
+| Adithya Gunawardana (Member 3) planner and ML integration | Define recommendation eligibility/ranking and missing-evidence behavior, itinerary ownership/ordering/duplicates, re-evaluation triggers and comparison/confirmation semantics, plus workflow-status and result-version contracts. Resolve the private IT3091 request/result schema, authentication, timeouts, finite retries, location minimization, provenance/freshness, caching/retention and explicit unavailable/invalid outcomes. A deterministic `UNSUITABLE` result must remain excluded after AI assembly; a biodiversity prediction is contextual and never an automatic safety/operations decision. |
+| Wanshaja Sooriyabandara (Member 4) operations and approval | Define operational and proposal/decision state machines, permitted transitions, high-impact policy, alert severity/lifecycle, reviewer permission and separation of duties, proposal version/expiry, revision, stale/duplicate/concurrent decision behavior, revalidation, transaction and audit. No agent may execute a protected change. |
+| Wanshaja Sooriyabandara (Member 4) image evidence | Before implementation, select accepted image formats and limits, private storage provider/configuration, content inspection/sanitization, attachment/version lifecycle, reviewer access, deletion/retention and failure behavior. Keep storage private behind the public API and Wanshaja Sooriyabandara (Member 4) service; raw media is not a Safety & Operations Agent input. Follow [ADR-0018](../adr/ADR-0018-assessment-evidence-storage-boundary.md). |
 | Agent runtime and tools | Resolve proposed [ADR-0007](../adr/ADR-0007-agentic-ai-framework.md) and [ADR-0008](../adr/ADR-0008-agent-workflow-state.md). Version typed input/output schemas, agent/step/tool allowlists, state storage and retention, correlation and timing summaries, timeouts, finite retries, resume/idempotency and safe failure. Define measurable golden-case and negative-case release gates in the [evaluation contract](../agentic-ai/evaluation.md). |
 | Model, provider and retrieval | The [Agentic AI implementation blueprint](../agentic-ai/implementation-blueprint.md) records the model capability contract, institution/no-cost and privacy review, version/fallback policy, structured-tool retrieval baseline, and the conditions and controls required before adding RAG, embeddings or vector storage. Select and document these before the AI runtime is accepted; do not imply a provider or RAG stack is already chosen. |
 | Backend Agentic dependency health | Finalize at G00 the configured private health/dispatch contract, `not connected`/unavailable outcomes, bounded timeouts/retryability, status persistence and public workflow representation. Preserve `GET /api/health` as liveness and keep database readiness separate. Exact routes and schemas remain implementation decisions; see the [integration boundary](agentic-ai-integration-boundary.md). |
@@ -232,30 +233,30 @@ The [component relationship map](component-relationships.md) is the complete
 visual and tabular description of producer/consumer contracts. Its key
 relationships are:
 
-- **Member 1 ↔ Member 4:** Member 1 owns canonical experience identities,
-  schedule and availability evidence; Member 4 owns managed operational state
-  and restrictions consumed by Member 1 when it computes effective
+- **Ushan Srinuka (Member 1) ↔ Wanshaja Sooriyabandara (Member 4):** Ushan Srinuka (Member 1) owns canonical experience identities,
+  schedule and availability evidence; Wanshaja Sooriyabandara (Member 4) owns managed operational state
+  and restrictions consumed by Ushan Srinuka (Member 1) when it computes effective
   availability. Agree both schemas at G00 and develop in parallel.
-- **Members 1, 2 and 4 → Member 3:** Member 3's deterministic
-  recommendations consume Member 1 publication/availability, Member 2
-  condition/suitability, and Member 4 operational restrictions. Implement
+- **Ushan Srinuka, Sanuda Abeysinghe and Wanshaja Sooriyabandara → Adithya Gunawardana (Member 3):** Adithya Gunawardana's deterministic
+  recommendations consume Ushan Srinuka (Member 1) publication/availability, Sanuda Abeysinghe (Member 2)
+  condition/suitability, and Wanshaja Sooriyabandara (Member 4) operational restrictions. Implement
   against the agreed contracts and contract-level test doubles while all four
   branches are in progress.
-- **Members 1, 2 and 3 → Member 4:** Member 4's assessment and review workflow
+- **Ushan Srinuka, Sanuda Abeysinghe and Adithya Gunawardana → Wanshaja Sooriyabandara (Member 4):** Wanshaja Sooriyabandara's assessment and review workflow
   consumes experience evidence, environmental evidence/suitability and
-  Member 3's business workflow identity. It does not consume Agentic AI
+  Adithya Gunawardana's business workflow identity. It does not consume Agentic AI
   execution state as its business source of truth.
-- **Member 2's external source:** backend-mediated Open-Meteo acquisition and
+- **Sanuda Abeysinghe's external source:** backend-mediated Open-Meteo acquisition and
   normalization can develop alongside the other member components. Activity
-  suitability uses the shared Member 1 activity taxonomy contract.
-- **Member 1's map API:** Member 1 owns the map-provider adapter and location-
+  suitability uses the shared Ushan Srinuka (Member 1) activity taxonomy contract.
+- **Ushan Srinuka's map API:** Ushan Srinuka (Member 1) owns the map-provider adapter and location-
   discovery consumer contract in its private component service; the provider
   is not the canonical destination store, and both clients reach it through
   the public API. The vendor and
   capability scope must be selected and documented before a live integration
   is accepted.
-- **Member 3's ML API:** Member 3 owns BLUEVERSE's private consumer adapter
-  and public prediction contract for IT3091 biodiversity inference. Member 1
+- **Adithya Gunawardana's ML API:** Adithya Gunawardana (Member 3) owns BLUEVERSE's private consumer adapter
+  and public prediction contract for IT3091 biodiversity inference. Ushan Srinuka (Member 1)
   owns the user-facing experience and consumes that validated contract. The
   IT3091 workstream supplies the model and inference service; it is not an
   Agentic AI agent. See [ADR-0019](../adr/ADR-0019-biodiversity-inference-integration-ownership.md).

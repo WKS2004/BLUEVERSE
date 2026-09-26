@@ -4,18 +4,23 @@ contract_type: business_component
 release: v1
 implementation_status: target_not_implemented
 owner_label: member_1
+owner_full_name: "Ushan Srinuka"
+owner_github_username: "Ushan-Srinuka"
+feature_branch: "features/experience-biodiversity"
+agentic_ai_branch: "agentic-ai/experience-biodiversity"
 requirements: "PROJECT_REQUIREMENTS.md sections 11, 12, 13, 29, 30, 53"
 non_crud_operation: publication_and_availability_evaluation
 minimum_meaningful_public_api_endpoints: 4
 agent_contract: "../agents/member-1-coastal-experience-biodiversity-agent.md"
 ---
 
-# Member 1 — Coastal Experience & Biodiversity Discovery
+# Ushan Srinuka (Member 1) — Coastal Experience & Biodiversity Discovery
 
 **Contract status:** v1 target specification. The current foundation does not
-contain the complete v1 business implementation described here. **Ownership
-label:** Member 1, as used by the frozen requirements. This label is not a
-person or GitHub identity.
+contain the complete v1 business implementation described here. **Assigned
+owner:** Ushan Srinuka (`@Ushan-Srinuka`) — frozen-requirements trace label
+Member 1. Feature branch: `features/experience-biodiversity`; paired Agentic
+AI branch: `agentic-ai/experience-biodiversity`.
 
 ## 1. Purpose and user outcome
 
@@ -40,14 +45,14 @@ Its user-visible answer must make these questions clear:
 
 | Layer | Component responsibility and implementation contract |
 |---|---|
-| **Universal product idea** | One authoritative coastal catalogue connects destinations, activities, destination-specific offerings, schedules, publication and current availability. People discover and save experiences; catalogue managers maintain them; biodiversity is optional, sourced context. Member 1 owns the BLUEVERSE map-provider integration that supports agreed location-aware discovery. Provider map/place data helps people find or view places; it never becomes the authoritative destination catalogue. Booking/payment inventory, generic travel search and an independent operational-restriction source are outside this component. |
-| **React Web** | Implement the same authorized discovery, detail, management, favourite, map-assisted location and biodiversity outcomes through the public API. Use the repository's React 19/TypeScript/Vite/React Router structure, reusable route/page/components, Tailwind utilities and existing request/state separation. Nearby search has a usable manual location/destination path. Map-provider requests and credentials stay in Member 1's private service, reached through the public API; the eventual map presentation must use a provider-compatible approach that does not make the browser call the provider directly. Do not calculate authoritative availability in the browser. See the [React component contract](../../v0/components/react-web-client.md), [UI integration guide](../../development/ui-integration.md), and [React state ADR](../../adr/ADR-0005-react-state-management.md). |
-| **Flutter Mobile** | Implement equivalent authorized outcomes in Dart with native Material widgets and the existing UI/logic/data separation, repository/API service and view-model pattern. Device location can improve nearby search when permission is granted; manual destination/location selection remains available when denied, unavailable or unsupported. Map-provider requests and credentials stay in Member 1's private service, reached through the public API; the eventual map presentation must use a provider-compatible approach that does not make the mobile client call the provider directly. Do not calculate availability locally. See the [Flutter component contract](../../v0/components/flutter-client.md), [UI integration guide](../../development/ui-integration.md), and [Flutter state ADR](../../adr/ADR-0006-flutter-state-management.md). |
-| **Member 1 .NET service and data** | A separate internal ASP.NET Core service in Member 1's own `services/<component-service>/` subfolder owns catalogue/discovery operations, domain validation, persistence, schedules/availability/favourites and the map-provider adapter. Its EF Core/PostgreSQL records are owned by this service. The existing `services/api` remains the public boundary and receives only the authentication/permission, route/forwarding and typed-integration code needed to expose this service under `/api/...`; it contains none of Member 1's business rules or persistence. Member 1 consumes biodiversity results through Member 3's validated public API contract; Member 3's service owns the private IT3091 adapter. Clients use only `/api/...`; they never call providers, PostgreSQL or internal services. Agree service identifiers, public/internal route mapping, DTOs, actor/permission propagation, schema and map choices at G00. |
-| **Map provider integration** | Member 1 owns the BLUEVERSE adapter and consumer contract for the selected map API. Its exact vendor and feature scope (for example map display, place lookup, geocoding or directions) are open decisions. All provider access is server-mediated under the assignment/repository boundary; keys remain server-side. Validate and normalize results, honor provider terms/attribution, and preserve manual/list discovery if the provider is unavailable. Provider results do not create, publish or overwrite canonical destinations automatically. |
-| **Biodiversity ML integration** | Member 3 owns BLUEVERSE's backend adapter to the separate IT3091 inference service and its validated public prediction-result contract; the IT3091 workstream supplies the trained model and inference service. Member 1 owns the destination/activity-facing user experience and consumes only Member 3's public contract. Preserve genuine prediction provenance, model/version, query location/time, uncertainty and limitations. An outage is explicit unavailable context, never a guessed result. This integration is ordinary backend ML/API work, not Agentic AI, and is implemented before G07. |
-| **Other external ownership** | Open-Meteo Weather and Marine API acquisition belongs to Member 2. It is independent of Member 1's map integration and Member 3's biodiversity inference adapter. |
-| **Component relationships** | Member 1 is the canonical source of destination/activity/offering IDs and schedule/availability for Members 2 and 3 and the managed target/evidence referenced by Member 4. It consumes Member 4's current operational restriction when deriving effective usability. It provides the location context Member 3 may use for an optional biodiversity request and consumes the resulting validated Member 3 public contract for presentation. Member 2 owns activity suitability; Member 3 owns planning and the ML adapter; Member 4 owns operational restrictions. See the [producer/consumer relationship map](../component-relationships.md#producer-consumer-and-authority-map). |
+| **Universal product idea** | One authoritative coastal catalogue connects destinations, activities, destination-specific offerings, schedules, publication and current availability. People discover and save experiences; catalogue managers maintain them; biodiversity is optional, sourced context. Ushan Srinuka (Member 1) owns the BLUEVERSE map-provider integration that supports agreed location-aware discovery. Provider map/place data helps people find or view places; it never becomes the authoritative destination catalogue. Booking/payment inventory, generic travel search and an independent operational-restriction source are outside this component. |
+| **React Web** | Implement the same authorized discovery, detail, management, favourite, map-assisted location and biodiversity outcomes through the public API. Use the repository's React 19/TypeScript/Vite/React Router structure, reusable route/page/components, Tailwind utilities and existing request/state separation. Nearby search has a usable manual location/destination path. Map-provider requests and credentials stay in Ushan Srinuka's private service, reached through the public API; the eventual map presentation must use a provider-compatible approach that does not make the browser call the provider directly. Do not calculate authoritative availability in the browser. See the [React component contract](../../v0/components/react-web-client.md), [UI integration guide](../../development/ui-integration.md), and [React state ADR](../../adr/ADR-0005-react-state-management.md). |
+| **Flutter Mobile** | Implement equivalent authorized outcomes in Dart with native Material widgets and the existing UI/logic/data separation, repository/API service and view-model pattern. Device location can improve nearby search when permission is granted; manual destination/location selection remains available when denied, unavailable or unsupported. Map-provider requests and credentials stay in Ushan Srinuka's private service, reached through the public API; the eventual map presentation must use a provider-compatible approach that does not make the mobile client call the provider directly. Do not calculate availability locally. See the [Flutter component contract](../../v0/components/flutter-client.md), [UI integration guide](../../development/ui-integration.md), and [Flutter state ADR](../../adr/ADR-0006-flutter-state-management.md). |
+| **Ushan Srinuka (Member 1) .NET service and data** | A separate internal ASP.NET Core service in Ushan Srinuka's own `services/<component-service>/` subfolder owns catalogue/discovery operations, domain validation, persistence, schedules/availability/favourites and the map-provider adapter. Its EF Core/PostgreSQL records are owned by this service. The existing `services/api` remains the public boundary and receives only the authentication/permission, route/forwarding and typed-integration code needed to expose this service under `/api/...`; it contains none of Ushan Srinuka's business rules or persistence. Ushan Srinuka (Member 1) consumes biodiversity results through Adithya Gunawardana's validated public API contract; Adithya Gunawardana's service owns the private IT3091 adapter. Clients use only `/api/...`; they never call providers, PostgreSQL or internal services. Agree service identifiers, public/internal route mapping, DTOs, actor/permission propagation, schema and map choices at G00. |
+| **Map provider integration** | Ushan Srinuka (Member 1) owns the BLUEVERSE adapter and consumer contract for the selected map API. Its exact vendor and feature scope (for example map display, place lookup, geocoding or directions) are open decisions. All provider access is server-mediated under the assignment/repository boundary; keys remain server-side. Validate and normalize results, honor provider terms/attribution, and preserve manual/list discovery if the provider is unavailable. Provider results do not create, publish or overwrite canonical destinations automatically. |
+| **Biodiversity ML integration** | Adithya Gunawardana (Member 3) owns BLUEVERSE's backend adapter to the separate IT3091 inference service and its validated public prediction-result contract; the IT3091 workstream supplies the trained model and inference service. Ushan Srinuka (Member 1) owns the destination/activity-facing user experience and consumes only Adithya Gunawardana's public contract. Preserve genuine prediction provenance, model/version, query location/time, uncertainty and limitations. An outage is explicit unavailable context, never a guessed result. This integration is ordinary backend ML/API work, not Agentic AI, and is implemented before G07. |
+| **Other external ownership** | Open-Meteo Weather and Marine API acquisition belongs to Sanuda Abeysinghe (Member 2). It is independent of Ushan Srinuka's map integration and Adithya Gunawardana's biodiversity inference adapter. |
+| **Component relationships** | Ushan Srinuka (Member 1) is the canonical source of destination/activity/offering IDs and schedule/availability for Sanuda Abeysinghe and Adithya Gunawardana and the managed target/evidence referenced by Wanshaja Sooriyabandara (Member 4). It consumes Wanshaja Sooriyabandara's current operational restriction when deriving effective usability. It provides the location context Adithya Gunawardana (Member 3) may use for an optional biodiversity request and consumes the resulting validated Adithya Gunawardana (Member 3) public contract for presentation. Sanuda Abeysinghe (Member 2) owns activity suitability; Adithya Gunawardana (Member 3) owns planning and the ML adapter; Wanshaja Sooriyabandara (Member 4) owns operational restrictions. See the [producer/consumer relationship map](../component-relationships.md#producer-consumer-and-authority-map). |
 
 Client workflows use the same public API contract and shared workflow IDs
 where status tracking applies, use the server's role-to-permission model, and
@@ -58,7 +63,7 @@ invariants, API capability, failures and acceptance evidence.
 
 Implement this component within the [v1 shared-foundation and file-ownership
 rules](../member-branch-workflow.md#shared-foundation-and-file-ownership):
-keep Member 1's business behavior in its own internal service, preserve
+keep Ushan Srinuka's business behavior in its own internal service, preserve
 existing API/Auth flows, and limit `services/api`, shared client, registry and
 infrastructure edits to the exact integration entries this component needs.
 
@@ -68,7 +73,7 @@ requirements for this component's paired agent.
 
 ## 2. Ownership boundary
 
-Member 1 owns the BLUEVERSE experience catalogue and its discovery behavior:
+Ushan Srinuka (Member 1) owns the BLUEVERSE experience catalogue and its discovery behavior:
 
 - destinations and their coastal location/context;
 - coastal activities such as surfing, snorkeling, diving, whale or dolphin
@@ -80,20 +85,20 @@ Member 1 owns the BLUEVERSE experience catalogue and its discovery behavior:
 - BLUEVERSE's map-provider adapter and map-assisted discovery contract, with
   the provider and exact map features chosen before implementation; and
 - the user-facing interpretation and presentation of sourced biodiversity
-  prediction context obtained through Member 3's public contract. The
-  BLUEVERSE IT3091 adapter belongs to Member 3; the separate IT3091 workstream
+  prediction context obtained through Adithya Gunawardana's public contract. The
+  BLUEVERSE IT3091 adapter belongs to Adithya Gunawardana (Member 3); the separate IT3091 workstream
   supplies the model and inference service.
 
 The component does **not** own weather acquisition or activity safety
-classification (Member 2), recommendation and itinerary orchestration or the
-biodiversity inference adapter (Member 3), operational restriction state or
-approval (Member 4), user authentication, the ML model or inference service
+classification (Sanuda Abeysinghe (Member 2)), recommendation and itinerary orchestration or the
+biodiversity inference adapter (Adithya Gunawardana (Member 3)), operational restriction state or
+approval (Wanshaja Sooriyabandara (Member 4)), user authentication, the ML model or inference service
 itself, or regulatory/emergency authority.
-It still consumes Member 4's authoritative operational status. An experience
+It still consumes Wanshaja Sooriyabandara's authoritative operational status. An experience
 record cannot override a restriction by remaining published or available in
 this component.
 
-On `features/coastal-experience-biodiversity`, implement the authorized
+On `features/experience-biodiversity`, implement the authorized
 public workflow/status contract and typed private backend adapter that will
 let the future Experience & Biodiversity Agent request this component's
 validated catalogue/availability context. Before G07, the adapter reports
@@ -134,13 +139,13 @@ constraints, indexes, audit columns, and PostgreSQL types.
 | Concept | Meaning and required relationships |
 |---|---|
 | Destination | A managed coastal place with a stable identity and enough location and descriptive context for detail, search, and nearby discovery. Activities and biodiversity queries may refer to it. |
-| Map-provider result | External map/place/geocoding data returned through Member 1's server-side adapter for the map features the team selects. It is untrusted discovery/display context, not a destination record; it cannot publish or silently overwrite BLUEVERSE-owned names, coordinates, visibility or business state. Exact result fields depend on the selected provider and feature scope. |
-| Activity | A coastal activity category with descriptive and practical participation context. An activity may have multiple offerings and activity-specific suitability rules owned by Member 2. |
+| Map-provider result | External map/place/geocoding data returned through Ushan Srinuka's server-side adapter for the map features the team selects. It is untrusted discovery/display context, not a destination record; it cannot publish or silently overwrite BLUEVERSE-owned names, coordinates, visibility or business state. Exact result fields depend on the selected provider and feature scope. |
+| Activity | A coastal activity category with descriptive and practical participation context. An activity may have multiple offerings and activity-specific suitability rules owned by Sanuda Abeysinghe (Member 2). |
 | Offering | A managed instance of an activity at a destination. It carries the availability and operational context needed to decide whether it can be shown as usable for a requested time. |
 | Schedule / availability | Time-related information for an offering. The implementation must distinguish a scheduled time from a general publication state and from current availability; booking or payment inventory is outside v1 scope. |
 | Publication state | Controls catalogue visibility and management lifecycle. DRAFT, PUBLISHED, UNPUBLISHED and ARCHIVED are possible vocabulary, but the final state machine and allowed transitions must be specified and tested. |
 | Favourite / saved experience | A user's association with a destination, activity or offering that supports save, revisit and removal without exposing one user's private list to another. Exact target types and uniqueness rules remain design decisions. |
-| Biodiversity prediction | Optional context returned through Member 3's validated public result contract, linked to the queried canonical location/area and prediction time. Member 3 owns the internal IT3091 adapter. A genuine result may include focal species, occurrence probability, habitat-suitability interpretation, model version, timestamp, uncertainty and limitations. |
+| Biodiversity prediction | Optional context returned through Adithya Gunawardana's validated public result contract, linked to the queried canonical location/area and prediction time. Adithya Gunawardana (Member 3) owns the internal IT3091 adapter. A genuine result may include focal species, occurrence probability, habitat-suitability interpretation, model version, timestamp, uncertainty and limitations. |
 | Availability assessment | A business result for whether the selected experience can be discovered/used for the requested time after publication, schedule, availability and authoritative operational state are considered. It is the required non-CRUD operation. |
 
 An occurrence probability is an estimate, not a guarantee of species presence.
@@ -162,7 +167,7 @@ time, uncertainty/limitations, and unavailable status where supplied.
    finalized visibility rules. Archived or otherwise non-published records
    cannot leak into ordinary public discovery.
 5. `services/api` authenticates/authorizes and routes each operation to the
-   private Member 1 service. That service validates and persists the mutation
+   private Ushan Srinuka (Member 1) service. That service validates and persists the mutation
    with EF Core/PostgreSQL and writes required audit data.
 
 ### 5.2 Browse, search and nearby discovery
@@ -181,7 +186,7 @@ time, uncertainty/limitations, and unavailable status where supplied.
    equivalent location-entry path; device affordances may differ.
 6. If the selected map API supplies map display, place lookup, geocoding or
    another location feature, both clients consume that capability through the
-   public API, which integrates the private Member 1 service. Provider-returned places are candidate discovery
+   public API, which integrates the private Ushan Srinuka (Member 1) service. Provider-returned places are candidate discovery
    context; a catalogue manager must validate and create/update an
    authoritative destination through the normal management workflow.
 7. A provider outage, quota/rate limit, ambiguous result or no-match response
@@ -205,9 +210,9 @@ time, uncertainty/limitations, and unavailable status where supplied.
 ### 5.4 Biodiversity context
 
 1. A relevant destination/activity or location detail requests biodiversity
-   context through Member 3's documented public prediction capability. Member
+   context through Adithya Gunawardana's documented public prediction capability. Member
    1 does not address the private IT3091 service or implement a second ML
-   adapter. Member 3's backend calls the internal inference service.
+   adapter. Adithya Gunawardana's backend calls the internal inference service.
 2. A genuine prediction is shown with enough provenance to explain what it
    estimates and the uncertainty or limitations returned by the model.
 3. If the service or trained model is unavailable, BLUEVERSE reports an
@@ -229,8 +234,8 @@ client's disabled button is not enforcement:
    applicable restrictions also matter.
 3. An invalid, unpublished, unavailable or operationally restricted offering
    is not an eligible recommendation candidate.
-4. Member 4's operational state is authoritative for operational restrictions.
-   Member 1 may display that state but may not maintain an independent value
+4. Wanshaja Sooriyabandara's operational state is authoritative for operational restrictions.
+   Ushan Srinuka (Member 1) may display that state but may not maintain an independent value
    that conflicts with it.
 5. Schedule and availability comparisons must use a defined time-zone and
    boundary convention. The selected convention is a technical decision that
@@ -259,7 +264,7 @@ requirements give `DRAFT → PUBLISHED → ARCHIVED` as an example, not a final
 state machine. Before implementation, define transitions, unpublish semantics,
 archive behavior, validation failures, and how operational restrictions
 interact with publication. Do not conflate catalogue publication with
-real-time availability or with Member 4's operational state.
+real-time availability or with Wanshaja Sooriyabandara's operational state.
 
 ## 7. Public API capability contract
 
@@ -280,9 +285,9 @@ The public contract must cover, as applicable:
   adapter, with a provider-independent public response and safe unavailable
   behavior (exact routes are chosen only when implemented);
 - user-scoped favourite read/add/remove actions; and
-- a biodiversity context request/result consumed through Member 3's public
+- a biodiversity context request/result consumed through Adithya Gunawardana's public
   API capability, with explicit unavailable status rather than fabricated
-  content. Its exact route and DTO are owned by Member 3 and are registered
+  content. Its exact route and DTO are owned by Adithya Gunawardana (Member 3) and are registered
   only when implemented.
 
 Do not register internal ML endpoints as client routes. The React and Flutter
@@ -314,12 +319,12 @@ practical while still relying on server-side idempotency/validation.
 
 | Collaborator | Information exchanged | Boundary |
 |---|---|---|
-| Member 2 — Marine Conditions & Safety Intelligence | Activity identity/context and suitability evidence may constrain recommendations or operational review. | Member 2 owns marine data and deterministic environmental suitability. Member 1 must not calculate a second result. |
-| Member 3 — Smart Coastal Planner & Itinerary Management | Valid destinations, activities, offerings, schedules, availability, experience constraints and location context for an optional prediction request. | Planner consumes authoritative candidate data and must apply marine and operational constraints too. Member 3 owns the IT3091 backend adapter and exposes only validated prediction context through its public contract; Member 1 renders that context. |
-| Member 4 — Coastal Operations, Advisories & Alerts | Current managed operational status/restriction relevant to an offering or session. | Member 4 owns restriction state and approved transitions. |
-| Selected map API | Provider-backed map/place/geocoding/display data for Member 1's agreed location-discovery features. | The private Member 1 service owns the adapter. `services/api` is the only client-facing boundary; provider results are untrusted, non-authoritative discovery context. Vendor and exact feature scope remain open. |
-| IT3091 biodiversity inference | Member 3 sends minimal validated prediction inputs and receives the model result. Member 1 consumes the resulting public context. | Member 3's internal adapter calls the IT3091 service; clients and agents do not call it directly. Preserve provenance, uncertainty and unavailable/invalid states; a prediction is never guaranteed presence or safety evidence. |
-| Open-Meteo | Weather and marine forecast/observation inputs. | Member 2 owns the adapter and deterministic suitability; this integration is not part of Member 1's map or Member 3's biodiversity adapter. |
+| Sanuda Abeysinghe (Member 2) — Marine Conditions & Safety Intelligence | Activity identity/context and suitability evidence may constrain recommendations or operational review. | Sanuda Abeysinghe (Member 2) owns marine data and deterministic environmental suitability. Ushan Srinuka (Member 1) must not calculate a second result. |
+| Adithya Gunawardana (Member 3) — Smart Coastal Planner & Itinerary Management | Valid destinations, activities, offerings, schedules, availability, experience constraints and location context for an optional prediction request. | Planner consumes authoritative candidate data and must apply marine and operational constraints too. Adithya Gunawardana (Member 3) owns the IT3091 backend adapter and exposes only validated prediction context through its public contract; Ushan Srinuka (Member 1) renders that context. |
+| Wanshaja Sooriyabandara (Member 4) — Coastal Operations, Advisories & Alerts | Current managed operational status/restriction relevant to an offering or session. | Wanshaja Sooriyabandara (Member 4) owns restriction state and approved transitions. |
+| Selected map API | Provider-backed map/place/geocoding/display data for Ushan Srinuka's agreed location-discovery features. | The private Ushan Srinuka (Member 1) service owns the adapter. `services/api` is the only client-facing boundary; provider results are untrusted, non-authoritative discovery context. Vendor and exact feature scope remain open. |
+| IT3091 biodiversity inference | Adithya Gunawardana (Member 3) sends minimal validated prediction inputs and receives the model result. Ushan Srinuka (Member 1) consumes the resulting public context. | Adithya Gunawardana's internal adapter calls the IT3091 service; clients and agents do not call it directly. Preserve provenance, uncertainty and unavailable/invalid states; a prediction is never guaranteed presence or safety evidence. |
+| Open-Meteo | Weather and marine forecast/observation inputs. | Sanuda Abeysinghe (Member 2) owns the adapter and deterministic suitability; this integration is not part of Ushan Srinuka's map or Adithya Gunawardana's biodiversity adapter. |
 | Identity and authorization | Authenticated principal and effective permissions. | Public API/Auth contract is authoritative; no role check embedded only in the client. |
 
 Cross-component dependencies use service/application contracts and stable
@@ -329,9 +334,9 @@ identifiers. Clients never call each other or internal service hostnames.
 
 The component must distinguish invalid user input, no matching results,
 unpublished content, no schedule/availability, map-provider no-match or
-unavailability, a service failure, and Member 3's unavailable biodiversity
+unavailability, a service failure, and Adithya Gunawardana's unavailable biodiversity
 result. An unavailable optional prediction must not turn into a normal-looking
-zero or stale value. Map errors and Member 3's public unavailable status
+zero or stale value. Map errors and Adithya Gunawardana's public unavailable status
 should be recorded without credentials, full sensitive payloads or
 unnecessary request data. Provider keys remain in server-side secret
 configuration. Use only location precision needed for the
@@ -369,11 +374,11 @@ successful build:
   target behavior matches the documented contract;
 - schedule/time-zone boundaries and concurrent availability updates are
   covered;
-- Member 1 renders a valid prediction fixture with its provenance and
-  uncertainty, and renders Member 3's unavailable/invalid result without
+- Ushan Srinuka (Member 1) renders a valid prediction fixture with its provenance and
+  uncertainty, and renders Adithya Gunawardana's unavailable/invalid result without
   presenting it as a prediction;
-- Member 1 calls only the approved Member 3 public contract for prediction
-  context and never addresses IT3091 or a private service directly; Member 3
+- Ushan Srinuka (Member 1) calls only the approved Adithya Gunawardana (Member 3) public contract for prediction
+  context and never addresses IT3091 or a private service directly; Adithya Gunawardana (Member 3)
   owns evidence for the genuine model-backed request/response and failure
   behavior;
 - equivalent authorized actions and outcomes are available in React and
@@ -405,13 +410,13 @@ public contract must be documented in the owning API/database/ADR material,
 then reflected in implementation and tests. The map-provider ownership and
 ASP.NET Core boundary are recorded in
 [ADR-0017](../../adr/ADR-0017-map-provider-integration-boundary.md). ML
-adapter ownership and the Member 1 consumer boundary are recorded in
+adapter ownership and the Ushan Srinuka (Member 1) consumer boundary are recorded in
 [ADR-0019](../../adr/ADR-0019-biodiversity-inference-integration-ownership.md).
 
 ## 13. Traceability
 
 - Requirements: [sections 11–13, 29, 30 and 53](../../../PROJECT_REQUIREMENTS.md).
 - Paired AI role: [Coastal Experience & Biodiversity Agent](../agents/member-1-coastal-experience-biodiversity-agent.md).
-- Component work areas on one member branch: [Member 1 phase plan](../phases/member-1-phase-plan.md); producer/consumer relationships: [component relationship map](../component-relationships.md); PR and G07 process: [member branch workflow](../member-branch-workflow.md).
+- Component work areas on one member branch: [Ushan Srinuka (Member 1) phase plan](../phases/member-1-phase-plan.md); producer/consumer relationships: [component relationship map](../component-relationships.md); PR and G07 process: [member branch workflow](../member-branch-workflow.md).
 - Related shared contracts: [v1 workflows](../workflows.md), [member Agentic AI integration boundary](../agentic-ai-integration-boundary.md), [permissions and client parity](../cross-platform-and-permissions.md), [quality and delivery](../quality-and-delivery.md), [requirements coverage and readiness](../requirements-coverage-and-readiness.md), [Agentic AI safety](../../agentic-ai/safety.md), [endpoint catalog](../../api/endpoint-catalog.md), [UI integration](../../contracts/ui-integration.json).
 - Device/location contract: [v1 device capabilities](../device-capabilities.md) defines one-time Flutter GPS use, React's equivalent location input, manual fallback, consent and data-minimization behavior.

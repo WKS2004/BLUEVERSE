@@ -49,7 +49,7 @@ tools, orchestration, agents or AI-owned execution state. See the
 | **Deterministic application logic** | Ordinary code that validates schemas, business constraints, data freshness, safety profiles, permissions, state transitions, approval and execution eligibility. | It is not an agent or an LLM. It rejects or blocks an unsafe or invalid model proposal regardless of model wording. |
 | **RAG (retrieval-augmented generation)** | A pattern that retrieves passages from an approved document collection and supplies them as source context for model generation. | It is not required by the v1 requirements. No v1 document corpus, embedding model, vector store, chunk policy, or RAG deployment is selected. |
 | **Embedding** | A numeric representation used to find semantically similar text or items. | No v1 requirement currently calls for embeddings. They are not needed for structured domain queries, normal filtering, or deterministic rules. |
-| **Biodiversity ML inference** | The separate IT3091 model integration that produces biodiversity predictions. | Member 3 owns the BLUEVERSE private-service adapter and validated public result contract; Member 1 owns experience-facing consumption. It is ordinary v1 domain integration outside the Agentic AI runtime. An LLM must not invent or replace its predictions. |
+| **Biodiversity ML inference** | The separate IT3091 model integration that produces biodiversity predictions. | Adithya Gunawardana (Member 3) owns the BLUEVERSE private-service adapter and validated public result contract; Ushan Srinuka (Member 1) owns experience-facing consumption. It is ordinary v1 domain integration outside the Agentic AI runtime. An LLM must not invent or replace its predictions. |
 
 ## 3. Model and orchestration requirements versus open choices
 
@@ -173,10 +173,10 @@ flowchart LR
     OWNER -->|typed private dispatch after G07| ORCH[Private Agentic AI runtime]
     ORCH -->|versioned role prompt and typed context| MODEL[Approved language-model provider/runtime]
     ORCH -->|allowlisted typed calls| TOOLS[Private backend tools/adapters]
-    TOOLS --> M1[Member 1 backend contract]
-    TOOLS --> M2[Member 2 backend contract]
-    TOOLS -->|read-only evidence| M4[Member 4 backend contract]
-    TOOLS --> M3[Member 3 workflow/context]
+    TOOLS --> M1[Ushan Srinuka (Member 1) backend contract]
+    TOOLS --> M2[Sanuda Abeysinghe (Member 2) backend contract]
+    TOOLS -->|read-only evidence| M4[Wanshaja Sooriyabandara (Member 4) backend contract]
+    TOOLS --> M3[Adithya Gunawardana (Member 3) workflow/context]
     M1 --> DB
     M2 --> DB
     M3 --> DB
@@ -202,22 +202,22 @@ minimization. The clients call only the public API.
 
 | Information | Authoritative owner/source | How the AI may receive it |
 |---|---|---|
-| Destinations, activities, offerings, publication, schedule, availability and favourites | Member 1 private component service and its owned data | Typed, scoped lookup tools; never direct table access. |
-| Biodiversity prediction | Separate IT3091 inference integration mediated by the Member 3 backend adapter; Member 1 consumes the validated public result for experience-facing context. | Optional genuine prediction with model/version/location/time/provenance/uncertainty. It is not an LLM-generated substitute, safety signal or Agentic AI output. The service adapter is delivered on Member 3's `features/**` branch before G07; the post-G07 Member 1 tool may use only the allowlisted Member 3 contract, never IT3091 directly. |
-| Weather and marine conditions | Member 2 backend-mediated Open-Meteo integration, normalized and validated by Member 2 | Typed condition tools with provider, units, requested/forecast/observed/retrieval times, freshness and gaps. The LLM does not call Open-Meteo directly. |
-| Activity safety profile and suitability | Member 2 deterministic application rules | Read the configured profile/result and evidence; never let an agent or model tune or override it. |
-| Operational state, proposals, reviewer decisions and alerts | Member 4 private component service | Read-only evidence tools for agents. The public API applies its existing authentication/permission integration; Member 4 revalidates and executes protected state changes after required approval. |
-| Tourist recommendation, itinerary and business request | Member 3 private component service | The planner may prepare a proposal; Member 3 remains the owner of business request and itinerary state. |
+| Destinations, activities, offerings, publication, schedule, availability and favourites | Ushan Srinuka (Member 1) private component service and its owned data | Typed, scoped lookup tools; never direct table access. |
+| Biodiversity prediction | Separate IT3091 inference integration mediated by the Adithya Gunawardana (Member 3) backend adapter; Ushan Srinuka (Member 1) consumes the validated public result for experience-facing context. | Optional genuine prediction with model/version/location/time/provenance/uncertainty. It is not an LLM-generated substitute, safety signal or Agentic AI output. The service adapter is delivered on Adithya Gunawardana's `features/**` branch before G07; the post-G07 Ushan Srinuka (Member 1) tool may use only the allowlisted Adithya Gunawardana (Member 3) contract, never IT3091 directly. |
+| Weather and marine conditions | Sanuda Abeysinghe (Member 2) backend-mediated Open-Meteo integration, normalized and validated by Sanuda Abeysinghe (Member 2) | Typed condition tools with provider, units, requested/forecast/observed/retrieval times, freshness and gaps. The LLM does not call Open-Meteo directly. |
+| Activity safety profile and suitability | Sanuda Abeysinghe (Member 2) deterministic application rules | Read the configured profile/result and evidence; never let an agent or model tune or override it. |
+| Operational state, proposals, reviewer decisions and alerts | Wanshaja Sooriyabandara (Member 4) private component service | Read-only evidence tools for agents. The public API applies its existing authentication/permission integration; Wanshaja Sooriyabandara (Member 4) revalidates and executes protected state changes after required approval. |
+| Tourist recommendation, itinerary and business request | Adithya Gunawardana (Member 3) private component service | The planner may prepare a proposal; Adithya Gunawardana (Member 3) remains the owner of business request and itinerary state. |
 | Model output | Selected model provider/runtime | Treat as untrusted, version/correlate it, validate schema, then apply deterministic checks. It is not an authoritative source. |
 
 ## 6. Four roles and their interaction
 
 | Role | Input and work | Output and tools | Authority it does not have |
 |---|---|---|---|
-| **Planning & Coordination (Member 3)** | Receives a validated objective, workflow identity, scope, limits and resume state; creates a structured plan and assigns configured specialist steps; tracks prerequisites and assembles validated reports. | Versioned plan/step status and assembled result. It may invoke only the roles allowed by the workflow policy: M1/M2 for coastal planning context, and M1/M2 followed by M4 for an operational assessment. | Cannot invent a role, skip a required dependency, change source data, perform deterministic safety decisions, approve or execute an operation. |
-| **Marine Conditions Intelligence (Member 2)** | Receives a scoped location, activity/period and requested evidence factors; obtains relevant normalized conditions and profile/suitability context. | Source-aware report with units, source, forecast/observation/retrieval times, freshness, gaps and the existing deterministic suitability result. Read-only tools. | Cannot select safety thresholds, turn `UNSUITABLE`/`UNKNOWN` into safe, or issue a maritime warning or closure. |
-| **Coastal Experience & Biodiversity (Member 1)** | Receives relevant canonical IDs, time/location and information need; returns published offering, schedule, availability, operational context and optional biodiversity information through the Member 3 validated prediction contract. | Typed sourced report; biodiversity result only when the Member 3 adapter returns a valid genuine prediction. Its post-G07 read-only tool handler uses the approved public/typed contract and never contacts IT3091 directly. | Cannot fabricate availability/prediction, expose unpublished/private data, or treat probability/suitability as observed presence, safety clearance or operational authority. |
-| **Safety & Operations (Member 4)** | Receives the objective, plan, validated specialist context, current operation and fixed allowed-action/policy envelope; prepares an assessment and proposal. | Structured recommendation, evidence references, uncertainty and proposed action/alert when supported. Read-only evidence tools. | Has no approve, publish, suspend, cancel or execute tool. Cannot decide its own approval requirement or change managed state. |
+| **Planning & Coordination — Adithya Gunawardana (Member 3)** | Receives a validated objective, workflow identity, scope, limits and resume state; creates a structured plan and assigns configured specialist steps; tracks prerequisites and assembles validated reports. | Versioned plan/step status and assembled result. It may invoke only the roles allowed by the workflow policy: M1/M2 for coastal planning context, and M1/M2 followed by M4 for an operational assessment. | Cannot invent a role, skip a required dependency, change source data, perform deterministic safety decisions, approve or execute an operation. |
+| **Marine Conditions Intelligence — Sanuda Abeysinghe (Member 2)** | Receives a scoped location, activity/period and requested evidence factors; obtains relevant normalized conditions and profile/suitability context. | Source-aware report with units, source, forecast/observation/retrieval times, freshness, gaps and the existing deterministic suitability result. Read-only tools. | Cannot select safety thresholds, turn `UNSUITABLE`/`UNKNOWN` into safe, or issue a maritime warning or closure. |
+| **Coastal Experience & Biodiversity — Ushan Srinuka (Member 1)** | Receives relevant canonical IDs, time/location and information need; returns published offering, schedule, availability, operational context and optional biodiversity information through the Adithya Gunawardana (Member 3) validated prediction contract. | Typed sourced report; biodiversity result only when the Adithya Gunawardana (Member 3) adapter returns a valid genuine prediction. Its post-G07 read-only tool handler uses the approved public/typed contract and never contacts IT3091 directly. | Cannot fabricate availability/prediction, expose unpublished/private data, or treat probability/suitability as observed presence, safety clearance or operational authority. |
+| **Safety & Operations — Wanshaja Sooriyabandara (Member 4)** | Receives the objective, plan, validated specialist context, current operation and fixed allowed-action/policy envelope; prepares an assessment and proposal. | Structured recommendation, evidence references, uncertainty and proposed action/alert when supported. Read-only evidence tools. | Has no approve, publish, suspend, cancel or execute tool. Cannot decide its own approval requirement or change managed state. |
 
 Each role contract is detailed in the
 [v1 agent documents](../v1/README.md#component-and-agent-contract-map).
@@ -228,17 +228,17 @@ with cloned prompts and no distinct participation does not meet the contract.
 ### Runtime dependency order
 
 For the operational assessment, the planner creates the persisted plan;
-independent Member 1 and Member 2 evidence steps can run in parallel when the
+independent Ushan Srinuka (Member 1) and Sanuda Abeysinghe (Member 2) evidence steps can run in parallel when the
 plan and configured policy allow it; the planner validates/assembles their
-reports; then the Member 4 agent prepares its read-only proposal. Application
+reports; then the Wanshaja Sooriyabandara (Member 4) agent prepares its read-only proposal. Application
 code validates the result and may pause for an authorized human reviewer.
-The Member 4 service rechecks the authorized actor context, target version,
+The Wanshaja Sooriyabandara (Member 4) service rechecks the authorized actor context, target version,
 current state and allowed transition before any protected operation; the
 public API provides the authentication/permission integration. If required
 evidence is absent or invalid, the outcome is blocked, requires revision, or
 safe failure according to the accepted state contract.
 
-For a tourist recommendation, the planner coordinates Member 1 and Member 2
+For a tourist recommendation, the planner coordinates Ushan Srinuka (Member 1) and Sanuda Abeysinghe (Member 2)
 context, then application-owned deterministic constraints determine eligible
 items before a recommendation/itinerary result is returned. Normal tourist
 recommendations do not require staff approval. Missing or stale evidence stays
@@ -305,7 +305,7 @@ only a tool already granted to its role. The runtime
 resolves the tool ID in a server-owned registry and invokes a fixed adapter;
 it never executes model-supplied code, SQL, shell, URL, HTTP method, hostname,
 or arbitrary arguments. Tool output is untrusted until validated. Read-only
-agent access is the v1 default, especially for Member 4.
+agent access is the v1 default, especially for Wanshaja Sooriyabandara (Member 4).
 
 Candidate operation names in [`tools.md`](tools.md) are logical examples, not
 routes or implemented methods. Exact routes, schemas and public use must be
@@ -313,11 +313,11 @@ recorded in the endpoint catalog if they change the public API. Internal tool
 contracts stay private and must not become client routes.
 
 The selected map API is not a default model source or v1 Agentic AI tool.
-Member 1's agent reads validated destination and location context through its
-Member 1-owned tools; it does not call a map provider, arbitrary URL or
+Ushan Srinuka's agent reads validated destination and location context through its
+Ushan Srinuka (Member 1)-owned tools; it does not call a map provider, arbitrary URL or
 map-provider SDK. If a later accepted workflow needs map operations, define a
 separate allowlisted server-side tool, minimization/provenance rules and
-evaluation, and preserve the Member 1 catalogue as the destination authority.
+evaluation, and preserve the Ushan Srinuka (Member 1) catalogue as the destination authority.
 
 ## 9. Business state, AI execution state and recovery
 
@@ -361,16 +361,16 @@ effect when safe recovery is impossible.
 
 Application-owned validation occurs after relevant model/tool results and
 again immediately before an approved protected mutation. It checks at least
-the applicable schema, required evidence, source freshness, Member 1
-publication/schedule/availability, Member 2 profile and deterministic
-suitability, Member 4 current state and allowed transitions, actor permission,
+the applicable schema, required evidence, source freshness, Ushan Srinuka (Member 1)
+publication/schedule/availability, Sanuda Abeysinghe (Member 2) profile and deterministic
+suitability, Wanshaja Sooriyabandara (Member 4) current state and allowed transitions, actor permission,
 proposal version and approval requirement.
 
-Member 4 agents can only propose. A high-impact proposal pauses pending an
+Wanshaja Sooriyabandara (Member 4) agents can only propose. A high-impact proposal pauses pending an
 authorized human decision. Approve/reject/request-revision must be validated
 for permission, current proposal and decision state. Reject/revision must not
 execute. Approval requires fresh revalidation and transactional application
-through the Member 4 service, with business and audit/history state kept
+through the Wanshaja Sooriyabandara (Member 4) service, with business and audit/history state kept
 consistent. The public API remains the client-facing route and permission
 integration point. The LLM never executes the change.
 
@@ -466,7 +466,7 @@ release, freeze and execute:
   tool output and any later accepted RAG source;
 - each role's allowlist, unauthorized access, cross-user isolation and attempt
   to bypass permissions or call protected tools;
-- missing, stale, contradictory and unavailable Member 1/2/4 evidence;
+- missing, stale, contradictory and unavailable Ushan Srinuka, Sanuda Abeysinghe and Wanshaja Sooriyabandara evidence;
 - model/provider and tool timeout, bounded retries, cancellation, duplicate
   dispatch, crash/restart/resume and retry exhaustion;
 - approval required, approve, reject, request revision, expired/stale proposal,
@@ -491,11 +491,11 @@ The component branch and integration gate in
 2. **AI-00:** accept model/provider/retrieval, framework, typed shared schema,
    tool, durable state, safety, deployment and evaluation decisions; build
    runtime foundation on `agentic-ai/runtime-foundation`.
-3. **AI-01a/AI-01b:** implement the Member 1 and Member 2 read-only specialist
+3. **AI-01a/AI-01b:** implement the Ushan Srinuka (Member 1) and Sanuda Abeysinghe (Member 2) read-only specialist
    agents in parallel after AI-00.
-4. **AI-02:** implement Member 3 planning, delegation and assembly using the
+4. **AI-02:** implement Adithya Gunawardana (Member 3) planning, delegation and assembly using the
    accepted specialist reports.
-5. **AI-03:** implement Member 4's proposal-only safety/operations role with
+5. **AI-03:** implement Wanshaja Sooriyabandara's proposal-only safety/operations role with
    no approval or execution tool.
 6. **AI-04:** run the end-to-end golden workflow, tourist path, full negative
    and recovery evaluation, deployment/setup and release evidence.
@@ -517,11 +517,11 @@ answer “yes” to each item:
 - [ ] All four agent role/input/output/tool/prompt versions and limits are
       explicit and tested.
 - [ ] Workflow state is durable, correlated, recoverable and separate from
-      Member 3/4 business state; hidden reasoning and secrets are absent.
+      Adithya Gunawardana and Wanshaja Sooriyabandara business state; hidden reasoning and secrets are absent.
 - [ ] All model/tool outputs are validated and all protected business rules
       remain deterministic.
-- [ ] Member 4 agents cannot approve or execute; authorized humans decide, the
-      Member 4 service revalidates/executes, and the public API supplies its
+- [ ] Wanshaja Sooriyabandara (Member 4) agents cannot approve or execute; authorized humans decide, the
+      Wanshaja Sooriyabandara (Member 4) service revalidates/executes, and the public API supplies its
       authentication/permission integration.
 - [ ] Not-connected/outage/malformed/retry-exhausted paths return safe state
       with no fabricated success or unauthorized side effect.

@@ -9,22 +9,22 @@ device-only branches.
 
 | Owner | In-scope capability | Business use | Client behavior |
 |---|---|---|---|
-| Member 1 — Coastal Experience & Biodiversity Discovery | GPS/device location and location-aware discovery; selected map-provider integration remains a separate backend-mediated responsibility | Find nearby coastal destinations and activities, with user permission and a manual alternative | Flutter offers a one-time current-location action. React supports location search/manual entry and may offer browser geolocation as an explicit convenience. Both produce the same nearby-discovery outcome. |
-| Member 3 — Smart Coastal Planner & Itinerary Management | Date/time selection | Set the requested planning period and itinerary schedule | Flutter uses native date/time picker controls. React uses accessible date/time inputs. Both submit equivalent, validated values to the public API. |
-| Member 4 — Coastal Operations, Advisories & Alerts | Optional photo evidence capture/selection and image-file upload | Attach visual evidence to a BLUEVERSE-managed operational assessment for the authorized reviewer | Flutter supports camera capture and image selection/upload. React supports image-file selection/upload; on camera-capable browsers, direct capture may be offered as a convenience. The reviewer-visible business outcome is equivalent. |
+| Ushan Srinuka (Member 1) — Coastal Experience & Biodiversity Discovery | GPS/device location and location-aware discovery; selected map-provider integration remains a separate backend-mediated responsibility | Find nearby coastal destinations and activities, with user permission and a manual alternative | Flutter offers a one-time current-location action. React supports location search/manual entry and may offer browser geolocation as an explicit convenience. Both produce the same nearby-discovery outcome. |
+| Adithya Gunawardana (Member 3) — Smart Coastal Planner & Itinerary Management | Date/time selection | Set the requested planning period and itinerary schedule | Flutter uses native date/time picker controls. React uses accessible date/time inputs. Both submit equivalent, validated values to the public API. |
+| Wanshaja Sooriyabandara (Member 4) — Coastal Operations, Advisories & Alerts | Optional photo evidence capture/selection and image-file upload | Attach visual evidence to a BLUEVERSE-managed operational assessment for the authorized reviewer | Flutter supports camera capture and image selection/upload. React supports image-file selection/upload; on camera-capable browsers, direct capture may be offered as a convenience. The reviewer-visible business outcome is equivalent. |
 
 The assignment minimum is met by the required Flutter GPS/device-location
-workflow. Member 3's itinerary date/time selection and Member 4's optional
+workflow. Adithya Gunawardana's itinerary date/time selection and Wanshaja Sooriyabandara's optional
 evidence images are additional interactions chosen because they directly
-support their existing v1 workflows. Member 2's marine condition query still
+support their existing v1 workflows. Sanuda Abeysinghe's marine condition query still
 requires a normal business period input, but it is not assigned a separate
 device feature. These interactions do not replace GPS or authorize adding
 every device feature in the assignment's example list.
 
 These allocations are workflow ownership, not an hours-equalization formula.
-Member 3's date/time controls serve its planner/API/itinerary/re-evaluation
-scope; Member 4's evidence upload adds storage and security work to its
-existing assessment/review/approval scope. Member 2's provider-query period
+Adithya Gunawardana's date/time controls serve its planner/API/itinerary/re-evaluation
+scope; Wanshaja Sooriyabandara's evidence upload adds storage and security work to its
+existing assessment/review/approval scope. Sanuda Abeysinghe's provider-query period
 is part of its existing business form and suitability contract. The complete
 component responsibilities and evidence remain with each member as defined
 in the [single-branch workflow](member-branch-workflow.md).
@@ -57,7 +57,7 @@ in the [single-branch workflow](member-branch-workflow.md).
   can prepare the normal API/access boundary, but the device interactions do
   not create or invoke agent runtimes.
 
-## Member 1 — GPS/device location and map-assisted discovery
+## Ushan Srinuka (Member 1) — GPS/device location and map-assisted discovery
 
 ### User interaction
 
@@ -71,7 +71,7 @@ in the [single-branch workflow](member-branch-workflow.md).
    shows a concise, user-understandable selected-location label and the
    search radius/filters that will be used; raw coordinates need not be shown.
 4. `services/api` authenticates/authorizes and routes the search to the private
-   Member 1 service. That service validates coordinate/radius bounds and
+   Ushan Srinuka (Member 1) service. That service validates coordinate/radius bounds and
    filters, then returns nearby destinations/activities with the same
    eligibility, publication, availability and restriction rules as manual
    search.
@@ -94,18 +94,18 @@ the same manual fallback. Never loop permission prompts.
 - Send the minimum coordinate precision needed for the agreed nearby search.
   Persist raw device coordinates only if a separately documented business
   need and retention rule requires it. Canonical destination coordinates
-  remain Member 1-owned catalogue data and are distinct from a visitor's
+  remain Ushan Srinuka (Member 1)-owned catalogue data and are distinct from a visitor's
   transient device reading.
 - GPS acquisition is a device capability and does not depend on a particular
-  map vendor. Map/place/geocoding/display calls are performed by Member 1's
+  map vendor. Map/place/geocoding/display calls are performed by Ushan Srinuka's
   private service behind the public API integration. The map provider and
-  exact rendered-map features remain unselected until Member 1 records the
+  exact rendered-map features remain unselected until Ushan Srinuka (Member 1) records the
   provider, terms, attribution, credential handling and supported features in
   the implementation contract.
 - Provider outage must leave the manual/list discovery path usable and must
   not make provider content authoritative over BLUEVERSE's catalogue.
 
-## Member 3 — date/time selection for planning
+## Adithya Gunawardana (Member 3) — date/time selection for planning
 
 Date/time selection is already part of the planner's place, time and duration
 inputs; this is a device-appropriate way to capture that in-scope input rather
@@ -127,11 +127,11 @@ than an additional planner feature.
 - Date/time selection is input, not a notification/reminder feature. Push or
   local notifications are not added by this decision.
 
-## Member 4 — optional assessment image evidence
+## Wanshaja Sooriyabandara (Member 4) — optional assessment image evidence
 
 Image attachments support an operator's existing assessment of a
 BLUEVERSE-managed activity, offering or session. They supplement, rather than
-replace, the Member 1/2 sourced evidence and deterministic validation. They
+replace, the Ushan Srinuka and Sanuda Abeysinghe sourced evidence and deterministic validation. They
 are optional in v1 unless a specific assessment rule later requires a
 particular evidence type and is documented.
 
@@ -140,10 +140,10 @@ particular evidence type and is documented.
 - Flutter lets an authorized operator capture a photo or choose an existing
   image. React lets the operator choose an image file and may expose a camera
   capture hint on supported mobile browsers.
-- Both clients submit the selected image through the Member 4 public API and
+- Both clients submit the selected image through the Wanshaja Sooriyabandara (Member 4) public API and
   associate it with the authorized assessment/workflow. File selection never
   grants access to an assessment or changes its status.
-- The public API authenticates the actor and routes the request to Member 4's
+- The public API authenticates the actor and routes the request to Wanshaja Sooriyabandara's
   service, which checks assessment scope and upload permission, validates the
   content type/count/size and file bytes, rejects malformed/unsafe content,
   and stores accepted bytes privately with
@@ -157,8 +157,8 @@ particular evidence type and is documented.
   version. A later correction/addition is a separately authorized and audited
   supplemental evidence version, so a reviewer can identify exactly what was
   considered. Draft removal, submitted-version behavior and retention must
-  follow the final Member 4 lifecycle contract.
-- The Member 4 implementation contract must set the supported image formats,
+  follow the final Wanshaja Sooriyabandara (Member 4) lifecycle contract.
+- The Wanshaja Sooriyabandara (Member 4) implementation contract must set the supported image formats,
   maximum number and size of files per assessment, private storage provider,
   scanning/sanitization method and retention/deletion schedule before code is
   accepted. Postgres stores searchable metadata and relationships, not image
@@ -194,7 +194,7 @@ The owning branch must demonstrate:
 - the same authorized nearby discovery result and API request semantics from
   manual and current-location input;
 - equivalent valid/invalid date, time, duration and time-zone behavior on
-  React and Flutter for Member 3 itinerary scheduling, including boundary and
+  React and Flutter for Adithya Gunawardana (Member 3) itinerary scheduling, including boundary and
   daylight-saving cases where the selected zone observes them;
 - optional image selection/capture and authorized upload/review from both
   clients, with identical API validation and assessment state;
@@ -212,12 +212,12 @@ register target-only endpoints or routes in advance.
 
 ## Related contracts
 
-- [Member 1 component and work plan](components/member-1-coastal-experience-biodiversity-discovery.md)
-  · [Member 1 phases](phases/member-1-phase-plan.md)
-- [Member 3 component and work plan](components/member-3-smart-coastal-planner-itinerary-management.md)
-  · [Member 3 phases](phases/member-3-phase-plan.md)
-- [Member 4 component and work plan](components/member-4-coastal-operations-advisories-alerts.md)
-  · [Member 4 phases](phases/member-4-phase-plan.md)
+- [Ushan Srinuka (Member 1) component and work plan](components/member-1-coastal-experience-biodiversity-discovery.md)
+  · [Ushan Srinuka (Member 1) phases](phases/member-1-phase-plan.md)
+- [Adithya Gunawardana (Member 3) component and work plan](components/member-3-smart-coastal-planner-itinerary-management.md)
+  · [Adithya Gunawardana (Member 3) phases](phases/member-3-phase-plan.md)
+- [Wanshaja Sooriyabandara (Member 4) component and work plan](components/member-4-coastal-operations-advisories-alerts.md)
+  · [Wanshaja Sooriyabandara (Member 4) phases](phases/member-4-phase-plan.md)
 - [Component relationships](component-relationships.md)
 - [Member branch and integration workflow](member-branch-workflow.md)
 - [Assessment evidence storage boundary](../adr/ADR-0018-assessment-evidence-storage-boundary.md)

@@ -18,8 +18,8 @@ The repository naming policy accepts these lowercase branch families:
 
 The following names are reserved for repository automation or foundation
 state: `main`, `dev`, `dev-backup`, `default-template`,
-`github-sync/<target>/<run>`, `docker-workflow-changes/<target>/<timestamp>`
-and `dev-backup-mistaken-commits/<actor>/<timestamp>`.
+`docker-workflow-changes/<target>/<timestamp>` and
+`dev-backup-mistaken-commits/<actor>/<timestamp>`.
 
 `branch-policy.yml` checks a branch immediately after creation. Branch names
 must be fully lowercase and match an approved name or family; an invalid branch
@@ -47,9 +47,7 @@ Configure GitHub rulesets or branch protection so that:
 - pull requests into `dev` require review and the relevant source checks;
 - force-push and deletion are disabled for `main`, `dev` and `dev-backup`;
 - the `dev-backup` maintenance workflow is allowed to update `dev-backup`, or
-  its repository rule explicitly grants the workflow token a bypass; and
-- GitHub Actions is allowed to create and queue the `.github` synchronization
-  pull requests if that automation is enabled.
+  its repository rule explicitly grants the workflow token a bypass.
 
 GitHub Actions status checks report whether a commit passed; they do not
 cancel an already accepted push. Required checks in a ruleset are the control
@@ -63,36 +61,27 @@ the mobile app does not start the backend or web workflows; a commit changing
 the endpoint catalog or shared CI helper starts the checks that consume it.
 Manual dispatch remains available for an explicit full run.
 
-The special automation branches are not included in the source/test/Docker
-workflow branch filters. Their jobs are driven only by their own automation
-workflows. Because a path-filtered workflow may not create a check at all,
+Temporary recovery branches are not included in the source/test/Docker
+workflow branch filters. The backup workflow creates them only to preserve an
+existing commit history. Because a path-filtered workflow may not create a check at all,
 required-check rules must be configured to match this policy; use a lightweight
 always-triggered gate where a branch rule demands a check on every pull request.
-
-## GitHub configuration synchronization
-
-`github-config-sync.yml` watches pushes that change `.github/**`. For every
-durable development branch except `main` and `dev-backup`, it creates a
-temporary `github-sync/<target>/<run-id>` branch containing only the `.github`
-folder, opens a pull request, queues automatic squash merging and requests
-branch cleanup after the merge. Temporary recovery/automation branches are
-excluded as sources and targets. The source and target application/service
-files are not copied.
-
-The workflow skips the standard synchronization commit subject to avoid a
-second propagation wave after a sync PR is merged. If a repository rule does
-not permit automatic merging, the PR remains available for a collaborator and
-the workflow reports the target as failed instead of silently discarding it.
 
 ## Dev backup
 
 `dev-backup.yml` runs only for `dev` and `dev-backup` pushes. It creates
-`dev-backup` from `dev` when the backup does not exist. When an unwanted commit
-lands on `dev-backup`, the workflow preserves the complete backup history on a
-timestamped `dev-backup-mistaken-commits/<actor>/<timestamp>` branch using an
-explicit merge commit, then synchronizes `dev-backup` to the exact `dev` SHA.
-The timestamp is generated in `Asia/Colombo` (`GMT+05:30`) with millisecond
-precision.
+`dev-backup` from `dev` when the backup does not exist. If an unwanted commit
+lands on `dev-backup`, the workflow creates a timestamped
+`dev-backup-mistaken-commits/<actor>/<timestamp>` rescue branch from the current
+`dev` commit, then creates a merge commit that preserves the mistaken backup
+history. The normal merge prefers the backup branch's content for conflicts.
+If that merge cannot complete, a fallback merge commit records both histories
+so the original mistaken commits remain reachable from the rescue branch.
+
+After creating the rescue ref, the workflow force-with-lease updates
+`dev-backup` to the exact current `dev` SHA, equivalent to resetting the backup
+branch to match `dev`. The timestamp uses `Asia/Colombo` (`GMT+05:30`) with
+millisecond precision.
 
 The final synchronization uses a force-with-lease update so an unexpected
 concurrent update is not overwritten. The repository rule for `dev-backup`

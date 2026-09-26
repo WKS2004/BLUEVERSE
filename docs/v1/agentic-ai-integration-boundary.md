@@ -54,10 +54,10 @@ for its paired role while implementing the ordinary feature:
 
 | Member feature | Paired future AI role | Member-branch integration work |
 |---|---|---|
-| Member 1 — Coastal Experience & Biodiversity Discovery | Experience & Biodiversity specialist | Authorized public workflow initiation/status contract; validated references to Member 1's catalogue and availability data; a typed private dispatch/result adapter; provenance and explicit not-connected/unavailable state for the optional Agentic report. |
-| Member 2 — Marine Conditions & Safety Intelligence | Marine Conditions specialist | Authorized public workflow initiation/status contract; validated access to normalized conditions and deterministic suitability; typed private dispatch/result adapter; source/freshness references and explicit not-connected/unavailable state. The agent cannot set or override safety thresholds. |
-| Member 3 — Smart Coastal Planner & Itinerary Management | Planning & Coordination agent | Public request, shared workflow ID/status/result and itinerary contracts; durable business request state; typed private orchestration adapter and dependency status; safe behavior when the planner or specialist dependencies are not connected. Deterministic recommendations and itineraries remain usable independently. |
-| Member 4 — Coastal Operations, Advisories & Alerts | Safety & Operations agent | Public assessment/status/proposal contracts; durable business assessment and proposal references; typed private dispatch adapter; explicit unavailable status. The Member 4 service enforces authorized decisions and protected execution behind the public API boundary. |
+| Ushan Srinuka (Member 1) — Coastal Experience & Biodiversity Discovery | Experience & Biodiversity specialist | Authorized public workflow initiation/status contract; validated references to Ushan Srinuka's catalogue and availability data; a typed private dispatch/result adapter; provenance and explicit not-connected/unavailable state for the optional Agentic report. |
+| Sanuda Abeysinghe (Member 2) — Marine Conditions & Safety Intelligence | Marine Conditions specialist | Authorized public workflow initiation/status contract; validated access to normalized conditions and deterministic suitability; typed private dispatch/result adapter; source/freshness references and explicit not-connected/unavailable state. The agent cannot set or override safety thresholds. |
+| Adithya Gunawardana (Member 3) — Smart Coastal Planner & Itinerary Management | Planning & Coordination agent | Public request, shared workflow ID/status/result and itinerary contracts; durable business request state; typed private orchestration adapter and dependency status; safe behavior when the planner or specialist dependencies are not connected. Deterministic recommendations and itineraries remain usable independently. |
+| Wanshaja Sooriyabandara (Member 4) — Coastal Operations, Advisories & Alerts | Safety & Operations agent | Public assessment/status/proposal contracts; durable business assessment and proposal references; typed private dispatch adapter; explicit unavailable status. The Wanshaja Sooriyabandara (Member 4) service enforces authorized decisions and protected execution behind the public API boundary. |
 
 Each member branch owns the public business contract and implements its
 business operation and private-service client seam inside its own internal
@@ -72,10 +72,10 @@ client shared-file boundary is in the [member branch workflow](member-branch-wor
 
 ## Keep business workflow state distinct from AI execution state
 
-Before G07, Members 3 and 4 may persist ordinary business workflow records:
+Before G07, Adithya Gunawardana and Wanshaja Sooriyabandara may persist ordinary business workflow records:
 requests, assessment identity, initiator and permissions, status, proposal
 references, outcome version, timestamps and safe dependency-failure status.
-Members 1 and 2 persist their component-owned data and any public workflow
+Ushan Srinuka and Sanuda Abeysinghe persist their component-owned data and any public workflow
 request/status needed for their paired report. These records are owned by the
 business component and remain meaningful if no agent has ever run.
 
@@ -144,7 +144,7 @@ Only the AI-dependent operation is unavailable when the AI service is not
 connected. Continue ordinary catalogue, condition acquisition, deterministic
 suitability, availability, deterministic recommendations, itineraries,
 assessment review, approval and other authorized non-AI behavior when their
-own dependencies are healthy. Never let an AI outage bypass Member 4's
+own dependencies are healthy. Never let an AI outage bypass Wanshaja Sooriyabandara's
 authorization, revalidation, approval or audit rules.
 
 ## Required pre-G07 acceptance evidence
