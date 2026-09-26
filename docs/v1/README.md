@@ -58,6 +58,19 @@ status only when source and tests provide evidence. The member numbers below
 are responsibility labels from the requirements; they do not identify a
 person or GitHub account.
 
+## Implementation start gate
+
+The final repository audit gives a **GO for G00** and a **conditional GO for
+member coding after G00**. The contracts and existing v0 foundation are ready
+to support the shared contract freeze; parallel feature coding must wait until
+the owners record the shared IDs, API/service and permission contracts, data
+ownership, delivery identities, client registrations and failure semantics.
+After G00, all four complete member components can proceed concurrently on
+their single feature branches. Executable Agentic AI remains gated on G07 by
+design. The repository is not yet v1 complete or ready for final assessment.
+See the detailed [final start-readiness decision and exit
+criteria](requirements-coverage-and-readiness.md#final-start-readiness-decision--2026-09-26).
+
 ## Product rule
 
 React Web and Flutter Mobile offer the same permitted business capabilities to

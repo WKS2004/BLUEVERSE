@@ -9,6 +9,115 @@ that the v1 services exist. Start with the
 this page to resolve cross-component decisions and collect implementation
 evidence.
 
+## Final start-readiness decision — 2026-09-26
+
+**Decision: GO for G00; conditional GO for member implementation; NO-GO for
+claiming v1 complete.** The repository has enough approved scope, component
+contracts, ownership boundaries, cross-component relationships, branch rules
+and validation guidance to begin the shared G00 contract-freeze work now. The
+four members may begin their complete component implementations concurrently
+only after the G00 exit criteria below are agreed and recorded. This is a
+shared start gate, not a member-by-member implementation order.
+
+The current source contains the public API and Auth services, but no v1 domain
+service. The endpoint catalog currently records 33 public endpoints and 22
+frontend routes, all for the foundation; it records no Agentic AI endpoint.
+Those are honest baseline counts, not missing documentation. Actual component
+services, feature routes, provider integrations, device workflows and the
+Agentic AI runtime remain implementation work.
+
+| Area | Final assessment | Evidence and next gate |
+|---|---|---|
+| v0 foundation and shared contracts | Ready as the starting baseline | Existing API/Auth, React/Flutter, Docker/Compose, role-to-permission model, endpoint catalog, UI registry and agent resources are present. Static catalog, UI-integration and agent-resource validators passed on this audit. This does not assert that application builds, tests or live infrastructure were rerun. |
+| v1 requirements and member plans | Ready as implementation specifications | Four complete member contracts, four paired-agent contracts, work-area plans, relationship map, workflow, device, integration, quality and branch guides link the scope. These are target contracts, not implementation evidence. |
+| Four member services and workflows | Not implemented; expected before kickoff | `services/` currently contains only `api` and `auth`. Each new private component service, its persistence, public API integration, React and Flutter workflow, provider adapters and tests must be built on its assigned feature branch. |
+| G00 shared contract freeze | Pending; required before component coding | Assign named member owners and settle the shared contracts listed below. Record decisions in their owning contracts and mark G00 accepted in the [branch tracker](member-branch-workflow.md#component-branch-status). |
+| External integrations and device behavior | Interfaces can be planned at G00; live decisions are owner gates | Agree cross-member data contracts and adapter boundaries before parallel work. Select and verify the map provider, Open-Meteo data policy, IT3091 wire/auth contract and Member 4 image storage policy before accepting each live integration. |
+| Executable Agentic AI | Correctly deferred; prohibited before G07 | Member branches prepare only their business workflow and typed, bounded, unavailable-aware AI integration seams. Start executable agents, tools, orchestration, model calls and AI-owned state on `agentic-ai/**` only after all four components pass G07. |
+| Full assessment and release | Not ready | The backend test workflow's path filters do not satisfy the guideline's every-push/every-pull-request-to-`main` requirement. The known Flutter widget-test reference to removed `MyHomePage`, duplicate Auth test IDs, hosted mobile HTTPS configuration and release evidence also remain open; see [foundation gaps](../project/foundation-gap-analysis.md). |
+
+### G00 exit criteria
+
+Before any member starts component coding, record agreement on all of the
+following in the linked contracts or a reviewable G00 decision record:
+
+1. **Named owners and branches:** map each Member 1–4 label to a confirmed
+   teammate, assign the four `features/<component>` branches and PR owners,
+   and identify the maintainer for sequential merges and shared-file
+   reconciliation. Member labels alone are not a person assignment.
+2. **Shared business identities and data authority:** freeze canonical IDs,
+   workflow identity, source-of-truth ownership, producer/consumer payloads,
+   status meanings and cross-component references shown in the
+   [relationship map](component-relationships.md).
+3. **Public and private contracts:** agree the first public operation set,
+   route/method and DTO ownership, validation, permission codes/resource
+   scope, error/status behavior, and the private API-to-service transport and
+   actor/permission propagation. Keep the existing API/Auth business flows
+   unchanged; clients still call only the public API.
+4. **Persistence and time:** decide how the shared PostgreSQL instance is
+   divided among service-owned schemas, migrations and database credentials;
+   document keys, constraints, migration ownership and concurrency approach.
+   Agree the shared timestamp, time-zone, period and availability semantics
+   required by the component relationships.
+5. **Service and delivery identity:** assign each service folder, project,
+   container and internal route/port; agree private network membership,
+   environment configuration/secrets, service startup and health/readiness
+   behavior, test-project discovery and CI/Compose integration. Do not invent
+   colliding identifiers independently across branches.
+6. **Shared client and registry edits:** agree distinct workflow IDs, React
+   and Flutter route ownership, permission references and endpoint/UI catalog
+   edits. Keep component modules member-specific and resolve shared route,
+   navigation, catalog and Compose conflicts sequentially during PR merges.
+7. **Provider and evidence seams:** agree the minimum adapter request/result
+   schemas and safe unavailable/fallback behavior for map discovery,
+   Open-Meteo, IT3091 inference and private image evidence. Concrete provider,
+   licensing, quota, storage and retention decisions may be finalized by the
+   owning member before that integration is accepted; test doubles do not
+   count as live integration.
+8. **Pre-G07 AI dependency behavior:** freeze typed dispatch/status meanings
+   for not-connected, unavailable and available states, bounded probe and
+   dispatch behavior, and retryability. Keep API liveness and database
+   readiness separate. No member branch implements an agent or fabricated AI
+   output.
+
+Once these items are agreed and recorded, update G00 to accepted, create the
+four feature branches from the same agreed `dev` baseline, and let all four
+members implement concurrently as described in the [branch workflow](member-branch-workflow.md).
+
+### Gates after G00
+
+- **Before each owner accepts its component PR:** complete that component's
+  live provider, media, persistence and cross-service integration decisions;
+  update the endpoint catalog and UI registry for implemented public routes
+  and screens; provide real integration and client-parity evidence.
+- **At G07:** all four complete member PRs are merged, real producer/consumer
+  paths are compatible on `dev`, integration corrections are finished, and
+  component quality evidence is accepted. G07 is the only gate that opens
+  executable Agentic AI implementation.
+- **Before final assessment/release:** remove the backend workflow path-filter
+  gap or obtain written assignment guidance; resolve the known Flutter and
+  test-ID baseline issues through the repository's test-change approval
+  process; verify hosted Flutter HTTPS and device behavior; and collect the
+  deployment, report, APK, demonstration and access evidence.
+
+Changing the PostgreSQL Compose bind address from `5432:5432` to
+`127.0.0.1:5432:5432` on promotion to `main` is already documented. Both
+mappings reserve host port `5432`; the development all-interface binding does
+not resolve a collision with a PostgreSQL process already using that port.
+Check the local port and trusted-network configuration during environment
+setup.
+
+### Audit evidence and limits
+
+On 2026-09-26, endpoint-catalog validation passed (33 public endpoints, 22
+frontend routes, no AI endpoints implemented), the UI-integration validator
+passed, and all 23 repository agent skills validated. Markdown links and
+`git diff --check` are rechecked after this documentation update. Application
+tests, builds, Android/device checks, live provider calls, hosted CI and
+runtime deployment were not run as part of this final documentation audit.
+Passing static contract validators confirms registry consistency only; it
+does not establish runtime readiness.
+
 ## Source order and status
 
 The repository's [frozen requirements](../../PROJECT_REQUIREMENTS.md) define

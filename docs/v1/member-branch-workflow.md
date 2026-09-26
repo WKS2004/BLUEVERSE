@@ -15,10 +15,14 @@ order.
 | Member 3 | `features/coastal-planner` | `dev` |
 | Member 4 | `features/coastal-operations` | `dev` |
 
-At G00, agree the shared IDs, source-of-truth ownership, contract schemas,
-permissions, error/status semantics, timestamps and workflow identity against
-the [relationship map](component-relationships.md). Create all four branches
-from the agreed `dev` baseline. Each owner implements one new .NET service in
+At G00, complete the shared
+[start-readiness exit criteria](requirements-coverage-and-readiness.md#g00-exit-criteria):
+agree the named owners, shared IDs, source-of-truth ownership, contract
+schemas, permissions, error/status semantics, timestamps, service identities,
+delivery contracts and shared workflow identity against the
+[relationship map](component-relationships.md). Record the agreement before
+component coding, then create all four branches from the same agreed `dev`
+baseline. Each owner implements one new .NET service in
 its own component-specific subfolder under `services/`, its data model, React
 and Flutter capabilities, paired backend Agentic AI access boundary, tests
 and documentation on that single branch. `services/api` remains the sole
@@ -161,6 +165,7 @@ turn-taking order.
 
 | Component | Owner label | Initial status | Branch | PR, merge and integration evidence |
 |---|---|---|---|---|
+| G00 — Shared contract freeze | All members | Pending | `dev` | — |
 | Member 1 — Experience and Biodiversity | Member 1 | Planned | `features/coastal-experience-biodiversity` | — |
 | Member 2 — Marine Conditions and Safety | Member 2 | Planned | `features/marine-conditions-safety` | — |
 | Member 3 — Planner and Itineraries | Member 3 | Planned | `features/coastal-planner` | — |

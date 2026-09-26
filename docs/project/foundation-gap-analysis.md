@@ -24,6 +24,35 @@ This review compares the checked-in repository with the implementation plan from
 | Submission package | Requirements documented, evidence pending | The group still needs the single consolidated PDF with Group and Individual Report sections, each student's own reflection and signed declaration, a runnable APK, accessible ten-minute demonstration video, evaluator links and secure test-account instructions. Submitted links and services must remain accessible through 21 October 2026. |
 | Git/GitHub | Repository present | Git metadata and branch history are present in the reviewed checkout. Continue using focused commits, pull requests and contribution evidence. |
 
+## Final v1 start-readiness decision — 2026-09-26
+
+**GO for G00; conditional GO for component coding after G00; not ready to
+claim v1 complete.** The repository contains the foundation and detailed
+member, agent, relationship, integration and branch contracts needed to begin
+the shared contract-freeze work. The source inventory still contains only
+`services/api` and `services/auth`; all four v1 component services, their
+client workflows and the executable Agentic AI runtime remain to be
+implemented.
+
+The team must record named component owners and agree the shared public and
+private contracts, cross-component IDs/data ownership, persistence strategy,
+service/container/network identities, authorization and failure semantics,
+health/readiness behavior, test/CI discovery and shared UI/catalog edits
+before starting the four concurrent component implementations. The complete
+checklist and post-G00 gates are in the
+[v1 requirements coverage and final readiness review](../v1/requirements-coverage-and-readiness.md).
+Actual Agentic AI work stays behind G07; the member-service integration seam
+and explicit `not connected`/unavailable behavior are part of the earlier
+member branches.
+
+The v1 scope and documents are ready to plan and begin, but final acceptance
+still has known work: the backend tests workflow is path-filtered despite the
+guideline's every-push/every-pull-request-to-`main` requirement; the existing
+Flutter widget-test reference and duplicate Auth test IDs need an approved
+baseline correction; hosted Flutter HTTPS/device evidence and deployment and
+submission artifacts remain outstanding. These are tracked as later delivery
+gates, not reasons to serialize the four component branches.
+
 ## Guideline-critical work still required
 
 The SE3090 specification requires a GitHub Actions workflow that restores,
