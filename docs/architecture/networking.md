@@ -29,6 +29,12 @@ the separate database network. The API reaches Auth through
 
 Auth is not connected to the edge network and has no public gateway route. Clients cannot call it directly.
 
+The v1 map provider is a planned outbound dependency of the ASP.NET Core API,
+not a host route or a client network target. The provider and egress policy
+are not configured in the current stack; see
+[ADR-0017](../adr/ADR-0017-map-provider-integration-boundary.md). React and
+Flutter must not call the map provider directly.
+
 No `/api/v1` style path versioning is planned.
 
 Client route/API integration is recorded in

@@ -16,6 +16,15 @@ contract, not an implementation claim.
 
 **Owning business component:** [Smart Coastal Planner & Itinerary Management](../components/member-3-smart-coastal-planner-itinerary-management.md).
 
+**Implementation sequence:** do not implement an executable agent, model
+call or tool before all four business components pass G07. After that gate,
+follow the post-G07 sequence in the [member branch and integration workflow](../member-branch-workflow.md),
+including the validated specialist-output handoff from Members 1 and 2.
+Before G07, the owning Member 3 feature branch prepares only the public
+business workflow, private backend adapter and not-connected/unavailable
+behavior defined in the [member integration boundary](../agentic-ai-integration-boundary.md).
+Implement this actual planner agent on an `agentic-ai/**` branch after G07.
+
 ## 1. Responsibility and distinction
 
 Interpret a validated coastal-tourism or operational-assessment objective,
@@ -46,7 +55,7 @@ The logical input contract includes:
 | Workflow identity | Stable workflow ID, workflow type, initiator reference/scope permitted for the task, and current durable workflow status. |
 | Validated objective | The coastal recommendation or operational assessment goal and allowed task scope. Free text is untrusted data and cannot change governing instructions. |
 | Domain references | Validated destination, activity/offering and time/period identifiers needed for the workflow. |
-| Constraints | Minimum planning preferences and business context needed for candidate selection; no unrelated personal data. |
+| Constraints | Minimum planning preferences and business context needed for candidate selection, including validated user-selected date/time, duration and applicable time-zone semantics; no unrelated personal data. The agent does not infer or invent a requested time. |
 | Available specialist roles | Fixed configured role identities and report types for this workflow class. The model cannot invent a role or swap in a generic clone. |
 | Tool and policy configuration | Server-owned allowlists, output schemas, dependency rules and execution bounds. These are immutable to the planner. |
 | Resume context | If resumed, previously validated completed-step references/results, failed step and permitted retry state. Do not reconstruct missing state from model memory. |
@@ -55,6 +64,10 @@ This table is semantic, not a frozen serialized schema. Define exact typed
 input properties, workflow-type validation and contract version during
 implementation. Never include passwords, provider credentials, hidden model
 reasoning, or an access token as natural-language context.
+The client controls for those time inputs are specified in the shared
+[device-capability contract](../device-capabilities.md); validated values
+remain business input and do not give the agent permission to alter the
+requested period.
 
 ## 3. Structured plan output
 
@@ -219,4 +232,4 @@ a good free-text plan.
 - Requirements: [sections 17, 20–27, 40–41](../../../PROJECT_REQUIREMENTS.md).
 - Owning component: [Smart Coastal Planner & Itinerary Management](../components/member-3-smart-coastal-planner-itinerary-management.md).
 - Specialists: [Marine Conditions](member-2-marine-conditions-intelligence-agent.md), [Experience & Biodiversity](member-1-coastal-experience-biodiversity-agent.md), [Safety & Operations](member-4-safety-operations-agent.md).
-- Shared behavior: [canonical workflows](../workflows.md), [requirements coverage and readiness](../requirements-coverage-and-readiness.md), [Agentic AI architecture](../../agentic-ai/architecture.md), [tools](../../agentic-ai/tools.md), [safety](../../agentic-ai/safety.md), [evaluation](../../agentic-ai/evaluation.md).
+- Shared behavior: [canonical workflows](../workflows.md), [requirements coverage and readiness](../requirements-coverage-and-readiness.md), [Agentic AI architecture](../../agentic-ai/architecture.md), [implementation blueprint](../../agentic-ai/implementation-blueprint.md), [tools](../../agentic-ai/tools.md), [safety](../../agentic-ai/safety.md), [evaluation](../../agentic-ai/evaluation.md).

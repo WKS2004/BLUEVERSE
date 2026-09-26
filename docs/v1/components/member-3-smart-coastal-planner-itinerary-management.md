@@ -31,16 +31,36 @@ used, and what remains uncertain. Recommendations do not promise inventory,
 conditions or real-world safety beyond the authoritative evidence and rules
 available at evaluation time.
 
+### 1.1 Cross-layer implementation overview
+
+| Layer | Component responsibility and implementation contract |
+|---|---|
+| **Universal product idea** | Turn a person's coastal place/time/interests/constraints into eligible, explainable coastal recommendations and user-owned itineraries. The planner assembles evidence from its source owners; it does not become the catalogue, marine-data provider or operations authority. A deterministic recommendation and itinerary path remains usable before the future AI runtime is connected. |
+| **React Web** | Provide the same authorized request, result, workflow-status, itinerary lifecycle and re-evaluation outcomes as Flutter. Use React 19/TypeScript/Vite/React Router, reusable pages/components, Tailwind utilities and existing request/state separation. Show evidence time, availability, suitability, uncertainty and re-evaluation changes; do not locally rank a blocked item back into an eligible result. See the [React component contract](../../v0/components/react-web-client.md), [UI integration guide](../../development/ui-integration.md), and [React state ADR](../../adr/ADR-0005-react-state-management.md). |
+| **Flutter Mobile** | Provide the same public workflow with native Dart/Material screens, the UI/logic/data separation, repository/API service and view-model pattern. Inputs and itinerary editing may be adapted to mobile interaction, but permissions, candidate eligibility, status, saved itinerary state and business outcome match React. See the [Flutter component contract](../../v0/components/flutter-client.md), [UI integration guide](../../development/ui-integration.md), and [Flutter state ADR](../../adr/ADR-0006-flutter-state-management.md). |
+| **ASP.NET Core and data** | The public API owns request authorization/validation, deterministic candidate assembly, business workflow identity/status/result and user-owned itinerary persistence. EF Core/PostgreSQL persist the business request and itinerary state under the approved schema. Member 1/2/4 source results remain authoritative; the planner stores references or evidence snapshots only as the accepted retention contract requires. |
+| **Third-party integration** | The planner has no direct third-party provider integration in the v1 contract. It consumes Member 1 catalogue/location/availability and optional biodiversity context, Member 2's backend-mediated Open-Meteo conditions and deterministic suitability, and Member 4 operational restrictions. It must not call the map provider, Open-Meteo, IT3091 inference, Auth or internal hosts directly from either client or from unrestricted model/network access. Map-assisted discovery remains in Member 1; planning receives validated Member 1 data. |
+| **Paired Agentic AI role** | The future Planning & Coordination Agent creates a structured plan, delegates to the distinct Member 1 and Member 2 specialists, tracks dependencies and assembles their validated outputs; it participates in Member 4 assessment when that workflow requests it. Before G07, Member 3 implements its ordinary deterministic business behavior, public workflow contract, typed private adapter and safe not-connected/unavailable state only. Actual orchestration/model calls and AI execution state wait for `agentic-ai/**` after G07. |
+| **Component relationships** | Member 3 consumes Member 1 publication/schedule/availability, Member 2 condition freshness and suitability, and Member 4 current restrictions. Its business workflow ID/objective/status/result references are consumed by Member 4 for traceable assessment. It never replaces source ownership or weakens `UNSUITABLE`, `UNKNOWN`, stale or restricted results. See the [producer/consumer relationship map](../component-relationships.md#producer-consumer-and-authority-map). |
+
+Both clients expose the same permitted outcomes through ASP.NET Core, the
+shared role-to-permission model and UI integration registry. This overview is
+the layer map; the later sections specify recommendation semantics, itinerary
+state, failure cases and acceptance evidence.
+
+The shared [Agentic AI implementation blueprint](../../agentic-ai/implementation-blueprint.md)
+defines common model, tool, retrieval, security, recovery and evaluation
+requirements for this component's paired agent.
+
 ## 2. Ownership and boundaries
 
 Member 3 owns:
 
 - recommendation requests and the planning constraints needed to serve them;
-- the persisted planning workflow for tourist recommendations and operational
-  assessment orchestration;
-- delegation to distinct marine, experience and (for operations) safety
-  specialists;
-- assembly of validated context into a final recommendation;
+- the persisted business request/workflow identity, status and result for
+  tourist recommendations and operational-assessment requests;
+- deterministic assembly of eligible candidates and validated context into a
+  useful recommendation;
 - user-owned itineraries and their ordered experience references; and
 - itinerary re-evaluation when relevant conditions, availability or
   operational state have changed.
@@ -48,8 +68,18 @@ Member 3 owns:
 It does not own the source catalogue and availability (Member 1), environmental
 retrieval and deterministic activity suitability (Member 2), operational
 restrictions/approval/execution (Member 4), or the public authorization
-boundary. The planning agent coordinates the process but does not replace a
-source component's facts or deterministic rule.
+boundary. The Planning & Coordination Agent's plan generation, specialist
+delegation, tool execution and orchestration are a separate post-G07 delivery;
+the agent coordinates the process but does not replace a source component's
+facts or deterministic rule.
+
+On `features/coastal-planner`, prepare the public request/status/result API
+and a typed private adapter for the future planner, including the backend
+availability check and a safe not-connected/unavailable result. The ordinary
+business workflow remains usable for deterministic recommendations and
+itineraries when the private Agentic AI service is absent. Keep business
+request state distinct from future agent plan/step state. Follow the shared
+[member integration boundary](../agentic-ai-integration-boundary.md).
 
 ## 3. Users, permissions and data minimization
 
@@ -71,7 +101,8 @@ profile data or treating inferred preferences as explicit consent.
 | Concept | Meaning |
 |---|---|
 | Recommendation request | A validated objective with only the preference and time/location constraints needed to produce a coastal recommendation. |
-| Planning workflow | A correlated, durable process with a shared workflow ID, structured plan, assigned specialists, step dependencies, status, validated results and errors. Detailed workflow state is defined in the shared [workflow contract](../workflows.md). |
+| Business workflow | A durable Member 3 request/assessment process with shared workflow ID, initiator, business status, result version, timestamps and links to relevant records. This exists independently of an AI run and is defined in the shared [workflow contract](../workflows.md). |
+| Agentic execution state | A post-G07 record of the planner's structured plan, assigned agents, dependencies, tool calls, outputs and recovery state. It is not implemented by the member feature branch; see the [Agentic AI integration boundary](../agentic-ai-integration-boundary.md). |
 | Candidate experience | A destination/activity/offering sourced from Member 1, combined with current schedule and availability, Member 2's condition/suitability result, and Member 4's applicable operational restrictions. |
 | Recommendation | A set of suggested experiences or activities, with reasons, evidence, suitability/availability context and explicit uncertainty. Exact ranking and presentation schema are implementation choices. |
 | Itinerary | A caller-owned or otherwise explicitly authorized ordered collection of coastal experience references for one or more dates/times. Exact ownership, sharing and item identity rules require a technical decision. |
@@ -184,7 +215,9 @@ The public capability set must support:
 - return status and structured uncertainty through the shared workflow ID.
 
 The API must never expose private orchestration, internal service hosts or
-specialist agent tools directly. Add each user-facing React/Flutter workflow
+specialist agent tools directly. If the future planner is not connected or
+unavailable, return the accepted safe business-workflow status; do not claim
+that an AI plan completed. Add each user-facing React/Flutter workflow
 to [`ui-integration.json`](../../contracts/ui-integration.json) with its
 public API references.
 
@@ -194,7 +227,7 @@ Both clients must provide the same authorized planning outcomes:
 
 | Step | Required behavior in each client |
 |---|---|
-| Preferences | Enter the relevant place, date/time, duration, coastal activity/interests and relevant experience constraints. Explain optional fields and allow correction. |
+| Preferences | Enter the relevant place, date/time, duration, coastal activity/interests and relevant experience constraints. Use accessible native date/time picker controls in Flutter and semantic date/time inputs in React. Explain optional fields and allow correction. |
 | Request | Submit through the public API and display the same workflow ID/status model. Prevent confusing duplicate submission while relying on server checks. |
 | Recommendation | Display coastal options, availability/schedule context, deterministic suitability, reasons and evidence timestamps, limitations and uncertainty. |
 | Itinerary | Create/revisit, add/remove/reorder/update, save and inspect history under the same authorization rules. |
@@ -205,6 +238,12 @@ Both clients must provide the same authorized planning outcomes:
 Web and mobile may adapt input widgets and layout to their form factor. Their
 business behavior, permission checks, data meaning and resulting itinerary
 must be equivalent. The shared UI registry is the conformance inventory.
+Keep date-only values distinct from instants. The member must agree the
+destination/user time-zone representation, daylight-saving gap/overlap
+behavior, supported planning horizon and range validation before freezing the
+API contract. The backend is authoritative; client pickers improve input but
+cannot make an unavailable or unsuitable offering eligible. See the shared
+[device-capability contract](../device-capabilities.md).
 
 ## 9. Cross-component handoffs
 
@@ -277,4 +316,6 @@ numeric safety policy is delegated to the planner or LLM.
 
 - Requirements: [sections 16, 17, 20–27, 40, 41 and 53](../../../PROJECT_REQUIREMENTS.md).
 - Paired AI role: [Planning & Coordination Agent](../agents/member-3-planning-coordination-agent.md).
-- Related contracts: [shared workflows](../workflows.md), [permissions and parity](../cross-platform-and-permissions.md), [quality and delivery](../quality-and-delivery.md), [requirements coverage and readiness](../requirements-coverage-and-readiness.md), [Agentic AI architecture](../../agentic-ai/architecture.md), [safety](../../agentic-ai/safety.md), [endpoint catalog](../../api/endpoint-catalog.md), [UI integration](../../contracts/ui-integration.json).
+- Component work areas on one member branch: [Member 3 phase plan](../phases/member-3-phase-plan.md); producer/consumer relationships: [component relationship map](../component-relationships.md); PR and G07 process: [member branch workflow](../member-branch-workflow.md).
+- Device input: [v1 device-capability contract](../device-capabilities.md) defines equivalent date/time selection for planning on React and Flutter.
+- Related contracts: [shared workflows](../workflows.md), [member Agentic AI integration boundary](../agentic-ai-integration-boundary.md), [permissions and parity](../cross-platform-and-permissions.md), [quality and delivery](../quality-and-delivery.md), [requirements coverage and readiness](../requirements-coverage-and-readiness.md), [Agentic AI architecture](../../agentic-ai/architecture.md), [safety](../../agentic-ai/safety.md), [endpoint catalog](../../api/endpoint-catalog.md), [UI integration](../../contracts/ui-integration.json).

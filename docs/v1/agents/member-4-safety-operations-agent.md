@@ -17,6 +17,16 @@ implemented.
 
 **Owning business component:** [Coastal Operations, Advisories & Alerts](../components/member-4-coastal-operations-advisories-alerts.md).
 
+**Implementation sequence:** do not implement an executable agent, model
+call or tool before all four business components pass G07. After that gate,
+follow the post-G07 sequence in the [member branch and integration workflow](../member-branch-workflow.md); this
+agent consumes validated planner/specialist evidence and never approves or
+executes its own proposal.
+Before G07, the owning Member 4 feature branch prepares only the public
+assessment/proposal contract, private backend adapter and
+not-connected/unavailable behavior defined in the [member integration boundary](../agentic-ai-integration-boundary.md).
+Implement this actual proposal agent on an `agentic-ai/**` branch after G07.
+
 ## 1. Responsibility and strict separation
 
 Consume validated marine, experience, operational and workflow evidence, then
@@ -54,6 +64,13 @@ The minimum logical input is:
 | Deterministic profile/result | Configured safety profile and the application-owned environmental assessment/evidence relevant to the objective. |
 | Active notices | Relevant active alerts, restrictions or operational constraints from their authoritative source. |
 | Policy envelope | Allowed recommendations/actions, output schema, tool allowlist and approval policy context; cannot be modified by the model. |
+
+Optional operator image attachments belong to the human-review evidence
+record. This agent does not receive image bytes, direct storage access, a
+storage URL or unvalidated text extracted from an image. Any later image
+interpretation requires a separate reviewed post-G07 capability; see the
+[device and evidence-media contract](../device-capabilities.md) and
+[ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md).
 
 This list describes semantic content, not serialized DTO fields or the final
 prompt. The implementation must define a typed/versioned input schema,
@@ -174,7 +191,9 @@ Do not persist hidden reasoning, credentials, access tokens or secrets.
 ## 8. Security and prompt-injection controls
 
 Objectives, user-provided context, catalogue text, external weather values,
-biodiversity metadata, active-alert content and tool output are untrusted.
+biodiversity metadata, active-alert content, any future approved derived
+media text and tool output are untrusted. Raw image attachments are not agent
+inputs under this contract.
 They cannot alter role instructions, create a tool, authorize a proposal,
 bypass a deterministic result, bypass reviewer approval, reveal secrets or
 cause direct mutation. Validate every tool input and output and enforce
@@ -228,4 +247,4 @@ application policy, even if the output includes a suggested flag.
 
 - Requirements: [sections 18–27, 40–41](../../../PROJECT_REQUIREMENTS.md).
 - Owning component: [Coastal Operations, Advisories & Alerts](../components/member-4-coastal-operations-advisories-alerts.md).
-- Shared behavior: [canonical workflow](../workflows.md), [requirements coverage and readiness](../requirements-coverage-and-readiness.md), [Agentic AI architecture](../../agentic-ai/architecture.md), [tools](../../agentic-ai/tools.md), [safety](../../agentic-ai/safety.md), [evaluation](../../agentic-ai/evaluation.md).
+- Shared behavior: [canonical workflow](../workflows.md), [requirements coverage and readiness](../requirements-coverage-and-readiness.md), [Agentic AI architecture](../../agentic-ai/architecture.md), [implementation blueprint](../../agentic-ai/implementation-blueprint.md), [tools](../../agentic-ai/tools.md), [safety](../../agentic-ai/safety.md), [evaluation](../../agentic-ai/evaluation.md).

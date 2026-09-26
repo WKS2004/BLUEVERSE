@@ -3,7 +3,15 @@
 This page organizes the acceptance requirements in
 [PROJECT_REQUIREMENTS.md](../../PROJECT_REQUIREMENTS.md), sections 32–48 and
 55. It is a target checklist, not a claim that the current foundation has
-passed the listed checks.
+passed the listed checks. Use the
+[component relationship map](component-relationships.md) to preserve
+producer/consumer contracts and the separate
+[member branch workflow](member-branch-workflow.md) for integration and G07.
+Each owner uses their linked
+[component work plan](README.md#component-and-agent-contract-map). Each member
+uses one `features/<component>` branch and a complete PR to `dev`; actual
+Agentic AI implementation is gated on all four business components passing
+G07.
 
 ## Business and persistence
 
@@ -17,7 +25,11 @@ Internal Auth, Agentic AI and ML services remain private.
 The final domain schema also needs an ER diagram, suitable PostgreSQL types,
 documented relationships and seed data where useful. Each owner must be able
 to explain their tables, constraints, migration, transaction boundary and
-business rule. API implementation evidence includes DTOs, application/service
+business rule. Each member feature also provides the prepared public workflow
+contract and private Agentic AI adapter boundary for its paired role, with
+bounded server-side health/dispatch handling and an explicit not-connected or
+unavailable outcome when the optional runtime is absent. See the
+[integration boundary](agentic-ai-integration-boundary.md). API implementation evidence includes DTOs, application/service
 logic, dependency injection, asynchronous I/O, structured logging, secure
 configuration, CORS and OpenAPI. The public workflow contract must cover
 initiation, status and execution summaries, reviewer decisions and resulting
@@ -30,6 +42,10 @@ React and Flutter each implement every authorized v1 role and workflow through
 the same public API. Verify form validation, loading, empty, success, denied,
 malformed, timeout and dependency-failure states where relevant. Flutter
 demonstrates GPS/location and a practical permission-denied alternative.
+Verify cross-client date/time semantics for the planner and authorized
+assessment image upload/review for operations, including invalid media,
+permission denial and storage failure. See the
+[device-capability contract](device-capabilities.md).
 Reports and analytics use real application data and remain useful to the
 person's task. Provide at least one meaningful data-driven report or analytics
 view in each client, such as assessment outcomes, condition history, alert

@@ -17,6 +17,14 @@ exists.
 
 **Owning business component:** [Coastal Experience & Biodiversity Discovery](../components/member-1-coastal-experience-biodiversity-discovery.md).
 
+**Implementation sequence:** do not implement an executable agent, model
+call or tool before all four business components pass G07. After that gate,
+follow the post-G07 sequence in the [member branch and integration workflow](../member-branch-workflow.md).
+Before G07, the owning Member 1 feature branch prepares only the public
+workflow contract, private backend adapter and not-connected/unavailable
+behavior defined in the [member integration boundary](../agentic-ai-integration-boundary.md).
+Implement this actual agent on an `agentic-ai/**` branch after G07.
+
 ## 1. Responsibility and intended use
 
 Return a structured, evidence-grounded context report about coastal
@@ -64,7 +72,11 @@ Candidate tool names below describe target capabilities, not live tools,
 public API routes or permission grants. Tool registration is centralized in
 the [tool contract](../../agentic-ai/tools.md). Tools return data through
 server-owned services; the agent must not call arbitrary URLs or internal
-hostnames directly.
+hostnames directly. The selected map API is not a direct agent dependency:
+map-assisted discovery/presentation belongs to Member 1's business component,
+and this agent receives only validated destination/location context returned
+by its Member 1 tools. A future map tool requires a separate approved
+allowlist, contract and evaluation; it is not implied by the map integration.
 
 | Candidate tool | Purpose | Agent must preserve |
 |---|---|---|
@@ -205,4 +217,4 @@ invent response property names, or set numeric model-confidence thresholds.
 
 - Requirements: [sections 13, 20–30 and 40](../../../PROJECT_REQUIREMENTS.md).
 - Owning component: [Coastal Experience & Biodiversity Discovery](../components/member-1-coastal-experience-biodiversity-discovery.md).
-- Shared behavior: [canonical workflows](../workflows.md), [requirements coverage and readiness](../requirements-coverage-and-readiness.md), [Agentic AI architecture](../../agentic-ai/architecture.md), [tools](../../agentic-ai/tools.md), [safety](../../agentic-ai/safety.md), [evaluation](../../agentic-ai/evaluation.md).
+- Shared behavior: [canonical workflows](../workflows.md), [requirements coverage and readiness](../requirements-coverage-and-readiness.md), [Agentic AI architecture](../../agentic-ai/architecture.md), [implementation blueprint](../../agentic-ai/implementation-blueprint.md), [tools](../../agentic-ai/tools.md), [safety](../../agentic-ai/safety.md), [evaluation](../../agentic-ai/evaluation.md).

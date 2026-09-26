@@ -4,6 +4,10 @@
 implemented. Evaluation evidence must come from executed tests and
 demonstrations, not from this document.
 
+The [implementation blueprint](implementation-blueprint.md) groups the model,
+retrieval, deployment, observability and release decisions that the evaluation
+must verify.
+
 ## Complete golden case
 
 The [Coastal Activity Operational Assessment](../v1/workflows.md) is the

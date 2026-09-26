@@ -75,12 +75,12 @@ separate AI-agent contract. Read both for work that crosses the agent/API
 boundary. Member numbers are ownership labels only; use the confirmed account
 mapping for contribution records.
 
-| Member label | Component contract | Core responsibility | Required business operation | Paired agent contract and responsibility |
-|---|---|---|---|---|
-| 1 (`v1.component.experience-biodiversity`) | [Coastal Experience & Biodiversity Discovery](components/member-1-coastal-experience-biodiversity-discovery.md) | Destinations, activities, offerings, schedules/availability, discovery, favourites and BLUEVERSE biodiversity integration | Publication and availability evaluation | [Coastal Experience & Biodiversity Agent](agents/member-1-coastal-experience-biodiversity-agent.md): sourced experience context and optional, uncertainty-aware biodiversity context |
-| 2 (`v1.component.marine-safety`) | [Marine Conditions & Safety Intelligence](components/member-2-marine-conditions-safety-intelligence.md) | Backend-mediated weather/marine data, provenance/freshness, activity safety profiles and deterministic suitability | Activity/location/time suitability assessment | [Marine Conditions Intelligence Agent](agents/member-2-marine-conditions-intelligence-agent.md): sourced, time-aware marine context; no invented thresholds or authority |
-| 3 (`v1.component.coastal-planner`) | [Smart Coastal Planner & Itinerary Management](components/member-3-smart-coastal-planner-itinerary-management.md) | Coastal recommendation requests, planning/delegation, assembly, itineraries and re-evaluation | Itinerary re-evaluation | [Planning & Coordination Agent](agents/member-3-planning-coordination-agent.md): structured workflow plan, specialist delegation, dependency tracking and assembly |
-| 4 (`v1.component.coastal-operations`) | [Coastal Operations, Advisories & Alerts](components/member-4-coastal-operations-advisories-alerts.md) | Operational assessment/state, approval, alerts/advisories and execution history | Approve, reject or request revision, followed by controlled execution where eligible | [Safety & Operations Agent](agents/member-4-safety-operations-agent.md): structured recommendation/proposal; read-only and never the executor |
+| Member label | Component contract | Work-area plan / single branch | Core responsibility | Required business operation | Paired agent contract and responsibility |
+|---|---|---|---|---|---|
+| 1 (`v1.component.experience-biodiversity`) | [Coastal Experience & Biodiversity Discovery](components/member-1-coastal-experience-biodiversity-discovery.md) | [Member 1 work areas](phases/member-1-phase-plan.md) · `features/coastal-experience-biodiversity` | Destinations, activities, offerings, schedules/availability, discovery, favourites, selected map-provider integration and BLUEVERSE biodiversity inference integration | Publication and availability evaluation | [Coastal Experience & Biodiversity Agent](agents/member-1-coastal-experience-biodiversity-agent.md): sourced experience context and optional, uncertainty-aware biodiversity context |
+| 2 (`v1.component.marine-safety`) | [Marine Conditions & Safety Intelligence](components/member-2-marine-conditions-safety-intelligence.md) | [Member 2 work areas](phases/member-2-phase-plan.md) · `features/marine-conditions-safety` | Backend-mediated weather/marine data, provenance/freshness, activity safety profiles and deterministic suitability | Activity/location/time suitability assessment | [Marine Conditions Intelligence Agent](agents/member-2-marine-conditions-intelligence-agent.md): sourced, time-aware marine context; no invented thresholds or authority |
+| 3 (`v1.component.coastal-planner`) | [Smart Coastal Planner & Itinerary Management](components/member-3-smart-coastal-planner-itinerary-management.md) | [Member 3 work areas](phases/member-3-phase-plan.md) · `features/coastal-planner` | Coastal recommendation requests, planning/delegation, date/time selection, assembly, itineraries and re-evaluation | Itinerary re-evaluation | [Planning & Coordination Agent](agents/member-3-planning-coordination-agent.md): structured workflow plan, specialist delegation, dependency tracking and assembly |
+| 4 (`v1.component.coastal-operations`) | [Coastal Operations, Advisories & Alerts](components/member-4-coastal-operations-advisories-alerts.md) | [Member 4 work areas](phases/member-4-phase-plan.md) · `features/coastal-operations` | Operational assessment/state, optional image evidence, approval, alerts/advisories and execution history | Approve, reject or request revision, followed by controlled execution where eligible | [Safety & Operations Agent](agents/member-4-safety-operations-agent.md): structured recommendation/proposal; read-only and never the executor |
 
 These member numbers are the labels in the requirements baseline. The
 requirements do not map them to actual names or GitHub accounts; ownership
@@ -100,8 +100,21 @@ must contain meaningful relational data, at least four meaningful public API
 endpoints and a business operation beyond CRUD. This index and the contracts
 do not name unimplemented API routes or declare target components complete.
 
+Use the [component relationship map](component-relationships.md) to see which
+component owns each contract and which consumers depend on it. The map does
+not prescribe a member implementation order. Use the separate
+[branch and integration workflow](member-branch-workflow.md) for the one
+complete branch/PR per member, parallel component development, `dev`
+integration, and the post-merge G07 gate. Each member keeps all of their
+component work on a single `features/<component>` branch; the detailed member
+plans group the full scope into work areas.
+
 ## Shared system behavior
 
+- [Member feature integration with Agentic AI](agentic-ai-integration-boundary.md)
+  defines the backend access seam and not-connected/unavailable behavior
+  implemented in member features, separate from the actual post-G07 AI
+  runtime and agents.
 - [V1 workflows](workflows.md) defines the assessed operational assessment and
   tourist recommendation path, including delegation, deterministic
   validation, approval, status return and safe failure.
@@ -111,10 +124,30 @@ do not name unimplemented API routes or declare target components complete.
   maps each component and agent to repository and assignment requirements,
   records the checked implementation status, and lists decisions and evidence
   required before v1 can be claimed complete.
+- [Component relationships](component-relationships.md) maps component
+  ownership, producer/consumer contracts, data authority and the cyclical
+  dependencies without prescribing which member implements first.
+- [Member branch and integration workflow](member-branch-workflow.md) defines
+  the single feature branch and complete PR per member, parallel development,
+  maintainer conflict resolution, compatibility fixes on `dev`, and the G07
+  gate before executable Agentic AI implementation.
 - [Cross-platform and permissions](cross-platform-and-permissions.md) defines
   equal React/Flutter capability and server-side permission boundaries.
+- [Device capabilities and evidence media](device-capabilities.md) assigns
+  Flutter GPS/React location-aware discovery to Member 1, planner date/time
+  selection to Member 3, and optional assessment image evidence to Member 4.
+  These are target requirements for the owner branches, not claims about the
+  current v0 clients.
+- [ADR-0018](../adr/ADR-0018-assessment-evidence-storage-boundary.md) keeps
+  Member 4's optional image evidence private, API-mediated, versioned and
+  outside raw Agentic AI input; its storage provider and limits must be
+  finalized before implementation.
 - [Agentic AI architecture](../agentic-ai/architecture.md) explains planning,
   delegation, controlled tools, deterministic validation and human approval.
+- [Agentic AI implementation blueprint](../agentic-ai/implementation-blueprint.md)
+  defines the model/framework decision criteria, RAG-versus-tool retrieval
+  baseline, runtime boundaries, state, security, operations and acceptance
+  checklist. It marks unselected technologies as decisions, not requirements.
 - [UI integration](../development/ui-integration.md) defines the shared
   workflow-ID, route and public API contract.
 - The [endpoint catalog](../api/endpoint-catalog.md) and
@@ -125,8 +158,13 @@ do not name unimplemented API routes or declare target components complete.
 ## Scope boundary
 
 The [v0 guide](../v0/README.md) documents the shared foundation. v1 delivers
-coastal tourism and operations, including
-Open-Meteo and internal biodiversity-ML integration. Environmental-authority,
+coastal tourism and operations, including Member 1's map-provider integration,
+Member 2's Open-Meteo weather/marine integration, and BLUEVERSE's consumer
+integration with the separate IT3091 biodiversity inference service.
+Map-provider choice and exact map feature scope remain open; external map
+access follows the ASP.NET Core boundary in
+[ADR-0017](../adr/ADR-0017-map-provider-integration-boundary.md).
+Environmental-authority,
 incident and pollution-response workflows belong to v2; fisheries and coastal
 livelihood workflows belong to v3. Generic booking, payment, social-network,
 emergency-dispatch and governmental beach-closure capabilities are not v1

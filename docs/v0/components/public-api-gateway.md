@@ -30,6 +30,21 @@ application services, structured errors, OpenAPI and tests at the public
 boundary. A new internal service is registered behind that boundary; a
 client must never call its container hostname.
 
+## Liveness and future dependency availability
+
+The current `GET /api/health` is API process liveness. Auth's
+`GET /api/auth/health` reports Auth and database readiness. Neither signal
+establishes availability of an optional internal dependency. Keep these
+signals separate when v1 adds the member-owned Agentic AI backend
+integration seam. That seam must probe the configured private AI dependency
+server-side with a bounded check and report a safe not-connected/unavailable
+state through the accepted workflow/readiness contract. It must not change
+API liveness, be reported as a database failure, block service startup when
+the optional runtime has not yet been deployed, or expose the private probe
+to React or Flutter. The exact readiness surface and response schema remain
+part of the [v1 integration contract](../../v1/agentic-ai-integration-boundary.md)
+and must be finalized before an endpoint is implemented.
+
 ## Verification
 
 Use `services/api/tests` for gateway, CORS, JWT, health, Swagger,

@@ -20,10 +20,11 @@ the frozen requirements, not an individual or account identity.
 
 This component is the operational assessment and human-approval boundary for
 BLUEVERSE-managed coastal activities and sessions. It connects an operator's
-request to authoritative experience and marine context, the four-role AI
-workflow, deterministic application validation, a human decision, any allowed
-BLUEVERSE-managed operational state change, an advisory/alert and auditable
-history.
+request to authoritative experience and marine context, the eventual
+post-G07 four-role AI workflow, deterministic application validation, a
+human decision, any allowed BLUEVERSE-managed operational state change, an
+advisory/alert and auditable history. Before G07, the business API and
+workflow exist without an executable agent or production proposal generator.
 
 An operator must be able to submit an objective and follow the result. A
 reviewer must be able to see what was assessed, which evidence and checks
@@ -31,6 +32,28 @@ support the proposal, what the AI proposed, what deterministic validation
 concluded, whether approval is required, and what action was actually taken.
 The reviewer—not the model—decides a high-impact proposal. The system must
 make pending, rejected, revised, executed and failed outcomes distinguishable.
+
+### 1.1 Cross-layer implementation overview
+
+| Layer | Component responsibility and implementation contract |
+|---|---|
+| **Universal product idea** | Own the BLUEVERSE-managed operational-assessment and review lifecycle: operator request, evidence/proposal, deterministic validation, authorized human decision, revalidation, permitted managed-state action, advisory/alert and audit history. The workflow is decision support for BLUEVERSE-managed records only; it does not issue government closures or emergency orders. Before G07 the business workflow exists, but no production AI proposal generator exists. |
+| **React Web** | Provide every authorized operator and reviewer action also available in Flutter: initiate/monitor, inspect evidence, decide approve/reject/request-revision, and view execution/alert/history state. Use React 19/TypeScript/Vite/React Router, reusable pages/components, Tailwind utilities and existing request/state separation. The browser never authorizes or executes a decision locally. See the [React component contract](../../v0/components/react-web-client.md), [UI integration guide](../../development/ui-integration.md), and [React state ADR](../../adr/ADR-0005-react-state-management.md). |
+| **Flutter Mobile** | Provide the same authorized initiation, monitoring, review/decision and outcome behavior using native Dart/Material UI, the existing UI/logic/data layers, repository/API service and view-model pattern. Layout may suit mobile, but reviewer permissions, evidence requirements, validation and result must match React. See the [Flutter component contract](../../v0/components/flutter-client.md), [UI integration guide](../../development/ui-integration.md), and [Flutter state ADR](../../adr/ADR-0006-flutter-state-management.md). |
+| **ASP.NET Core and data** | The public API authenticates and authorizes each operation, owns assessment/proposal/decision state, applies deterministic policy, revalidates the current target and permission, performs an eligible protected mutation transactionally, and writes corresponding audit/history. EF Core/PostgreSQL persist the business records and concurrency/approval evidence according to the accepted schema. Agents and clients do not connect to the database. |
+| **Third-party integration** | No external alert publisher or government/emergency integration is assumed by this v1 component. It consumes Member 1 managed experience/location/availability, Member 2 sourced marine/suitability evidence and Member 3 business workflow identity. The map provider, Open-Meteo and biodiversity inference stay behind their owning backend components; Member 4 consumes canonical Member 1 location data and never uses map results as operational authority. Optional assessment images use a private backend storage adapter, not a client-side provider integration; the provider/configuration is open under [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md). Any future external notification/delivery provider needs an explicit requirement, privacy/security contract and ADR before becoming part of scope. |
+| **Paired Agentic AI role** | The future Safety & Operations Agent receives validated context through read-only allowlisted tools and proposes a structured recommendation/action. Before G07, the member branch implements only the public business contract, typed private dispatch seam and safe not-connected/unavailable state. After G07, the agent still has no approve, publish, suspend, cancel or execute tool; the authorized reviewer and ASP.NET Core own those actions. |
+| **Component relationships** | Member 4 consumes Member 1 identity/schedule/availability, Member 2 source-timed conditions and deterministic suitability, and Member 3 workflow identity/objective/status. Member 4 is authoritative for BLUEVERSE operational restrictions and returns current status to Members 1 and 3. Every source fact stays owned by its producer. See the [producer/consumer relationship map](../component-relationships.md#producer-consumer-and-authority-map). |
+
+All client workflows use the shared API, role-to-permission model, workflow
+IDs and [UI integration registry](../../contracts/ui-integration.json).
+The sections below are the detailed source for state transitions, decisions,
+failures, audit and acceptance; this summary does not introduce routes or
+freeze unresolved policy values.
+
+The shared [Agentic AI implementation blueprint](../../agentic-ai/implementation-blueprint.md)
+defines common model, tool, retrieval, security, recovery and evaluation
+requirements for this component's paired agent.
 
 ## 2. Ownership and legal/operational boundary
 
@@ -51,6 +74,16 @@ claim the authority to close a public beach, issue governmental/legal
 emergency orders, control navigation, dispatch emergency services, or replace
 professional maritime advice. An operational action changes only records
 that BLUEVERSE manages.
+
+On `features/coastal-operations`, implement the authorized public assessment,
+proposal and status contracts plus a typed private backend adapter for the
+future Safety & Operations Agent. Persist business assessment/proposal
+identity and explicit not-connected/unavailable status if the Agentic AI
+dependency is absent; do not ship a fixture-backed production proposal
+generator. The agent's eventual availability never grants permission or
+executes an action. Keep this dependency status separate from API liveness and
+database readiness. Follow the shared
+[member integration boundary](../agentic-ai-integration-boundary.md).
 
 ## 3. Users and permissions
 
@@ -74,9 +107,10 @@ table or wire names.
 
 | Concept | Meaning |
 |---|---|
-| Operational assessment | A workflow initiated for a BLUEVERSE-managed destination/activity/offering/session and time, with validated objective, initiator, current state reference and evidence context. |
-| Workflow | The shared durable Agentic AI execution record and workflow ID, including plan, progress, outputs, deterministic validation, errors, approval and final result as needed. |
-| Proposal | The structured agent recommendation, factors, affected object, proposed outcome/action, optional alert/advisory, uncertainty and supporting evidence references. It is not an executed change. |
+| Operational assessment | A Member 4 business workflow initiated for a BLUEVERSE-managed destination/activity/offering/session and time, with validated objective, initiator, current-state reference and evidence context. It has a business workflow ID/status whether or not an AI run occurs. |
+| Assessment image evidence | Optional image evidence captured or selected by an authorized operator and attached to a particular assessment version. Member 4 owns its permissions, metadata, private storage reference, reviewer access and audit lifecycle; the image supplements rather than overrides authoritative Member 1/2 evidence or deterministic validation. |
+| Business workflow | The durable assessment, review and decision record owned by Member 4, linked to the shared workflow ID and Member 3 request where applicable. It tracks business status and proposal/decision references; it is distinct from post-G07 Agentic plan/step/tool execution state. |
+| Proposal | The target structured recommendation from the future Safety & Operations Agent or a validated proposal input, with factors, affected object, proposed outcome/action, optional alert/advisory, uncertainty and supporting evidence. It is not an executed change and is not generated by a production fixture before G07. |
 | Validation result | Application-owned result checking schema, required evidence, configured safety rules, freshness, availability, current operation state, legal state transition, permission and approval requirement. |
 | Approval decision | A permission-checked reviewer decision: approve, reject, or request revision, with actor, time, referenced proposal/version and optional allowed explanation. |
 | Operational state | The authoritative state of a managed operation. Candidate values include OPEN, CAUTION, TEMPORARILY_SUSPENDED, CANCELLED and COMPLETED; final states and transitions are unresolved until formally documented. |
@@ -90,8 +124,8 @@ status must not merge them into one ambiguous badge.
 ## 5. Canonical operational-assessment flow
 
 1. **Initiate.** An authorized operator selects a destination, activity or
-   offering/session and relevant period, adds a constrained objective, and
-   submits through React or Flutter.
+   offering/session and relevant period, adds a constrained objective, may
+   attach optional image evidence, and submits through React or Flutter.
 2. **Establish authority.** ASP.NET Core authenticates the caller, checks
    permission and resource eligibility, validates request fields, stores the
    objective and creates a shared workflow ID. Clients never call agents or
@@ -200,6 +234,8 @@ without a path-version segment.
 The public API must make available, as authorized:
 
 - assessment initiation, detail, queue/list, status and workflow progress;
+- optional image-evidence upload for an authorized assessment and retrieval of
+  its versioned metadata/content by authorized reviewers;
 - the associated objective, plan, structured specialist summaries, relevant
   source evidence, validation, proposal and error/status information;
 - reviewer approve, reject and request-revision decisions;
@@ -223,7 +259,7 @@ Both clients must support all actions authorized by the same permission set:
 | Operator initiation | Select the same eligible managed object/period, inspect relevant context, enter an objective, submit, and receive the same workflow ID/status. |
 | Operator monitoring | Revisit plan progress, proposal/decision status, current managed state, alerts and safe failure/result. |
 | Reviewer queue | Find permitted pending and prior assessments with useful search/filter/pagination. |
-| Reviewer evidence | Inspect objective, plan/dependencies, agent/tool summaries, marine and experience evidence, timestamps/freshness, validation, affected object and proposal. |
+| Reviewer evidence | Inspect objective, plan/dependencies, agent/tool summaries, marine and experience evidence, timestamps/freshness, validation, affected object, proposal and any authorized optional assessment images. |
 | Decision | Approve, reject or request revision only when authorized and valid for the current proposal. Collect any required rationale under the decided policy. |
 | Outcome | See the recorded reviewer decision, execution result, current operational state and audit/history summary. Distinguish proposal from applied change. |
 | Alerts | Inspect and manage the same authorized advisory/alert lifecycle and scope. |
@@ -233,6 +269,16 @@ React and Flutter can lay out queue, evidence and approval controls differently.
 They cannot differ in who may act, which evidence is required, the result of
 the action, or the source-of-truth status. A hidden/disabled button is not
 authorization; the API checks each decision and execution.
+
+The operator may capture/select and upload optional image evidence in Flutter
+or choose an image file in React. Reviewers in either client see the same
+authorized attachment metadata and content through the public API. A submitted
+assessment version's evidence is immutable; additions/corrections are
+separately authorized and audited. The format/count/size limits, private
+storage provider, inspection/sanitization method and retention policy must be
+settled before implementation. Use [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md)
+and the [device-capability contract](../device-capabilities.md). The paired
+Agentic AI agent receives no raw image or storage URL.
 
 ## 10. Cross-component and AI relationships
 
@@ -256,7 +302,8 @@ Failure outcomes must cover malformed proposal, unsupported action, missing
 or stale conditions, unavailable offering, invalid state transition,
 unauthorized/expired approval, rejected or revised proposal, stale target,
 duplicate/concurrent decision, provider or model timeout, persistence failure
-and retry exhaustion. Record enough structured outcome and error information
+retry exhaustion, rejected/malformed/oversized image, failed image inspection
+or private-storage outage. Record enough structured outcome and error information
 to explain what happened without persisting hidden reasoning, credentials,
 tokens or unrelated sensitive content.
 
@@ -270,7 +317,11 @@ Objectives, tool results, external content and model output are untrusted. They
 cannot rewrite instructions, grant tools, reveal secrets, bypass deterministic
 rules/approval, or authorize an operation. Tool access for the Safety &
 Operations agent is read-only. Least-privilege permissions and audit logs are
-required.
+required. Operator image attachments are also untrusted; reviewer access is
+authorized by the API, and raw image bytes, storage URLs and unvalidated
+extracted image text are excluded from the future agent input contract. Any
+later image interpretation needs separate approval, threat analysis and
+evaluation under [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md).
 
 ## 12. Acceptance and evidence checklist
 
@@ -297,6 +348,9 @@ required.
 - AI/tool/provider timeout, malformed output, dependency outage and retry
   exhaustion lead to explicit state and no unsafe side effects;
 - both clients deliver equivalent authorized workflows; and
+- optional assessment images are uploaded and viewed only through authorized
+  API operations, remain private and versioned with the assessment, and are
+  not exposed to the Agentic AI agent; and
 - endpoint catalog, UI registry, permissions, state machine, migrations,
   tests and operational documentation agree.
 
@@ -321,4 +375,6 @@ in this document are not implemented authority.
 
 - Requirements: [sections 18–27, 40, 41 and 53](../../../PROJECT_REQUIREMENTS.md).
 - Paired AI role: [Safety & Operations Agent](../agents/member-4-safety-operations-agent.md).
-- Related contracts: [v1 workflows](../workflows.md), [permissions and parity](../cross-platform-and-permissions.md), [quality and delivery](../quality-and-delivery.md), [requirements coverage and readiness](../requirements-coverage-and-readiness.md), [Agentic AI safety](../../agentic-ai/safety.md), [tool catalog](../../agentic-ai/tools.md), [endpoint catalog](../../api/endpoint-catalog.md), [UI integration](../../contracts/ui-integration.json).
+- Component work areas on one member branch: [Member 4 phase plan](../phases/member-4-phase-plan.md); producer/consumer relationships: [component relationship map](../component-relationships.md); PR and G07 process: [member branch workflow](../member-branch-workflow.md).
+- Device and evidence media: [v1 device-capability contract](../device-capabilities.md) and [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md).
+- Related contracts: [v1 workflows](../workflows.md), [member Agentic AI integration boundary](../agentic-ai-integration-boundary.md), [permissions and parity](../cross-platform-and-permissions.md), [quality and delivery](../quality-and-delivery.md), [requirements coverage and readiness](../requirements-coverage-and-readiness.md), [Agentic AI safety](../../agentic-ai/safety.md), [tool catalog](../../agentic-ai/tools.md), [endpoint catalog](../../api/endpoint-catalog.md), [UI integration](../../contracts/ui-integration.json).

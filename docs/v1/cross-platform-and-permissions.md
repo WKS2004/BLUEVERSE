@@ -13,7 +13,11 @@ device capabilities may change presentation, but may not remove a permitted
 business workflow. Flutter GPS is the required v1 device feature; React must
 still support location-aware discovery through an appropriate location input.
 Flutter offers a manual alternative where practical when location permission
-is denied.
+is denied. Member 3's date/time inputs and Member 4's optional assessment
+image evidence also have equivalent user outcomes in both clients, though
+native controls and capture methods may differ. See the shared
+[device-capability contract](device-capabilities.md) for permission, upload,
+privacy and failure behavior.
 
 The SE3090 assignment describes React as primarily administrative/staff and
 Flutter as primarily user-facing/operational. BLUEVERSE's accepted

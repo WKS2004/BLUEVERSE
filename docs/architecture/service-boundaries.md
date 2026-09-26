@@ -87,7 +87,20 @@ executes approved protected changes.
 
 ## v1 ML inference target
 
-The separate IT3091 workstream supplies the initial biodiversity model.
-BLUEVERSE v1 integrates it through a private inference boundary called by
-ASP.NET Core. A missing service yields an explicit unavailable result. The
-model and inference service are not implemented in this repository today.
+The separate IT3091 workstream supplies the initial biodiversity model and
+inference service. Member 1 owns BLUEVERSE's consumer contract and adapter;
+ASP.NET Core calls the private inference boundary. A missing service yields an
+explicit unavailable result. The model and inference service are not
+implemented in this repository today.
+
+## v1 map-provider target
+
+Member 1 owns the BLUEVERSE adapter for the selected map API as part of
+location-aware destination and activity discovery. React and Flutter reach
+map capabilities only through the public ASP.NET Core API; provider
+credentials and outbound requests remain server-side. Provider-returned place
+or map data is untrusted discovery/display context and does not own canonical
+destination records. The provider, exact map features and compatible
+rendering approach remain open under
+[ADR-0017](../adr/ADR-0017-map-provider-integration-boundary.md). This
+integration is not implemented in the current repository.

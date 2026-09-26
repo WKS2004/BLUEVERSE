@@ -30,6 +30,27 @@ It provides decision support for tourists, operators and reviewers. It is not
 a marine navigation system, professional maritime forecast, official closure
 authority or autonomous safety decision-maker.
 
+### 1.1 Cross-layer implementation overview
+
+| Layer | Component responsibility and implementation contract |
+|---|---|
+| **Universal product idea** | Acquire weather and marine source data for an activity, location and period; validate and normalize it with provenance/freshness; then apply configured application rules to determine `SUITABLE`, `CAUTION`, `UNSUITABLE` or insufficient evidence. Source data, deterministic classification and optional AI explanation remain distinct. |
+| **React Web** | Provide the same authorized condition, suitability, profile-management and history outcomes as Flutter through the public API. Use React 19/TypeScript/Vite/React Router, reusable pages/components, Tailwind utilities and existing request/state separation. Render server classifications, source, units, time and gaps; do not recompute them in the browser. See the [React component contract](../../v0/components/react-web-client.md), [UI integration guide](../../development/ui-integration.md), and [React state ADR](../../adr/ADR-0005-react-state-management.md). |
+| **Flutter Mobile** | Provide those same outcomes with native Dart/Material UI, using the repository's UI/logic/data layers, repository/API service and view-model pattern. Activity, location and period entry may fit the device differently, but the server's condition evidence, classification, permission outcome and warnings remain equivalent. Do not reclassify locally. See the [Flutter component contract](../../v0/components/flutter-client.md), [UI integration guide](../../development/ui-integration.md), and [Flutter state ADR](../../adr/ADR-0006-flutter-state-management.md). |
+| **ASP.NET Core and data** | The public API validates requests and permissions. Backend-owned provider adapters retrieve only required values, validate shape/units/ranges/timestamps, normalize them and preserve provenance. Application code applies the deterministic activity profile. EF Core/PostgreSQL may persist profiles, validated snapshots, assessment history and audit data according to the accepted schema; cache-versus-persist is an implementation decision. |
+| **Third-party integration** | Open-Meteo Weather and Marine APIs are Member 2's required v1 source and are called by the backend only. The integration must handle timeout, rate limits, schema/value errors, missing variables and stale data, minimize location data, and keep provider details/secrets out of both clients. Requests, fields, units, caching and freshness rules remain explicit implementation decisions; a provider response never changes the configured safety profile. |
+| **Paired Agentic AI role** | The future Marine Conditions Intelligence Agent may summarize validated, time-aware conditions and the existing deterministic suitability result through read-only allowlisted tools. Before G07, this branch prepares only the typed adapter and safe unavailable status. After G07 the agent may contextualize evidence but cannot fetch arbitrary network data, choose thresholds or change a classification. |
+| **Component relationships** | Member 2 uses Member 1's canonical activity identity/taxonomy and destination location, supplies sourced conditions and suitability to Member 3's eligibility/ranking workflow, and supplies evidence to Member 4's assessment. Member 1 owns map-provider lookups; Member 2 consumes the canonical location data and does not call the map provider. Member 2 does not own operational restrictions. See the [producer/consumer relationship map](../component-relationships.md#producer-consumer-and-authority-map). |
+
+All authorized actions and statuses use the server's role-to-permission
+contract and the shared public API/UI workflow IDs. The table summarizes the
+system boundary; the following sections specify detailed data semantics,
+profiles, journeys, provider failure, acceptance and choices still open.
+
+The shared [Agentic AI implementation blueprint](../../agentic-ai/implementation-blueprint.md)
+defines common model, tool, retrieval, security, recovery and evaluation
+requirements for this component's paired agent.
+
 ## 2. Ownership and hard boundary
 
 Member 2 owns:
@@ -60,6 +81,16 @@ Application-owned deterministic suitability
                  ↓
 Optional AI explanation or recommendation
 ```
+
+On `features/marine-conditions-safety`, implement the authorized public
+workflow/status contract and typed private backend adapter through which the
+future Marine Conditions Intelligence Agent can consume only the validated,
+minimal condition and suitability evidence it needs. Before G07, report
+not connected or unavailable if the Agentic AI runtime is absent; never
+produce a placeholder report or let the adapter change suitability rules.
+Keep AI dependency health separate from API liveness, database readiness and
+Open-Meteo provider health. Follow the shared
+[member integration boundary](../agentic-ai-integration-boundary.md).
 
 An AI model cannot invent physical thresholds or override a deterministic
 `UNSUITABLE`, `UNKNOWN` or blocked outcome.
@@ -279,4 +310,5 @@ and tested. Numeric safety thresholds are deliberately not specified here.
 
 - Requirements: [sections 14, 15, 20–27, 31 and 53](../../../PROJECT_REQUIREMENTS.md).
 - Paired AI role: [Marine Conditions Intelligence Agent](../agents/member-2-marine-conditions-intelligence-agent.md).
-- Related contracts: [shared v1 workflows](../workflows.md), [permissions and client parity](../cross-platform-and-permissions.md), [quality and delivery](../quality-and-delivery.md), [requirements coverage and readiness](../requirements-coverage-and-readiness.md), [Agentic AI safety](../../agentic-ai/safety.md), [tool contract](../../agentic-ai/tools.md), [endpoint catalog](../../api/endpoint-catalog.md), [UI integration](../../contracts/ui-integration.json).
+- Component work areas on one member branch: [Member 2 phase plan](../phases/member-2-phase-plan.md); producer/consumer relationships: [component relationship map](../component-relationships.md); PR and G07 process: [member branch workflow](../member-branch-workflow.md).
+- Related contracts: [shared v1 workflows](../workflows.md), [member Agentic AI integration boundary](../agentic-ai-integration-boundary.md), [permissions and client parity](../cross-platform-and-permissions.md), [quality and delivery](../quality-and-delivery.md), [requirements coverage and readiness](../requirements-coverage-and-readiness.md), [Agentic AI safety](../../agentic-ai/safety.md), [tool contract](../../agentic-ai/tools.md), [endpoint catalog](../../api/endpoint-catalog.md), [UI integration](../../contracts/ui-integration.json).

@@ -4,6 +4,11 @@
 The names below are candidate allowlisted operations from the v1
 requirements, not API routes or callable production tools.
 
+The [implementation blueprint](implementation-blueprint.md) defines the full
+tool execution checklist, authoritative source map, model/retrieval boundary,
+and pre-implementation decisions. Read it before introducing a new class of
+tool such as document retrieval or RAG.
+
 | Agent | Candidate read-only tools |
 |---|---|
 | Coastal Experience & Biodiversity | destination_lookup, activity_lookup, offering_lookup, schedule_lookup, biodiversity_prediction_lookup |

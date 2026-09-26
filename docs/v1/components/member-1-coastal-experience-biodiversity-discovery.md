@@ -4,7 +4,7 @@ contract_type: business_component
 release: v1
 implementation_status: target_not_implemented
 owner_label: member_1
-requirements: "PROJECT_REQUIREMENTS.md sections 12, 13, 29, 30, 53"
+requirements: "PROJECT_REQUIREMENTS.md sections 11, 12, 13, 29, 30, 53"
 non_crud_operation: publication_and_availability_evaluation
 minimum_meaningful_public_api_endpoints: 4
 agent_contract: "../agents/member-1-coastal-experience-biodiversity-agent.md"
@@ -36,6 +36,30 @@ Its user-visible answer must make these questions clear:
 - Is there an operational restriction from the authoritative operations
   component that changes whether the offering can be presented as usable?
 
+### 1.1 Cross-layer implementation overview
+
+| Layer | Component responsibility and implementation contract |
+|---|---|
+| **Universal product idea** | One authoritative coastal catalogue connects destinations, activities, destination-specific offerings, schedules, publication and current availability. People discover and save experiences; catalogue managers maintain them; biodiversity is optional, sourced context. Member 1 owns the BLUEVERSE map-provider integration that supports agreed location-aware discovery. Provider map/place data helps people find or view places; it never becomes the authoritative destination catalogue. Booking/payment inventory, generic travel search and an independent operational-restriction source are outside this component. |
+| **React Web** | Implement the same authorized discovery, detail, management, favourite, map-assisted location and biodiversity outcomes through the public API. Use the repository's React 19/TypeScript/Vite/React Router structure, reusable route/page/components, Tailwind utilities and existing request/state separation. Nearby search has a usable manual location/destination path. Map-provider requests and credentials stay behind ASP.NET Core; the eventual map presentation must use a provider-compatible approach that does not make the browser call the provider directly. Do not calculate authoritative availability in the browser. See the [React component contract](../../v0/components/react-web-client.md), [UI integration guide](../../development/ui-integration.md), and [React state ADR](../../adr/ADR-0005-react-state-management.md). |
+| **Flutter Mobile** | Implement equivalent authorized outcomes in Dart with native Material widgets and the existing UI/logic/data separation, repository/API service and view-model pattern. Device location can improve nearby search when permission is granted; manual destination/location selection remains available when denied, unavailable or unsupported. Map-provider requests and credentials stay behind ASP.NET Core; the eventual map presentation must use a provider-compatible approach that does not make the mobile client call the provider directly. Do not calculate availability locally. See the [Flutter component contract](../../v0/components/flutter-client.md), [UI integration guide](../../development/ui-integration.md), and [Flutter state ADR](../../adr/ADR-0006-flutter-state-management.md). |
+| **ASP.NET Core and data** | The public ASP.NET Core API authenticates, authorizes, validates and owns catalogue/discovery business operations. The backend owns persistence and domain decisions; EF Core/PostgreSQL represent the canonical catalogue, schedule/availability, favourites and required audit data. Server-side adapters mediate selected map-provider requests and private biodiversity inference. Exact route, DTO, entity, search, map-provider, map-feature and time-zone choices remain for the owning API/database/ADR decisions. Clients use only `/api/...`; they never call third-party providers, PostgreSQL or internal services directly. |
+| **Map provider integration** | Member 1 owns the BLUEVERSE adapter and consumer contract for the selected map API. Its exact vendor and feature scope (for example map display, place lookup, geocoding or directions) are open decisions. All provider access is server-mediated under the assignment/repository boundary; keys remain server-side. Validate and normalize results, honor provider terms/attribution, and preserve manual/list discovery if the provider is unavailable. Provider results do not create, publish or overwrite canonical destinations automatically. |
+| **Biodiversity ML integration** | BLUEVERSE Member 1 owns the consumer-side contract, backend adapter and user-facing availability/provenance for the separate IT3091 inference service. The IT3091 workstream owns supplying the trained model and inference service; Member 1 does not own or implement that model/service. When it returns a genuine prediction, preserve model/version, query location/time, uncertainty and limitations. An outage is an explicit unavailable state, not a model guess. |
+| **Other external ownership** | Open-Meteo Weather and Marine API acquisition belongs to Member 2. It is independent of Member 1's map integration and biodiversity inference adapter. |
+| **Component relationships** | Member 1 is the canonical source of destination/activity/offering IDs and schedule/availability for Members 2 and 3 and the managed target/evidence referenced by Member 4. It consumes Member 4's current operational restriction when deriving effective usability. Member 2 owns activity suitability; Member 3 owns planning; Member 4 owns operational restrictions. See the [producer/consumer relationship map](../component-relationships.md#producer-consumer-and-authority-map). |
+
+Client workflows use the same public API contract and shared workflow IDs
+where status tracking applies, use the server's role-to-permission model, and
+are registered in the shared
+[UI integration registry](../../contracts/ui-integration.json). The table is
+an at-a-glance boundary map; the sections below define the full journeys,
+invariants, API capability, failures and acceptance evidence.
+
+The shared [Agentic AI implementation blueprint](../../agentic-ai/implementation-blueprint.md)
+defines common model, tool, retrieval, security, recovery and evaluation
+requirements for this component's paired agent.
+
 ## 2. Ownership boundary
 
 Member 1 owns the BLUEVERSE experience catalogue and its discovery behavior:
@@ -47,15 +71,27 @@ Member 1 owns the BLUEVERSE experience catalogue and its discovery behavior:
   be used or attended;
 - schedules, availability, and catalogue publication status;
 - nearby discovery and personal saved experiences/favourites; and
+- BLUEVERSE's map-provider adapter and map-assisted discovery contract, with
+  the provider and exact map features chosen before implementation; and
 - BLUEVERSE's integration and user-facing interpretation of biodiversity
   predictions produced by the separately developed IT3091 ML capability.
 
 The component does **not** own weather acquisition or activity safety
 classification (Member 2), recommendation and itinerary orchestration (Member
 3), operational restriction state or approval (Member 4), user authentication,
-the ML model itself, or regulatory/emergency authority. It consumes
-Member 4's authoritative operational status. An experience record cannot
-override a restriction by remaining published or available in this component.
+the ML model or inference service itself, or regulatory/emergency authority.
+It still consumes Member 4's authoritative operational status. An experience
+record cannot override a restriction by remaining published or available in
+this component.
+
+On `features/coastal-experience-biodiversity`, implement the authorized
+public workflow/status contract and typed private backend adapter that will
+let the future Experience & Biodiversity Agent request this component's
+validated catalogue/availability context. Before G07, the adapter reports
+not connected or unavailable when the private Agentic AI runtime is absent;
+it does not execute an agent or fabricate a report. Keep this dependency
+status distinct from API liveness, database readiness and biodiversity ML
+availability. Follow the shared [member integration boundary](../agentic-ai-integration-boundary.md).
 
 ## 3. Users and permission behavior
 
@@ -89,6 +125,7 @@ constraints, indexes, audit columns, and PostgreSQL types.
 | Concept | Meaning and required relationships |
 |---|---|
 | Destination | A managed coastal place with a stable identity and enough location and descriptive context for detail, search, and nearby discovery. Activities and biodiversity queries may refer to it. |
+| Map-provider result | External map/place/geocoding data returned through Member 1's server-side adapter for the map features the team selects. It is untrusted discovery/display context, not a destination record; it cannot publish or silently overwrite BLUEVERSE-owned names, coordinates, visibility or business state. Exact result fields depend on the selected provider and feature scope. |
 | Activity | A coastal activity category with descriptive and practical participation context. An activity may have multiple offerings and activity-specific suitability rules owned by Member 2. |
 | Offering | A managed instance of an activity at a destination. It carries the availability and operational context needed to decide whether it can be shown as usable for a requested time. |
 | Schedule / availability | Time-related information for an offering. The implementation must distinguish a scheduled time from a general publication state and from current availability; booking or payment inventory is outside v1 scope. |
@@ -132,6 +169,15 @@ time, uncertainty/limitations, and unavailable status where supplied.
 5. If location permission is denied on Flutter, a practical manual location
    or destination-selection path remains available. React must provide an
    equivalent location-entry path; device affordances may differ.
+6. If the selected map API supplies map display, place lookup, geocoding or
+   another location feature, both clients consume that capability through the
+   public ASP.NET Core API. Provider-returned places are candidate discovery
+   context; a catalogue manager must validate and create/update an
+   authoritative destination through the normal management workflow.
+7. A provider outage, quota/rate limit, ambiguous result or no-match response
+   must leave a usable list/manual search path. A map view is a presentation
+   aid and does not determine publication, availability, safety or operational
+   permission.
 
 ### 5.3 Favourites
 
@@ -180,12 +226,16 @@ client's disabled button is not enforcement:
 6. Location queries must validate coordinates/region inputs and must not
    return misleading nearby results when the input or location data is
    invalid or absent.
-7. Biodiversity results preserve source/model metadata and uncertainty. An
+7. Map-provider output is untrusted input: validate and normalize it before
+   use; do not let it silently create or overwrite a canonical destination.
+   Provider attribution, license and use limits must be followed. A provider
+   failure never implies that no destination exists.
+8. Biodiversity results preserve source/model metadata and uncertainty. An
    unavailable or malformed response is represented as unavailable/invalid,
    never as a guessed prediction.
-8. Favourites are scoped to the authorized user and must have a documented
+9. Favourites are scoped to the authorized user and must have a documented
    duplicate and stale-target policy.
-9. Every mutation uses server-side authorization, validation, audit fields
+10. Every mutation uses server-side authorization, validation, audit fields
    and transaction boundaries where the operation requires atomic changes.
 
 ### Publication and availability operation
@@ -214,6 +264,9 @@ The public contract must cover, as applicable:
 - schedule and availability management and current availability queries;
 - the publication/availability business operation;
 - nearby discovery with validated location input;
+- any selected map lookup/display-support operation through an ASP.NET Core
+  adapter, with a provider-independent public response and safe unavailable
+  behavior (exact routes are chosen only when implemented);
 - user-scoped favourite read/add/remove actions; and
 - a biodiversity context request/result that is mediated by the backend and
   reports real model availability/provenance.
@@ -232,7 +285,7 @@ outcome. At minimum, verify equivalent capability for:
 | Capability | React Web | Flutter Mobile |
 |---|---|---|
 | Discover | Search, filter, sort, paginate, inspect destination/activity/offering detail and availability. | Same results and filters; fit browse and detail interaction to a small screen. |
-| Location-aware browse | Enter a location or select a destination for nearby results. | Use device location when granted; keep manual selection when denied or unavailable. |
+| Location-aware browse | Enter a location or select a destination for nearby results; use agreed map-provider features through the public API. | Use device location when granted; keep manual selection when denied or unavailable; use the same API-mediated map-provider capabilities and safe fallback. |
 | Catalogue management | Perform every management action authorized by the API. | Perform those same authorized actions, with mobile-appropriate forms. |
 | Favourites | Save, revisit and remove the caller's eligible saved experiences. | Same saved-item behavior and current status. |
 | Biodiversity | Present prediction/unavailable state, provenance and uncertainty. | Present the same meaning and caveats in a readable mobile layout. |
@@ -250,7 +303,9 @@ practical while still relying on server-side idempotency/validation.
 | Member 2 — Marine Conditions & Safety Intelligence | Activity identity/context and suitability evidence may constrain recommendations or operational review. | Member 2 owns marine data and deterministic environmental suitability. Member 1 must not calculate a second result. |
 | Member 3 — Smart Coastal Planner & Itinerary Management | Valid destinations, activities, offerings, schedules, availability and experience constraints. | Planner consumes authoritative candidate data and must apply marine and operational constraints too. |
 | Member 4 — Coastal Operations, Advisories & Alerts | Current managed operational status/restriction relevant to an offering or session. | Member 4 owns restriction state and approved transitions. |
+| Selected map API | Provider-backed map/place/geocoding/display data for Member 1's agreed location-discovery features. | Member 1 owns the server-side adapter. ASP.NET Core is the only client-facing boundary; provider results are untrusted, non-authoritative discovery context. Vendor and exact feature scope remain open. |
 | IT3091 biodiversity inference | Query location and prediction result plus provenance, uncertainty and availability. | Internal service called through backend; never directly exposed to React/Flutter or treated as guaranteed presence. |
+| Open-Meteo | Weather and marine forecast/observation inputs. | Member 2 owns the adapter and deterministic suitability; this integration is not part of Member 1's map or biodiversity work. |
 | Identity and authorization | Authenticated principal and effective permissions. | Public API/Auth contract is authoritative; no role check embedded only in the client. |
 
 Cross-component dependencies use service/application contracts and stable
@@ -259,11 +314,15 @@ identifiers. Clients never call each other or internal service hostnames.
 ## 10. Failure, privacy and operational behavior
 
 The component must distinguish invalid user input, no matching results,
-unpublished content, no schedule/availability, a service failure, and
-unavailable biodiversity inference. An unavailable optional prediction must
-not turn into a normal-looking zero or stale value. External/provider and ML
-errors should be recorded without storing credentials or unnecessary request
-data.
+unpublished content, no schedule/availability, map-provider no-match or
+unavailability, a service failure, and unavailable biodiversity inference.
+An unavailable optional prediction must not turn into a normal-looking zero
+or stale value. Map and ML errors should be recorded without credentials,
+full sensitive payloads or unnecessary request data. Provider keys remain in
+server-side secret configuration. Use only location precision needed for the
+requested operation, disclose/request device location only when needed, and
+avoid persistent tracking or raw-location retention without a documented
+business need. Follow provider terms, attribution and quota limits.
 
 Collect only location and preference data needed for the requested task. Do
 not infer persistent GPS consent from a one-time nearby search. Enforce
@@ -286,6 +345,10 @@ successful build:
   filters unavailable or operationally restricted candidates;
 - search/filter/sort/pagination work consistently in both clients;
 - nearby discovery handles valid, missing, malformed and boundary locations;
+- map-provider adapter responses are schema/coordinate validated and
+  normalized; provider attribution/usage requirements are met; outage,
+  timeout, quota/rate-limit, malformed and ambiguous/no-result cases preserve
+  useful manual/list discovery without exposing provider credentials;
 - denied/unavailable device location still permits manual Flutter discovery;
 - favourites cannot be read or changed by another user, and duplicate/stale
   target behavior matches the documented contract;
@@ -312,13 +375,22 @@ The following choices are deliberately not invented here: final entity/table
 and DTO names; exact endpoints and permission codes; destination coordinate
 and search-radius semantics; publication and availability state machines;
 schedule time-zone representation; whether favourites can target each
-conceptual item type; biodiversity request granularity, caching and retention;
-and audit-history retention. Each decision that changes architecture or a
+conceptual item type; map provider/vendor and exact feature scope (display,
+tiles, place search, geocoding, directions or other functions); whether its
+terms support the required ASP.NET-mediated access and chosen client-rendering
+approach; key restrictions, attribution, quotas, caching, timeouts and failure
+fallback; biodiversity request granularity, caching and retention; and
+audit-history retention. Do not ship direct client-to-provider calls under
+the current architecture. Each decision that changes architecture or a
 public contract must be documented in the owning API/database/ADR material,
-then reflected in implementation and tests.
+then reflected in implementation and tests. The map-provider ownership and
+ASP.NET Core boundary are recorded in
+[ADR-0017](../../adr/ADR-0017-map-provider-integration-boundary.md).
 
 ## 13. Traceability
 
-- Requirements: [sections 12, 13, 29, 30 and 53](../../../PROJECT_REQUIREMENTS.md).
+- Requirements: [sections 11–13, 29, 30 and 53](../../../PROJECT_REQUIREMENTS.md).
 - Paired AI role: [Coastal Experience & Biodiversity Agent](../agents/member-1-coastal-experience-biodiversity-agent.md).
-- Related shared contracts: [v1 workflows](../workflows.md), [permissions and client parity](../cross-platform-and-permissions.md), [quality and delivery](../quality-and-delivery.md), [requirements coverage and readiness](../requirements-coverage-and-readiness.md), [Agentic AI safety](../../agentic-ai/safety.md), [endpoint catalog](../../api/endpoint-catalog.md), [UI integration](../../contracts/ui-integration.json).
+- Component work areas on one member branch: [Member 1 phase plan](../phases/member-1-phase-plan.md); producer/consumer relationships: [component relationship map](../component-relationships.md); PR and G07 process: [member branch workflow](../member-branch-workflow.md).
+- Related shared contracts: [v1 workflows](../workflows.md), [member Agentic AI integration boundary](../agentic-ai-integration-boundary.md), [permissions and client parity](../cross-platform-and-permissions.md), [quality and delivery](../quality-and-delivery.md), [requirements coverage and readiness](../requirements-coverage-and-readiness.md), [Agentic AI safety](../../agentic-ai/safety.md), [endpoint catalog](../../api/endpoint-catalog.md), [UI integration](../../contracts/ui-integration.json).
+- Device/location contract: [v1 device capabilities](../device-capabilities.md) defines one-time Flutter GPS use, React's equivalent location input, manual fallback, consent and data-minimization behavior.

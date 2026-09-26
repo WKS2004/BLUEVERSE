@@ -4,6 +4,10 @@
 are untrusted. No executable v1 Agentic AI workflow is checked in yet;
 these controls are required of its implementation.
 
+Use the [implementation blueprint](implementation-blueprint.md) for the
+end-to-end data boundary, model/provider privacy review, retrieval/RAG policy,
+recovery design and release checklist.
+
 ## Deterministic decision boundary
 
 Application code validates structured output and required fields, configured

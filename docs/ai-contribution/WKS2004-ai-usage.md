@@ -1307,3 +1307,81 @@ runtime lacks PyYAML.
 - Summary of what the AI Agent did: Prepared a focused documentation bundle containing the expanded requirements baseline, v0 and v1 guides, shared Agentic AI contracts, relevant ADRs, roadmap and design guide. Updated the readiness guide to avoid fixed route-count claims and point the known mobile transport and CI gaps to their owning source files. Staged only documentation and this AI-use record; left application code and tests untouched.
 - AI output accepted/changed/rejected: Retained the detailed v1 contracts and source hierarchy; revised time-sensitive status wording for use after commit. Rejected adding unrelated dirty application files to this documentation commit. Existing links from v0/design guides to local, uncommitted UI sources remain source pointers and are not implementation evidence in this commit.
 - Verification/evidence: `git diff --cached --check` passed. The working-tree documentation scan checked 77 Markdown files, 411 local links and eight unique v1 contract IDs without findings; endpoint catalog, UI-integration and agent-resource validators passed. The staged-tree link audit found that v1 guide links are present, while v0/design guides refer to UI files still uncommitted in the working tree; those source changes require a separate commit. No application test suites were run for this documentation-only commit.
+
+## 2026-09-25 — Correct v1 component dependency and implementation order
+
+- Date/time or time range: 2026-09-25 20:26 (Asia/Colombo; v1 dependency review and guide updates)
+- GitHub Username: WKS2004
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Python and Git
+- AI Model: GPT-6
+- Summary of the user's request: Replace the illustrative example order with the dependency-derived implementation sequence for each v1 member component, its branchable subcomponents, parallel work and required waits; keep executable Agentic AI work after all four business features.
+- Summary of what the AI Agent did: Compared the component contracts, shared workflows, frozen requirements, v0 boundary and supplied team guide. Rebuilt the global queue around Member 1 catalogue IDs, Member 2 condition acquisition, Member 4's early operational-status API, Member 2 suitability and Member 3 workflow foundations, then downstream recommendations, assessments, approval/execution, both-client work, integrations and the G07 domain gate. Rewrote four detailed member phase plans, added planned branch names and queue status fields, synchronized readiness/index/quality/architecture guidance, and linked the individual component/agent contracts to their implementation sequence.
+- AI output accepted/changed/rejected: Accepted the user's clarification that the example was illustrative and the confirmed component-branch plus suffixed-slice branch convention. Replaced the prior assumed serial order with explicit API dependencies and parallel gates. Did not assign an unsupported overall highest/lowest member contribution rank; documented equal full-stack requirements and distinct per-component workload drivers.
+- Verification/evidence: Reviewed the relevant repository contracts and requirements plus the simplified team guide's dependency page. A local Markdown check covered 17 changed documents and 219 links, phase/global gate and branch-name alignment, changed-file anchors and whitespace; all passed. git diff --check passed with Git's LF/CRLF normalization warnings only. No application code or application tests were changed or run.
+
+## 2026-09-26 — Align v1 implementation branches and Agentic AI boundary
+
+- Date/time or time range: 2026-09-26 01:51 (Asia/Colombo; branch-plan and integration-contract documentation update)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Python and Git
+- AI Model: GPT-6
+- Summary of the user's request: Update the v1 guides so each member implements the full component on one `features/**` branch in parallel, submits a PR to `dev`, has merge conflicts handled by the maintainer, and resolves compatibility issues on the merged `dev` branch. Keep the actual Agentic AI runtime, agents and tools on `agentic-ai/**` branches after every member component is complete, while documenting the backend access boundary and unavailable behavior that belongs in member features.
+- Summary of what the AI Agent did: Added a shared member-to-Agentic-AI integration contract covering public workflow access, private backend adapters, business versus AI execution state, bounded dependency availability checks, safe not-connected/unavailable results and acceptance evidence. Replaced per-phase branch guidance with one branch per member, retained the dependency-ordered phases as milestones, documented sequential PR merging and post-merge compatibility checks, and aligned the v1 index, four component/agent contracts, readiness guide, quality guide, workflows, Agentic AI architecture and v0 API health documentation.
+- AI output accepted/changed/rejected: Accepted the user's single-branch-per-member strategy, maintainer conflict resolution and `dev` integration follow-up. Kept the established cross-component dependency order and post-G07 Agentic AI gate. Distinguished member-owned public workflow/API and private connection preparation from executable AI implementation. Left exact routes, response codes, health paths and status enums open for G00 because no Agentic AI endpoint exists in the current repository; preserved API liveness and Auth/database readiness as separate signals.
+- Verification/evidence: A local Markdown link scan passed across the v1, Agentic AI and public-gateway guidance documents. `git diff --check` passed with Git's LF-to-CRLF working-copy notices only. No application code or application test suites were changed or run.
+
+## 2026-09-26 — Replace v1 member sequence with component relationships
+
+- Date/time or time range: 2026-09-26 02:41 (Asia/Colombo; relationship-map and branch-workflow documentation update)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Python and Git
+- AI Model: GPT-6
+- Summary of the user's request: Convert the proposed cross-member implementation order into a component relationship document while keeping all four members implementing their complete components in parallel on one branch each.
+- Summary of what the AI Agent did: Added a producer/consumer relationship graph and authority table covering the Member 1 activity taxonomy input to Member 2, the Member 1/Member 4 status-availability feedback loop, Member 3 recommendation inputs, Member 4 assessment inputs and the external data/model sources. Kept the one-branch-per-member workflow and status tracker, rewrote all four member plans as local component work areas, replaced the readiness guide's global queue with relationships and shared integration gates, removed the obsolete implementation-order document, and preserved the G07 gate before actual Agentic AI work.
+- AI output accepted/changed/rejected: Accepted the user's decision to build the four member components concurrently and merge one complete PR per member without a prescribed order. Replaced the cross-member chronology with contract relationships; retained local work areas, the G00 shared-contract agreement, post-merge `dev` compatibility checks and the post-G07 Agentic AI work boundary.
+- Verification/evidence: Searched the updated v1 and Agentic AI guides for stale global queue/gate references; a custom Markdown scan checked 20 changed Markdown files, including this record, and 274 local links/anchors with no missing targets; `git diff --check` passed with Git's LF-to-CRLF working-copy notices only. No application code or application test suites were changed or run.
+
+## 2026-09-26 — Complete v1 component and Agentic AI implementation guides
+
+- Date/time or time range: 2026-09-26 11:12 (Asia/Colombo; v1 component and Agentic AI documentation review)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Python and Git
+- AI Model: GPT-6
+- Summary of the user's request: Recheck v1 member and Agentic AI documentation against repository contracts and the project guideline. Make each member component's React, Flutter, backend, integration, AI and component relationships clear, and provide a complete Agentic AI development guide including model types and RAG.
+- Summary of what the AI Agent did: Added a cross-layer implementation overview to each of the four component contracts; created a shared Agentic AI implementation blueprint covering model capability and provider choices, structured tool retrieval versus optional RAG, embeddings, architecture, four roles, prompts/schemas, tools, state/recovery, deterministic validation, approval, security, privacy, observability, deployment and release evaluation; linked it from v1/AI indexes and role contracts; and clarified that member work-area headings expose dependencies but do not create a serial implementation schedule. Kept the member branches ahead of executable `agentic-ai/**` work through G07.
+- AI output accepted/changed/rejected: Retained the repository and assignment requirements. Kept the model/provider/framework open for ADR-backed selection and documented RAG/vector storage as not required by current v1 scope because no governed document corpus is specified; any addition needs an accepted use case and its own controls. No implementation technology was falsely marked selected.
+- Verification/evidence: Compared contracts with `PROJECT_REQUIREMENTS.md`, existing v0 client/architecture guidance, the previously reviewed team guide and the formal assignment specification. A local link/anchor scan passed for 22 changed Markdown files including this contribution record; `git diff --check` passed with Git's LF/CRLF normalization notices only. Documentation-only change; no application tests were run.
+
+## 2026-09-26 — Assign map API and clarify ML integration ownership
+
+- Date/time or time range: 2026-09-26 11:43–11:52 (Asia/Colombo; map and ML integration analysis and documentation update)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Python and Git
+- AI Model: GPT-6
+- Summary of the user's request: Analyze the new map API requirement, determine which member owns it and who handles ML APIs, then update the implementation documentation.
+- Summary of what the AI Agent did: Compared the supplied team and assignment PDFs with the requirements and component contracts. Assigned the BLUEVERSE map-provider adapter to Member 1, preserved Member 2 ownership of Open-Meteo, and clarified that Member 1 owns BLUEVERSE's biodiversity inference consumer adapter while the separate IT3091 workstream supplies the model and inference service. Updated the frozen-scope amendment record, Member 1 work-area/React/Flutter/backend contracts, other member relationship summaries, the producer/consumer map, readiness guide, service/network boundaries and Agentic AI guidance. Added ADR-0017 for map ownership and server-mediated provider access.
+- AI output accepted/changed/rejected: Accepted the Member 1 map-adapter ownership and the Member 1 consumer-side ML ownership. Left the map vendor and exact map features undecided because neither the user nor source documents selected them. Kept all external map access behind ASP.NET Core and did not invent API routes, direct client provider calls or an Agentic AI map tool.
+- Verification/evidence: Reviewed relevant pages of both supplied PDFs and `PROJECT_REQUIREMENTS.md`; a local link/anchor scan passed for 15 Markdown sources, 290 local links and 17 heading fragments; `git diff --check` passed. Documentation-only update; no application tests were run.
+
+## 2026-09-26 — Assign v1 device capabilities to member workflows
+
+- Date/time or time range: 2026-09-26 13:52–14:09 (Asia/Colombo; device-capability analysis and contract update)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Python and Git
+- AI Model: GPT-6
+- Summary of the user's request: Select the device features that fit BLUEVERSE v1 and assign them to member components while keeping the React and Flutter products aligned and balancing existing integration contributions.
+- Summary of what the AI Agent did: Assigned one-time GPS/location discovery and the map boundary to Member 1, accessible date/time selection for planner inputs to Member 3, and optional private image evidence capture/upload for BLUEVERSE-managed assessments to Member 4. Added a shared device-capability contract, an assessment-image storage-boundary ADR, and cross-links/acceptance requirements across the v1 requirements, components, member work plans, relationship map, workflows, Agentic AI contracts and readiness guide. Kept all work within the existing single feature branch per member and post-G07 Agentic AI boundary; left current route/endpoint inventories unchanged because those v1 workflows are not yet implemented.
+- AI output accepted/changed/rejected: Accepted the user's GPS direction and interest in camera/image selection and upload. Scoped uploads to optional assessment image evidence; excluded generic file sharing and v2 environmental-incident/pollution reporting. Kept concrete image limits, provider/configuration, sanitization and retention as decisions required before Member 4 implementation.
+- Verification/evidence: UI integration validator passed; endpoint catalog validator passed (33 public endpoints, 22 frontend routes, no Agentic AI endpoints); local Markdown link paths passed for 34 changed/untracked Markdown files; `git diff --check` passed with LF-to-CRLF notices only. No application code or application tests were changed or run.

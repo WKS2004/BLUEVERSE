@@ -89,8 +89,9 @@ v0 includes:
 ## 3.2 Phase Boundary
 
 The four coastal tourism and operations business components, their four
-Agentic AI contributions, Open-Meteo marine integration and biodiversity ML
-integration belong to v1. v0 establishes their shared client, API,
+Agentic AI contributions, Member 1's map API integration, Member 2's Open-Meteo
+marine integration and BLUEVERSE's biodiversity ML integration belong to v1.
+v0 establishes their shared client, API,
 authorization, database, gateway, test and documentation contracts. This phase
 boundary does not reduce the role or workflow coverage required of either
 client when a business capability is introduced.
@@ -562,6 +563,13 @@ permission is denied. The same location-aware business workflow must remain
 usable in React through an appropriate location input; GPS is a mobile input
 method, not ownership of coastal discovery.
 
+The selected additional in-scope device interactions are Member 3's
+date/time selection for coastal planning and Member 4's optional image
+evidence attachments for BLUEVERSE-managed operational assessments. The
+specific cross-platform behavior and security boundary are in the
+[v1 device-capability contract](docs/v1/device-capabilities.md). They do not
+replace the required Flutter GPS capability.
+
 ---
 
 # 10. Final Four v1 Business Components
@@ -614,7 +622,10 @@ Ownership must remain clear enough to defend through Git history and viva.
 * tourism availability;
 * schedules associated with those offerings;
 * favourites/saved experiences;
-* biodiversity integration/context.
+* the selected map API integration for location-aware discovery; and
+* BLUEVERSE's consumer integration/context for the separate IT3091
+  biodiversity model/inference service. Member 1 does not own or implement
+  the IT3091 model or inference service itself.
 
 ## Component B owns
 
@@ -694,6 +705,8 @@ Both clients must support the complete authorized Component A workflow:
 * browse, search, filter, sort and paginate destinations and activities;
 * view destination/activity details and current availability;
 * discover nearby coastal experiences;
+* use the selected map API capability for location-aware discovery where
+  included in the approved feature scope;
 * save/remove favourites and inspect biodiversity context where available.
 
 ## 12.4 Location and Interaction
@@ -703,6 +716,30 @@ capability. React must support the same location-aware discovery through a
 suitable location input. Manual alternatives should be available where
 practical when location permission is denied. Layout and controls may vary
 without reducing any permitted business action on either client.
+
+Use a one-time, user-initiated location reading for nearby discovery; do not
+add background tracking. React may offer browser geolocation as a convenience,
+but must retain manual destination/region entry. The Member 1 work-area
+contract defines permission, timeout, privacy and fallback behavior. Member 3
+captures its already-scoped itinerary date/time inputs with appropriate web
+and native picker controls. Member 4 may accept optional image evidence on a
+managed operational assessment; this does not include generic uploads or
+environmental-incident reporting. See the [v1 device-capability
+contract](docs/v1/device-capabilities.md).
+
+Member 1 owns BLUEVERSE's consumer integration for the selected map API as
+part of destination/activity discovery. The provider and the exact features
+required (such as map display, place lookup, geocoding or directions) must be
+selected and documented before implementation; this requirement does not
+silently require every example feature. React and Flutter must access provider
+capabilities through ASP.NET Core under the repository's public-API-only
+client boundary. Provider credentials remain server-side. Returned map/place
+data is untrusted discovery/display context and must not automatically create
+or overwrite canonical BLUEVERSE destination records. Respect provider terms,
+attribution, quotas, rate limits and location-data minimization. If the
+provider is unavailable, manual/list discovery remains usable. The map does
+not decide publication, schedule/availability, environmental suitability or
+operational restrictions.
 
 ---
 
@@ -741,6 +778,11 @@ Representative resources include:
 ```
 
 Publication, availability evaluation or another equivalent domain operation satisfies the required non-CRUD business behaviour.
+
+Where the selected map features require backend operations (for example
+provider-backed place lookup or geocoding), expose them only through the
+public ASP.NET Core API. Define their exact routes and DTOs during
+implementation; document only implemented routes in the endpoint catalog.
 
 Exact routes and DTOs belong to implementation contracts.
 
@@ -1035,6 +1077,12 @@ Both clients must support the complete authorized Component C workflow:
   AI workflows and failures where permitted;
 * view useful aggregate planning information where permitted.
 
+Date/time preferences and itinerary schedule edits must use accessible,
+platform-appropriate date/time selection controls. Both clients submit the
+same semantic date, local time, duration and time-zone context for server
+validation; the [device-capability contract](docs/v1/device-capabilities.md)
+defines the interaction and unresolved time-zone decisions.
+
 ## 16.5 Presentation and Inspection
 
 Both clients may adapt the itinerary editor and monitoring views to their
@@ -1134,6 +1182,8 @@ It connects:
 The component must represent:
 
 * operational assessment;
+* optional image evidence submitted by an authorized operator and attached
+  to a specific assessment/version;
 * AI operational recommendation/proposal;
 * operational status;
 * operational history;
@@ -1159,13 +1209,22 @@ The final allowed state-transition model must be documented and validated.
 For authorized operators and reviewers, both clients must support:
 
 * select an activity/offering, inspect conditions and submit an assessment
-  objective with relevant context;
+  objective with relevant context, optionally attaching image evidence;
 * inspect the assessment queue, details, workflow plan, progress, agent and
   tool-call summaries, recommendation, validation result and proposed action;
 * approve, reject or request revision through permission-gated controls;
 * inspect approval status, resulting operational state and active alerts;
 * manage permitted advisories/alerts and inspect operational history;
 * search, filter and paginate assessment information where appropriate.
+
+Flutter may capture a photo or select an image; React supports image-file
+selection/upload and may offer direct camera capture when available. Both
+clients upload and display the same authorized evidence through Member 4's
+public API. The [device-capability contract](docs/v1/device-capabilities.md)
+and [ADR-0018](docs/adr/ADR-0018-assessment-evidence-storage-boundary.md)
+define the private-storage, integrity, reviewer-access, versioning and
+Agentic-AI boundaries. Uploads do not make Member 4 an owner of pollution or
+environmental-incident workflows.
 
 ## 18.4 Presentation and Interaction
 
@@ -1827,6 +1886,10 @@ Safe degradation does not replace the requirement to implement the actual v1 ML 
 # 31. Third-Party Weather/Marine Integration
 
 BLUEVERSE v1 integrates Open-Meteo Weather/Marine APIs for relevant coastal context.
+
+This weather/marine responsibility belongs to Member 2. Member 1's separate
+map API integration for destination/activity discovery is specified in
+§12.4; the two providers and their data contracts must not be conflated.
 
 External-service access must be mediated through backend services.
 
@@ -2577,8 +2640,11 @@ Coastal Experience & Biodiversity Agent
 * associated schedules;
 * discovery;
 * GPS-aware coastal discovery;
+* the selected map API consumer integration for destination/activity
+  discovery, through ASP.NET Core;
 * favourites;
-* biodiversity integration/context.
+* BLUEVERSE's biodiversity inference API integration/context. The separate
+  IT3091 workstream owns supplying the trained model and inference service.
 
 ---
 
@@ -2681,9 +2747,16 @@ Safety & Operations Agent
                                       │
                             ┌─────────┴─────────┐
                             ▼                   ▼
-                  React               Flutter
-                All roles             All roles
+                React               Flutter
+              All roles             All roles
 ```
+
+The external integration ownership is distinct: Member 1 consumes the
+selected map API through ASP.NET Core; Member 2 owns Open-Meteo
+weather/marine acquisition; and Member 1 consumes the private IT3091
+biodiversity inference API while that separate workstream supplies the model
+and inference service. These boundaries do not make map or ML services
+available in the current foundation.
 
 ---
 
@@ -2760,6 +2833,9 @@ groups include the v1 member components, agents and full delivery evidence.
 ## Intelligence Integrations
 
 * [ ] Open-Meteo weather/marine integration works;
+* [ ] the selected Member 1 map API integration works through ASP.NET Core,
+      with provider terms/attribution, server-side credentials, validated
+      results, privacy-minimal location data and safe unavailable behavior;
 * [ ] source/time/freshness information is handled correctly;
 * [ ] ML inference integration path is implemented;
 * [ ] a real biodiversity prediction can be consumed when the trained model service is available;
@@ -2905,6 +2981,9 @@ From this point onward:
 * v1 stakeholder scope is considered finalized;
 * v2 and v3 remain deferred;
 * Marine Biodiversity Intelligence remains part of v1 integration;
+* the team has amended the v1 scope to include a Member 1-owned map API
+  integration for location-aware discovery, with provider and exact feature
+  scope left for technical selection;
 * implementation details may evolve through ADRs and technical contracts;
 * implementation changes must not silently alter this requirements baseline.
 
@@ -2919,6 +2998,30 @@ Editorial clarification, source mapping and cross-reference updates may
 improve readability without silently changing the agreed scope. Record any
 material amendment, the reason and its effects on the owning component and
 acceptance documents.
+
+## Recorded v1 scope amendment — 2026-09-26
+
+The team added a map API integration to v1 at the user's direction. Member 1
+owns the BLUEVERSE adapter and location-discovery contract because it owns
+destinations and activity discovery. The formal assignment permits maps as a
+meaningful third-party API, while repository rules require clients to use the
+public ASP.NET Core API. The selected vendor and exact feature scope remain
+open and are tracked in [ADR-0017](docs/adr/ADR-0017-map-provider-integration-boundary.md).
+
+## Recorded device-capability and evidence amendment — 2026-09-26
+
+The team confirmed Flutter GPS/device location as the required device
+capability, with Member 1 owning nearby discovery and React retaining an
+equivalent location-entry workflow. To place useful device interactions
+inside the existing member scopes, Member 3 owns accessible date/time
+selection for the planner's already-required time inputs; Member 4 owns
+optional image capture/selection and private upload as evidence on
+BLUEVERSE-managed operational assessments. These are implemented in the
+owning members' single `features/**` branches, with no cross-member branch
+sequence. Image evidence is not generic file sharing, is not sent to the
+Agentic AI runtime, and does not add v2 environmental-incident or pollution
+reporting. See [device capabilities](docs/v1/device-capabilities.md) and
+[ADR-0018](docs/adr/ADR-0018-assessment-evidence-storage-boundary.md).
 
 Otherwise:
 

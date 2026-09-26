@@ -20,8 +20,18 @@ ADRs capture significant architectural decisions and their rationale.
 14. `ADR-0014-active-session-archive.md`
 15. `ADR-0015-cross-platform-role-coverage-and-ui-experience.md`
 16. `ADR-0016-equal-client-capability-for-all-roles.md`
+17. `ADR-0017-map-provider-integration-boundary.md`
+18. `ADR-0018-assessment-evidence-storage-boundary.md`
 
 Some decisions remain **Proposed / Pending implementation choice** because the foundation does not invent decisions that have not yet been made.
 
 ADR-0016 is the current equal-client-capability decision. ADR-0015 remains
 available as historical context and is superseded.
+
+ADR-0017 assigns the v1 map-provider adapter to Member 1 and preserves the
+ASP.NET Core boundary. Its provider and exact feature scope remain open.
+
+ADR-0018 assigns optional operational-assessment image evidence to Member 4
+and keeps its upload/retrieval path private and API-mediated. The storage
+provider, limits and retention/sanitization details remain pre-implementation
+decisions.

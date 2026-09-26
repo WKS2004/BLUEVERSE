@@ -16,6 +16,14 @@ hand-off; it does not claim that provider integration or AI inference exists.
 
 **Owning business component:** [Marine Conditions & Safety Intelligence](../components/member-2-marine-conditions-safety-intelligence.md).
 
+**Implementation sequence:** do not implement an executable agent, model
+call or tool before all four business components pass G07. After that gate,
+follow the post-G07 sequence in the [member branch and integration workflow](../member-branch-workflow.md).
+Before G07, the owning Member 2 feature branch prepares only the public
+workflow contract, private backend adapter and not-connected/unavailable
+behavior defined in the [member integration boundary](../agentic-ai-integration-boundary.md).
+Implement this actual agent on an `agentic-ai/**` branch after G07.
+
 ## 1. Responsibility and role separation
 
 Collect and interpret weather and marine context relevant to a validated
@@ -196,4 +204,4 @@ delegated to this agent.
 
 - Requirements: [sections 14–15, 20–27, 31 and 40](../../../PROJECT_REQUIREMENTS.md).
 - Owning component: [Marine Conditions & Safety Intelligence](../components/member-2-marine-conditions-safety-intelligence.md).
-- Shared behavior: [canonical workflows](../workflows.md), [requirements coverage and readiness](../requirements-coverage-and-readiness.md), [Agentic AI architecture](../../agentic-ai/architecture.md), [tools](../../agentic-ai/tools.md), [safety](../../agentic-ai/safety.md), [evaluation](../../agentic-ai/evaluation.md).
+- Shared behavior: [canonical workflows](../workflows.md), [requirements coverage and readiness](../requirements-coverage-and-readiness.md), [Agentic AI architecture](../../agentic-ai/architecture.md), [implementation blueprint](../../agentic-ai/implementation-blueprint.md), [tools](../../agentic-ai/tools.md), [safety](../../agentic-ai/safety.md), [evaluation](../../agentic-ai/evaluation.md).
