@@ -16,6 +16,15 @@ tool such as document retrieval or RAG.
 | Safety & Operations | safety_profile_lookup, operational_status_lookup, active_alert_lookup, operational_constraint_lookup |
 | Planning & Coordination | Delegates configured steps to specialist agents; it cannot create or grant itself tools. |
 
+The candidate `biodiversity_prediction_lookup` belongs to the post-G07
+Coastal Experience & Biodiversity Agent. Its backend handler may call only
+the validated Member 3 prediction contract; Member 3 owns the ordinary v1
+IT3091 service adapter on its `features/**` branch. The agent and tool do not
+call the private IT3091 service directly. Keep prediction unavailability,
+invalidity, provenance and uncertainty explicit. See
+[ADR-0019](../adr/ADR-0019-biodiversity-inference-integration-ownership.md)
+and the [Member 1 agent contract](../v1/agents/member-1-coastal-experience-biodiversity-agent.md).
+
 For every tool actually introduced, document its purpose, authorized
 agent(s), typed input, structured output, source or owning service,
 validation, allowed side effects, timeout, bounded retry, failure response,

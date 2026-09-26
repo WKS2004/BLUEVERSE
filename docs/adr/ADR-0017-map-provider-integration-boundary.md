@@ -61,9 +61,10 @@ attribution, quotas, privacy and availability behavior depend on those choices.
 - This ADR does not claim a vendor, map SDK, geocoder, route service, API
   endpoint, production credential, or working map integration has been
   selected or implemented.
-- Member 2 continues to own Open-Meteo weather/marine acquisition. Member 1
-  separately owns the BLUEVERSE consumer adapter for the IT3091 biodiversity
-  inference API; IT3091 supplies the model and inference service.
+- Member 2 owns Open-Meteo weather/marine acquisition. Member 3 owns the
+  separate BLUEVERSE consumer adapter for the IT3091 biodiversity inference
+  API; Member 1 consumes its validated public result for experience-facing
+  context. See [ADR-0019](ADR-0019-biodiversity-inference-integration-ownership.md).
 
 ## Evidence required to complete implementation
 

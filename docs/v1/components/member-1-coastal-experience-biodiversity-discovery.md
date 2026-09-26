@@ -43,11 +43,11 @@ Its user-visible answer must make these questions clear:
 | **Universal product idea** | One authoritative coastal catalogue connects destinations, activities, destination-specific offerings, schedules, publication and current availability. People discover and save experiences; catalogue managers maintain them; biodiversity is optional, sourced context. Member 1 owns the BLUEVERSE map-provider integration that supports agreed location-aware discovery. Provider map/place data helps people find or view places; it never becomes the authoritative destination catalogue. Booking/payment inventory, generic travel search and an independent operational-restriction source are outside this component. |
 | **React Web** | Implement the same authorized discovery, detail, management, favourite, map-assisted location and biodiversity outcomes through the public API. Use the repository's React 19/TypeScript/Vite/React Router structure, reusable route/page/components, Tailwind utilities and existing request/state separation. Nearby search has a usable manual location/destination path. Map-provider requests and credentials stay behind ASP.NET Core; the eventual map presentation must use a provider-compatible approach that does not make the browser call the provider directly. Do not calculate authoritative availability in the browser. See the [React component contract](../../v0/components/react-web-client.md), [UI integration guide](../../development/ui-integration.md), and [React state ADR](../../adr/ADR-0005-react-state-management.md). |
 | **Flutter Mobile** | Implement equivalent authorized outcomes in Dart with native Material widgets and the existing UI/logic/data separation, repository/API service and view-model pattern. Device location can improve nearby search when permission is granted; manual destination/location selection remains available when denied, unavailable or unsupported. Map-provider requests and credentials stay behind ASP.NET Core; the eventual map presentation must use a provider-compatible approach that does not make the mobile client call the provider directly. Do not calculate availability locally. See the [Flutter component contract](../../v0/components/flutter-client.md), [UI integration guide](../../development/ui-integration.md), and [Flutter state ADR](../../adr/ADR-0006-flutter-state-management.md). |
-| **ASP.NET Core and data** | The public ASP.NET Core API authenticates, authorizes, validates and owns catalogue/discovery business operations. The backend owns persistence and domain decisions; EF Core/PostgreSQL represent the canonical catalogue, schedule/availability, favourites and required audit data. Server-side adapters mediate selected map-provider requests and private biodiversity inference. Exact route, DTO, entity, search, map-provider, map-feature and time-zone choices remain for the owning API/database/ADR decisions. Clients use only `/api/...`; they never call third-party providers, PostgreSQL or internal services directly. |
+| **ASP.NET Core and data** | The public ASP.NET Core API authenticates, authorizes, validates and owns catalogue/discovery business operations. The backend owns persistence and domain decisions; EF Core/PostgreSQL represent the canonical catalogue, schedule/availability, favourites and required audit data. Member 1's backend adapter mediates selected map-provider requests. Member 1 consumes biodiversity prediction results through Member 3's validated public API contract; Member 3 owns the server-side IT3091 adapter. Exact route, DTO, entity, search, map-provider, map-feature and time-zone choices remain for the owning API/database/ADR decisions. Clients use only `/api/...`; they never call third-party providers, PostgreSQL or internal services directly. |
 | **Map provider integration** | Member 1 owns the BLUEVERSE adapter and consumer contract for the selected map API. Its exact vendor and feature scope (for example map display, place lookup, geocoding or directions) are open decisions. All provider access is server-mediated under the assignment/repository boundary; keys remain server-side. Validate and normalize results, honor provider terms/attribution, and preserve manual/list discovery if the provider is unavailable. Provider results do not create, publish or overwrite canonical destinations automatically. |
-| **Biodiversity ML integration** | BLUEVERSE Member 1 owns the consumer-side contract, backend adapter and user-facing availability/provenance for the separate IT3091 inference service. The IT3091 workstream owns supplying the trained model and inference service; Member 1 does not own or implement that model/service. When it returns a genuine prediction, preserve model/version, query location/time, uncertainty and limitations. An outage is an explicit unavailable state, not a model guess. |
-| **Other external ownership** | Open-Meteo Weather and Marine API acquisition belongs to Member 2. It is independent of Member 1's map integration and biodiversity inference adapter. |
-| **Component relationships** | Member 1 is the canonical source of destination/activity/offering IDs and schedule/availability for Members 2 and 3 and the managed target/evidence referenced by Member 4. It consumes Member 4's current operational restriction when deriving effective usability. Member 2 owns activity suitability; Member 3 owns planning; Member 4 owns operational restrictions. See the [producer/consumer relationship map](../component-relationships.md#producer-consumer-and-authority-map). |
+| **Biodiversity ML integration** | Member 3 owns BLUEVERSE's backend adapter to the separate IT3091 inference service and its validated public prediction-result contract; the IT3091 workstream supplies the trained model and inference service. Member 1 owns the destination/activity-facing user experience and consumes only Member 3's public contract. Preserve genuine prediction provenance, model/version, query location/time, uncertainty and limitations. An outage is explicit unavailable context, never a guessed result. This integration is ordinary backend ML/API work, not Agentic AI, and is implemented before G07. |
+| **Other external ownership** | Open-Meteo Weather and Marine API acquisition belongs to Member 2. It is independent of Member 1's map integration and Member 3's biodiversity inference adapter. |
+| **Component relationships** | Member 1 is the canonical source of destination/activity/offering IDs and schedule/availability for Members 2 and 3 and the managed target/evidence referenced by Member 4. It consumes Member 4's current operational restriction when deriving effective usability. It provides the location context Member 3 may use for an optional biodiversity request and consumes the resulting validated Member 3 public contract for presentation. Member 2 owns activity suitability; Member 3 owns planning and the ML adapter; Member 4 owns operational restrictions. See the [producer/consumer relationship map](../component-relationships.md#producer-consumer-and-authority-map). |
 
 Client workflows use the same public API contract and shared workflow IDs
 where status tracking applies, use the server's role-to-permission model, and
@@ -73,13 +73,16 @@ Member 1 owns the BLUEVERSE experience catalogue and its discovery behavior:
 - nearby discovery and personal saved experiences/favourites; and
 - BLUEVERSE's map-provider adapter and map-assisted discovery contract, with
   the provider and exact map features chosen before implementation; and
-- BLUEVERSE's integration and user-facing interpretation of biodiversity
-  predictions produced by the separately developed IT3091 ML capability.
+- the user-facing interpretation and presentation of sourced biodiversity
+  prediction context obtained through Member 3's public contract. The
+  BLUEVERSE IT3091 adapter belongs to Member 3; the separate IT3091 workstream
+  supplies the model and inference service.
 
 The component does **not** own weather acquisition or activity safety
-classification (Member 2), recommendation and itinerary orchestration (Member
-3), operational restriction state or approval (Member 4), user authentication,
-the ML model or inference service itself, or regulatory/emergency authority.
+classification (Member 2), recommendation and itinerary orchestration or the
+biodiversity inference adapter (Member 3), operational restriction state or
+approval (Member 4), user authentication, the ML model or inference service
+itself, or regulatory/emergency authority.
 It still consumes Member 4's authoritative operational status. An experience
 record cannot override a restriction by remaining published or available in
 this component.
@@ -131,7 +134,7 @@ constraints, indexes, audit columns, and PostgreSQL types.
 | Schedule / availability | Time-related information for an offering. The implementation must distinguish a scheduled time from a general publication state and from current availability; booking or payment inventory is outside v1 scope. |
 | Publication state | Controls catalogue visibility and management lifecycle. DRAFT, PUBLISHED, UNPUBLISHED and ARCHIVED are possible vocabulary, but the final state machine and allowed transitions must be specified and tested. |
 | Favourite / saved experience | A user's association with a destination, activity or offering that supports save, revisit and removal without exposing one user's private list to another. Exact target types and uniqueness rules remain design decisions. |
-| Biodiversity prediction | Context returned by the internal ML integration, linked to the queried location/area and prediction time. It may include focal species, occurrence probability, habitat-suitability interpretation, model version, timestamp, uncertainty and limitations. |
+| Biodiversity prediction | Optional context returned through Member 3's validated public result contract, linked to the queried canonical location/area and prediction time. Member 3 owns the internal IT3091 adapter. A genuine result may include focal species, occurrence probability, habitat-suitability interpretation, model version, timestamp, uncertainty and limitations. |
 | Availability assessment | A business result for whether the selected experience can be discovered/used for the requested time after publication, schedule, availability and authoritative operational state are considered. It is the required non-CRUD operation. |
 
 An occurrence probability is an estimate, not a guarantee of species presence.
@@ -194,8 +197,10 @@ time, uncertainty/limitations, and unavailable status where supplied.
 
 ### 5.4 Biodiversity context
 
-1. A relevant destination or location detail requests biodiversity context
-   through ASP.NET Core, which calls the internal inference service.
+1. A relevant destination/activity or location detail requests biodiversity
+   context through Member 3's documented public prediction capability. Member
+   1 does not address the private IT3091 service or implement a second ML
+   adapter. Member 3's backend calls the internal inference service.
 2. A genuine prediction is shown with enough provenance to explain what it
    estimates and the uncertainty or limitations returned by the model.
 3. If the service or trained model is unavailable, BLUEVERSE reports an
@@ -268,8 +273,10 @@ The public contract must cover, as applicable:
   adapter, with a provider-independent public response and safe unavailable
   behavior (exact routes are chosen only when implemented);
 - user-scoped favourite read/add/remove actions; and
-- a biodiversity context request/result that is mediated by the backend and
-  reports real model availability/provenance.
+- a biodiversity context request/result consumed through Member 3's public
+  API capability, with explicit unavailable status rather than fabricated
+  content. Its exact route and DTO are owned by Member 3 and are registered
+  only when implemented.
 
 Do not register internal ML endpoints as client routes. The React and Flutter
 screens that implement these workflows must be represented in
@@ -301,11 +308,11 @@ practical while still relying on server-side idempotency/validation.
 | Collaborator | Information exchanged | Boundary |
 |---|---|---|
 | Member 2 — Marine Conditions & Safety Intelligence | Activity identity/context and suitability evidence may constrain recommendations or operational review. | Member 2 owns marine data and deterministic environmental suitability. Member 1 must not calculate a second result. |
-| Member 3 — Smart Coastal Planner & Itinerary Management | Valid destinations, activities, offerings, schedules, availability and experience constraints. | Planner consumes authoritative candidate data and must apply marine and operational constraints too. |
+| Member 3 — Smart Coastal Planner & Itinerary Management | Valid destinations, activities, offerings, schedules, availability, experience constraints and location context for an optional prediction request. | Planner consumes authoritative candidate data and must apply marine and operational constraints too. Member 3 owns the IT3091 backend adapter and exposes only validated prediction context through its public contract; Member 1 renders that context. |
 | Member 4 — Coastal Operations, Advisories & Alerts | Current managed operational status/restriction relevant to an offering or session. | Member 4 owns restriction state and approved transitions. |
 | Selected map API | Provider-backed map/place/geocoding/display data for Member 1's agreed location-discovery features. | Member 1 owns the server-side adapter. ASP.NET Core is the only client-facing boundary; provider results are untrusted, non-authoritative discovery context. Vendor and exact feature scope remain open. |
-| IT3091 biodiversity inference | Query location and prediction result plus provenance, uncertainty and availability. | Internal service called through backend; never directly exposed to React/Flutter or treated as guaranteed presence. |
-| Open-Meteo | Weather and marine forecast/observation inputs. | Member 2 owns the adapter and deterministic suitability; this integration is not part of Member 1's map or biodiversity work. |
+| IT3091 biodiversity inference | Member 3 sends minimal validated prediction inputs and receives the model result. Member 1 consumes the resulting public context. | Member 3's internal adapter calls the IT3091 service; clients and agents do not call it directly. Preserve provenance, uncertainty and unavailable/invalid states; a prediction is never guaranteed presence or safety evidence. |
+| Open-Meteo | Weather and marine forecast/observation inputs. | Member 2 owns the adapter and deterministic suitability; this integration is not part of Member 1's map or Member 3's biodiversity adapter. |
 | Identity and authorization | Authenticated principal and effective permissions. | Public API/Auth contract is authoritative; no role check embedded only in the client. |
 
 Cross-component dependencies use service/application contracts and stable
@@ -315,11 +322,12 @@ identifiers. Clients never call each other or internal service hostnames.
 
 The component must distinguish invalid user input, no matching results,
 unpublished content, no schedule/availability, map-provider no-match or
-unavailability, a service failure, and unavailable biodiversity inference.
-An unavailable optional prediction must not turn into a normal-looking zero
-or stale value. Map and ML errors should be recorded without credentials,
-full sensitive payloads or unnecessary request data. Provider keys remain in
-server-side secret configuration. Use only location precision needed for the
+unavailability, a service failure, and Member 3's unavailable biodiversity
+result. An unavailable optional prediction must not turn into a normal-looking
+zero or stale value. Map errors and Member 3's public unavailable status
+should be recorded without credentials, full sensitive payloads or
+unnecessary request data. Provider keys remain in server-side secret
+configuration. Use only location precision needed for the
 requested operation, disclose/request device location only when needed, and
 avoid persistent tracking or raw-location retention without a documented
 business need. Follow provider terms, attribution and quota limits.
@@ -354,9 +362,13 @@ successful build:
   target behavior matches the documented contract;
 - schedule/time-zone boundaries and concurrent availability updates are
   covered;
-- biodiversity returns an actual prediction when the inference service and
-  model are available, preserves metadata/uncertainty, and reports unavailable
-  or malformed inference without fabrication;
+- Member 1 renders a valid prediction fixture with its provenance and
+  uncertainty, and renders Member 3's unavailable/invalid result without
+  presenting it as a prediction;
+- Member 1 calls only the approved Member 3 public contract for prediction
+  context and never addresses IT3091 or a private service directly; Member 3
+  owns evidence for the genuine model-backed request/response and failure
+  behavior;
 - equivalent authorized actions and outcomes are available in React and
   Flutter; denied actions remain denied even if a client is manipulated;
 - agent consumers receive structured, current context and do not make a
@@ -385,7 +397,9 @@ the current architecture. Each decision that changes architecture or a
 public contract must be documented in the owning API/database/ADR material,
 then reflected in implementation and tests. The map-provider ownership and
 ASP.NET Core boundary are recorded in
-[ADR-0017](../../adr/ADR-0017-map-provider-integration-boundary.md).
+[ADR-0017](../../adr/ADR-0017-map-provider-integration-boundary.md). ML
+adapter ownership and the Member 1 consumer boundary are recorded in
+[ADR-0019](../../adr/ADR-0019-biodiversity-inference-integration-ownership.md).
 
 ## 13. Traceability
 

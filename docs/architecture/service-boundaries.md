@@ -88,10 +88,14 @@ executes approved protected changes.
 ## v1 ML inference target
 
 The separate IT3091 workstream supplies the initial biodiversity model and
-inference service. Member 1 owns BLUEVERSE's consumer contract and adapter;
-ASP.NET Core calls the private inference boundary. A missing service yields an
-explicit unavailable result. The model and inference service are not
-implemented in this repository today.
+inference service. Member 3 owns BLUEVERSE's validated public result contract
+and server-side adapter; ASP.NET Core calls the private inference boundary.
+Member 1 owns experience-facing presentation and consumes the Member 3
+contract. A missing service yields an explicit unavailable result. The
+adapter, model and inference service are not implemented in this repository
+today. The BLUEVERSE adapter is ordinary member-feature ML/API integration,
+separate from post-G07 Agentic AI work; see
+[ADR-0019](../adr/ADR-0019-biodiversity-inference-integration-ownership.md).
 
 ## v1 map-provider target
 

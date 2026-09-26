@@ -42,6 +42,9 @@ views must also be available in both clients.
    returns sourced weather and marine context with time, freshness and missing
    data. The [Coastal Experience & Biodiversity Agent](agents/member-1-coastal-experience-biodiversity-agent.md)
    returns offering, schedule and optional biodiversity context.
+   When that context needs a prediction, the Member 1 agent obtains it through
+   Member 3's validated public/typed contract; only Member 3's private
+   backend adapter calls IT3091.
 5. The [Safety & Operations Agent](agents/member-4-safety-operations-agent.md)
    proposes a structured outcome and any operational action.
 6. Application code independently validates schemas, safety profiles,

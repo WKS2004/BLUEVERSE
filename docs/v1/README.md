@@ -77,9 +77,9 @@ mapping for contribution records.
 
 | Member label | Component contract | Work-area plan / single branch | Core responsibility | Required business operation | Paired agent contract and responsibility |
 |---|---|---|---|---|---|
-| 1 (`v1.component.experience-biodiversity`) | [Coastal Experience & Biodiversity Discovery](components/member-1-coastal-experience-biodiversity-discovery.md) | [Member 1 work areas](phases/member-1-phase-plan.md) · `features/coastal-experience-biodiversity` | Destinations, activities, offerings, schedules/availability, discovery, favourites, selected map-provider integration and BLUEVERSE biodiversity inference integration | Publication and availability evaluation | [Coastal Experience & Biodiversity Agent](agents/member-1-coastal-experience-biodiversity-agent.md): sourced experience context and optional, uncertainty-aware biodiversity context |
-| 2 (`v1.component.marine-safety`) | [Marine Conditions & Safety Intelligence](components/member-2-marine-conditions-safety-intelligence.md) | [Member 2 work areas](phases/member-2-phase-plan.md) · `features/marine-conditions-safety` | Backend-mediated weather/marine data, provenance/freshness, condition-query period selection, activity safety profiles and deterministic suitability | Activity/location/time suitability assessment | [Marine Conditions Intelligence Agent](agents/member-2-marine-conditions-intelligence-agent.md): sourced, time-aware marine context; no invented thresholds or authority |
-| 3 (`v1.component.coastal-planner`) | [Smart Coastal Planner & Itinerary Management](components/member-3-smart-coastal-planner-itinerary-management.md) | [Member 3 work areas](phases/member-3-phase-plan.md) · `features/coastal-planner` | Coastal recommendation requests, planning/delegation, date/time selection, assembly, itineraries and re-evaluation | Itinerary re-evaluation | [Planning & Coordination Agent](agents/member-3-planning-coordination-agent.md): structured workflow plan, specialist delegation, dependency tracking and assembly |
+| 1 (`v1.component.experience-biodiversity`) | [Coastal Experience & Biodiversity Discovery](components/member-1-coastal-experience-biodiversity-discovery.md) | [Member 1 work areas](phases/member-1-phase-plan.md) · `features/coastal-experience-biodiversity` | Destinations, activities, offerings, schedules/availability, discovery, favourites, selected map-provider integration and the user-facing biodiversity context surface | Publication and availability evaluation | [Coastal Experience & Biodiversity Agent](agents/member-1-coastal-experience-biodiversity-agent.md): sourced experience context and optional, uncertainty-aware biodiversity context |
+| 2 (`v1.component.marine-safety`) | [Marine Conditions & Safety Intelligence](components/member-2-marine-conditions-safety-intelligence.md) | [Member 2 work areas](phases/member-2-phase-plan.md) · `features/marine-conditions-safety` | Backend-mediated weather/marine data, provenance/freshness, activity safety profiles and deterministic suitability; period is an ordinary query input, with no separately assigned device capability | Activity/location/time suitability assessment | [Marine Conditions Intelligence Agent](agents/member-2-marine-conditions-intelligence-agent.md): sourced, time-aware marine context; no invented thresholds or authority |
+| 3 (`v1.component.coastal-planner`) | [Smart Coastal Planner & Itinerary Management](components/member-3-smart-coastal-planner-itinerary-management.md) | [Member 3 work areas](phases/member-3-phase-plan.md) · `features/coastal-planner` | Coastal recommendation requests, planning/delegation, Member 3's backend-mediated IT3091 biodiversity inference adapter, date/time selection, assembly, itineraries and re-evaluation | Itinerary re-evaluation | [Planning & Coordination Agent](agents/member-3-planning-coordination-agent.md): structured workflow plan, specialist delegation, dependency tracking and assembly |
 | 4 (`v1.component.coastal-operations`) | [Coastal Operations, Advisories & Alerts](components/member-4-coastal-operations-advisories-alerts.md) | [Member 4 work areas](phases/member-4-phase-plan.md) · `features/coastal-operations` | Operational assessment/state, optional image evidence, approval, alerts/advisories and execution history | Approve, reject or request revision, followed by controlled execution where eligible | [Safety & Operations Agent](agents/member-4-safety-operations-agent.md): structured recommendation/proposal; read-only and never the executor |
 
 These member numbers are the labels in the requirements baseline. The
@@ -134,12 +134,11 @@ plans group the full scope into work areas.
 - [Cross-platform and permissions](cross-platform-and-permissions.md) defines
   equal React/Flutter capability and server-side permission boundaries.
 - [Device capabilities and evidence media](device-capabilities.md) assigns
-  Flutter GPS/React location-aware discovery to Member 1, marine condition
-  query-period selection to Member 2, planner date/time selection to Member 3,
-  and optional assessment image evidence to Member 4. Member 2 condition
-  periods and Member 3 itinerary times are distinct workflows. These are
-  target requirements for the owner branches, not claims about the current v0
-  clients.
+  Flutter GPS/React location-aware discovery to Member 1, planner date/time
+  selection to Member 3, and optional assessment image evidence to Member 4.
+  Member 2 has no separate device feature; its condition period is an ordinary
+  query input. These are target requirements for the owner branches, not
+  claims about the current v0 clients.
 - [ADR-0018](../adr/ADR-0018-assessment-evidence-storage-boundary.md) keeps
   Member 4's optional image evidence private, API-mediated, versioned and
   outside raw Agentic AI input; its storage provider and limits must be
@@ -161,11 +160,16 @@ plans group the full scope into work areas.
 
 The [v0 guide](../v0/README.md) documents the shared foundation. v1 delivers
 coastal tourism and operations, including Member 1's map-provider integration,
-Member 2's Open-Meteo weather/marine integration, and BLUEVERSE's consumer
-integration with the separate IT3091 biodiversity inference service.
+Member 2's Open-Meteo weather/marine integration, and Member 3's consumer
+integration with the separate IT3091 biodiversity inference service. Member 1
+owns the user-facing experience for biodiversity context and obtains validated
+prediction results through the Member 3 API contract.
 Map-provider choice and exact map feature scope remain open; external map
 access follows the ASP.NET Core boundary in
 [ADR-0017](../adr/ADR-0017-map-provider-integration-boundary.md).
+The ownership of the private biodiversity inference adapter and the public
+consumer contract is set in
+[ADR-0019](../adr/ADR-0019-biodiversity-inference-integration-ownership.md).
 Environmental-authority,
 incident and pollution-response workflows belong to v2; fisheries and coastal
 livelihood workflows belong to v3. Generic booking, payment, social-network,

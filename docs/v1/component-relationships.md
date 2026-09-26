@@ -23,7 +23,6 @@ flowchart LR
 
     Person[Authorized person]
     Person -->|explicit one-time location input| M1
-    Person -->|selected direct condition-query period| M2
     Person -->|optional assessment image evidence| M4
 
     API --> M1[Member 1<br/>Experience and Biodiversity]
@@ -33,16 +32,18 @@ flowchart LR
 
     M1 -->|canonical activity IDs and taxonomy| M2
     M1 -->|canonical IDs, publication, schedule, availability| M3
+    M1 -->|canonical location and optional prediction context request| M3
     M1 -->|experience and availability evidence| M4
     M4 -->|managed operational status and restrictions| M1
     M4 -->|managed operational status and restrictions| M3
     M2 -->|time-aware conditions and deterministic suitability| M3
     M2 -->|condition and suitability evidence| M4
     M3 -->|business workflow ID, objective, status and result references| M4
+    M3 -->|validated prediction or unavailable context| M1
 
     OpenMeteo[Open-Meteo] -->|weather and marine source data| M2
     MapProvider[Selected map API provider] -->|validated map/place context| M1
-    Biodiversity[Separate IT3091 inference service] -->|genuine prediction and provenance| M1
+    Biodiversity[Separate IT3091 inference service] -->|genuine prediction and provenance| M3
 ```
 
 The arrows between member components mean that the consumer depends on the
@@ -50,9 +51,10 @@ producer's agreed contract and authoritative data. They do not require a
 direct client connection or prescribe whether backend code uses an internal
 application interface, a typed service client or another accepted boundary.
 React and Flutter call only the public API. The selected map provider and
-Open-Meteo are called through their owning ASP.NET Core adapters; the
-biodiversity inference service, Auth, PostgreSQL and any later Agentic AI
-service remain behind their approved backend boundaries. Map-provider output
+Open-Meteo are called through their owning ASP.NET Core adapters; the private
+biodiversity inference service is called through Member 3's ASP.NET Core
+adapter. Auth, PostgreSQL and any later Agentic AI service remain behind
+their approved backend boundaries. Map-provider output
 supports discovery/display only and never becomes the authority for Member
 1's canonical destination records.
 
@@ -68,16 +70,18 @@ supports discovery/display only and never becomes the authority for Member
 | **Member 2 — Marine and safety** | Member 3 — Planner | Conditions with source, units, observation/forecast time, retrieval time, freshness and missing factors; deterministic suitability with profile/version evidence. | Planner preserves `UNSUITABLE`, `UNKNOWN`, stale and missing-data meaning. It does not recalculate or weaken Member 2 thresholds. |
 | **Member 2 — Marine and safety** | Member 4 — Operations | Time-aware environmental evidence and the deterministic suitability assessment for the relevant activity and period. | Member 4 keeps source/freshness/missing evidence visible and cannot turn an unsuitable or unknown result into a permissive one. |
 | **Member 3 — Planner** | Member 4 — Operations | Business workflow ID, objective/request context, initiator and authorized status/result references; itinerary or recommendation context where relevant. | Member 4 links to Member 3's business workflow identity without claiming that it is an Agentic AI execution record. |
+| **Member 3 — biodiversity integration** | Member 1 — Experience and biodiversity | Validated prediction context or explicit not-requested/unavailable/invalid result for a relevant canonical destination/activity location. | Member 3 owns the private IT3091 adapter and public result contract; Member 1 owns the user-facing presentation. Preserve provenance and uncertainty. Prediction context is optional and never evidence of observed presence, safety, availability or operational authority. |
 | **Open-Meteo** | Member 2 — Marine and safety | Weather and marine observations/forecasts requested by the backend adapter. | Member 2 validates and normalizes data, preserves provenance and reports provider failure explicitly. Clients never call the provider. |
 | **Selected map API provider** | Member 1 — Experience and biodiversity | Map/place/geocoding or other location context for the explicitly selected discovery features. | Member 1 owns the BLUEVERSE consumer adapter; ASP.NET Core mediates provider access. Provider results are untrusted and cannot create or overwrite canonical destinations. Provider choice and feature scope remain open. |
-| **IT3091 biodiversity model/inference workstream** | External supplier; Member 1 owns BLUEVERSE integration | A genuine model-backed prediction and supplied model/provenance/uncertainty metadata through a private inference API. | The IT3091 workstream supplies the trained model/service. Member 1 owns the ASP.NET Core consumer adapter and user-facing unavailable/provenance contract, not the model/service implementation. This ML integration is separate from Agentic AI. |
+| **IT3091 biodiversity model/inference workstream** | External supplier; Member 3 owns BLUEVERSE integration | A genuine model-backed prediction and supplied model/provenance/uncertainty metadata through a private inference API. | The IT3091 workstream supplies the trained model/service. Member 3 owns the ASP.NET Core consumer adapter and validated public result contract, not the model/service implementation. Member 1 consumes the result for user-facing context. This ML integration is separate from Agentic AI and is implemented before G07. |
 | **Authorized person/device location** | Member 1 — Experience and biodiversity | A user-initiated, one-time device reading or manually selected destination/region used as a nearby-discovery input. | Member 1 validates the query through the public API; location is not background-tracked or retained as a movement history. Device coordinates are not canonical destination data. |
-| **Authorized user-selected condition period** | Member 2 — Marine and safety | A direct weather/marine lookup or deterministic suitability request for a supported forecast/observation time or interval. | Member 2 validates supported bounds, granularity, location time zone and provider coverage. For planner-originated work, Member 2 preserves Member 3's validated candidate period and does not request a competing selection. |
 | **Authorized operator image evidence** | Member 4 — Coastal operations | Optional image evidence attached to a BLUEVERSE-managed assessment/version and displayed to authorized reviewers. | Member 4 owns upload authorization, private storage, content validation, versioning and audit. Raw media is not public and is not passed to the future Agentic AI agent. |
 
-The first eight rows describe the internal BLUEVERSE component relationships;
-the next three describe external data/model relationships; the final three
-define human/device inputs. Each component's API,
+The first nine rows describe the internal BLUEVERSE component relationships;
+the next three describe external data/model relationships; the final two
+define human/device inputs. Member 2's requested condition period remains an
+ordinary marine-query input, not a separately assigned device capability.
+Each component's API,
 permission, validation, persistence, client parity, error and acceptance
 requirements are detailed in its linked contract.
 
@@ -91,9 +95,14 @@ The contracts intentionally connect in more than one direction:
 - Member 3 consumes Member 1 availability, Member 2 suitability and Member 4
   restrictions to assemble deterministic recommendations.
 - Member 2 uses Member 1's canonical activity taxonomy when associating
-  safety profiles and suitability assessments with activities. A user may
-  select a supported period for a direct Member 2 query; Member 3 remains the
-  source of the validated candidate period for planner-originated assessment.
+  safety profiles and suitability assessments with activities. Its requested
+  period is a normal query field; Member 3 remains the source of the validated
+  candidate period for planner-originated assessment. Member 2 has no
+  separate device-feature assignment.
+- Member 1 supplies canonical location context when relevant; Member 3 owns
+  the optional IT3091 request/response adapter and returns only a validated
+  result or explicit unavailability. Member 1 owns its display, and neither
+  Member 4 nor the Agentic runtime may use that prediction as safety authority.
 - Member 4 consumes Member 1/2 evidence and Member 3's business workflow
   identity to create an auditable assessment and proposal record.
 - Member 2 can establish data acquisition and condition normalization while

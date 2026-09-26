@@ -563,12 +563,11 @@ permission is denied. The same location-aware business workflow must remain
 usable in React through an appropriate location input; GPS is a mobile input
 method, not ownership of coastal discovery.
 
-Additional in-scope device interactions are Member 2's date/time or interval
-selection for direct marine-condition queries, Member 3's date/time selection
-for coastal planning, and Member 4's optional image evidence attachments for
-BLUEVERSE-managed operational assessments. Member 2's query period and Member
-3's itinerary schedule are distinct business inputs even if both clients
-reuse a date/time control. The specific cross-platform behavior and security
+Additional in-scope device interactions are Member 3's date/time selection
+for coastal planning and Member 4's optional image evidence attachments for
+BLUEVERSE-managed operational assessments. Member 2 accepts a requested period
+as an ordinary marine-query business input; it has no separately assigned
+device capability. The specific cross-platform behavior and security
 boundary are in the
 [v1 device-capability contract](docs/v1/device-capabilities.md). They do not
 replace the required Flutter GPS capability.
@@ -626,9 +625,9 @@ Ownership must remain clear enough to defend through Git history and viva.
 * schedules associated with those offerings;
 * favourites/saved experiences;
 * the selected map API integration for location-aware discovery; and
-* BLUEVERSE's consumer integration/context for the separate IT3091
-  biodiversity model/inference service. Member 1 does not own or implement
-  the IT3091 model or inference service itself.
+* the user-facing biodiversity context surface, consuming Member 3's validated
+  public prediction contract. Member 1 does not own the BLUEVERSE inference
+  adapter or the separate IT3091 model/inference service.
 
 ## Component B owns
 
@@ -645,7 +644,10 @@ Ownership must remain clear enough to defend through Git history and viva.
 * Agentic AI workflow planning/delegation;
 * recommendation assembly;
 * itineraries;
-* itinerary re-evaluation.
+* itinerary re-evaluation; and
+* BLUEVERSE's backend-mediated consumer adapter and validated public result
+  contract for the separate IT3091 biodiversity inference service. Member 3
+  does not own or implement the IT3091 model or inference service itself.
 
 ## Component D owns
 
@@ -827,6 +829,14 @@ schedule_lookup
 biodiversity_prediction_lookup
 ```
 
+For this post-G07 tool, the Member 1 agent requests biodiversity context
+through the approved Member 3 public/typed backend contract. Member 3 owns
+the private IT3091 adapter as ordinary v1 component integration; neither the
+agent nor its tool calls the IT3091 host directly. The prediction result must
+remain sourced optional context with explicit provenance, uncertainty and
+unavailable/invalid states, not safety authority. See
+[ADR-0019](docs/adr/ADR-0019-biodiversity-inference-integration-ownership.md).
+
 ### Structured Output
 
 The agent produces an **Experience & Biodiversity Context Report** containing relevant fields such as:
@@ -938,9 +948,9 @@ The LLM must not invent thresholds during runtime.
 Both clients must support the complete authorized Component B workflow:
 
 * look up current and forecast marine conditions by destination and activity;
-* for direct condition/suitability requests, select a supported forecast or
-  observation time/interval; when evaluating a planner candidate, preserve
-  the validated itinerary period supplied by Member 3;
+* accept the requested supported forecast or observation time/interval as an
+  ordinary query input; when evaluating a planner candidate, preserve the
+  validated itinerary period supplied by Member 3;
 * show source, timestamps, freshness, unavailable fields and relevant warnings;
 * show activity-specific suitability, caution and condition summaries;
 * navigate between destination/activity details and marine information;
@@ -952,11 +962,12 @@ Both clients must support the complete authorized Component B workflow:
 
 Each client may present condition information to fit its screen and input
 method. Both must preserve the same evidence, permission-gated actions and
-server-calculated suitability result. Flutter may use native date/time or
-interval controls; React must offer equivalent accessible controls. The API
-defines the supported period horizon, granularity, time-zone interpretation
-and provider coverage. Clients must report unsupported periods and must not
-silently clamp, shift or replace a requested period.
+server-calculated suitability result. The requested period is a normal
+business input in the condition query; Member 2 has no separately assigned
+device feature. The API defines the supported period horizon, granularity,
+time-zone interpretation and provider coverage. Clients must report
+unsupported periods and must not silently clamp, shift or replace a requested
+period.
 
 ---
 
@@ -1863,6 +1874,15 @@ Structured Prediction
 ASP.NET Core
 ```
 
+Member 3 owns BLUEVERSE's ASP.NET Core consumer adapter and validated public
+prediction-result contract. Member 1 owns the destination/activity-facing
+experience and consumes Member 3's public contract; its clients never call
+the private IT3091 service. The ML adapter is ordinary v1 backend integration
+on `features/coastal-planner`, and must be implemented before G07. It does not
+implement Agentic AI. The future Member 1 biodiversity agent may invoke the
+result only through an approved allowlisted backend tool after G07. See
+[ADR-0019](docs/adr/ADR-0019-biodiversity-inference-integration-ownership.md).
+
 The model integration should expose useful information such as:
 
 * focal species;
@@ -2657,8 +2677,9 @@ Coastal Experience & Biodiversity Agent
 * the selected map API consumer integration for destination/activity
   discovery, through ASP.NET Core;
 * favourites;
-* BLUEVERSE's biodiversity inference API integration/context. The separate
-  IT3091 workstream owns supplying the trained model and inference service.
+* the user-facing biodiversity context surface, consuming the validated
+  Member 3 prediction contract. Member 1 does not own the BLUEVERSE adapter;
+  the separate IT3091 workstream supplies the model and inference service.
 
 ---
 
@@ -2700,7 +2721,10 @@ Planning & Coordination Agent
 * Agentic AI planning/delegation;
 * recommendation assembly;
 * itineraries;
-* itinerary re-evaluation.
+* itinerary re-evaluation; and
+* BLUEVERSE's backend-mediated adapter and validated public result contract
+  for the separate IT3091 biodiversity inference service. The IT3091
+  workstream supplies the model and inference service.
 
 ---
 
@@ -2767,10 +2791,12 @@ Safety & Operations Agent
 
 The external integration ownership is distinct: Member 1 consumes the
 selected map API through ASP.NET Core; Member 2 owns Open-Meteo
-weather/marine acquisition; and Member 1 consumes the private IT3091
-biodiversity inference API while that separate workstream supplies the model
-and inference service. These boundaries do not make map or ML services
-available in the current foundation.
+weather/marine acquisition; and Member 3 consumes the private IT3091
+biodiversity inference API through its backend adapter while that separate
+workstream supplies the model and inference service. Member 1 owns the
+user-facing biodiversity context and consumes Member 3's validated public
+contract. These boundaries do not make map or ML services available in the
+current foundation.
 
 ---
 
@@ -3037,7 +3063,11 @@ Agentic AI runtime, and does not add v2 environmental-incident or pollution
 reporting. See [device capabilities](docs/v1/device-capabilities.md) and
 [ADR-0018](docs/adr/ADR-0018-assessment-evidence-storage-boundary.md).
 
-## Recorded Member 2 device-input allocation — 2026-09-26
+## Recorded Member 2 device-input allocation — 2026-09-26 (superseded)
+
+This historical allocation was superseded by the later Member 2 capability
+clarification below. It is retained to preserve the requirements amendment
+history; it is not a current device-feature requirement.
 
 The team assigned Member 2 an accessible date/time or interval selector for
 direct marine-condition lookups and deterministic suitability assessments.
@@ -3051,6 +3081,29 @@ interval granularity and time-zone/DST behavior. See the [Member 2 component
 contract](docs/v1/components/member-2-marine-conditions-safety-intelligence.md),
 [Member 2 work plan](docs/v1/phases/member-2-phase-plan.md) and [device
 capability guide](docs/v1/device-capabilities.md).
+
+## Recorded ML integration and Member 2 device-capability clarification — 2026-09-26
+
+The team assigned BLUEVERSE's backend-mediated IT3091 biodiversity inference
+consumer adapter and validated public prediction contract to Member 3 because
+the prediction is optional context for planning and is not an operational
+safety authority. The separate IT3091 workstream continues to supply the
+model and inference service. Member 1 owns the destination/activity-facing
+presentation and consumes Member 3's validated public contract; Member 4 does
+not own this adapter. This ordinary ML integration is implemented as part of
+the Member 3 feature before G07 and is distinct from Agentic AI, which remains
+deferred to `agentic-ai/**` until all member components pass G07. The member
+relationship and cross-layer contracts are in
+[ADR-0019](docs/adr/ADR-0019-biodiversity-inference-integration-ownership.md).
+
+The team also removed Member 2's separately assigned device interaction.
+Member 2 continues to accept a requested period as a normal marine-query
+business input and preserves Member 3's validated itinerary period for
+planner-originated work. Member 2 has no additional sensor, device permission
+or device-specific feature requirement. The current device assignments are
+Member 1 GPS/location discovery, Member 3 planner date/time selection, and
+Member 4 optional assessment image evidence; see the
+[device-capability guide](docs/v1/device-capabilities.md).
 
 Otherwise:
 

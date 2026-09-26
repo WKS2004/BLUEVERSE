@@ -13,12 +13,11 @@ device capabilities may change presentation, but may not remove a permitted
 business workflow. Flutter GPS is the required v1 device feature; React must
 still support location-aware discovery through an appropriate location input.
 Flutter offers a manual alternative where practical when location permission
-is denied. Member 2's date/time or interval selection for direct
-marine-condition queries, Member 3's date/time inputs for itinerary planning,
-and Member 4's optional assessment image evidence also have equivalent user
-outcomes in both clients. Native controls and capture methods may differ;
-Member 2 query periods and Member 3 itinerary times remain distinct business
-inputs. See the shared
+is denied. Member 3's date/time inputs for itinerary planning and Member 4's
+optional assessment image evidence also have equivalent user outcomes in
+both clients. Native controls and capture methods may differ. Member 2's
+condition period remains an ordinary query input and is not assigned as a
+separate device feature. See the shared
 [device-capability contract](device-capabilities.md) for permission, upload,
 privacy and failure behavior.
 

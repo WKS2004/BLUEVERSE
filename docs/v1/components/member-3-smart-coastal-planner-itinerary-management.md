@@ -38,10 +38,11 @@ available at evaluation time.
 | **Universal product idea** | Turn a person's coastal place/time/interests/constraints into eligible, explainable coastal recommendations and user-owned itineraries. The planner assembles evidence from its source owners; it does not become the catalogue, marine-data provider or operations authority. A deterministic recommendation and itinerary path remains usable before the future AI runtime is connected. |
 | **React Web** | Provide the same authorized request, result, workflow-status, itinerary lifecycle and re-evaluation outcomes as Flutter. Use React 19/TypeScript/Vite/React Router, reusable pages/components, Tailwind utilities and existing request/state separation. Show evidence time, availability, suitability, uncertainty and re-evaluation changes; do not locally rank a blocked item back into an eligible result. See the [React component contract](../../v0/components/react-web-client.md), [UI integration guide](../../development/ui-integration.md), and [React state ADR](../../adr/ADR-0005-react-state-management.md). |
 | **Flutter Mobile** | Provide the same public workflow with native Dart/Material screens, the UI/logic/data separation, repository/API service and view-model pattern. Inputs and itinerary editing may be adapted to mobile interaction, but permissions, candidate eligibility, status, saved itinerary state and business outcome match React. See the [Flutter component contract](../../v0/components/flutter-client.md), [UI integration guide](../../development/ui-integration.md), and [Flutter state ADR](../../adr/ADR-0006-flutter-state-management.md). |
-| **ASP.NET Core and data** | The public API owns request authorization/validation, deterministic candidate assembly, business workflow identity/status/result and user-owned itinerary persistence. EF Core/PostgreSQL persist the business request and itinerary state under the approved schema. Member 1/2/4 source results remain authoritative; the planner stores references or evidence snapshots only as the accepted retention contract requires. |
-| **Third-party integration** | The planner has no direct third-party provider integration in the v1 contract. It consumes Member 1 catalogue/location/availability and optional biodiversity context, Member 2's backend-mediated Open-Meteo conditions and deterministic suitability, and Member 4 operational restrictions. It must not call the map provider, Open-Meteo, IT3091 inference, Auth or internal hosts directly from either client or from unrestricted model/network access. Map-assisted discovery remains in Member 1; planning receives validated Member 1 data. |
+| **ASP.NET Core and data** | The public API owns request authorization/validation, deterministic candidate assembly, business workflow identity/status/result and user-owned itinerary persistence. It also owns Member 3's private server-side adapter to the separate IT3091 biodiversity inference service and the validated public prediction-result capability consumed by Member 1. EF Core/PostgreSQL persist business request and itinerary state under the approved schema; prediction caching/persistence is not assumed and must be decided from freshness, privacy and retention needs. Member 1/2/4 source results remain authoritative; the planner stores references or evidence snapshots only as the accepted retention contract requires. |
+| **ML service integration** | Member 3 sends minimal validated location/species/context to the private IT3091 service, validates response schema, numeric ranges, timestamps and provenance, and returns genuine predictions or a clear unavailable/invalid result. IT3091 supplies the trained model and inference service; Member 3 does not train, host, or claim ownership of it. Member 1's experience screens consume the Member 3 public contract. Biodiversity is optional contextual enrichment, never a safety or operational authority, and this adapter is ordinary backend ML/API integration rather than Agentic AI. |
+| **Other provider integration** | Member 3 does not own the map provider or Open-Meteo. It consumes Member 1's canonical catalogue/location/availability and Member 2's backend-mediated Open-Meteo conditions/suitability, plus Member 4 restrictions. Only the typed Member 3 server adapter may call IT3091. Neither client, planner UI, future model nor agent tool may call the map provider, Open-Meteo, IT3091, Auth or internal hosts directly. Map-assisted discovery remains in Member 1; planning receives validated Member 1 data. |
 | **Paired Agentic AI role** | The future Planning & Coordination Agent creates a structured plan, delegates to the distinct Member 1 and Member 2 specialists, tracks dependencies and assembles their validated outputs; it participates in Member 4 assessment when that workflow requests it. Before G07, Member 3 implements its ordinary deterministic business behavior, public workflow contract, typed private adapter and safe not-connected/unavailable state only. Actual orchestration/model calls and AI execution state wait for `agentic-ai/**` after G07. |
-| **Component relationships** | Member 3 consumes Member 1 publication/schedule/availability, Member 2 condition freshness and suitability, and Member 4 current restrictions. Its business workflow ID/objective/status/result references are consumed by Member 4 for traceable assessment. It never replaces source ownership or weakens `UNSUITABLE`, `UNKNOWN`, stale or restricted results. See the [producer/consumer relationship map](../component-relationships.md#producer-consumer-and-authority-map). |
+| **Component relationships** | Member 3 consumes Member 1 publication/schedule/availability, Member 2 condition freshness and suitability, and Member 4 current restrictions. It owns the adapter that obtains optional biodiversity predictions from IT3091 and exposes validated context to Member 1; Member 1 owns experience-facing presentation. Its business workflow ID/objective/status/result references are consumed by Member 4 for traceable assessment. It never replaces source ownership or weakens `UNSUITABLE`, `UNKNOWN`, stale or restricted results. See the [producer/consumer relationship map](../component-relationships.md#producer-consumer-and-authority-map). |
 
 Both clients expose the same permitted outcomes through ASP.NET Core, the
 shared role-to-permission model and UI integration registry. This overview is
@@ -61,12 +62,16 @@ Member 3 owns:
   tourist recommendations and operational-assessment requests;
 - deterministic assembly of eligible candidates and validated context into a
   useful recommendation;
-- user-owned itineraries and their ordered experience references; and
+- user-owned itineraries and their ordered experience references;
 - itinerary re-evaluation when relevant conditions, availability or
-  operational state have changed.
+  operational state have changed;
+- BLUEVERSE's backend-mediated IT3091 biodiversity inference adapter and
+  validated public prediction-result contract, but not the separately
+  supplied IT3091 model or inference service.
 
-It does not own the source catalogue and availability (Member 1), environmental
-retrieval and deterministic activity suitability (Member 2), operational
+It does not own the source catalogue and availability or experience-facing
+biodiversity presentation (Member 1), environmental retrieval and deterministic
+activity suitability (Member 2), operational
 restrictions/approval/execution (Member 4), or the public authorization
 boundary. The Planning & Coordination Agent's plan generation, specialist
 delegation, tool execution and orchestration are a separate post-G07 delivery;
@@ -104,6 +109,7 @@ profile data or treating inferred preferences as explicit consent.
 | Business workflow | A durable Member 3 request/assessment process with shared workflow ID, initiator, business status, result version, timestamps and links to relevant records. This exists independently of an AI run and is defined in the shared [workflow contract](../workflows.md). |
 | Agentic execution state | A post-G07 record of the planner's structured plan, assigned agents, dependencies, tool calls, outputs and recovery state. It is not implemented by the member feature branch; see the [Agentic AI integration boundary](../agentic-ai-integration-boundary.md). |
 | Candidate experience | A destination/activity/offering sourced from Member 1, combined with current schedule and availability, Member 2's condition/suitability result, and Member 4's applicable operational restrictions. |
+| Biodiversity prediction context | Optional genuine ML output obtained through Member 3's private IT3091 adapter from the separate IT3091 workstream. A validated result may carry focal species, requested canonical location/area, model and version, prediction time, probability or habitat-suitability interpretation, uncertainty and limitations. It is supplementary context, not evidence of observed presence or safety. |
 | Recommendation | A set of suggested experiences or activities, with reasons, evidence, suitability/availability context and explicit uncertainty. Exact ranking and presentation schema are implementation choices. |
 | Itinerary | A caller-owned or otherwise explicitly authorized ordered collection of coastal experience references for one or more dates/times. Exact ownership, sharing and item identity rules require a technical decision. |
 | Itinerary item | A reference to an eligible destination/activity/offering plus an itinerary position and any documented user-edited schedule/context. It must not be a copied source of truth for availability or operational status. |
@@ -136,11 +142,18 @@ concurrency token and retention period are database/API design decisions.
    uncertainty; the planner does not fabricate a value.
 3. Applicable restrictions are read from Member 4's authoritative operational
    state.
-4. Candidate eligibility is enforced deterministically. In particular, an
+4. When the objective has a clear biodiversity-context need, the backend may
+   request an optional prediction through Member 3's IT3091 adapter. Use only
+   validated location/species/context input; preserve source, model/version,
+   prediction time, uncertainty and limitations. An unavailable, stale,
+   invalid or unrequested result stays explicitly distinct. Do not require
+   this optional context for eligibility and do not use it to rank safety or
+   override any component's deterministic decision.
+5. Candidate eligibility is enforced deterministically. In particular, an
    activity classified as unsuitable for the requested circumstances cannot
    appear in the final accepted result for that same period, even if model
    text proposes it.
-5. The recommendation communicates relevant evidence, timing, missing data
+6. The recommendation communicates relevant evidence, timing, missing data
    and limitations. The user can distinguish current evidence from a stored
    historical result.
 
@@ -210,6 +223,10 @@ The public capability set must support:
 - create, retrieve, update and manage saved itineraries and their ordered
   items;
 - re-evaluate a stored itinerary against current source-component context;
+- retrieve optional biodiversity prediction context through Member 3's
+  validated public capability for Member 1's destination/activity experience
+  surfaces or applicable planner context. Member 3 owns its exact route and
+  DTO and adds them to the endpoint catalog only when implemented;
 - retrieve permitted history/search/filter/pagination and useful aggregates;
   and
 - return status and structured uncertainty through the shared workflow ID.
@@ -230,6 +247,7 @@ Both clients must provide the same authorized planning outcomes:
 | Preferences | Enter the relevant place, date/time, duration, coastal activity/interests and relevant experience constraints. Use accessible native date/time picker controls in Flutter and semantic date/time inputs in React. Explain optional fields and allow correction. |
 | Request | Submit through the public API and display the same workflow ID/status model. Prevent confusing duplicate submission while relying on server checks. |
 | Recommendation | Display coastal options, availability/schedule context, deterministic suitability, reasons and evidence timestamps, limitations and uncertainty. |
+| Biodiversity context | Where the workflow requests this optional context, show a genuine validated result and its provenance/uncertainty, or the explicit unavailable/invalid state. It never acts as a safety signal or replaces Member 1's experience detail presentation contract. |
 | Itinerary | Create/revisit, add/remove/reorder/update, save and inspect history under the same authorization rules. |
 | Re-evaluation | Request a fresh assessment, compare affected items/evidence, and distinguish suggested changes from committed itinerary edits. |
 | Monitoring | Inspect related workflow progress, completion, recoverable error or safe failure where permitted. |
@@ -252,6 +270,7 @@ cannot make an unavailable or unsuitable offering eligible. See the shared
 | Member 1 — Experience & Biodiversity | Candidate destinations, activities, offerings, schedule, availability, experience constraints and optional prediction context. |
 | Member 2 — Marine Conditions & Safety | Sourced conditions, freshness/gaps and deterministic activity-specific suitability. |
 | Member 4 — Coastal Operations | Current restrictions/status and, for the assessed operations path, the Safety & Operations proposal. |
+| IT3091 biodiversity inference workstream | Member 3 sends a validated, privacy-minimal private request and receives a genuine prediction or dependency/schema failure. Member 3 exposes only its validated public result capability; Member 1 consumes that result for the experience-facing screen. |
 | Planning & Coordination Agent | Durable plan, delegation, dependency tracking, structured assembly. It does not itself own business facts. |
 | React and Flutter | Same result, status and workflow identity through public ASP.NET Core APIs. |
 
@@ -264,7 +283,13 @@ Handle invalid or conflicting constraints, empty candidate sets, no available
 offering, unavailable/stale marine information, restricted activities,
 malformed specialist result, unavailable biodiversity, agent/tool timeout,
 bounded retry exhaustion, failed persistence and re-evaluation against a
-changed source state. Surface which inputs could not be verified. A workflow
+changed source state. The IT3091 adapter must bound connection/read timeouts
+and any retry, validate the returned schema, numeric probability/range fields,
+timestamps, model/version metadata and result-to-query association, and map
+dependency or invalid-response conditions to an explicit safe status. Do not
+return a prior cached prediction as current unless its age and reuse policy
+are explicitly accepted; do not convert missing/invalid values to zero or
+invent a substitute. Surface which inputs could not be verified. A workflow
 that cannot produce a safe result completes with an explicit failure state;
 it must not return a plausible fabricated itinerary.
 
@@ -272,8 +297,11 @@ Persist only the objective, necessary preferences/constraints, plan/status,
 structured specialist results or auditable summaries, validation, permitted
 errors/retry information and final result needed to operate and audit the
 workflow. Never persist hidden chain-of-thought, credentials or unrelated
-personal information. Per-user request and itinerary reads/writes are
-authorized server-side.
+personal information. Send the least precise location and smallest set of
+species/context fields supported by the model contract. Treat the IT3091
+response as untrusted external-service data until deterministic validation
+passes. Keep credentials and private host details on the backend. Per-user
+request and itinerary reads/writes are authorized server-side.
 
 ## 11. Acceptance and evidence checklist
 
@@ -285,6 +313,16 @@ authorized server-side.
 - missing/stale marine evidence is visible and is not described as a verified
   condition;
 - ranking/recommendation output includes meaningful evidence and provenance;
+- the IT3091 adapter returns a genuine service prediction when available and
+  validates model/version, request association, result ranges, timestamps,
+  provenance, uncertainty and limitations before exposing it;
+- timeout, connection failure, absent model, malformed/out-of-range output,
+  stale result and bounded retry exhaustion produce the specified explicit
+  unavailable/invalid status without fabricated values or leaked credentials;
+- Member 1 can consume the validated Member 3 public result contract, while
+  neither client nor any agent calls the private IT3091 service directly;
+- biodiversity is optional context and cannot change deterministic candidate
+  eligibility, safety suitability, operational restriction or approval;
 - itinerary item add/remove/reorder/update is persisted with documented
   ownership, duplicate and concurrency semantics;
 - re-evaluation identifies changed conditions, availability and operational
@@ -308,9 +346,13 @@ ranking and tie-breaking; the exact input/evidence that makes a condition
 required; workflow status vocabulary; synchronous/asynchronous API behavior;
 itinerary ownership/sharing; item uniqueness, ordering and concurrency; how
 re-evaluation detects and stores changes; result snapshot/retention policy;
-and how recommendation failures are presented. Document any architecture or
-public contract choice in the relevant ADR/API/database documentation. No
-numeric safety policy is delegated to the planner or LLM.
+how recommendation failures are presented; and the IT3091 private request and
+response schema, authentication, location precision, supported output fields,
+freshness/timeout/retry/error mapping, health semantics, cache/retention policy
+and public Member 1 consumer API capability. Record the provider contract and
+privacy/failure decisions in the implementation/API/ADR documentation before
+the adapter is accepted. No numeric safety policy is delegated to the planner
+or LLM.
 
 ## 13. Traceability
 
@@ -318,4 +360,5 @@ numeric safety policy is delegated to the planner or LLM.
 - Paired AI role: [Planning & Coordination Agent](../agents/member-3-planning-coordination-agent.md).
 - Component work areas on one member branch: [Member 3 phase plan](../phases/member-3-phase-plan.md); producer/consumer relationships: [component relationship map](../component-relationships.md); PR and G07 process: [member branch workflow](../member-branch-workflow.md).
 - Device input: [v1 device-capability contract](../device-capabilities.md) defines equivalent date/time selection for planning on React and Flutter.
+- ML integration ownership: [ADR-0019](../../adr/ADR-0019-biodiversity-inference-integration-ownership.md) assigns the BLUEVERSE IT3091 adapter to Member 3 and the experience-facing consumer to Member 1.
 - Related contracts: [shared workflows](../workflows.md), [member Agentic AI integration boundary](../agentic-ai-integration-boundary.md), [permissions and parity](../cross-platform-and-permissions.md), [quality and delivery](../quality-and-delivery.md), [requirements coverage and readiness](../requirements-coverage-and-readiness.md), [Agentic AI architecture](../../agentic-ai/architecture.md), [safety](../../agentic-ai/safety.md), [endpoint catalog](../../api/endpoint-catalog.md), [UI integration](../../contracts/ui-integration.json).

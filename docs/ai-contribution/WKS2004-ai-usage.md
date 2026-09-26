@@ -1398,3 +1398,16 @@ runtime lacks PyYAML.
 - Summary of what the AI Agent did: Assigned Member 2 an accessible forecast/condition-period selector for direct marine queries and suitability assessment. Distinguished it from Member 3's itinerary scheduling, specified that planner-originated periods pass through unchanged, and updated the Member 2 component contract, work plan, shared device guide, project requirements, component relationship map, cross-platform guidance, v1 indexes and paired agent input constraints.
 - AI output accepted/changed/rejected: Accepted date/time or interval selection because Member 2 already queries conditions by activity, location and period. Kept provider-supported bounds, interval granularity and time-zone/DST semantics as explicit API decisions. Rejected adding a separate sensor permission, notification workflow, feature branch or Agentic AI behavior; no live UI or endpoint is claimed implemented.
 - Verification/evidence: Local Markdown link targets exist in all 10 changed Markdown files; `git diff --check` passed with Git's LF-to-CRLF working-copy notices; searched v1 docs and `PROJECT_REQUIREMENTS.md` for stale device ownership wording. Documentation-only update; no application tests were run.
+
+## 2026-09-26 — Reassign biodiversity inference and simplify device scope
+
+- Date/time or time range: 2026-09-26 15:00–15:14 (Asia/Colombo; ownership and device-capability documentation update)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Git
+- AI Model: GPT-6
+- Summary of the user's request: Move the BLUEVERSE ML API adapter from Member 1 to Member 3 or Member 4, and simplify Member 2's device assignment or remove the dedicated feature.
+- Summary of what the AI Agent did: Assigned the IT3091 inference adapter and validated public result contract to Member 3 because biodiversity is optional planning/discovery context rather than an operational safety authority. Kept Member 1's experience-facing presentation as a consumer of Member 3's contract, and deferred the Member 1 agent tool that reads it until after G07. Removed Member 2's separate device feature while retaining requested condition period as ordinary query input. Updated the requirements, ADR index/ADR-0019, member contracts and work plans, relationship map, device/cross-platform guidance, Agentic AI tool/blueprint, architecture boundary, test matrix and v1 indexes.
+- AI output accepted/changed/rejected: Accepted Member 3 as the adapter owner and Member 1 as the presentation owner; did not assign the adapter to Member 4. Kept the IT3091 model/service externally supplied, the inference integration ordinary member-feature work before G07, and executable Agentic AI work post-G07. No vendor, route, wire schema, ML model/framework or cache policy was invented.
+- Verification/evidence: Checked stale ownership/device references; 22 changed Markdown files and 370 local links/heading fragments resolved; `git diff --check` passed with Git's LF-to-CRLF working-copy notices. Documentation-only update; no application tests were run.

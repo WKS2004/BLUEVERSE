@@ -20,7 +20,7 @@ application's deterministic result.
 |---:|---|
 | 1 | Open-Meteo acquisition and normalized condition contract |
 | 2 | Safety profiles and deterministic suitability |
-| 3 | Condition, profile and suitability surfaces in both clients, including Member 2's query-period selector |
+| 3 | Condition, profile and suitability surfaces in both clients |
 | 4 | Agentic backend boundary, consumer verification and component closeout |
 
 Use the single branch `features/marine-conditions-safety` for all four work
@@ -104,15 +104,11 @@ their integrated behavior before the complete component PR is ready.
 **Implement in both clients:**
 
 - select the relevant destination/activity/location/time and inspect current
-  or forecast conditions. Direct queries provide the Member 2 condition-period
-  selector; planner-originated queries preserve Member 3's validated
-  itinerary period without prompting for a competing selection;
-- provide a current-conditions shortcut where defined, plus an accessible
-  date/time or interval selector for supported forecast/observation queries;
-- show the applicable location/time-zone context and actionable feedback for
-  unsupported periods. The API defines and validates supported horizon,
-  granularity, zone semantics and provider coverage; clients do not clip or
-  reinterpret the requested period;
+  or forecast conditions using the ordinary condition-query inputs. When the
+  query comes from a planner candidate, preserve Member 3's validated period
+  instead of asking for a competing period;
+- show actionable feedback when the requested period is unsupported by the
+  validated API/provider contract; and
 - show units, source, observation/forecast time, retrieval time, freshness,
   missing fields and stale/unavailable warnings;
 - show only the server-calculated suitability result and its contributing
@@ -122,10 +118,9 @@ their integrated behavior before the complete component PR is ready.
 
 React and Flutter may arrange the views differently. Values, classification,
 permission behavior, evidence and uncertainty must have the same meaning.
-Member 2's period selection means a weather/marine query or suitability
-assessment period; Member 3's date/time selection means planning and itinerary
-schedule. A reusable control does not merge these contracts or transfer
-ownership.
+Condition-query period remains ordinary business input, distinct from Member
+3's planning and itinerary schedule; it is not an additional Member 2 device
+feature.
 
 **Handoff:** the same public API outcome and recovery choice are usable in
 both clients, and the route/API registry metadata agrees with the screens.

@@ -11,13 +11,13 @@ branches or PRs and do not schedule other members. Component requirements
 remain the source of behavior.
 
 Member 1 owns destinations, activities, offerings, schedules, publication and
-availability, discovery, favourites, and BLUEVERSE's integration of the
-selected map provider and the separately developed biodiversity model's
-inference API. The separate IT3091 workstream supplies the biodiversity
-model/inference service; Member 1 owns the BLUEVERSE consumer adapter, not
-that model/service. Member 1 does not own environmental
-conditions/suitability, itinerary recommendations, or operational
-restriction state.
+availability, discovery, favourites, the selected map-provider adapter, and
+the user-facing biodiversity context surface. Member 3 owns BLUEVERSE's
+backend adapter to the separate IT3091 inference API and its validated public
+prediction contract; IT3091 supplies the model/inference service. Member 1
+consumes the Member 3 public contract and does not call the private service.
+Member 1 does not own environmental conditions/suitability, itinerary
+recommendations, the ML adapter, or operational restriction state.
 
 ## Component work areas
 
@@ -26,20 +26,22 @@ restriction state.
 | 1 | Catalogue identities and relational foundation |
 | 2 | Catalogue lifecycle, schedule and effective availability |
 | 3 | Search, map-assisted nearby discovery and favourites |
-| 4 | Backend-mediated biodiversity ML integration |
-| 5 | Agentic backend boundary, component acceptance and consumer handoff |
+| 4 | Agentic backend boundary, component acceptance and consumer handoff |
 
-Use the single branch `features/coastal-experience-biodiversity` for all five
+Use the single branch `features/coastal-experience-biodiversity` for all four
 work areas and submit one complete feature PR to `dev`. Agree shared schemas
 and semantics at G00, implement against those contracts while other members'
 branches are in progress, then verify live provider/consumer behavior on
-`dev` after the component PRs merge. Do not wait for another member to finish
+`dev` after the component PRs merge. Member 1 can build its biodiversity
+presentation against the agreed Member 3 contract and controlled fixtures
+while Member 3 implements the inference adapter; verify the live consumer and
+provider integration on `dev`. Do not wait for another member to finish
 their component before completing this branch.
 React and Flutter must deliver the same permitted actions and server-owned
 outcomes in each applicable workflow.
 
 The numbered phases below are contract/dependency work areas, not a required
-implementation timeline or separate branch sequence. Implement all five as
+implementation timeline or separate branch sequence. Implement all four as
 one component on the single member branch; work areas may overlap where their
 local technical dependencies permit. Use the component relationship map to
 see cross-member producer/consumer dependencies.
@@ -138,36 +140,9 @@ place-provider features do.
 discovery and saved-experience outcomes from React and Flutter; downstream
 components can query the same public API results.
 
-## Phase 4 — Backend-mediated biodiversity ML integration
+## Phase 4 — Agentic backend boundary, component acceptance and handoff
 
-**Dependencies:** use work area 1's location identity and the IT3091
-inference service's accepted private request/result contract. This work is
-distinct from Agentic AI and must be complete before G07.
-
-**Implement:**
-
-- an ASP.NET Core-mediated call to the private inference service; neither
-  client calls ML directly;
-- minimal, validated location/species/context inputs and response schema;
-- provenance needed to interpret focal species, occurrence probability or
-  habitat suitability, model version, query/prediction time, uncertainty and
-  limitations when supplied;
-- explicit unavailable/invalid behavior for timeout, absent model, malformed
-  output or stale results; and
-- prediction/unavailable presentation in both clients without implying that
-  a probability guarantees species presence.
-
-The real integration path must return a genuine model result when the trained
-model service is available. Fixtures cover controlled failure cases; they do
-not replace the real path or authorize fabricated predictions.
-
-**Handoff:** the public experience API provides sourced biodiversity context
-or an explicit unavailable result, which remains optional only where the
-business decision permits it.
-
-## Phase 5 — Agentic backend boundary, component acceptance and handoff
-
-**Local dependency and shared boundary:** complete work areas 1–4 on this
+**Local dependency and shared boundary:** complete work areas 1–3 on this
 branch and use the shared Agentic integration contract agreed at G00.
 
 **Implement and verify the Agentic AI integration boundary:**
@@ -182,8 +157,9 @@ branch and use the shared Agentic integration contract agreed at G00.
   handling, safe retryability and correlated failure evidence when the
   private Agentic AI service is absent or cannot respond; and
 - no production agent, prompt/model call, tool execution or fabricated report
-  before G07. This is an integration seam only; biodiversity ML remains the
-  separate real model integration in Phase 4.
+  before G07. This is an integration seam only; the real biodiversity ML
+  adapter belongs to Member 3, is separate from Agentic AI, and must be ready
+  before G07. Member 1 consumes its validated public result contract.
 
 Follow [Member feature integration with Agentic AI](../agentic-ai-integration-boundary.md)
 for shared states, health semantics and acceptance evidence.
@@ -197,8 +173,8 @@ for shared states, health semantics and acceptance evidence.
 - Member 4 restriction consumption and the Member 3 candidate contract,
   without duplicating their state or rules;
 - React/Flutter role-action parity, the GPS-denied fallback, map-provider
-  failure fallback, location validation, stale status and biodiversity
-  unavailable behavior;
+  failure fallback, location validation, stale status and correct rendering
+  of Member 3's available/unavailable biodiversity result;
 - route catalog, UI registry, OpenAPI, component docs, tests and attributable
   PR evidence.
 

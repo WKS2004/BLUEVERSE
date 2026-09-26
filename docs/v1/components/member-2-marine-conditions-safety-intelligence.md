@@ -34,9 +34,9 @@ authority or autonomous safety decision-maker.
 
 | Layer | Component responsibility and implementation contract |
 |---|---|
-| **Universal product idea** | Acquire weather and marine source data for an activity, location and period; validate and normalize it with provenance/freshness; then apply configured application rules to determine `SUITABLE`, `CAUTION`, `UNSUITABLE` or insufficient evidence. Source data, deterministic classification and optional AI explanation remain distinct. For a direct condition/suitability query, the caller can choose a supported forecast/observation time or interval; a planner-originated request preserves the planner's already-selected itinerary period. |
-| **React Web** | Provide the same authorized condition, suitability, profile-management and history outcomes as Flutter through the public API. Use React 19/TypeScript/Vite/React Router, reusable pages/components, Tailwind utilities and existing request/state separation. Provide accessible date/time or interval controls for direct marine-condition queries, show the applicable location/time-zone context and server-supported query bounds, and render server classifications, source, units, time and gaps; do not recompute them in the browser. See the [React component contract](../../v0/components/react-web-client.md), [UI integration guide](../../development/ui-integration.md), and [React state ADR](../../adr/ADR-0005-react-state-management.md). |
-| **Flutter Mobile** | Provide those same outcomes with native Dart/Material UI, using the repository's UI/logic/data layers, repository/API service and view-model pattern. Provide accessible native date/time or interval selection for direct marine-condition queries. Activity, location and period entry may fit the device differently, but the server's condition evidence, classification, permission outcome and warnings remain equivalent. Do not reclassify locally or change a planner-originated period. See the [Flutter component contract](../../v0/components/flutter-client.md), [UI integration guide](../../development/ui-integration.md), and [Flutter state ADR](../../adr/ADR-0006-flutter-state-management.md). |
+| **Universal product idea** | Acquire weather and marine source data for an activity, location and requested period; validate and normalize it with provenance/freshness; then apply configured application rules to determine `SUITABLE`, `CAUTION`, `UNSUITABLE` or insufficient evidence. Source data, deterministic classification and optional AI explanation remain distinct. The period is an ordinary condition-query input; a planner-originated request preserves the planner's validated itinerary period. |
+| **React Web** | Provide the same authorized condition, suitability, profile-management and history outcomes as Flutter through the public API. Use React 19/TypeScript/Vite/React Router, reusable pages/components, Tailwind utilities and existing request/state separation. Accept the location and period needed for a condition query using ordinary workflow inputs, then render server classifications, source, units, time and gaps; do not recompute them in the browser. See the [React component contract](../../v0/components/react-web-client.md), [UI integration guide](../../development/ui-integration.md), and [React state ADR](../../adr/ADR-0005-react-state-management.md). |
+| **Flutter Mobile** | Provide those same outcomes with native Dart/Material UI, using the repository's UI/logic/data layers, repository/API service and view-model pattern. The condition workflow accepts its location and period as ordinary business inputs; no distinct sensor or device feature is assigned to Member 2. The server's condition evidence, classification, permission outcome and warnings remain equivalent to React. Do not reclassify locally or change a planner-originated period. See the [Flutter component contract](../../v0/components/flutter-client.md), [UI integration guide](../../development/ui-integration.md), and [Flutter state ADR](../../adr/ADR-0006-flutter-state-management.md). |
 | **ASP.NET Core and data** | The public API validates requests and permissions. Backend-owned provider adapters retrieve only required values, validate shape/units/ranges/timestamps, normalize them and preserve provenance. Application code applies the deterministic activity profile. EF Core/PostgreSQL may persist profiles, validated snapshots, assessment history and audit data according to the accepted schema; cache-versus-persist is an implementation decision. |
 | **Third-party integration** | Open-Meteo Weather and Marine APIs are Member 2's required v1 source and are called by the backend only. The integration must handle timeout, rate limits, schema/value errors, missing variables and stale data, minimize location data, and keep provider details/secrets out of both clients. Requests, fields, units, caching and freshness rules remain explicit implementation decisions; a provider response never changes the configured safety profile. |
 | **Paired Agentic AI role** | The future Marine Conditions Intelligence Agent may summarize validated, time-aware conditions and the existing deterministic suitability result through read-only allowlisted tools. Before G07, this branch prepares only the typed adapter and safe unavailable status. After G07 the agent may contextualize evidence but cannot fetch arbitrary network data, choose thresholds or change a classification. |
@@ -64,10 +64,10 @@ Member 2 owns:
   activity types;
 - the non-CRUD assessment of activity suitability for a specified location
   and time; and
-- cross-client selection of a supported condition-query time/interval for a
-  direct weather/marine lookup or suitability assessment. This is not
-  itinerary scheduling; when Member 3 invokes this component, its validated
-  requested period is authoritative.
+- validation and reporting of the requested period as part of the ordinary
+  weather/marine query. A planner-originated request uses Member 3's validated
+  itinerary period; this does not create a separately assigned device
+  capability.
 
 The component does not own experience publication/availability (Member 1),
 recommendation and itinerary planning (Member 3), operational state or human
@@ -220,7 +220,7 @@ Both clients must support the complete authorized Component B workflow:
 
 | User task | Required experience in both clients |
 |---|---|
-| Select context | Choose or navigate from a destination/activity and request a relevant location and period. For direct condition/suitability queries, the user can select an available date/time or interval; when the request comes from Member 3, preserve its validated itinerary period instead of asking the user to set a competing one. Invalid, unsupported or incomplete inputs receive actionable feedback. |
+| Select context | Choose or navigate from a destination/activity and submit the location and relevant period through the ordinary query workflow. When the request comes from Member 3, preserve its validated itinerary period instead of asking the user to set a competing one. Invalid, unsupported or incomplete inputs receive actionable feedback. |
 | Read conditions | See relevant weather/marine factors with units, forecast/observation time, retrieval time, source and freshness. |
 | Understand gaps | Identify unavailable variables, stale information, provider outage, and the effect those gaps have on the assessment. |
 | Read suitability | See the backend classification and meaningful explanation of contributing factors; clients do not reclassify. |
@@ -231,42 +231,9 @@ Both clients must support the complete authorized Component B workflow:
 Search, filters, sorting and pagination should be provided where they improve
 history and profile management. Responsive layouts may differ. Both clients
 must preserve the same facts, warnings, classification, permission behavior
-and recovery choices.
-
-### Member 2 condition-period selection
-
-The direct marine-condition workflow needs a requested time as part of its
-query and deterministic assessment. This interaction is owned by Member 2:
-it lets a user inspect conditions for a supported forecast/observation time
-or interval and run the corresponding assessment. It is separate from
-Member 3's date/time controls, which schedule planning requests and itinerary
-items. The two workflows may reuse a shared date/time widget, but must retain
-their distinct labels, API meaning, owner and validation rules.
-
-- Flutter provides an accessible native date/time or range-selection flow;
-  React provides semantic, keyboard-accessible date/time controls. Both show
-  the chosen location and its applicable time-zone context before lookup.
-- A current-conditions action may use the server-defined current period
-  without requiring manual time entry. A forecast/observation query carries
-  the user's explicit supported target time/interval.
-- Member 2 must define supported horizons, interval granularity, source
-  availability, location-time-zone semantics, ambiguous/nonexistent local
-  times, and the public API representation before accepting the branch.
-  The server validates bounds and provider coverage; clients must not silently
-  clamp, reinterpret or claim support for an unavailable period.
-- On a Member 3 planning/re-evaluation handoff, Member 2 consumes the
-  validated period attached to the candidate itinerary item. It must neither
-  substitute the current period nor prompt the user to select a second,
-  conflicting interval.
-- A selected period is query input only. It does not create an itinerary,
-  reserve an activity, establish availability, trigger a reminder, or make an
-  unsuitable/unknown result permissive. The backend remains authoritative for
-  provider data, freshness and deterministic classification.
-
-The [shared device-capability contract](../device-capabilities.md) contains
-the client interaction, boundary and cross-platform acceptance details. This
-is part of Member 2's one complete feature branch, not a separate device
-branch.
+and recovery choices. The requested condition period remains part of the
+normal query contract. It is not a separate device capability, and a
+planner-originated period is preserved without a competing input.
 
 ## 9. Agent and component handoffs
 

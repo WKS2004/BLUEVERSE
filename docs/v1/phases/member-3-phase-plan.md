@@ -9,10 +9,14 @@ parallel work, pull requests and the G07 gate. Work areas are not separate
 branches or PRs and do not schedule other members.
 
 Member 3 owns planning requests, workflow/result identity, personalization
-constraints, deterministic recommendation assembly, persisted itineraries
-and re-evaluation. The component includes ordinary application workflow
-state; its LLM plan generation, delegation, tool use and Agentic AI
-orchestration are deferred until after all four business components pass G07.
+constraints, deterministic recommendation assembly, persisted itineraries,
+re-evaluation and BLUEVERSE's backend-mediated adapter/public result contract
+for the separately supplied IT3091 biodiversity inference service. Member 1
+owns the experience-facing presentation and consumes the validated Member 3
+contract. The component includes ordinary application workflow state and ML
+service integration; its LLM plan generation, delegation, tool use and
+Agentic AI orchestration are deferred until after all four business
+components pass G07.
 
 ## Component work areas
 
@@ -21,9 +25,10 @@ orchestration are deferred until after all four business components pass G07.
 | 1 | Planning request, workflow and itinerary foundation |
 | 2 | Deterministic candidate eligibility and recommendation |
 | 3 | Itinerary lifecycle, re-evaluation and both-client workflow |
-| 4 | Agentic backend boundary, component acceptance and handoff |
+| 4 | Backend-mediated biodiversity ML adapter and public result contract |
+| 5 | Agentic backend boundary, component acceptance and handoff |
 
-Use the single branch `features/coastal-planner` for all four work areas and
+Use the single branch `features/coastal-planner` for all five work areas and
 submit one complete feature PR to `dev`. Agree the Member 1 catalogue and
 availability, Member 2 suitability, and Member 4 status contracts at G00.
 Develop consumers against those contracts and controlled test doubles while
@@ -32,7 +37,7 @@ behavior on `dev` after the component PRs merge; fixtures alone are not
 integration evidence.
 
 The numbered phases below are contract/dependency work areas, not a required
-implementation timeline or separate branch sequence. Implement all four as
+implementation timeline or separate branch sequence. Implement all five as
 one component on the single member branch; work areas may overlap where their
 local technical dependencies permit. Use the component relationship map to
 see cross-member producer/consumer dependencies.
@@ -131,9 +136,52 @@ availability, safety or operations state.
 **Handoff:** each authorized user can complete the same recommendation and
 itinerary outcome from either client through the public API.
 
-## Phase 4 — Agentic backend boundary, component acceptance and handoff
+## Phase 4 — Backend-mediated biodiversity ML adapter and public result contract
 
-**Local dependency and shared boundary:** complete work areas 1–3 on this
+**Starts after:** the G00 decision defines the Member 1 canonical location
+reference and consumer need, Member 3's public/private boundaries, and the
+IT3091 service request/result contract. Member 1 can implement its user-facing
+presentation against the agreed result schema and controlled available/
+unavailable fixtures while this adapter is in progress.
+
+**Implement as ordinary Member 3 backend/API work before G07:**
+
+- a typed private ASP.NET Core adapter calls the IT3091 inference service; no
+  client or agent receives its private host or credentials;
+- validate the minimum location/species/context needed for the query and
+  associate each response with the request location and time;
+- validate required fields, numeric ranges, timestamps, model/version and
+  provenance before constructing the public result; preserve uncertainty and
+  limitations supplied by the service;
+- define explicit `available`, `not requested`, `unavailable` and invalid or
+  equivalent documented states so no absent, malformed, stale or failed
+  response becomes zero, a guess or a false current prediction;
+- bound connection/read timeouts and retry policy, avoid unapproved cache or
+  retention, minimize location precision and keep provider details/secrets
+  server-side;
+- expose the validated result through a Member 3 public API capability that
+  Member 1 can consume for its destination/activity experience. Name and
+  register exact routes/DTOs only when implemented; do not add target routes
+  to the live catalog in advance; and
+- keep prediction context optional. It may enrich an experience or planning
+  report, but cannot decide safety, eligibility, operational status or
+  approval and cannot override Member 1/2/4 authoritative data.
+
+This adapter is not an AI agent and does not implement an LLM, RAG pipeline,
+prompt, agent tool execution or AI-owned workflow state. IT3091 supplies the
+separate trained model and inference service. The real adapter path must
+return a genuine model-backed result when that service is available;
+fixtures provide deterministic contract and failure evidence but do not
+replace the integration.
+
+**Handoff:** Member 3 provides validated sourced prediction context or the
+documented unavailable/invalid state. Member 1 renders the public contract;
+the future Member 1 agent may consume it only through a separately approved,
+allowlisted integration after G07.
+
+## Phase 5 — Agentic backend boundary, component acceptance and handoff
+
+**Local dependency and shared boundary:** complete work areas 1–4 on this
 branch and use the shared Agentic integration contract agreed at G00.
 
 **Verify the Agentic AI connection boundary:**
@@ -141,6 +189,9 @@ branch and use the shared Agentic integration contract agreed at G00.
 - authorized workflow initiation/status/results use the Member 3 public API;
 - the private planner/orchestration adapter has server-side configuration,
   a bounded availability check and correlated dispatch outcome;
+- the ordinary IT3091 prediction adapter and public result contract remain a
+  separate Member 3 service integration and are not used as the Agentic
+  runtime's health signal;
 - an absent or unreachable runtime is reported as not connected/unavailable
   without fabricating a plan, while deterministic recommendations and
   itineraries remain usable; and
@@ -163,9 +214,10 @@ for the shared status, readiness and safe-failure contract.
 - catalog/UI registry, OpenAPI, database/ER documentation, tests and Git/PR
   evidence.
 
-**Member 3 exit:** all deterministic domain behavior is accepted at G07. The
-Planning & Coordination Agent begins only after G07; its schema and
-orchestration work follow the post-gate AI queue.
+**Member 3 exit:** deterministic domain behavior and the genuine IT3091
+integration are accepted at G07. The Planning & Coordination Agent begins
+only after all four member components pass G07; its schema and orchestration
+work follow the post-gate `agentic-ai/**` queue.
 
 ## Progress record
 

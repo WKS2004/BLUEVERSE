@@ -84,7 +84,7 @@ allowlist, contract and evaluation; it is not implied by the map integration.
 | `activity_lookup` | Read an activity's coastal type and relevant experience constraints. | Source-owned activity identity, status and non-invented attributes. |
 | `offering_lookup` | Read the offering that links a destination and activity. | Authoritative operational/availability status where supplied; this agent cannot change it. |
 | `schedule_lookup` | Read relevant offering schedule and time-specific availability. | Requested timezone/period, source time, missing/closed/unavailable distinctions. |
-| `biodiversity_prediction_lookup` | Ask the backend's internal integration for a genuine IT3091 model prediction when relevant. | Result/unavailable state, focal species, query location, probability or suitability interpretation, model version, prediction time, uncertainty and limitations where returned. |
+| `biodiversity_prediction_lookup` | When relevant, request prediction context through the validated Member 3 public/typed backend capability. The tool handler uses Member 3's server-side IT3091 adapter; this agent never calls IT3091 or a private host directly. | Explicit not-requested/available/unavailable/invalid state and, only for a genuine validated result, focal species, query location, probability or habitat-suitability interpretation, model/version, prediction time, uncertainty and limitations where supplied. |
 
 Each implemented tool contract defines exact typed arguments/results,
 authorized agent, source service, validation, timeout, bounded retry, error
@@ -92,6 +92,15 @@ mapping, side-effect policy, workflow/step correlation, elapsed time and
 auditable summary. All tools for this agent
 are read-only. There is no publish, archive, availability mutation or
 operational-state mutation tool.
+
+The biodiversity tool is a post-G07 Agentic AI capability; it does not own
+the ML integration. Member 3's ordinary feature branch implements and
+validates the real IT3091 request/response adapter and public result contract
+before G07. After G07, the tool is allowlisted and typed, and its backend
+handler invokes only that Member 3 contract. It must preserve the contract's
+unavailable/invalid state and provenance and must not present a prediction as
+observed presence, safety evidence or operational authority. See
+[ADR-0019](../../adr/ADR-0019-biodiversity-inference-integration-ownership.md).
 
 ## 4. Structured output contract
 
@@ -217,4 +226,5 @@ invent response property names, or set numeric model-confidence thresholds.
 
 - Requirements: [sections 13, 20–30 and 40](../../../PROJECT_REQUIREMENTS.md).
 - Owning component: [Coastal Experience & Biodiversity Discovery](../components/member-1-coastal-experience-biodiversity-discovery.md).
+- Biodiversity adapter ownership: [Member 3 component](../components/member-3-smart-coastal-planner-itinerary-management.md) and [ADR-0019](../../adr/ADR-0019-biodiversity-inference-integration-ownership.md).
 - Shared behavior: [canonical workflows](../workflows.md), [requirements coverage and readiness](../requirements-coverage-and-readiness.md), [Agentic AI architecture](../../agentic-ai/architecture.md), [implementation blueprint](../../agentic-ai/implementation-blueprint.md), [tools](../../agentic-ai/tools.md), [safety](../../agentic-ai/safety.md), [evaluation](../../agentic-ai/evaluation.md).
