@@ -15,15 +15,16 @@ universal rule. Skills provide the workflow; rules remain authoritative.
 
 | Changed paths or task | Rules to read | Source of truth / focused checks |
 |---|---|---|
+| Any v1 member component, v1 component integration, or actual Agentic AI work; `docs/v1/**` | v1-development, architecture, security, documentation, validation; add testing, endpoint-catalog, data-access and docker when the touched scope requires them | G00/G07 readiness and [branch workflow](../docs/v1/member-branch-workflow.md), assigned component and phase plan, relationship map, source/CI evidence; actual Agentic AI implementation is gated on accepted G07 |
 | `apps/web/**` | architecture, security, testing, validation | `apps/web/README.md`; web lint/build/test workflow |
 | `apps/mobile/**` | architecture, security, testing, validation | `apps/mobile/README.md`; Flutter analyze/test workflow |
 | API/route/endpoint lookup or inventory question without a code change | endpoint-catalog | **Fast path:** read `.agents/rules/endpoint-catalog.md` and `docs/api/endpoint-catalog.md`; inspect source only for doubt, missing data, validator drift or an explicit verification request |
 | `docs/contracts/**`, `scripts/validation/**`, UI route/API integration | architecture, security, testing, documentation, validation, endpoint-catalog | `docs/development/ui-integration.md`, `docs/api/endpoint-catalog.md`; shared UI/API and endpoint-catalog validators |
 | Any frontend route, client API target, backend/internal/test/AI endpoint, health/OpenAPI route or gateway mapping addition, update, rename, move or removal; `docs/api/endpoint-catalog.*` | architecture, security, documentation, testing, validation, endpoint-catalog | **Mandatory:** read `docs/api/endpoint-catalog.md`, update its JSON source in the same change, regenerate Markdown, run the source/catalog validator, and run UI validation when a client workflow is affected |
-| `services/api/**`, `services/auth/**`, `services/*/**` | architecture, security, testing, documentation, validation, endpoint-catalog, docker if containerized | `docs/api/endpoint-catalog.md`, `docs/api/`, architecture/security docs; matching backend workflow |
+| `services/api/**`, `services/auth/**`, `services/*/**` | architecture, security, testing, documentation, validation, endpoint-catalog, docker if containerized; add v1-development for member component work | `docs/api/endpoint-catalog.md`, `docs/api/`, architecture/security docs; matching backend workflow; preserve the v1 API/Auth integration-only boundary |
 | PostgreSQL, EF Core, migrations, persistence models, constraints, indexes or provider-specific queries | architecture, security, data-access, testing, documentation, validation | `docs/database/README.md`, `docs/database/schema.md`, owning service migrations/tests; `blueverse-postgresql-efcore` workflow |
 | `services/**` | architecture, security, testing, validation, docker if containerized | `docs/testing/`; backend workflow discovery |
-| `services/ai/**`, `services/ai-agents/**`, `services/agents/**`, AI orchestration/tools/workflows | architecture, security, testing, validation, endpoint-catalog | `docs/agentic-ai/`; deterministic safety/evaluation workflow |
+| `services/ai/**`, `services/ai-agents/**`, `services/agents/**`, AI orchestration/tools/workflows | v1-development, architecture, security, testing, validation, endpoint-catalog | `docs/agentic-ai/`; confirm G07 is accepted before executable v1 Agentic AI implementation; deterministic safety/evaluation workflow |
 | `compose.yaml`, `infrastructure/docker/**` | architecture, security, docker, documentation, validation, endpoint-catalog | `docs/api/endpoint-catalog.md`, `docs/deployment/`, `infrastructure/docker/README.md`; config/health checks |
 | `.github/workflows/**`, `.github/scripts/**` | testing, documentation, validation, git | `docs/development/ci.md`; YAML/script and discovery review |
 | `docs/database/**` | data-access, architecture, testing, documentation, validation | owning EF model/migrations/tests plus `.agents/rules/data-access.md` |
@@ -36,6 +37,7 @@ universal rule. Skills provide the workflow; rules remain authoritative.
 | Task | Skill |
 |---|---|
 | Whole-repository audit or readiness review | `$blueverse-foundation-audit` |
+| v1 component work or v1 sequencing/ownership review | Read `.agents/rules/v1-development.md`; select the applicable backend, client, persistence, Docker or Agentic AI skill by changed scope |
 | ASP.NET API, Auth, persistence or backend service | `$blueverse-backend-service` |
 | PostgreSQL, EF Core persistence, migrations or provider-specific data behavior | `$blueverse-postgresql-efcore` |
 | Shared React/Flutter API contract or permission UI | `$blueverse-client-contract` |
@@ -93,6 +95,9 @@ component document and `docs/project/ui-experience-principles.md`.
   update the owning database and test documentation, and use real PostgreSQL
   evidence for provider-sensitive behavior. Do not replace protected tests or
   add a database runtime dependency solely to satisfy agent guidance.
+- v1 component or Agentic AI change: follow `v1-development.md`; keep all
+  pre-G07 Agentic AI work at the member-owned access boundary and defer
+  executable agents/runtime until G07 is accepted.
 
 ## Efficient inspection order
 

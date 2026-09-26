@@ -1476,3 +1476,29 @@ runtime lacks PyYAML.
 - Summary of what the AI Agent did: Restored the previous `dev-backup.yml` recovery workflow, including its timestamped rescue branch and merge-commit preservation logic, then aligned the README and CI/Git workflow guides with that behavior. Kept the separate GitHub configuration sync and auto-merge workflow removed.
 - AI output accepted/changed/rejected: Accepted the user's clarification that backup divergence must create a recoverable rescue branch before synchronizing `dev-backup` to the exact `dev` SHA. Preserved the prior `-X theirs` merge and fallback history-preserving merge behavior.
 - Verification/evidence: The embedded Bash passed `bash -n`; checked that `dev-backup.yml` matches the pre-change tracked version; documentation describes the rescue merge and force-with-lease reset; `git diff --check` passed. No application tests were run.
+
+## 2026-09-26 — Distinguish agent commits from GitHub Actions automation
+
+- Date/time or time range: 2026-09-26 18:08 (Asia/Colombo; workflow and source-control guidance correction)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Python, Git Bash and Git
+- AI Model: GPT-6
+- Summary of the user's request: Clarify that the request concerned AI-agent commits, not GitHub Actions automation, and finalize the documentation with that distinction.
+- Summary of what the AI Agent did: Restored the existing GitHub configuration-sync workflow and its branch-policy allowance, restored its CI/Git/README documentation, and added an explicit no-automatic-commit/push rule to `AGENTS.md`, `.agents/rules/git.md` and the `.agents` guidance index. Kept the existing dev-backup rescue workflow unchanged.
+- AI output accepted/changed/rejected: Retained GitHub Actions automation for `.github` synchronization and automatic PR merging; distinguished it from AI-agent source-control authorization. No new commit or push was made for this correction.
+- Verification/evidence: Confirmed the restored Actions workflow and branch-policy pattern match the prior tracked versions; verified that agent guidance contains the explicit-authorization rule and documented the restored Actions behavior. Static validators, local Markdown link checks, workflow syntax checks and `git diff --check` are recorded for this correction. No application tests were run.
+
+## 2026-09-26 — Enforce v1 rules in agent guidance
+
+- Date/time or time range: 2026-09-26 18:32 (Asia/Colombo; v1 agent-guidance audit and update)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Python and Git
+- AI Model: GPT-6
+- Summary of the user's request: Audit `AGENTS.md` and `.agents` against v1 requirements, preserve the necessary implementation gates and qualities for team members and agents, and make required documentation updates.
+- Summary of what the AI Agent did: Added a focused v1 development rule and connected it to root instructions, task routing, architecture guidance, the repository map, backend/client/Agentic AI/CI/foundation-audit skills and the routing evaluation cases. Enforced G00 before member coding, one complete component branch per owner, private member-service ownership, narrow API/Auth integration, equal React/Flutter outcomes, distinct map/Open-Meteo/ML ownership, and the G07 gate for executable Agentic AI. Clarified that the agent no-commit rule does not disable the GitHub Actions backup rescue/synchronization or configuration-sync workflows. Linked the new rule from the v1 guide and agent-resources documentation.
+- AI output accepted/changed/rejected: Kept the existing v1 contracts as the detailed product source of truth and added enforceable routing/gating instructions instead of duplicating every member requirement. Preserved member-owned integration scaffolding and safe unavailable behavior before G07 while deferring actual agents, tools, model calls, orchestration and AI-owned state. Kept the Member 3 IT3091 integration classified as external ML, not Agentic AI. No application or workflow implementation was changed in this task.
+- Verification/evidence: `validate_agent_resources.py` passed and validated all 23 repository skills, routing fixtures, overlays, metadata and Markdown links; `git diff --check` passed; the new rule has no trailing whitespace. No application tests, builds or GitHub workflows were run. No commit or push was made.

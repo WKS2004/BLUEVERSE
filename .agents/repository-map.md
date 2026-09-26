@@ -7,9 +7,9 @@ Verify paths and implementation state before relying on any entry.
 |---|---|---|
 | `apps/web` | React 19 + TypeScript + Vite client | public API only; equal authorized role and workflow coverage with Flutter |
 | `apps/mobile` | Flutter/Dart client and platform shells | public API only; equal authorized role and workflow coverage with React |
-| `services/api` | public ASP.NET Core API | REST, DTO/application layers, validation, auth proxy, OpenAPI |
-| `services/auth` | internal authentication service | private behind API/gateway |
-| `services/<name>` | additional internal backend services | own data/service contract and matching tests |
+| `services/api` | public ASP.NET Core API | public routes, existing auth/permission integration, routing to private services; v1 member logic stays in its owning service |
+| `services/auth` | internal authentication service | private behind API/gateway; reuse for v1 and preserve its existing flows |
+| `services/<component-service>` | future v1 member-owned private .NET services | each owner implements its own domain logic, provider adapters, persistence, health and tests; confirm the service exists before reporting it implemented |
 | `apps/web/src`, `apps/web/e2e` | React test cases colocated with the web package | stable IDs and web CI discovery |
 | `apps/mobile/test`, `apps/mobile/integration_test` | Flutter unit/widget and integration test cases | stable IDs and mobile CI discovery |
 | `services/*/tests` | service-owned backend test projects | stable IDs and backend CI discovery |
@@ -39,6 +39,10 @@ Verify paths and implementation state before relying on any entry.
 - Client-facing requests use the public `/api/...` boundary. The React
   and Flutter surfaces have equal authorized role and business-capability
   coverage, with shared workflow IDs and server-owned permissions.
+- For v1, G00 shared contracts precede the four parallel member feature
+  branches. Actual Agentic AI runtime work is deferred to `agentic-ai/**`
+  until the integrated feature components pass G07; pre-G07 member branches
+  may implement only their own typed access seam and unavailable behavior.
 - The endpoint catalog is the current route inventory; the UI registry is
   its workflow-facing subset. Add implementation routes and client targets
   to both as applicable.
@@ -52,6 +56,8 @@ Verify paths and implementation state before relying on any entry.
 
 - Project scope and applicable release/component documents:
   `PROJECT_REQUIREMENTS.md`, `docs/README.md`
+- v1 ownership, readiness and branch gates: `docs/v1/`; agent enforcement is
+  in `.agents/rules/v1-development.md`
 - Setup/commands: `docs/development/setup.md`, `docs/development/ci.md`
 - UI integration: `docs/development/ui-integration.md`,
   `docs/contracts/ui-integration.json`

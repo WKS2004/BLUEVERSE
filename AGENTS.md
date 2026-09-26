@@ -34,10 +34,38 @@ the agent configuration itself.
 - Flutter: `apps/mobile`
 - Public API: `services/api`
 - Auth: `services/auth`
+- Future v1 member-owned private services: distinct
+  `services/<component-service>/` subfolders; verify each exists before
+  treating it as implemented
 - Docker infrastructure: `infrastructure/docker`
 - Architecture/docs: `docs`
 
 Do not replace repository applications with sample applications.
+
+## v1 implementation gates
+
+For v1 member components or Agentic AI work, follow
+[`.agents/rules/v1-development.md`](.agents/rules/v1-development.md) and the
+linked source-of-truth documents under `docs/v1/`:
+
+- Complete and record G00 shared-contract decisions before member component
+  coding. Each owner implements one complete component on the assigned
+  `features/**` branch; all four may proceed in parallel. The relationship map
+  describes compatibility dependencies, not a member implementation order.
+- A member's new private .NET service owns its domain behavior and persistence.
+  `services/api` receives only the narrow public route, existing auth/permission
+  and private-service integration needed to expose it. Reuse Auth and preserve
+  existing API/Auth logical flows except for a separately justified essential
+  integration change. Preserve the established v0 behavior.
+- Before G07, member branches may implement their business workflows and typed
+  private Agentic AI access seam, including availability checks and safe
+  `not connected`/unavailable outcomes. Do not implement executable agents,
+  model calls, tools, orchestration or AI-owned execution state until all four
+  member components are integrated and G07 is accepted. Actual Agentic AI work
+  then uses the assigned `agentic-ai/**` branches. Member-owned external ML
+  service integration remains distinct from Agentic AI.
+- Treat v1 documentation as target specifications. Confirm behavior and
+  implementation status in source, tests and CI before reporting completion.
 
 ## Docker
 
@@ -60,12 +88,17 @@ The ASP.NET runtime image is intentionally treated as a minimal runtime image. P
 - ASP.NET Core 10
 - SDK pinned by `global.json`
 - RESTful routes
-- DTOs and application/service layers
+- DTOs and application/service layers at their owning service boundary
 - asynchronous I/O
 - validation
 - structured error handling
 - Swagger/OpenAPI
 - tests
+
+For v1 member work, business logic, provider adapters and persistence belong
+to the owner's private component service; do not place them in `services/api`
+or change Auth behavior as a shortcut. The v1 implementation rule defines
+the allowed API/Auth integration surface.
 
 ## Security
 
@@ -179,6 +212,16 @@ boundary cases that prevent the error from returning.
 ## Git
 
 Prefer focused commits with descriptive messages.
+
+Do not create commits or push branches automatically. Create a local commit or
+push to GitHub only when the user explicitly requests that action; a request
+to implement or finalize changes alone does not authorize a commit or push.
+
+This restriction governs agent-initiated Git actions. It does not prohibit
+repository-approved GitHub Actions automation. Preserve the existing backup
+rescue/synchronization and GitHub configuration synchronization workflows;
+change or disable them only when the user explicitly requests a workflow
+change.
 
 Never commit generated secrets, `.env`, local IDE state, build artifacts or machine-specific configuration.
 

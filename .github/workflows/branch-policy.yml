@@ -24,7 +24,7 @@ jobs:
               /^features\/.+$/.test(branch) ||
               /^agentic-ai\/.+$/.test(branch) ||
               /^dev-backup-mistaken-commits\/[^/]+\/.+$/.test(branch) ||
-              /^(claude|codex|antigravity|gemini|maintenance|bug-fixes|docker-workflow-changes)\/.+$/.test(branch);
+              /^(claude|codex|antigravity|gemini|maintenance|bug-fixes|github-sync|docker-workflow-changes)\/.+$/.test(branch);
             const isLowercase = branch === branch.toLowerCase();
 
             if (matchesPolicy && isLowercase) {

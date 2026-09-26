@@ -9,6 +9,11 @@ Read the root `AGENTS.md`, `.agents/routing.md`, and the architecture, security,
 testing and validation rules. Inspect the public contract and existing client
 code before changing either client.
 
+For v1 member work, follow `.agents/rules/v1-development.md` and the assigned
+component contract. Keep both clients behind `services/api`, implement
+equivalent authorized outcomes, and use member-specific modules with narrow
+shared-file changes.
+
 - React 19 + Vite and Flutter call only the public ASP.NET Core API/gateway.
   Never add direct Auth, Agentic AI, PostgreSQL or internal-service access.
 - Style React Web pages and components with Tailwind CSS utilities. Keep

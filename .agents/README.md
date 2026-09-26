@@ -105,6 +105,7 @@ directory or tool actually exists before modifying or reporting on it.
     ├── endpoint-catalog.md    # Fast endpoint lookup and source escalation
     ├── data-access.md         # PostgreSQL, EF Core and provider-test policy
     ├── git.md                 # Commit, pull-request and contribution hygiene
+    ├── v1-development.md      # Member-service ownership and the G00/G07 gate
     ├── ai-usage.md            # AI contribution logging and identity checks
     ├── security.md            # Input, secrets, authorization and AI safety
     ├── testing.md             # Mandatory test-case implementation rules
@@ -146,7 +147,7 @@ instead of copying them.
 | `blueverse-client-contract` | React/Flutter public-contract work |
 | `blueverse-test-design` | Test cases, IDs, matrices, fixtures and runners |
 | `blueverse-postgresql-efcore` | PostgreSQL/EF Core persistence, migrations and provider-specific tests |
-| `blueverse-agentic-ai-workflow` | AI orchestration, tools, approvals and evaluation |
+| `blueverse-agentic-ai-workflow` | Agentic AI design/review; executable v1 runtime only after G07 |
 | `blueverse-docker-gateway` | DHI, Compose, edge-nginx, networks and health |
 | `blueverse-ci-validation` | GitHub Actions, discovery, metrics and artifacts |
 
@@ -229,9 +230,14 @@ individual records belong under `docs/ai-contribution/`.
 
 ### `rules/git.md`
 
-Use this for source-control decisions. Keep commits focused and explainable,
-use pull requests for shared changes, preserve meaningful individual
-contribution, and do not commit `.env` files or generated build artifacts.
+Use this for source-control decisions. Agents do not create commits or push
+branches unless the user explicitly requests that action. When authorized,
+keep commits focused and explainable, use pull requests for shared changes,
+preserve meaningful individual contribution, and do not commit `.env` files or
+generated build artifacts. This limits agent-initiated Git actions; it does
+not disable the repository's approved GitHub Actions. Preserve the
+`dev-backup` rescue/synchronization and `.github` configuration-sync workflows
+unless the user explicitly requests a workflow change.
 
 Follow the repository’s branch and contribution guidance in
 `docs/development/git-workflow.md` and `docs/project/contribution.md`.
@@ -258,6 +264,18 @@ The complete implementation sequence and test matrix are in
 [`docs/testing/implementation-plan.md`](../docs/testing/implementation-plan.md).
 Agents must consult both documents when adding or changing tests.
 
+### `rules/v1-development.md`
+
+Use this for every v1 member component or Agentic AI task. It binds the G00
+shared-contract gate, one complete component per assigned feature branch,
+private member-service ownership, API/Auth integration limits, equal client
+capabilities, provider ownership and the G07 gate. Member branches may prepare
+their private Agentic AI adapter and safe unavailable behavior before G07;
+actual agents, tools, model calls, orchestration and AI-owned execution state
+wait until the four component integrations pass G07. The rule links the full
+member, phase, relationship and Agentic AI contracts instead of duplicating
+their detailed feature specifications.
+
 ## Repository scope and boundaries
 
 The expected application and service locations are:
@@ -267,7 +285,9 @@ apps/web       React client
 apps/mobile    Flutter client
 services/api   Public ASP.NET Core API
 services/auth  Internal authentication service
-services/*     Additional internal backend services and their local tests
+services/<component-service>
+               Future v1 member-owned internal service; confirm it exists
+               before treating it as implemented
 services/ai/*,
 services/ai-agents/*,
 services/agents/*
@@ -285,14 +305,21 @@ docs/api/endpoint-catalog.md
 The system boundary is:
 
 ```text
-React / Flutter → public ASP.NET Core API → PostgreSQL
-                                      └── internal Agentic AI services
+React / Flutter → public ASP.NET Core API → private member services → PostgreSQL
+                                         └→ private Agentic AI runtime after G07
 ```
 
 Clients must not call internal Auth or Agentic AI services directly. Agents
 must not introduce API version path segments such as `/api/v1`, replace the
 role-to-permission model with hard-coded role checks, expose database access to
 clients, or move the edge gateway out of its intended role.
+
+The v1 component-service and Agentic AI target order is governed by
+[`rules/v1-development.md`](rules/v1-development.md),
+[`docs/v1/member-branch-workflow.md`](../docs/v1/member-branch-workflow.md) and
+the owning contracts. Before G07, component branches implement only the
+business features and their backend AI access seams. Treat every target as
+planned until source and CI provide implementation evidence.
 
 For UI work, `docs/contracts/ui-integration.json` is the canonical mapping
 from a shared workflow ID to the React route, Flutter route and public API

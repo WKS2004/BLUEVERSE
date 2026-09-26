@@ -49,6 +49,7 @@ claiming implementation or test completion.
 | `.agents/rules/` | Focused repository constraints |
 | `.agents/rules/endpoint-catalog.md` | Fast endpoint lookup and source-escalation rule |
 | `.agents/rules/data-access.md` | PostgreSQL, EF Core, migration and test-provider policy |
+| `.agents/rules/v1-development.md` | v1 member ownership, API/Auth limits and G00/G07 sequencing gates |
 | `docs/api/endpoint-catalog.md` | Fast, readable endpoint and route lookup |
 | `docs/api/endpoint-catalog.json` | Machine-checked source for the readable catalog |
 | `.agents/skills/` | On-demand project and supplementary workflows |
@@ -96,7 +97,7 @@ large requirements matrices into skills or load every skill for every task.
 | PostgreSQL/EF Core persistence, migrations and provider-specific tests | `blueverse-postgresql-efcore` | deferred PostgreSQL/Testcontainers skills only when approved and needed |
 | React/Flutter API contracts and permission-aware clients | `blueverse-client-contract` | matching Flutter skills; `vercel-react-best-practices` for React/Vite performance |
 | Test design, IDs, fixtures and discovery | `blueverse-test-design` | `run-tests`, `assertion-quality`, `test-anti-patterns`, `test-gap-analysis`, `grade-tests` |
-| Agentic AI orchestration, tools, approvals and evaluation | `blueverse-agentic-ai-workflow` | deferred governance/OWASP skills until executable AI workflows exist |
+| Agentic AI design, orchestration, tools, approvals and evaluation | `blueverse-agentic-ai-workflow` | executable v1 runtime only after G07; deferred governance/OWASP skills until needed |
 | Docker, Compose, edge-nginx, networks and health | `blueverse-docker-gateway` | — |
 | GitHub Actions, path filters, metrics and artifacts | `blueverse-ci-validation` | — |
 | Response-style compression | — | `caveman` for explicit, user-requested conversational compression |
@@ -117,6 +118,17 @@ Layout and device integrations may differ while business outcomes stay
 equivalent. Select the applicable component and workflow reference through
 the [documentation index](../README.md). User-facing work also follows
 [`../project/ui-experience-principles.md`](../project/ui-experience-principles.md).
+
+For all v1 work, follow the agent-enforced
+[`v1 development rule`](../../.agents/rules/v1-development.md) and the source
+contracts in [`../v1/`](../v1/README.md). G00 precedes component coding; the
+four complete member components may be developed concurrently on their
+assigned branches. Member branches may prepare their private Agentic AI access
+seam and safe unavailable behavior, but executable agents, tools, model calls,
+orchestration and AI-owned state wait until the four components pass G07.
+External ML provider integration remains owned by its member component and is
+not Agentic AI implementation.
+
 For every frontend route, client API target, gateway/YARP/Nginx mapping,
 backend or internal service endpoint, health/OpenAPI route, test-only fixture
 endpoint or Agentic AI endpoint addition, update, rename, move or removal,

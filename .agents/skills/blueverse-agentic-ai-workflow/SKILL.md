@@ -5,6 +5,14 @@ description: Design, implement, or review BLUEVERSE Agentic AI orchestration, to
 
 # BLUEVERSE Agentic AI workflow
 
+For v1 sequencing, read `.agents/rules/v1-development.md` and
+`docs/v1/member-branch-workflow.md` first. Before G07, this skill may support
+target-design and resource review or the member-owned typed access seam; do
+not implement executable agents, model calls, tools, orchestration or
+AI-owned execution state until all four member components pass G07. The
+Member 3 IT3091 biodiversity inference adapter is an external ML integration
+on a `features/**` branch, not Agentic AI runtime work.
+
 Read `docs/api/endpoint-catalog.md` for AI route questions. Do not invent
 an endpoint from target architecture. For every AI endpoint addition, update, rename or
 removal, **MUST** update the catalog JSON in the same change with its exact

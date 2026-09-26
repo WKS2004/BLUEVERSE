@@ -18,8 +18,8 @@ The repository naming policy accepts these lowercase branch families:
 
 The following names are reserved for repository automation or foundation
 state: `main`, `dev`, `dev-backup`, `default-template`,
-`docker-workflow-changes/<target>/<timestamp>` and
-`dev-backup-mistaken-commits/<actor>/<timestamp>`.
+`github-sync/<target>/<run>`, `docker-workflow-changes/<target>/<timestamp>`
+and `dev-backup-mistaken-commits/<actor>/<timestamp>`.
 
 `branch-policy.yml` checks a branch immediately after creation. Branch names
 must be fully lowercase and match an approved name or family; an invalid branch
@@ -47,7 +47,9 @@ Configure GitHub rulesets or branch protection so that:
 - pull requests into `dev` require review and the relevant source checks;
 - force-push and deletion are disabled for `main`, `dev` and `dev-backup`;
 - the `dev-backup` maintenance workflow is allowed to update `dev-backup`, or
-  its repository rule explicitly grants the workflow token a bypass.
+  its repository rule explicitly grants the workflow token a bypass; and
+- GitHub Actions is allowed to create and queue the `.github` synchronization
+  pull requests.
 
 GitHub Actions status checks report whether a commit passed; they do not
 cancel an already accepted push. Required checks in a ruleset are the control
@@ -61,11 +63,30 @@ the mobile app does not start the backend or web workflows; a commit changing
 the endpoint catalog or shared CI helper starts the checks that consume it.
 Manual dispatch remains available for an explicit full run.
 
-Temporary recovery branches are not included in the source/test/Docker
-workflow branch filters. The backup workflow creates them only to preserve an
-existing commit history. Because a path-filtered workflow may not create a check at all,
+Automation and temporary recovery branches are not included in the
+source/test/Docker workflow branch filters. Their jobs are driven by their
+respective GitHub Actions workflows. Because a path-filtered workflow may not
+create a check at all,
 required-check rules must be configured to match this policy; use a lightweight
 always-triggered gate where a branch rule demands a check on every pull request.
+
+## GitHub configuration synchronization
+
+`github-config-sync.yml` watches pushes that change `.github/**`. For every
+durable development branch except `main` and `dev-backup`, it creates a
+temporary `github-sync/<target>/<run-id>` branch containing only the `.github`
+folder, opens a pull request, queues automatic squash merging and requests
+branch cleanup after merge. Temporary recovery and automation branches are
+excluded as sources and targets. Application and service files are not copied.
+
+The workflow skips its standard synchronization commit subject to avoid a
+second propagation wave after a sync PR is merged. If repository rules do not
+permit automatic merging, the PR remains available for a collaborator and
+the workflow reports the target as failed.
+
+This GitHub Actions automation is separate from agent source control. Agents
+must not create commits or push them to GitHub unless the user explicitly
+requests that action; see the [agent Git rules](../../.agents/rules/git.md).
 
 ## Dev backup
 

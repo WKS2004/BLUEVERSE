@@ -395,10 +395,13 @@ builds the other ASP.NET service directories, including the internal Auth
 service. The backend test workflow fails if a service source project has no
 discovered service-local test project.
 
-`branch-policy.yml` enforces lowercase approved names. When a mistaken commit
-lands on `dev-backup`, `dev-backup.yml` creates a timestamped rescue branch with
-the backup history, then force-resets the `dev-backup` ref to the exact `dev`
-commit.
+`github-config-sync.yml` uses GitHub Actions to copy `.github/**` changes
+through focused pull requests and queues automatic squash merges when allowed
+by repository settings. This repository automation is distinct from agent
+source-control behavior: an agent does not create or push commits unless the
+user explicitly asks. `branch-policy.yml` enforces lowercase approved names;
+`dev-backup.yml` preserves mistaken backup history on a timestamped rescue
+branch before force-resetting `dev-backup` to the exact `dev` commit.
 
 See [Docker CI Workflows](docs/development/ci.md) for the complete workflow behavior and service conventions.
 

@@ -24,6 +24,11 @@ service and requirement before generating code. A reserved directory or ignored 
 Read the applicable requirements and owning component/workflow documents;
 preserve the same public contract for React and Flutter.
 
+For a v1 member component, also follow `.agents/rules/v1-development.md`.
+Implement the component's business logic and persistence in its own private
+service. The existing `services/api` and `services/auth` receive only the
+contract-authorized integration; preserve their current logical flows.
+
 - Keep clients behind the public API and internal services private. Use `/api/`
   routes without an API-version path segment.
 - Use ASP.NET Core 10 and the pinned SDK, DTO/application layers, async I/O,

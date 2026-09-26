@@ -22,8 +22,10 @@
   path segments; follow the existing `/api/...` convention.
 - Keep role → permission authorization. Do not replace permission checks with
   hard-coded role names or client-only business rules.
-- Keep DTOs, application/service layers, async I/O, validation, structured
-  errors and OpenAPI at the public API boundary.
+- Keep DTOs, application/service layers, async I/O, validation and structured
+  errors in the owning backend service. The public API exposes OpenAPI and
+  routes requests; v1 member domain logic and persistence remain in the
+  owner's private service, as specified by `v1-development.md`.
 - Use `docs/api/endpoint-catalog.md` as the fast inventory of implemented
   frontend, gateway, public API, internal, test-only and Agentic AI routes.
   For every route addition, update, rename, move or removal, update its JSON
@@ -36,6 +38,11 @@
 Before changing a boundary, read the relevant `docs/architecture/`,
 `docs/adr/`, security and Agentic AI documents and verify the target service
 actually exists.
+
+For v1 member boundaries or Agentic AI sequencing, also follow
+[`v1-development.md`](v1-development.md) and the linked G00/G07 contracts.
+Member-owned domain behavior belongs in its private service; `services/api`
+and Auth receive only the narrow integration permitted by that contract.
 
 For any UI route or API request change, also read
 [`docs/development/ui-integration.md`](../../docs/development/ui-integration.md)

@@ -14,6 +14,13 @@ Read the root `AGENTS.md`, `.agents/repository-map.md`,
    release/component/workflow documents, architecture/ADRs, the UI integration
    registry, endpoint catalog, database docs, CI workflows, tests, Docker
    configuration and `.agents` registry, overlays and skills.
+   For v1 readiness, explicitly check the G00 and G07 gates, single-branch
+   member ownership, one private service per member, API/Auth integration-only
+   constraints, provider ownership and React/Flutter parity. Confirm that
+   member Agentic AI access seams are distinct from executable runtime work and
+   that no v1 Agentic AI runtime starts before G07. When reviewing Git
+   automation, distinguish agent-initiated commits from GitHub Actions and
+   preserve the documented `dev-backup` rescue/synchronization behavior.
 3. Distinguish implemented behavior, reserved paths, ignored build output,
    target architecture and environment-blocked checks. Documentation or Docker
    stubs never count as a working service.

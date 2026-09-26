@@ -8,6 +8,12 @@ around the authoritative requirements, API catalog, UI registry, source or
 tests. A detailed target specification does not claim that its component,
 agent, route, model or deployment already exists.
 
+For agent execution, also follow the repository's
+[v1 development rule](../../.agents/rules/v1-development.md), which enforces
+the G00/G07 gates, assigned branch shape, member-service boundary and the
+distinction between pre-G07 integration seams and the later executable
+Agentic AI runtime.
+
 ## Authority, status and how to use these contracts
 
 The supplied **BLUEVERSE Simplified Team Guide** is an orientation document

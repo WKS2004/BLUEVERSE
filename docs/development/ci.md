@@ -13,6 +13,7 @@ repository state are intentionally limited to the permissions they need:
 - `branch-policy.yml` can delete a newly created invalid branch;
 - `dev-backup.yml` can create backup/rescue refs, create a rescue merge commit
   and force-update `dev-backup`;
+- `github-config-sync.yml` can create sync branches and pull requests.
 
 Configure the following repository secrets before expecting Docker checks to
 pass:
@@ -42,11 +43,13 @@ pulled.
 | `agentic-ai-tests.yml` | Supported work branches; Agentic AI, helper or AI-test workflow paths | Runs every discovered AI test suite with aggregate and per-service evidence. |
 | `branch-policy.yml` | Branch creation | Enforces lowercase approved branch names and deletes invalid branches. |
 | `dev-backup.yml` | Pushes to `dev` or `dev-backup` | On divergence, creates a timestamped rescue branch containing the mistaken history in a merge commit, then force-with-lease synchronizes `dev-backup` to the exact `dev` SHA. |
+| `github-config-sync.yml` | `.github/**` pushes | Creates focused `.github`-only pull requests for other branches and queues auto-merge. |
 
 The supported active work families are `features/**`, `agentic-ai/**`,
 `claude/**`, `codex/**`, `antigravity/**`, `gemini/**`, `maintenance/**` and
-`bug-fixes/**`. Recovery branches such as
-`dev-backup-mistaken-commits/**` are excluded from normal source/test workflow
+`bug-fixes/**`. Automation branches such as `github-sync/**` and
+`docker-workflow-changes/**`, plus recovery branches such as
+`dev-backup-mistaken-commits/**`, are excluded from normal source/test workflow
 triggers.
 
 ## Branch and path-aware behavior
@@ -175,6 +178,26 @@ those runs to succeed, and then checks out the exact commit. It validates
 checks `/health`, `/api/health`, the Swagger UI and both API/Auth OpenAPI documents,
 and each discovered backend `/api/<service-name>/health`, prints Compose diagnostics on failure and always
 tears the stack down.
+
+## GitHub configuration synchronization
+
+When a push changes `.github/**`, `github-config-sync.yml` copies only that
+folder from the source branch to durable development branches other than
+`main` and `dev-backup`. It uses a temporary
+`github-sync/<target>/<run-id>` branch, creates a focused pull request, queues
+automatic squash merging and requests deletion of the temporary branch after
+merge. Recovery and automation branches are excluded as sources and targets;
+application and service files are not copied.
+
+The workflow skips its standard synchronization commit subject to avoid a
+second propagation wave. If repository rules do not permit auto-merge, the
+pull request remains available for a collaborator and the workflow reports
+the target as failed. Repository settings must allow GitHub Actions to create
+pull requests and queue auto-merges for this automation to complete.
+
+This is repository-managed GitHub Actions behavior. It does not authorize an
+AI agent to create or push commits; agents follow the explicit authorization
+rule in the root [`AGENTS.md`](../../AGENTS.md) and [Git rules](../../.agents/rules/git.md).
 
 ## Local validation
 

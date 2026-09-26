@@ -33,6 +33,13 @@ called scripts as one unit.
   and per-service evidence and attempt every discovered service.
 - Preserve selected DHI authentication/build behavior and exact-commit Docker
   health coordination.
+- Distinguish agent-initiated Git actions from repository-approved GitHub
+  Actions. The prohibition on agents creating commits/pushes does not prohibit
+  automated workflow commits. Preserve `dev-backup.yml` recovery of mistaken
+  backup commits to `dev-backup-mistaken-commits/<actor>/<timestamp>` and its
+  synchronization of `dev-backup` to `dev`, as well as the `.github`
+  configuration-sync workflow. Do not remove or weaken these unless the user
+  explicitly asks to change that automation.
 - Distinguish an absent implementation from broken test discovery; an
   implemented service or workflow needs its owning suite and CI evidence.
 - When PostgreSQL integration tests are enabled, make Docker/database
