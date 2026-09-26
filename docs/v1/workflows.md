@@ -3,10 +3,12 @@
 This page describes target workflows from
 [PROJECT_REQUIREMENTS.md](../../PROJECT_REQUIREMENTS.md), sections 20–27 and
 41. No v1 Agentic AI service or Agentic AI endpoint is implemented in the
-current foundation. The public API and persisted state remain authoritative.
-Before G07, member features implement the public business-workflow API and
-the private backend integration seam, including a structured not-connected
-or unavailable outcome. They do not implement agents, orchestration or
+current foundation. The public API and owning member-service state remain
+authoritative.
+Before G07, each member implements its private .NET component service, its
+public business-workflow API integration through `services/api`, and the
+private Agentic AI access seam, including a structured not-connected or
+unavailable outcome. They do not implement agents, orchestration or
 agent-owned execution state. See the
 [member integration boundary](agentic-ai-integration-boundary.md).
 
@@ -30,11 +32,13 @@ views must also be available in both clients.
 1. The operator selects a destination, activity or offering and relevant
    period, enters an operational objective, and may attach optional image
    evidence to the assessment.
-2. ASP.NET Core authenticates, checks the required permission, validates the
-   request, validates any optional image evidence, persists the objective and
-   creates a workflow ID. Attachment bytes remain private and are exposed only
-   through authorized API operations; an upload failure is never reported as
-   a successful attachment.
+2. `services/api` authenticates the caller, applies the existing permission
+   contract and routes the operation to Member 4's private service. The Member
+   4 service validates the domain request and optional image evidence,
+   persists the objective and creates the business workflow ID. Attachment
+   bytes remain private and are exposed only through authorized public API
+   operations; an upload failure is never reported as a successful
+   attachment.
 3. The [Planning & Coordination Agent](agents/member-3-planning-coordination-agent.md)
    persists a structured plan with assigned agents, dependencies, tools and
    expected outputs.
@@ -53,8 +57,10 @@ views must also be available in both clients.
 7. A high-impact proposal pauses for an authorized reviewer to approve,
    reject or request revision. Rejection and revision record a decision but do
    not execute the proposed protected action.
-8. For an eligible approval, ASP.NET Core rechecks applicable business rules,
-   performs the permitted transactional state change and records audit history.
+8. For an eligible approval, the Member 4 service rechecks current business
+   rules and state, performs the permitted transactional change and records
+   audit history after the public API has authenticated and authorized the
+   operation.
 9. The initiating operator and other authorized viewers receive the same
    updated status through the public API in either client.
 
@@ -79,7 +85,8 @@ exposed as uncertainty, never invented.
 
 ## Shared state and failure
 
-Persist the workflow ID and type, initiator, objective, plan, status,
+The owning member service persists the workflow ID and type, initiator,
+objective, plan, status,
 completed/current steps, structured outputs or auditable tool summaries,
 validation, errors, bounded retries, approval decision, result and timestamps
 as needed. Include correlated step/tool-call outcome and elapsed time where
@@ -91,8 +98,8 @@ records may exist before G07 and must remain distinguishable from the later
 Agentic AI plan, step and tool-execution state. If the private Agentic AI
 dependency is absent or unavailable, persist and return the defined safe
 business-workflow/dependency outcome; do not claim an agent completed or
-fabricate its output. API liveness and database readiness remain separate
-from Agentic AI availability.
+fabricate its output. API liveness, member-service health, database readiness
+and Agentic AI availability remain distinct states.
 
 Malformed model output, unsafe tools, stale or missing conditions, dependency
 timeouts, unavailable biodiversity inference and approval rejection need

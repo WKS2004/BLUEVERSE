@@ -10,6 +10,12 @@ parallel work, pull requests and the G07 gate. Work areas are not separate
 branches or PRs and do not schedule other members. Component requirements
 remain the source of behavior.
 
+The [shared foundation and file-ownership rules](../member-branch-workflow.md#shared-foundation-and-file-ownership)
+apply to every phase: keep this component additive, preserve existing API/Auth
+flows, implement Member 1's business logic in its own `services/` microservice,
+and limit `services/api` to integration code. Minimize shared React, Flutter,
+route-registry and infrastructure edits.
+
 Member 1 owns destinations, activities, offerings, schedules, publication and
 availability, discovery, favourites, the selected map-provider adapter, and
 the user-facing biodiversity context surface. Member 3 owns BLUEVERSE's
@@ -113,8 +119,9 @@ provider responses while the provider contract is being implemented.
 - consistent browse, detail, search, filters, sorting and pagination;
 - nearby discovery with validated coordinate/radius input and no implied
   continuous location tracking;
-- the selected map API integration through an ASP.NET Core server-side
-  adapter; the supported feature may be map display support, place lookup,
+- the selected map API integration through a server-side adapter owned by
+  Member 1's internal .NET service and reached by clients through the public
+  API; the supported feature may be map display support, place lookup,
   geocoding, directions or another explicitly selected capability, but the
   provider and exact scope are not assumed by this plan;
 - provider-response normalization, coordinate/schema validation, required

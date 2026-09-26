@@ -20,10 +20,10 @@ deployment.
 
 React and Flutter are peer client applications and communicate with the
 ASP.NET Core API. Neither is a backend microservice. The public API and Auth
-sources are checked in at `services/api` and `services/auth`; v1 domain,
-Agentic AI and ML-inference implementations are not yet checked in. The
-[v1 guide](../v1/README.md) defines the four component and four agent
-boundaries without claiming they are live services.
+sources are checked in at `services/api` and `services/auth`; the four v1
+member-owned component services, Agentic AI and ML-inference implementations
+are not yet checked in. The [v1 guide](../v1/README.md) defines the target
+service/component and four-agent boundaries without claiming they are live.
 The [v0 guide](../v0/README.md) maps the implemented client, API, Auth,
 PostgreSQL and infrastructure foundation.
 
@@ -59,18 +59,44 @@ published on `127.0.0.1:5432` for local pgAdmin4 access; Auth uses the
 database network rather than that host port. The API has no database
 credential or database-network attachment in the v0 stack.
 
+### v1 member-service target (not implemented in the current Compose stack)
+
+```text
+React / Flutter
+      |
+      v
+edge-nginx -> public services/api ──┬-> internal Auth ─────────────> PostgreSQL
+                                   ├-> private Member 1 service ─┐
+                                   ├-> private Member 2 service ─┤
+                                   ├-> private Member 3 service ─┼-> PostgreSQL
+                                   └-> private Member 4 service ─┘
+```
+
+The API remains the only client entry point and changes only to integrate the
+four private services. Each service owns its component's domain behavior and
+data. Actual service IDs, route mapping, network/service credentials and data
+schema ownership must be agreed at G00; this target does not describe deployed
+containers. See [ADR-0020](../adr/ADR-0020-member-component-service-boundaries.md).
+
 ## Intended public application boundary
 
-ASP.NET Core is authoritative for:
+The existing `services/api` remains the only public application boundary. For
+v1 member work it authenticates/authorizes requests under the existing model,
+routes or forwards each component operation to its private owning service,
+and preserves the shared gateway/error behavior. Its shared logical flow is
+not rewritten to implement component behavior.
 
-- authentication/authorization integration
-- Auth session lifecycle, refresh-token rotation and device/account logout
-- request validation
-- business rules
-- persistence
-- Agentic AI workflow initiation
-- approval enforcement
-- audit/execution history
+The owning member component service is responsible for:
+
+- component-specific request validation and business rules;
+- component-owned PostgreSQL persistence, migrations and audit history;
+- provider integration and safe dependency failures;
+- business workflow state and Agentic AI access seams; and
+- deterministic approval checks and protected state changes for its domain.
+
+Auth session lifecycle, refresh-token rotation, identity and role-to-permission
+resolution remain owned by the existing Auth/API foundation. Client
+applications never connect directly to Auth or a member service.
 
 ## AI boundary
 

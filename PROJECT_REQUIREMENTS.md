@@ -147,11 +147,16 @@ structured form, and forwards `/api/auth/...` through YARP to internal Auth.
 The public gateway also exposes the documented health and API/Auth OpenAPI
 routes.
 
-New domain operations must enter through public `/api/...` routes with
-validated DTOs, named permissions, application services, structured errors,
-OpenAPI and tests. Public API signature validation and Auth's active-session
-check are separate guarantees: immediate revocation for a future non-Auth
-domain endpoint requires an explicit server-side design.
+Operations implemented inside the existing public API must use public
+`/api/...` routes with validated DTOs, named permissions, application services,
+structured errors, OpenAPI and tests. For v1 member-owned operations, the
+existing public API is the only client entry point and contains only the
+routing, authentication and authorization integration needed to reach the
+owning internal component service. The component service owns the new domain
+behavior. Public API
+signature validation and Auth's active-session check are separate guarantees:
+immediate revocation for a future non-Auth domain endpoint requires an
+explicit server-side design.
 
 ## 3.6 Auth, Identity and Access Control
 
@@ -272,6 +277,41 @@ gateway health/OpenAPI reachability, repository validators and CI discovery.
 A successful build or matching HTTP status alone is insufficient: response
 content, persisted state, revocation and side effects must match the
 documented contract.
+
+## 3.12 v1 Member Component Isolation
+
+The four v1 member components are delivered on their own `features/<component>`
+branches and must preserve the shared v0 API and Auth behavior. Each member
+owns a separately deployable internal ASP.NET Core component service for its
+new business operations, data model, provider adapters and API contract. That
+service may be integrated into `compose.yaml` and the private Docker network
+when needed. Existing React and Flutter clients continue to call only public
+`/api/...` routes. The existing `services/api` changes only as the public
+gateway/facade integration needed to authenticate, authorize, route or forward
+those component operations; it does not implement the members' domain logic.
+Existing API routes and shared host behavior keep their established semantics.
+
+Member services reuse Auth through the existing API identity boundary. Changes
+in `services/auth` are out of scope by default; an unavoidable integration
+change must be limited to integration code and preserve registration,
+sign-in, refresh, logout, password, session, token, role and permission
+behavior. A component must not redesign the role-to-permission model or the
+existing identity flow.
+
+Change shared Dockerfiles, `compose.yaml`, `.dockerignore`, `.gitignore`,
+gateway configuration, package manifests, client route registries and shared
+contracts only when the owned component needs that exact change. Keep every
+edit narrow and additive. Do not include unrelated infrastructure cleanup or
+shared-code reorganization in a member feature branch.
+
+React and Flutter component screens, state, models and API adapters should be
+kept in component-specific modules. Changes to shared route tables, shells,
+navigation, network/auth/permission adapters, design tokens, dependency
+manifests and route/API registries must be limited to the entries needed by
+that component. Record unavoidable changes to shared files in the PR and
+preserve the same authorized workflows and outcomes in both clients. The
+[member branch workflow](docs/v1/member-branch-workflow.md) gives the detailed
+ownership and merge-conflict procedure.
 
 ---
 
@@ -1286,7 +1326,7 @@ Approve / Reject / Request Revision
         │
         └──► Eligible Approval
                     ↓
-            ASP.NET Core Revalidation
+            Member 4 Service Revalidation
                     ↓
             Transactional State Change
                     ↓
@@ -1620,7 +1660,7 @@ Unauthorized users must not be able to make the approval decision.
 
 ## Step 9 — Business Execution
 
-If an eligible proposal is approved, ASP.NET Core executes the permitted business action.
+If an eligible proposal is approved, the Member 4 service executes the permitted business action behind the public API's authentication and permission integration.
 
 Changes must:
 
@@ -1874,8 +1914,8 @@ Structured Prediction
 ASP.NET Core
 ```
 
-Member 3 owns BLUEVERSE's ASP.NET Core consumer adapter and validated public
-prediction-result contract. Member 1 owns the destination/activity-facing
+Member 3 owns BLUEVERSE's private component-service consumer adapter and
+validated public prediction-result contract. Member 1 owns the destination/activity-facing
 experience and consumes Member 3's public contract; its clients never call
 the private IT3091 service. The ML adapter is ordinary v1 backend integration
 on `features/coastal-planner`, and must be implemented before G07. It does not
@@ -2042,6 +2082,14 @@ The public API and internal Auth foundation establish the service boundary.
 New domain or AI services must be reachable by clients only through the
 public API and must add owning tests, health/operational wiring and route
 documentation with their implementation.
+
+For v1 member components, each owner implements a separate internal .NET
+microservice in a component-specific `services/` subfolder. The member
+service owns its application/domain logic, persistence and provider
+integration. The existing `services/api` only authenticates/authorizes and
+routes or forwards public operations to that service; it does not contain
+member business logic. The existing Auth service is reused and its logical
+flow remains unchanged. See [ADR-0020](docs/adr/ADR-0020-member-component-service-boundaries.md).
 
 ---
 
@@ -2675,7 +2723,7 @@ Coastal Experience & Biodiversity Agent
 * discovery;
 * GPS-aware coastal discovery;
 * the selected map API consumer integration for destination/activity
-  discovery, through ASP.NET Core;
+  discovery, in Member 1's private service and exposed through the public API;
 * favourites;
 * the user-facing biodiversity context surface, consuming the validated
   Member 3 prediction contract. Member 1 does not own the BLUEVERSE adapter;
@@ -2790,9 +2838,10 @@ Safety & Operations Agent
 ```
 
 The external integration ownership is distinct: Member 1 consumes the
-selected map API through ASP.NET Core; Member 2 owns Open-Meteo
-weather/marine acquisition; and Member 3 consumes the private IT3091
-biodiversity inference API through its backend adapter while that separate
+selected map API through its private component service, reached through the
+public API; Member 2 owns Open-Meteo weather/marine acquisition; and Member 3
+consumes the private IT3091 biodiversity inference API through its component-
+service adapter while that separate
 workstream supplies the model and inference service. Member 1 owns the
 user-facing biodiversity context and consumes Member 3's validated public
 contract. These boundaries do not make map or ML services available in the
@@ -2873,8 +2922,8 @@ groups include the v1 member components, agents and full delivery evidence.
 ## Intelligence Integrations
 
 * [ ] Open-Meteo weather/marine integration works;
-* [ ] the selected Member 1 map API integration works through ASP.NET Core,
-      with provider terms/attribution, server-side credentials, validated
+* [ ] the selected Member 1 map API integration works in its private service
+      through the public API, with provider terms/attribution, server-side credentials, validated
       results, privacy-minimal location data and safe unavailable behavior;
 * [ ] source/time/freshness information is handled correctly;
 * [ ] ML inference integration path is implemented;
@@ -2929,7 +2978,7 @@ Approve / Reject / Request Revision
             │
             └──► Eligible Approval
                         ↓
-              ASP.NET Core Revalidation
+              Member 4 Service Revalidation
                         ↓
               Permitted Business Execution
                         ↓
@@ -3024,6 +3073,9 @@ From this point onward:
 * the team has amended the v1 scope to include a Member 1-owned map API
   integration for location-aware discovery, with provider and exact feature
   scope left for technical selection;
+* v1 member-branch isolation, shared API/Auth protection and client/shared-file
+  collision guidance are clarified in section 3.12 and the recorded amendment
+  below;
 * implementation details may evolve through ADRs and technical contracts;
 * implementation changes must not silently alter this requirements baseline.
 
@@ -3105,7 +3157,31 @@ Member 1 GPS/location discovery, Member 3 planner date/time selection, and
 Member 4 optional assessment image evidence; see the
 [device-capability guide](docs/v1/device-capabilities.md).
 
-Otherwise:
+## Recorded v1 member-branch isolation amendment — 2026-09-26
+
+The team clarified that the four `features/<component>` branches are
+independent, complete component deliveries and must preserve the existing v0
+API and Auth behavior. Each branch adds a new .NET microservice in its own
+component-specific subfolder under `services/`; that service owns the
+component's business operations, domain data and provider integrations.
+`services/api` remains the sole public boundary and receives only the
+authentication/permission and routing/forwarding integration needed to reach
+the new service. Existing API routes, middleware, authentication/session
+behavior and role-to-permission semantics must remain stable. Auth is reused
+and normally needs no change.
+
+Each branch may add only its required service Dockerfile, Compose/ignore
+configuration and other exact integration files. React and Flutter feature
+code belongs in member-specific modules; central route tables, shared shells,
+adapters, design tokens, dependency manifests and workflow/API registries
+receive only necessary additive entries. The one-PR-per-member parallel
+workflow remains unchanged: the maintainer merges PRs sequentially, resolves
+remaining shared-file conflicts and verifies compatibility on `dev`.
+This clarifies implementation and merge boundaries without changing component
+scope, the existing v0 product flow or the post-G07 `agentic-ai/**` gate. The
+detailed procedure is in the [v1 member branch workflow](docs/v1/member-branch-workflow.md).
+
+With the recorded amendments above:
 
 ```text
 PROJECT_REQUIREMENTS.md

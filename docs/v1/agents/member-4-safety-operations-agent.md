@@ -48,9 +48,9 @@ and biodiversity context.
 ## 2. Invocation and typed input
 
 The private orchestrator invokes the role only for a validated operational
-assessment plan step. ASP.NET Core has already authenticated and authorized
-the initiator, validated the objective, assigned the workflow ID and
-persisted workflow state.
+assessment plan step. The public API has applied its existing authentication
+and permission checks, and Member 4's private service has validated the
+objective, assigned the workflow ID and persisted workflow state.
 
 The minimum logical input is:
 
@@ -136,10 +136,11 @@ Application/business code independently evaluates the proposal against:
 The model cannot change an `UNSUITABLE`, `UNKNOWN` or blocked result, invent a
 threshold, mark a stale report fresh, or turn missing evidence into a positive
 assessment. A high-impact proposal enters a pending-approval workflow. The
-authorized human decision belongs to the public API workflow, not the agent.
-Rejection/revision is recorded and has no protected side effect. Even after
-approval, ASP.NET Core rechecks current state, permission and proposal
-applicability before transactional execution.
+authorized human decision belongs to the Member 4 service workflow exposed
+through the public API, not to the agent. Rejection/revision is recorded and
+has no protected side effect. The public API applies its existing caller
+authentication/permission checks; the Member 4 service rechecks current state
+and proposal applicability before transactional execution.
 
 High-impact examples include suspension of a BLUEVERSE-managed offering,
 cancellation of a managed session, another restrictive state, and a
@@ -181,8 +182,9 @@ Never fill gaps with invented facts or default to a permissive action.
 After safe failure, invalid output, blocked validation, lost authorization,
 rejection, revision or stale target, the proposed protected action must not
 execute. No retry may bypass a human decision, reuse obsolete evidence as
-current or create duplicate side effects. The API—not the agent—owns final
-revalidation and idempotency/concurrency behavior.
+current or create duplicate side effects. The Member 4 service—not the
+agent—owns final business revalidation and idempotency/concurrency behavior
+behind the public API's authentication/permission boundary.
 
 Persist only the structured recommendation or necessary auditable summary,
 referenced validated evidence, tool outcomes, errors/retries and timestamps.

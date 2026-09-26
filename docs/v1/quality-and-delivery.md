@@ -15,12 +15,16 @@ G07.
 
 ## Business and persistence
 
-Each of the four components needs meaningful normalized PostgreSQL/EF Core
-data, constraints, indexes, appropriate audit fields, migrations and
-transactions where necessary. Each provides at least four meaningful public
-API endpoints and a non-CRUD operation. The public ASP.NET Core boundary owns
-validation, permission enforcement, business execution and structured errors.
-Internal Auth, Agentic AI and ML services remain private.
+Each of the four components is implemented as its own internal .NET
+microservice in a component-specific `services/` subfolder. The service owns
+meaningful normalized PostgreSQL/EF Core data, constraints, indexes, audit
+fields, migrations, transactions, domain validation and business execution.
+Each service provides at least four meaningful operations exposed through
+public `/api/...` endpoints and a non-CRUD operation. `services/api` remains
+the sole public boundary and changes only for the authentication/permission,
+routing/forwarding and typed-service integration needed to reach the member
+service; it contains no member domain logic or persistence. Auth, the member
+services, Agentic AI and ML services remain private behind the public API.
 
 The final domain schema also needs an ER diagram, suitable PostgreSQL types,
 documented relationships and seed data where useful. Each owner must be able
@@ -29,12 +33,32 @@ business rule. Each member feature also provides the prepared public workflow
 contract and private Agentic AI adapter boundary for its paired role, with
 bounded server-side health/dispatch handling and an explicit not-connected or
 unavailable outcome when the optional runtime is absent. See the
-[integration boundary](agentic-ai-integration-boundary.md). API implementation evidence includes DTOs, application/service
-logic, dependency injection, asynchronous I/O, structured logging, secure
-configuration, CORS and OpenAPI. The public workflow contract must cover
+[integration boundary](agentic-ai-integration-boundary.md). Component-service
+implementation evidence includes DTOs, application/service logic, dependency
+injection, asynchronous I/O, structured logging, secure configuration,
+service health and data access. Public API integration evidence includes its
+route/proxy mapping, permission integration, OpenAPI and structured response
+compatibility. The public workflow contract must cover
 initiation, status and execution summaries, reviewer decisions and resulting
 state where relevant. Record exact routes in the
 [endpoint catalog](../api/endpoint-catalog.md) when source exists.
+
+## Shared foundation and member PR review
+
+Each member implements new domain behavior inside their own internal service.
+Existing API and Auth flows remain stable; a member's changes in `services/api`
+are limited to the smallest integration wiring needed to expose and connect
+that service. Auth is reused and should normally have no component changes.
+The detailed boundary and frontend/shared-file collision guidance is
+in the [member branch workflow](member-branch-workflow.md#shared-foundation-and-file-ownership).
+
+Each PR must identify its component-owned files and enumerate any shared API,
+Auth, Docker/Compose, gateway, React, Flutter, registry or dependency-manifest
+files it touches, with the reason and compatibility evidence for each. Keep
+shared edits additive, avoid broad formatting or reorganization, and show that
+existing API/Auth behavior and equal React/Flutter permissions and outcomes
+remain intact. Merge PRs one at a time, then validate the complete cross-member
+flows on `dev`; see the [branch workflow](member-branch-workflow.md).
 
 ## Client evidence
 

@@ -23,6 +23,7 @@ ADRs capture significant architectural decisions and their rationale.
 17. `ADR-0017-map-provider-integration-boundary.md`
 18. `ADR-0018-assessment-evidence-storage-boundary.md`
 19. `ADR-0019-biodiversity-inference-integration-ownership.md`
+20. `ADR-0020-member-component-service-boundaries.md`
 
 Some decisions remain **Proposed / Pending implementation choice** because the foundation does not invent decisions that have not yet been made.
 
@@ -43,3 +44,8 @@ experience-facing consumption. The separate ML service is ordinary member
 feature work before G07; the future agent tool uses the Member 3 contract only
 after G07. Member 2's condition period remains ordinary query input with no
 separate device-feature assignment.
+
+ADR-0020 assigns one internal .NET microservice under `services/` to each v1
+member component. The existing API is integration-only for these services,
+Auth behavior is preserved, and the exact internal contracts are agreed at
+G00.

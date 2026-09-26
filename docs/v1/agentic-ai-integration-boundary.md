@@ -21,16 +21,16 @@ at G00 and implemented in source before it is described as live.
 
 The v1 work has two separate deliveries:
 
-1. **Member feature delivery, before G07:** each member implements its normal
-   business component and the ASP.NET Core boundary needed to request and
-   inspect that component's future Agentic AI workflow. This includes the
-   public API contract, authorization and validation, business/workflow
-   identity and status persistence, a typed backend integration seam to the
-   future private AI service, service configuration, dependency availability
-   handling, and a safe unavailable response. The seam may be unconfigured
-   or report `NOT_CONNECTED` until the service exists. A member may verify the
-   seam with test doubles, but must not ship a fake agent or fabricated AI
-   result as production behavior.
+1. **Member feature delivery, before G07:** each member implements its own
+   internal .NET component service and the minimum `services/api` integration
+   needed to expose that service through the public API. The member service
+   owns business/workflow identity and status persistence, its typed private
+   adapter to the future Agentic AI service, dependency configuration and
+   availability handling, and the safe unavailable response. The API owns
+   only public authentication/permission and route/forwarding integration.
+   The seam may be unconfigured or report `NOT_CONNECTED` until the service
+   exists. A member may verify the seam with test doubles, but must not ship a
+   fake agent or fabricated AI result as production behavior.
 2. **Agentic AI delivery, only after G07:** implement the actual private
    Agentic AI runtime, agent roles, prompts/model calls, tools, orchestration,
    agent-owned execution state and evaluations through `agentic-ai/**`
@@ -39,9 +39,13 @@ The v1 work has two separate deliveries:
 
 The Agentic AI service remains private. React and Flutter call only the
 public ASP.NET Core API. No client calls a private AI hostname, tool, model
-provider or internal health endpoint. The API authenticates and authorizes
-the actor, validates the request, persists the member-owned business
-workflow, and mediates any future private dispatch.
+provider, member-service hostname or internal health endpoint. `services/api`
+authenticates/authorizes the caller using the existing model and routes or
+forwards the operation to the owning member service. That component service
+validates domain input, persists its business workflow and mediates any future
+private AI dispatch; its logic does not move into `services/api`. Use the
+[member service boundary](../adr/ADR-0020-member-component-service-boundaries.md)
+and G00 contracts for the internal transport and identity/permission context.
 
 ## What member branches implement
 
@@ -53,13 +57,18 @@ for its paired role while implementing the ordinary feature:
 | Member 1 — Coastal Experience & Biodiversity Discovery | Experience & Biodiversity specialist | Authorized public workflow initiation/status contract; validated references to Member 1's catalogue and availability data; a typed private dispatch/result adapter; provenance and explicit not-connected/unavailable state for the optional Agentic report. |
 | Member 2 — Marine Conditions & Safety Intelligence | Marine Conditions specialist | Authorized public workflow initiation/status contract; validated access to normalized conditions and deterministic suitability; typed private dispatch/result adapter; source/freshness references and explicit not-connected/unavailable state. The agent cannot set or override safety thresholds. |
 | Member 3 — Smart Coastal Planner & Itinerary Management | Planning & Coordination agent | Public request, shared workflow ID/status/result and itinerary contracts; durable business request state; typed private orchestration adapter and dependency status; safe behavior when the planner or specialist dependencies are not connected. Deterministic recommendations and itineraries remain usable independently. |
-| Member 4 — Coastal Operations, Advisories & Alerts | Safety & Operations agent | Public assessment/status/proposal contracts; durable business assessment and proposal references; typed private dispatch adapter; explicit unavailable status. The member-owned API remains the only approval and protected-execution boundary. |
+| Member 4 — Coastal Operations, Advisories & Alerts | Safety & Operations agent | Public assessment/status/proposal contracts; durable business assessment and proposal references; typed private dispatch adapter; explicit unavailable status. The Member 4 service enforces authorized decisions and protected execution behind the public API boundary. |
 
-The four member branches own the public business API and their private-service
-client seams. The later `agentic-ai/**` implementation owns the actual
-runtime, agent execution and agent-side contracts. Shared transport schemas,
-correlation fields, workflow identifiers and status meanings must be agreed
-at G00 so independently developed branches converge on the same contract.
+Each member branch owns the public business contract and implements its
+business operation and private-service client seam inside its own internal
+component service. Connect that service through `services/api` using only
+necessary public route/forwarding and identity integration; preserve existing
+API and Auth flows. The later
+`agentic-ai/**` implementation owns the actual runtime, agent execution and
+agent-side contracts. Shared transport schemas, correlation fields, workflow
+identifiers and status meanings must be agreed at G00 so independently
+developed branches converge on the same contract. The detailed service and
+client shared-file boundary is in the [member branch workflow](member-branch-workflow.md#shared-foundation-and-file-ownership).
 
 ## Keep business workflow state distinct from AI execution state
 

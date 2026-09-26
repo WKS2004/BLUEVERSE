@@ -8,6 +8,12 @@ producer/consumer contracts, and the
 parallel work, pull requests and the G07 gate. Work areas are not separate
 branches or PRs and do not schedule other members.
 
+The [shared foundation and file-ownership rules](../member-branch-workflow.md#shared-foundation-and-file-ownership)
+apply to every phase: keep this component additive, preserve existing API/Auth
+flows, implement Member 4's business logic in its own `services/` microservice,
+and limit `services/api` to integration code. Minimize shared React, Flutter,
+route-registry and infrastructure edits.
+
 Member 4 owns BLUEVERSE-managed operational targets/state, assessment
 records, proposal and decision lifecycle, reviewer authorization, alerts,
 protected execution and audit/history. The Safety & Operations Agent may
@@ -104,8 +110,9 @@ Before Agentic AI exists, use controlled proposal fixtures only in tests or
 development validation of the proposal boundary. Do not ship a fixture-backed
 production proposal generator. The member branch implements the business API
 and prepared private adapter, not the Safety & Operations Agent or its runtime.
-Member 4's API and execution application service must accept a versioned
-proposal through the architecture-approved boundary once the agent is built.
+Member 4's component service must accept and validate a versioned proposal
+through the architecture-approved private boundary once the agent is built;
+the public API remains the authenticated route to that service.
 
 **Handoff:** a reviewer can inspect a persisted assessment/evidence record;
 reading it cannot trigger any protected change. Optional images are available

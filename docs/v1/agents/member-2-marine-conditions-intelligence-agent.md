@@ -44,10 +44,11 @@ limits. It must not invent physical thresholds, facts or authorization.
 
 ## 2. Invocation and input contract
 
-The private orchestrator invokes this role for a validated plan step. ASP.NET
-Core has authenticated and authorized the initiating principal, validated the
-request and created the shared workflow record before private orchestration
-begins. The agent receives only the context required for its step.
+The private orchestrator invokes this role for a validated plan step. The
+public API has applied its existing authentication and permission checks, and
+the owning member service has validated the request and created the shared
+workflow record before private orchestration begins. The agent receives only
+the context required for its step.
 
 The logical typed input must carry, as relevant:
 

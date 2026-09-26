@@ -63,9 +63,10 @@ person or GitHub account.
 React Web and Flutter Mobile offer the same permitted business capabilities to
 every participating role. Neither client owns or prioritizes tourists,
 operators, reviewers, administrators or their workflows. Both use the public
-ASP.NET Core API, PostgreSQL-backed business state and server-owned
-role-to-permission checks. Device input and responsive presentation may differ
-without changing capability coverage. See
+ASP.NET Core API and the same server-owned role-to-permission contract; each
+v1 member service owns its component's PostgreSQL-backed business state.
+Device input and responsive presentation may differ without changing
+capability coverage. See
 [cross-platform and permissions](cross-platform-and-permissions.md).
 
 ## Component and agent contract map
@@ -94,11 +95,14 @@ remain open. The paired agent contracts separately describe role distinction,
 typed logical inputs and outputs, candidate allowlisted tools, handoffs,
 workflow state, safety limits, recovery and evaluation.
 
-Each member contributes identifiable ASP.NET Core, PostgreSQL/EF Core, React,
-Flutter, test, documentation, Git/GitHub and Agentic AI work. Each component
-must contain meaningful relational data, at least four meaningful public API
-endpoints and a business operation beyond CRUD. This index and the contracts
-do not name unimplemented API routes or declare target components complete.
+Each member contributes one internal ASP.NET Core component service with
+PostgreSQL/EF Core data, React, Flutter, tests, documentation, Git/GitHub and
+the prepared Agentic AI integration seam. Each component must contain
+meaningful relational data, at least four meaningful public API endpoints
+exposed through `services/api`, and a business operation beyond CRUD. This
+index and the contracts do not name unimplemented routes or declare target
+services complete. The four service boundaries are specified in
+[service boundaries](../architecture/service-boundaries.md) and [ADR-0020](../adr/ADR-0020-member-component-service-boundaries.md).
 
 Use the [component relationship map](component-relationships.md) to see which
 component owns each contract and which consumers depend on it. The map does
@@ -115,6 +119,9 @@ plans group the full scope into work areas.
   defines the backend access seam and not-connected/unavailable behavior
   implemented in member features, separate from the actual post-G07 AI
   runtime and agents.
+- [ADR-0020](../adr/ADR-0020-member-component-service-boundaries.md) assigns
+  component business logic and persistence to one private service per member;
+  `services/api` is the public integration boundary and Auth remains reused.
 - [V1 workflows](workflows.md) defines the assessed operational assessment and
   tourist recommendation path, including delegation, deterministic
   validation, approval, status return and safe failure.
@@ -129,8 +136,9 @@ plans group the full scope into work areas.
   dependencies without prescribing which member implements first.
 - [Member branch and integration workflow](member-branch-workflow.md) defines
   the single feature branch and complete PR per member, parallel development,
-  maintainer conflict resolution, compatibility fixes on `dev`, and the G07
-  gate before executable Agentic AI implementation.
+  the protected existing API/Auth behavior, narrow shared-file and frontend
+  ownership rules, maintainer conflict resolution, compatibility fixes on
+  `dev`, and the G07 gate before executable Agentic AI implementation.
 - [Cross-platform and permissions](cross-platform-and-permissions.md) defines
   equal React/Flutter capability and server-side permission boundaries.
 - [Device capabilities and evidence media](device-capabilities.md) assigns

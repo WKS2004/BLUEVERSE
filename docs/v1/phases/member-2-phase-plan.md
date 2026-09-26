@@ -8,6 +8,12 @@ producer/consumer contracts, and the
 parallel work, pull requests and the G07 gate. Work areas are not separate
 branches or PRs and do not schedule other members.
 
+The [shared foundation and file-ownership rules](../member-branch-workflow.md#shared-foundation-and-file-ownership)
+apply to every phase: keep this component additive, preserve existing API/Auth
+flows, implement Member 2's business logic in its own `services/` microservice,
+and limit `services/api` to integration code. Minimize shared React, Flutter,
+route-registry and infrastructure edits.
+
 Member 2 owns backend-mediated weather/marine acquisition, normalized
 condition data and history, provenance/freshness, activity safety profiles,
 and deterministic suitability. The Marine Conditions Intelligence Agent is
@@ -47,8 +53,8 @@ uses the agreed Member 1 taxonomy contract without waiting for its code.
 
 **Implement:**
 
-- a server-side adapter for only the Weather and Marine API variables needed
-  by a real v1 workflow;
+- a server-side adapter inside Member 2's internal .NET service for only the
+  Weather and Marine API variables needed by a real v1 workflow;
 - validated location, activity reference and forecast/observation interval
   handling, with no unrelated account, favourite or itinerary data sent to
   the provider;

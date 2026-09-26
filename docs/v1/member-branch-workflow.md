@@ -18,22 +18,122 @@ order.
 At G00, agree the shared IDs, source-of-truth ownership, contract schemas,
 permissions, error/status semantics, timestamps and workflow identity against
 the [relationship map](component-relationships.md). Create all four branches
-from the agreed `dev` baseline. Each owner implements their complete API,
-data model, React and Flutter capabilities, paired backend Agentic AI access
-boundary, tests and documentation on that single branch. The work-area plans
-help each owner cover the scope; they do not create extra branches or require
-one member to wait for another member's full component.
+from the agreed `dev` baseline. Each owner implements one new .NET service in
+its own component-specific subfolder under `services/`, its data model, React
+and Flutter capabilities, paired backend Agentic AI access boundary, tests
+and documentation on that single branch. `services/api` remains the sole
+public API and receives only the integration code needed to authenticate and
+authorize, route or forward requests to those services. Auth is reused. Each
+component still provides its required public API operations without changing
+the existing API or Auth flows. The work-area plans help each owner cover the
+scope; they do not create extra branches or require one member to wait for
+another member's full component.
 
 The GPS/location, planner date/time and operations evidence-media capabilities
 in the [device-capability contract](device-capabilities.md) are included in
 Members 1, 3 and 4's complete component branches respectively. They do not
 create separate device-feature branches.
 
+## Shared foundation and file ownership
+
+The v0 API, Auth, React and Flutter foundations are shared by all four
+parallel branches. Each member owns a new .NET service in a distinct
+`services/<component-service>/` subfolder, including its domain logic and
+persistence. Preserve existing shared behavior and make every API/Auth
+integration additive and narrow. This section is the implementation rule for
+every component and phase plan.
+
+### Public API and Auth
+
+- Implement each member's domain operations, DTOs, business validation,
+  provider adapters, persistence and owning tests inside that member's new
+  internal ASP.NET Core service under its own `services/<component-service>/`
+  subfolder. The subfolder contains that service's project and service-local
+  Dockerfile/configuration as needed. The service is private and is not a new
+  client-facing boundary.
+- `services/api` may receive only integration code: the public `/api/...`
+  route/forwarding entry, existing authentication and permission integration,
+  typed service client or proxy configuration, dependency-injection and
+  options registration, and the minimum service-availability reporting
+  required by the component. Do not put member endpoints/business handlers,
+  rules, persistence or provider logic in `services/api`. Do not refactor the
+  host or change existing endpoint behavior, middleware order, JWT/cookie
+  handling, CORS, forwarded-header behavior, existing Auth forwarding, common
+  error/health semantics or permission resolution.
+- Reuse `services/auth` and its existing public API integration; no Auth
+  service change is expected. If an essential integration change is found,
+  limit it to integration code and do not alter registration, sign-in,
+  refresh, logout, password, device/session, token issuance/revocation,
+  role-to-permission resolution or system-role protections.
+- All client calls continue through `services/api`. Component-service
+  containers, internal routes and credentials stay private. Component
+  services do not call Auth directly; the authenticated actor and authorized
+  operation context are passed across the agreed internal boundary. At G00,
+  agree each subfolder/project/service ID, internal route contracts,
+  identity/permission propagation, data/schema ownership, network and health
+  semantics. Do not invent those details independently in parallel branches.
+- If a requirement appears to need a change to an existing API/Auth flow,
+  identify the requirement, affected behavior and narrowest alternative at
+  G00. Proceed only with the smallest essential change, keep it separate from
+  unrelated component work, and include focused compatibility evidence in the
+  PR. Record a material boundary change through the applicable ADR process.
+
+### Docker and other shared files
+
+Each member adds only its own required service Dockerfile and Compose entry,
+plus narrowly scoped `.dockerignore`, `.gitignore`, edge configuration or
+other root/shared-file changes the service actually requires. Keep changes
+local to the affected service, preserve the selected DHI images, private
+network boundaries and secret handling, and do not combine unrelated image,
+network or repository cleanup. Record each touched shared infrastructure
+file and why it is needed in the PR.
+
+Shared cross-layer files include the endpoint catalog and UI integration
+registry, both client route entry points, shared application shells/navigation,
+React's Tailwind entry stylesheet, Flutter's shared theme, API/auth/network
+adapters, and package/dependency manifests. They are not the home for a
+component's implementation. Update only the exact route, workflow, endpoint,
+registration, token or dependency entry needed by that component. Never
+reformat or reorganize a shared file to make a feature fit.
+
+### React and Flutter collision prevention
+
+- Put screens, state, models, view models, repositories and component-specific
+  API adapters in a member-specific module. The current React structure can
+  use `apps/web/src/features/<component>/` with route-level screens in
+  `apps/web/src/pages/<component>/`; Flutter can use
+  `apps/mobile/lib/features/<component>/`. These are extension patterns, not
+  a claim that all v1 modules already exist.
+- Keep every member's route path, workflow ID, permission and endpoint
+  references distinct and agree them at G00. Add only the component's route
+  declaration to React `apps/web/src/app/routes.tsx` and Flutter
+  `apps/mobile/lib/main.dart` when central registration is required. Do not
+  reformat, reorder or refactor the shared route/auth/shell code.
+- Use the existing shared design tokens, navigation, API clients and
+  permission behavior. Touch those shared facilities only when the component
+  cannot work through their existing extension points; coordinate such edits
+  at G00 and keep each edit additive. React and Flutter must retain equal
+  authorized business actions and outcomes.
+- Add only the component's entries to `docs/contracts/ui-integration.json`
+  and `docs/api/endpoint-catalog.json`; preserve all other entries and
+  regenerate the catalog when required. Keep `package.json`, lockfiles,
+  `pubspec.yaml` and its lockfile unchanged unless a dependency is necessary
+  for the component and the choice is agreed at G00.
+
+These practices reduce overlapping edits; they cannot guarantee conflict-free
+merges when several branches add entries to the same registry or route file.
+The maintainer handles any remaining conflicts sequentially on `dev` and then
+checks both clients against the merged contracts.
+
 ## Pull requests and merged-branch compatibility
 
 1. Each member submits one complete component PR to `dev`. The branch may use
    the G00-reviewed contracts and contract-level test doubles during parallel
    development; a test double is not evidence of real integration.
+   The PR describes its component-owned folders and lists every shared file
+   changed, the specific integration need, and evidence that existing API/Auth
+   behavior is preserved. It must include the applicable route/catalog and
+   client validation evidence.
 2. Merge the four PRs one at a time. There is **no prescribed member or PR
    order**. The repository maintainer personally resolves merge conflicts,
    preserving each component's accepted contract, behavior, permissions and

@@ -38,16 +38,24 @@ available at evaluation time.
 | **Universal product idea** | Turn a person's coastal place/time/interests/constraints into eligible, explainable coastal recommendations and user-owned itineraries. The planner assembles evidence from its source owners; it does not become the catalogue, marine-data provider or operations authority. A deterministic recommendation and itinerary path remains usable before the future AI runtime is connected. |
 | **React Web** | Provide the same authorized request, result, workflow-status, itinerary lifecycle and re-evaluation outcomes as Flutter. Use React 19/TypeScript/Vite/React Router, reusable pages/components, Tailwind utilities and existing request/state separation. Show evidence time, availability, suitability, uncertainty and re-evaluation changes; do not locally rank a blocked item back into an eligible result. See the [React component contract](../../v0/components/react-web-client.md), [UI integration guide](../../development/ui-integration.md), and [React state ADR](../../adr/ADR-0005-react-state-management.md). |
 | **Flutter Mobile** | Provide the same public workflow with native Dart/Material screens, the UI/logic/data separation, repository/API service and view-model pattern. Inputs and itinerary editing may be adapted to mobile interaction, but permissions, candidate eligibility, status, saved itinerary state and business outcome match React. See the [Flutter component contract](../../v0/components/flutter-client.md), [UI integration guide](../../development/ui-integration.md), and [Flutter state ADR](../../adr/ADR-0006-flutter-state-management.md). |
-| **ASP.NET Core and data** | The public API owns request authorization/validation, deterministic candidate assembly, business workflow identity/status/result and user-owned itinerary persistence. It also owns Member 3's private server-side adapter to the separate IT3091 biodiversity inference service and the validated public prediction-result capability consumed by Member 1. EF Core/PostgreSQL persist business request and itinerary state under the approved schema; prediction caching/persistence is not assumed and must be decided from freshness, privacy and retention needs. Member 1/2/4 source results remain authoritative; the planner stores references or evidence snapshots only as the accepted retention contract requires. |
+| **Member 3 .NET service and data** | A separate internal ASP.NET Core service in Member 3's own `services/<component-service>/` subfolder owns planning requests, deterministic candidate assembly, workflow identity/status/result, itinerary persistence and the private IT3091 biodiversity inference adapter plus validated prediction-result operation consumed by Member 1. Its EF Core/PostgreSQL records are owned by this service; prediction caching/persistence is decided from freshness, privacy and retention needs. The existing `services/api` receives only authentication/permission, routing/forwarding and typed-integration code needed to expose public `/api/...` operations; it contains no Member 3 business logic or ML calls. Member 1/2/4 source results remain authoritative. Clients never call IT3091 or internal services directly. Agree identifiers, routes, DTOs, actor/permission propagation and schema at G00. |
 | **ML service integration** | Member 3 sends minimal validated location/species/context to the private IT3091 service, validates response schema, numeric ranges, timestamps and provenance, and returns genuine predictions or a clear unavailable/invalid result. IT3091 supplies the trained model and inference service; Member 3 does not train, host, or claim ownership of it. Member 1's experience screens consume the Member 3 public contract. Biodiversity is optional contextual enrichment, never a safety or operational authority, and this adapter is ordinary backend ML/API integration rather than Agentic AI. |
 | **Other provider integration** | Member 3 does not own the map provider or Open-Meteo. It consumes Member 1's canonical catalogue/location/availability and Member 2's backend-mediated Open-Meteo conditions/suitability, plus Member 4 restrictions. Only the typed Member 3 server adapter may call IT3091. Neither client, planner UI, future model nor agent tool may call the map provider, Open-Meteo, IT3091, Auth or internal hosts directly. Map-assisted discovery remains in Member 1; planning receives validated Member 1 data. |
 | **Paired Agentic AI role** | The future Planning & Coordination Agent creates a structured plan, delegates to the distinct Member 1 and Member 2 specialists, tracks dependencies and assembles their validated outputs; it participates in Member 4 assessment when that workflow requests it. Before G07, Member 3 implements its ordinary deterministic business behavior, public workflow contract, typed private adapter and safe not-connected/unavailable state only. Actual orchestration/model calls and AI execution state wait for `agentic-ai/**` after G07. |
 | **Component relationships** | Member 3 consumes Member 1 publication/schedule/availability, Member 2 condition freshness and suitability, and Member 4 current restrictions. It owns the adapter that obtains optional biodiversity predictions from IT3091 and exposes validated context to Member 1; Member 1 owns experience-facing presentation. Its business workflow ID/objective/status/result references are consumed by Member 4 for traceable assessment. It never replaces source ownership or weakens `UNSUITABLE`, `UNKNOWN`, stale or restricted results. See the [producer/consumer relationship map](../component-relationships.md#producer-consumer-and-authority-map). |
 
-Both clients expose the same permitted outcomes through ASP.NET Core, the
-shared role-to-permission model and UI integration registry. This overview is
-the layer map; the later sections specify recommendation semantics, itinerary
-state, failure cases and acceptance evidence.
+Both clients expose the same permitted outcomes through the public API, which
+routes to Member 3's private service under the shared role-to-permission
+model. The UI integration registry tracks both client routes and public API
+operations. This overview is the layer map; the later sections specify
+recommendation semantics, itinerary state, failure cases and acceptance
+evidence.
+
+Implement this component within the [v1 shared-foundation and file-ownership
+rules](../member-branch-workflow.md#shared-foundation-and-file-ownership):
+keep Member 3's business behavior in its own internal service, preserve
+existing API/Auth flows, and limit `services/api`, shared client, registry and
+infrastructure edits to the exact integration entries this component needs.
 
 The shared [Agentic AI implementation blueprint](../../agentic-ai/implementation-blueprint.md)
 defines common model, tool, retrieval, security, recovery and evaluation
@@ -123,10 +131,11 @@ concurrency token and retention period are database/API design decisions.
 ### 5.1 Request validation and planning
 
 1. React or Flutter submits the user's coastal objective and relevant
-   constraints to ASP.NET Core.
-2. The API authenticates the caller, checks permission, validates identifiers
-   and requested period, minimizes/persists only necessary input, and creates
-   the shared workflow record and ID.
+   constraints through the public `/api/...` boundary.
+2. `services/api` authenticates/authorizes the caller and routes the request
+   to the private Member 3 service. That service validates identifiers and
+   period, minimizes/persists necessary input, and creates the shared business
+   workflow record and ID.
 3. The Planning & Coordination Agent produces a structured plan: required
    experience and marine information, specialist assignment, dependencies,
    allowlisted tools, expected output types, and assembly step.

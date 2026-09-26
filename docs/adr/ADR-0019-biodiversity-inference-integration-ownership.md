@@ -34,10 +34,12 @@ provider integrations, to be integrated and accepted before executable
 ## Decision
 
 1. **Member 3 owns BLUEVERSE's IT3091 integration.** Its
-   `features/coastal-planner` branch implements the backend-mediated private
-   adapter, deterministic validation of request/response data and the
-   validated public prediction-result capability. Member 3 does not train,
-   host or claim ownership of the separate IT3091 model or inference service.
+   `features/coastal-planner` branch implements the private adapter,
+   deterministic request/response validation and validated prediction-result
+   capability inside Member 3's own internal service. `services/api` receives
+   only the public-route and service-integration wiring. Member 3 does not
+   train, host or claim ownership of the separate IT3091 model or inference
+   service.
 2. **Member 1 owns the experience-facing use.** Its
    `features/coastal-experience-biodiversity` branch consumes Member 3's
    agreed public contract to request or display relevant biodiversity
@@ -50,7 +52,7 @@ provider integrations, to be integrated and accepted before executable
    state. No such safety rule is introduced by this ADR.
 4. **Keep the boundaries server-side.** React, Flutter and Agentic AI model
    prompts cannot call IT3091 directly or receive its credentials/private
-   host. The Member 3 backend validates the request, calls the private
+   host. The Member 3 component service validates the request, calls the private
    inference service, validates its response and exposes only a public
    contract appropriate to authorized BLUEVERSE workflows.
 5. **Treat predictions as optional, sourced ML context.** Preserve returned
@@ -61,7 +63,8 @@ provider integrations, to be integrated and accepted before executable
    unavailable/invalid states; they must never be replaced with guessed or
    zero values.
 6. **Implement this integration before G07 as member-feature work.** It is
-   ordinary ASP.NET Core ML/API integration and is required for v1. It is not
+   ordinary Member 3 service integration behind the public API and is required
+   for v1. It is not
    an AI agent, RAG pipeline, LLM call, prompt, tool runtime or AI-owned
    workflow. After all four member components pass G07, the Member 1
    biodiversity specialist may use a separately allowlisted tool whose
@@ -76,10 +79,11 @@ provider integrations, to be integrated and accepted before executable
 
 ## Rationale
 
-- Member 3's planner assembles optional contextual information alongside
-  existing source contracts and has the backend/API ownership to validate and
-  expose the result. This keeps the inference adapter in the service layer
-  that already integrates the planning workflow.
+- Member 3's planner service assembles optional contextual information
+  alongside existing source contracts and owns the validation and result
+  capability. This keeps the inference adapter within the same member-owned
+  service boundary as its planning workflow while `services/api` stays a thin
+  integration layer.
 - Member 1 still owns the user need: discovery and clear presentation of
   sourced biodiversity information alongside coastal destinations and
   activities. It can implement against the agreed Member 3 contract and
@@ -122,7 +126,7 @@ provider integrations, to be integrated and accepted before executable
 This would colocate provider calls with the user-facing biodiversity
 experience. It was not selected because it blurs the service that assembles
 planning context with the screen that presents it, while Member 3 already
-owns backend planning integration. The contracts remain explicit so Member 1
+owns the planning service integration. The contracts remain explicit so Member 1
 can consume Member 3's API without losing ownership of UX.
 
 ### Assign the adapter to Member 4

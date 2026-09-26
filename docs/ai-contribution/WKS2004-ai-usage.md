@@ -1411,3 +1411,16 @@ runtime lacks PyYAML.
 - Summary of what the AI Agent did: Assigned the IT3091 inference adapter and validated public result contract to Member 3 because biodiversity is optional planning/discovery context rather than an operational safety authority. Kept Member 1's experience-facing presentation as a consumer of Member 3's contract, and deferred the Member 1 agent tool that reads it until after G07. Removed Member 2's separate device feature while retaining requested condition period as ordinary query input. Updated the requirements, ADR index/ADR-0019, member contracts and work plans, relationship map, device/cross-platform guidance, Agentic AI tool/blueprint, architecture boundary, test matrix and v1 indexes.
 - AI output accepted/changed/rejected: Accepted Member 3 as the adapter owner and Member 1 as the presentation owner; did not assign the adapter to Member 4. Kept the IT3091 model/service externally supplied, the inference integration ordinary member-feature work before G07, and executable Agentic AI work post-G07. No vendor, route, wire schema, ML model/framework or cache policy was invented.
 - Verification/evidence: Checked stale ownership/device references; 22 changed Markdown files and 370 local links/heading fragments resolved; `git diff --check` passed with Git's LF-to-CRLF working-copy notices. Documentation-only update; no application tests were run.
+
+## 2026-09-26 — Finalize v1 member microservice boundaries
+
+- Date/time or time range: 2026-09-26 16:12 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Python and Git
+- AI Model: GPT-6
+- Summary of the user's request: Finalize the v1 guides so each member owns a separate .NET microservice under `services/`, integrated through the public API while preserving existing API/Auth flows, shared client ownership boundaries and the post-G07 Agentic AI implementation gate.
+- Summary of what the AI Agent did: Updated the member branch/file-ownership workflow, four component contracts and phase plans, API/service architecture, relationship and workflow guides, paired agent contracts, requirements, relevant ADRs, and PR acceptance guidance. Added ADR-0020 for the accepted one-service-per-member boundary and clarified that the public API performs only public authentication/permission and routing integration while component services own business logic, integrations, persistence and domain workflow state.
+- AI output accepted/changed/rejected: Accepted the user's separate-service architecture and API integration-only boundary. Corrected prior guide language that placed member business behavior in `services/api`. Kept exact service identifiers, transport, identity propagation, schema and health details as G00 decisions. No application code or tests were changed.
+- Verification/evidence: `git diff --check` passed with only LF-to-CRLF notices; 443 local Markdown links and anchors resolved across 28 changed Markdown files; stale API/service ownership claims were searched and reconciled. No application tests were run.

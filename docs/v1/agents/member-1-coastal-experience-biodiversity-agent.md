@@ -44,11 +44,11 @@ four-agent architecture.
 ## 2. Invocation and input contract
 
 The private orchestrator invokes the agent only for a validated workflow step
-whose plan identifies experience context as needed. The API has already
-authenticated and authorized the caller and persisted the workflow before
-invocation. The agent receives only the minimum context required for its
-assigned step; it does not receive passwords, access tokens or unrestricted
-identity data.
+whose plan identifies experience context as needed. The public API has applied
+its existing authentication and permission checks, and Member 1's private
+service has validated and persisted the workflow before invocation. The agent
+receives only the minimum context required for its assigned step; it does not
+receive passwords, access tokens or unrestricted identity data.
 
 The logical input must identify, as relevant:
 

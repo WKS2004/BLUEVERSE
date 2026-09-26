@@ -8,6 +8,12 @@ producer/consumer contracts, and the
 parallel work, pull requests and the G07 gate. Work areas are not separate
 branches or PRs and do not schedule other members.
 
+The [shared foundation and file-ownership rules](../member-branch-workflow.md#shared-foundation-and-file-ownership)
+apply to every phase: keep this component additive, preserve existing API/Auth
+flows, implement Member 3's business logic in its own `services/` microservice,
+and limit `services/api` to integration code. Minimize shared React, Flutter,
+route-registry and infrastructure edits.
+
 Member 3 owns planning requests, workflow/result identity, personalization
 constraints, deterministic recommendation assembly, persisted itineraries,
 re-evaluation and BLUEVERSE's backend-mediated adapter/public result contract
@@ -62,9 +68,10 @@ branch while Member 1, Member 2 and Member 4 implement their own components.
 - one workflow identity that React and Flutter can both use to retrieve the
   same authorized status and result.
 
-This is ordinary ASP.NET Core application behavior. It does not invoke an
-LLM, specialist agent, external provider, or free-form model output. The
-backend adapter and availability result prepare access to the future planner;
+This is ordinary Member 3 component-service behavior exposed through the
+public API. It does not invoke an LLM, specialist agent, external provider, or
+free-form model output. The service adapter and availability result prepare
+access to the future planner;
 they do not implement its runtime, plan generation or agent-owned execution
 state. Define workflow state and persistence with the owning database/ADR
 documentation. Keep the member-owned business request/status distinct from
@@ -144,10 +151,12 @@ IT3091 service request/result contract. Member 1 can implement its user-facing
 presentation against the agreed result schema and controlled available/
 unavailable fixtures while this adapter is in progress.
 
-**Implement as ordinary Member 3 backend/API work before G07:**
+**Implement inside Member 3's component service, with only the required
+public route/authorization integration in `services/api`, before G07:**
 
-- a typed private ASP.NET Core adapter calls the IT3091 inference service; no
-  client or agent receives its private host or credentials;
+- a typed private adapter in Member 3's .NET service calls the IT3091
+  inference service; no client or agent receives its private host or
+  credentials;
 - validate the minimum location/species/context needed for the query and
   associate each response with the request location and time;
 - validate required fields, numeric ranges, timestamps, model/version and

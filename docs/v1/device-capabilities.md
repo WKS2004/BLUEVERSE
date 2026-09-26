@@ -35,17 +35,20 @@ in the [single-branch workflow](member-branch-workflow.md).
   validation meaning, workflow state and results. Their device controls may
   differ to suit web and mobile hardware.
 - Both clients call only registered relative `/api/...` operations through
-  ASP.NET Core. They do not call the map vendor, object storage, Auth,
-  PostgreSQL or Agentic AI services directly.
+  `services/api`, which authenticates/authorizes and routes to the owning
+  private member service. They do not call the map vendor, object storage,
+  Auth, PostgreSQL, Agentic AI or component services directly.
 - Device permission and access to a sensor are requested only after a clear
   user action and only for the immediate workflow. No background or
   continuous location tracking is in v1.
 - A permission prompt, file picker or native widget is not the business
-  operation. The owning API validates, authorizes, persists and returns the
-  authoritative result.
-- Time entry is not server validation. The API owns supported period bounds,
-  zone interpretation, provider coverage and the resulting condition/
-  suitability evidence.
+  operation. The public API applies the existing caller authorization and
+  routes to the owning member service, which validates, persists and returns
+  the authoritative business result.
+- Time entry is not server validation. The owning component service defines
+  supported period bounds, zone interpretation, provider coverage and the
+  resulting condition/suitability evidence; the public API remains the
+  authenticated entry point.
 - These capabilities are implemented inside the complete owning
   `features/<component>` branch. The work-area numbers in member plans help
   coverage and local dependency analysis; they do not create new branches or
@@ -67,10 +70,11 @@ in the [single-branch workflow](member-branch-workflow.md).
 3. The client maps the result to the location input for a nearby query. It
    shows a concise, user-understandable selected-location label and the
    search radius/filters that will be used; raw coordinates need not be shown.
-4. The public API validates coordinate ranges, radius bounds and the caller's
-   requested filters, then returns authorized nearby destinations/activities
-   with the same eligibility, publication, availability and restriction
-   rules as manual search.
+4. `services/api` authenticates/authorizes and routes the search to the private
+   Member 1 service. That service validates coordinate/radius bounds and
+   filters, then returns nearby destinations/activities with the same
+   eligibility, publication, availability and restriction rules as manual
+   search.
 5. The client handles the result through the normal loading, populated, empty,
    recoverable-error and retry states. Location does not bypass permissions or
    make unavailable/unpublished experiences discoverable.
@@ -93,10 +97,11 @@ the same manual fallback. Never loop permission prompts.
   remain Member 1-owned catalogue data and are distinct from a visitor's
   transient device reading.
 - GPS acquisition is a device capability and does not depend on a particular
-  map vendor. Map/place/geocoding/display calls remain behind Member 1's
-  ASP.NET Core integration. The map provider and exact rendered-map features
-  remain unselected until Member 1 records the provider, terms, attribution,
-  credential handling and supported features in the implementation contract.
+  map vendor. Map/place/geocoding/display calls are performed by Member 1's
+  private service behind the public API integration. The map provider and
+  exact rendered-map features remain unselected until Member 1 records the
+  provider, terms, attribution, credential handling and supported features in
+  the implementation contract.
 - Provider outage must leave the manual/list discovery path usable and must
   not make provider content authoritative over BLUEVERSE's catalogue.
 
@@ -138,10 +143,10 @@ particular evidence type and is documented.
 - Both clients submit the selected image through the Member 4 public API and
   associate it with the authorized assessment/workflow. File selection never
   grants access to an assessment or changes its status.
-- Member 4's API checks the current principal, assessment scope and upload
-  permission; enforces an explicit image type/count/size allowlist; inspects
-  file content rather than trusting extension or client MIME; rejects
-  malformed/unsafe content; and stores accepted bytes privately with
+- The public API authenticates the actor and routes the request to Member 4's
+  service, which checks assessment scope and upload permission, validates the
+  content type/count/size and file bytes, rejects malformed/unsafe content,
+  and stores accepted bytes privately with
   assessment-linked metadata and audit history.
 - Reviewers with access to that assessment can view evidence through an
   authorized public API response. Storage paths, public static links and

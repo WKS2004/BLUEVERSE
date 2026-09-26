@@ -40,9 +40,9 @@ make pending, rejected, revised, executed and failed outcomes distinguishable.
 | **Universal product idea** | Own the BLUEVERSE-managed operational-assessment and review lifecycle: operator request, evidence/proposal, deterministic validation, authorized human decision, revalidation, permitted managed-state action, advisory/alert and audit history. The workflow is decision support for BLUEVERSE-managed records only; it does not issue government closures or emergency orders. Before G07 the business workflow exists, but no production AI proposal generator exists. |
 | **React Web** | Provide every authorized operator and reviewer action also available in Flutter: initiate/monitor, inspect evidence, decide approve/reject/request-revision, and view execution/alert/history state. Use React 19/TypeScript/Vite/React Router, reusable pages/components, Tailwind utilities and existing request/state separation. The browser never authorizes or executes a decision locally. See the [React component contract](../../v0/components/react-web-client.md), [UI integration guide](../../development/ui-integration.md), and [React state ADR](../../adr/ADR-0005-react-state-management.md). |
 | **Flutter Mobile** | Provide the same authorized initiation, monitoring, review/decision and outcome behavior using native Dart/Material UI, the existing UI/logic/data layers, repository/API service and view-model pattern. Layout may suit mobile, but reviewer permissions, evidence requirements, validation and result must match React. See the [Flutter component contract](../../v0/components/flutter-client.md), [UI integration guide](../../development/ui-integration.md), and [Flutter state ADR](../../adr/ADR-0006-flutter-state-management.md). |
-| **ASP.NET Core and data** | The public API authenticates and authorizes each operation, owns assessment/proposal/decision state, applies deterministic policy, revalidates the current target and permission, performs an eligible protected mutation transactionally, and writes corresponding audit/history. EF Core/PostgreSQL persist the business records and concurrency/approval evidence according to the accepted schema. Agents and clients do not connect to the database. |
+| **Member 4 .NET service and data** | A separate internal ASP.NET Core service in Member 4's own `services/<component-service>/` subfolder owns assessment/proposal/decision state, deterministic policy, target revalidation, authorized human-review outcomes, eligible protected mutations and audit/history. Its EF Core/PostgreSQL records are owned by this service. The existing `services/api` receives only authentication/permission and route/forwarding integration needed to expose public `/api/...` operations; it contains none of Member 4's operational business logic or persistence. The service is private; neither clients nor agents connect to its database or internal routes. Agree identifiers, route/DTO mapping, actor/permission propagation and data ownership at G00. |
 | **Third-party integration** | No external alert publisher or government/emergency integration is assumed by this v1 component. It consumes Member 1 managed experience/location/availability, Member 2 sourced marine/suitability evidence and Member 3 business workflow identity. The map provider, Open-Meteo and biodiversity inference stay behind their owning backend components: Member 1 owns map integration, Member 2 owns Open-Meteo, and Member 3 owns the IT3091 inference adapter. Member 4 may consume biodiversity only as optional contextual information under an accepted contract; it is never safety evidence or operational authority. Member 4 consumes canonical Member 1 location data and never uses map results as operational authority. Optional assessment images use a private backend storage adapter, not a client-side provider integration; the provider/configuration is open under [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md). Any future external notification/delivery provider needs an explicit requirement, privacy/security contract and ADR before becoming part of scope. |
-| **Paired Agentic AI role** | The future Safety & Operations Agent receives validated context through read-only allowlisted tools and proposes a structured recommendation/action. Before G07, the member branch implements only the public business contract, typed private dispatch seam and safe not-connected/unavailable state. After G07, the agent still has no approve, publish, suspend, cancel or execute tool; the authorized reviewer and ASP.NET Core own those actions. |
+| **Paired Agentic AI role** | The future Safety & Operations Agent receives validated context through read-only allowlisted tools and proposes a structured recommendation/action. Before G07, the Member 4 service implements the business contract, typed private dispatch seam and safe not-connected/unavailable state. After G07, the agent still has no approve, publish, suspend, cancel or execute tool; the authorized reviewer decides and the Member 4 service enforces and executes the permitted action after the public API authenticates/authorizes the caller. |
 | **Component relationships** | Member 4 consumes Member 1 identity/schedule/availability, Member 2 source-timed conditions and deterministic suitability, and Member 3 workflow identity/objective/status. Member 4 is authoritative for BLUEVERSE operational restrictions and returns current status to Members 1 and 3. Every source fact stays owned by its producer. See the [producer/consumer relationship map](../component-relationships.md#producer-consumer-and-authority-map). |
 
 All client workflows use the shared API, role-to-permission model, workflow
@@ -50,6 +50,12 @@ IDs and [UI integration registry](../../contracts/ui-integration.json).
 The sections below are the detailed source for state transitions, decisions,
 failures, audit and acceptance; this summary does not introduce routes or
 freeze unresolved policy values.
+
+Implement this component within the [v1 shared-foundation and file-ownership
+rules](../member-branch-workflow.md#shared-foundation-and-file-ownership):
+keep Member 4's business behavior in its own internal service, preserve
+existing API/Auth flows, and limit `services/api`, shared client, registry and
+infrastructure edits to the exact integration entries this component needs.
 
 The shared [Agentic AI implementation blueprint](../../agentic-ai/implementation-blueprint.md)
 defines common model, tool, retrieval, security, recovery and evaluation
@@ -126,10 +132,11 @@ status must not merge them into one ambiguous badge.
 1. **Initiate.** An authorized operator selects a destination, activity or
    offering/session and relevant period, adds a constrained objective, may
    attach optional image evidence, and submits through React or Flutter.
-2. **Establish authority.** ASP.NET Core authenticates the caller, checks
-   permission and resource eligibility, validates request fields, stores the
-   objective and creates a shared workflow ID. Clients never call agents or
-   internal services directly.
+2. **Establish authority.** `services/api` authenticates the caller, applies
+   the permission integration and routes to the private Member 4 service. The
+   Member 4 service checks component resource eligibility, validates domain
+   fields, stores the objective and creates a shared workflow ID. Clients
+   never call agents or internal services directly.
 3. **Plan.** The Planning & Coordination Agent persists a structured plan
    with specialist assignments, dependencies, required allowlisted tools and
    expected outputs.
@@ -154,11 +161,12 @@ status must not merge them into one ambiguous badge.
    request-revision do not execute the proposed protected change. Revision
    starts or resumes a constrained analysis path without erasing prior
    decision history.
-9. **Revalidate and execute.** For an eligible approval, the public API
-   re-checks permission, freshness/eligibility as required, current state,
-   transition legality and proposal applicability. It performs the permitted
-   change transactionally where needed and writes audit/history. The agent
-   never commits a mutation.
+9. **Revalidate and execute.** The public API authenticates and authorizes the
+   decision request. For an eligible approval, the Member 4 service
+   re-checks freshness/eligibility as required, current state, transition
+   legality and proposal applicability. It performs the permitted change
+   transactionally where needed and writes audit/history. The agent never
+   commits a mutation.
 10. **Return status.** The workflow result and new authoritative state are
     available through the public API to authorized viewers in either client.
 
@@ -196,8 +204,9 @@ this target document.
 ### Stale, duplicate and concurrent decisions
 
 Approval is valid only for the proposal and state the reviewer inspected.
-Immediately before execution, the API revalidates the target's current state,
-proposal version/applicability, permissions and transition. Duplicate
+Immediately before execution, the Member 4 service revalidates the target's
+current state, proposal version/applicability and transition after the public
+API has authenticated/authorized the caller. Duplicate
 decisions must be handled idempotently or rejected as a conflict under a
 documented contract. Concurrent reviewers must not cause both decisions or
 transitions to apply. Database concurrency control and transaction boundaries
@@ -268,11 +277,14 @@ Both clients must support all actions authorized by the same permission set:
 React and Flutter can lay out queue, evidence and approval controls differently.
 They cannot differ in who may act, which evidence is required, the result of
 the action, or the source-of-truth status. A hidden/disabled button is not
-authorization; the API checks each decision and execution.
+authorization: the public API applies its existing caller authentication and
+permission integration, while the Member 4 service validates the current
+proposal, decision eligibility and execution preconditions.
 
 The operator may capture/select and upload optional image evidence in Flutter
 or choose an image file in React. Reviewers in either client see the same
-authorized attachment metadata and content through the public API. A submitted
+authorized attachment metadata and content through the public API, which
+routes to Member 4's private service. A submitted
 assessment version's evidence is immutable; additions/corrections are
 separately authorized and audited. The format/count/size limits, private
 storage provider, inspection/sanitization method and retention policy must be
@@ -289,7 +301,7 @@ Agentic AI agent receives no raw image or storage URL.
 | Member 3 | Objective, structured plan, dependency status, itinerary/recommendation context where relevant. |
 | Planning & Coordination Agent | Plan and delegation. It cannot change operational state or approval. |
 | Safety & Operations Agent | Structured assessment factors, recommendation, proposed action/affected object, alert proposal, uncertainty and suggested approval need. Application logic independently decides validation and actual approval requirements. |
-| ASP.NET Core operations service | Authorization, deterministic checks, reviewer decision, revalidation, protected mutation, transaction and audit. This is the only execution authority. |
+| Member 4 internal service | Deterministic checks, reviewer decision state, revalidation, protected mutation, transaction and audit after the public API's existing authentication/permission checks. This is the only execution authority. |
 
 See the paired [Safety & Operations Agent contract](../agents/member-4-safety-operations-agent.md)
 and [canonical workflow](../workflows.md). The LLM is a decision-support

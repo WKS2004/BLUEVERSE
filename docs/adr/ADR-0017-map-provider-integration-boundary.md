@@ -24,13 +24,14 @@ attribution, quotas, privacy and availability behavior depend on those choices.
 ## Decision
 
 1. Member 1 owns BLUEVERSE's map-provider integration contract and
-   server-side consumer adapter as part of Coastal Experience & Biodiversity
-   Discovery.
-2. ASP.NET Core mediates all client-requested map-provider access. React and
-   Flutter call only registered public `/api/...` operations. Provider
-   credentials remain server-side. A provider that cannot support this
-   boundary is not eligible under the current architecture unless a later
-   reviewed ADR explicitly changes the boundary.
+   server-side consumer adapter inside its own internal .NET component
+   service under `services/`.
+2. `services/api` mediates all client-requested map-provider access by
+   routing/forwarding public `/api/...` operations to Member 1's service.
+   React and Flutter call only the public API; provider credentials and
+   outbound requests remain in Member 1's service. A provider that cannot
+   support this boundary is not eligible under the current architecture unless
+   a later reviewed ADR explicitly changes the boundary.
 3. Member 1's persisted destination catalogue remains authoritative for
    canonical destination identity, title, coordinates, publication and
    business availability. Provider results are untrusted discovery or display
@@ -52,12 +53,11 @@ attribution, quotas, privacy and availability behavior depend on those choices.
   `features/coastal-experience-biodiversity` branch; map functionality does
   not create a separate member branch or change the parallel four-member
   workflow.
-- Map requests, secrets and errors are governed by the public API, server-side
-  validation, provider terms and the same safe failure expectations as other
-  external integrations.
-- The eventual provider choice must be compatible with ASP.NET Core-mediated
-  access and useful in both React and Flutter. A direct client SDK/API call is
-  not an allowed shortcut under this decision.
+- Member 1's service owns map requests, provider credentials, response
+  validation and provider failure behavior behind the public API integration.
+- The eventual provider choice must be compatible with server-mediated access
+  and useful in both React and Flutter. A direct client SDK/API call is not an
+  allowed shortcut under this decision.
 - This ADR does not claim a vendor, map SDK, geocoder, route service, API
   endpoint, production credential, or working map integration has been
   selected or implemented.

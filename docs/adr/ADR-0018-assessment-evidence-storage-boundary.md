@@ -24,17 +24,19 @@ sharing or environmental incident reporting.
    the browser supports it. Both clients provide the same business action,
    permission behavior and reviewer-visible result.
 2. Image upload, association, authorization and retrieval pass through the
-   public ASP.NET Core API. Clients never receive storage credentials, access
-   a storage host directly or use public static file URLs.
-3. PostgreSQL stores attachment metadata, ownership, assessment/version
-   association, status and audit references. Image bytes live in private
-   backend-controlled storage behind a storage interface; the concrete
-   storage provider and development/deployment configuration are not selected
-   by this ADR.
-4. The API validates actual file content, not just client name or MIME; it
-   enforces the agreed type/count/size limits, rejects unsafe or malformed
-   images, and makes evidence available to reviewers only after the accepted
-   inspection/sanitization process succeeds.
+   public API, which routes the operation to Member 4's private .NET service.
+   Clients never receive storage credentials, access a storage host directly
+   or use public static file URLs.
+3. Member 4's service owns PostgreSQL attachment metadata, ownership,
+   assessment/version association, status and audit references. Image bytes
+   live in private backend-controlled storage behind that service's storage
+   interface; the concrete storage provider and development/deployment
+   configuration are not selected by this ADR.
+4. The Member 4 service validates actual file content, not just client name
+   or MIME; it enforces agreed type/count/size limits, rejects unsafe or
+   malformed images, and makes evidence available to reviewers only after
+   accepted inspection/sanitization succeeds. The existing API remains a
+   thin authenticated/authorized routing integration.
 5. Evidence associated with a submitted assessment version cannot be
    silently replaced or removed. Supplemental evidence is separately
    authorized, versioned and auditable. Retention and deletion follow the
@@ -48,10 +50,10 @@ sharing or environmental incident reporting.
 
 ## Consequences
 
-- Member 4's single `features/coastal-operations` branch includes the
-  cross-platform capture/selection, upload and reviewer experience, API and
-  persistence contracts, private storage adapter, failure behavior, tests and
-  documentation.
+- Member 4's single `features/coastal-operations` branch includes its new
+  internal service under `services/`, cross-platform capture/selection,
+  upload and reviewer experience, private storage adapter, persistence,
+  public API integration, failure behavior, tests and documentation.
 - Before implementation, Member 4 records the accepted image formats,
   maximum file count/bytes, scanning/sanitization approach, provider/config,
   retention/deletion behavior, assessment-version lifecycle, permissions and

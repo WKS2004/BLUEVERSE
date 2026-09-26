@@ -42,11 +42,12 @@ ways is not four agents.
 ## 2. Invocation and validated input
 
 React and Flutter call only the public ASP.NET Core API. Before private
-orchestration starts, ASP.NET Core authenticates the caller, checks permission,
-validates the request, persists its allowed objective and creates a workflow
-ID. The planner receives the minimum validated step context required to
-coordinate that workflow; it does not perform authorization from raw role
-names or secrets.
+orchestration starts, the API applies the existing caller authentication and
+permission checks, then routes the operation to Member 3's private component
+service. That service validates the domain request, persists the allowed
+objective and creates the durable workflow ID. The planner receives the
+minimum validated step context required to coordinate that workflow; it does
+not perform authorization from raw role names or secrets.
 
 The logical input contract includes:
 
@@ -81,7 +82,7 @@ Produce a typed, application-validated plan whose meaning includes:
 | Dependencies | Which validated outputs must exist before another step can start. Unmet required dependency blocks downstream use. |
 | Required tools | Only tools already allowed for the selected assigned agent and step. A plan is rejected if it asks for any other tool. |
 | Expected output | Specific structured report type/schema expected from each step and how the next application stage consumes it. |
-| Status/progress | Current/complete/blocked steps, dependency outcomes and the reason a step is incomplete. The workflow store/API owns final durable state. |
+| Status/progress | Current/complete/blocked steps, dependency outcomes and the reason a step is incomplete. The Member 3 component service owns final durable business workflow state; post-G07 Agentic AI execution state has a separate owner. |
 | Error/recovery | Structured tool/agent failure reference and a bounded next action if allowed; no open-ended retry loop. |
 
 An illustrative operational plan retrieves experience and marine context,
@@ -144,8 +145,8 @@ errors/retries, approval decision, final result and timestamps where
 relevant. Never persist hidden reasoning, chain-of-thought,
 API keys, passwords, bearer tokens or unrelated personal data.
 
-The durable workflow store/API, not an in-memory prompt transcript, is the
-source of truth for status. The exact workflow state machine must be designed
+The Member 3 service's durable workflow store and public API, not an in-memory
+prompt transcript, are the source of truth for status. The exact workflow state machine must be designed
 and tested. At minimum, states must distinguish a created/active workflow,
 work in progress, a dependency/error blockage, pending approval, completion,
 rejection/revision and unrecoverable safe failure as the product requires.

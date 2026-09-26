@@ -14,6 +14,11 @@ their [member work plans](README.md#component-and-agent-contract-map), the
 Requirements, accepted repository contracts and implementation sources remain
 authoritative.
 
+Each member owns one internal .NET microservice in its own `services/`
+subfolder. The existing public API integrates and routes to those services but
+does not hold their business logic; Auth remains reused. See
+[ADR-0020](../adr/ADR-0020-member-component-service-boundaries.md).
+
 ## Component contract relationships
 
 ```mermaid
@@ -72,9 +77,9 @@ supports discovery/display only and never becomes the authority for Member
 | **Member 3 — Planner** | Member 4 — Operations | Business workflow ID, objective/request context, initiator and authorized status/result references; itinerary or recommendation context where relevant. | Member 4 links to Member 3's business workflow identity without claiming that it is an Agentic AI execution record. |
 | **Member 3 — biodiversity integration** | Member 1 — Experience and biodiversity | Validated prediction context or explicit not-requested/unavailable/invalid result for a relevant canonical destination/activity location. | Member 3 owns the private IT3091 adapter and public result contract; Member 1 owns the user-facing presentation. Preserve provenance and uncertainty. Prediction context is optional and never evidence of observed presence, safety, availability or operational authority. |
 | **Open-Meteo** | Member 2 — Marine and safety | Weather and marine observations/forecasts requested by the backend adapter. | Member 2 validates and normalizes data, preserves provenance and reports provider failure explicitly. Clients never call the provider. |
-| **Selected map API provider** | Member 1 — Experience and biodiversity | Map/place/geocoding or other location context for the explicitly selected discovery features. | Member 1 owns the BLUEVERSE consumer adapter; ASP.NET Core mediates provider access. Provider results are untrusted and cannot create or overwrite canonical destinations. Provider choice and feature scope remain open. |
-| **IT3091 biodiversity model/inference workstream** | External supplier; Member 3 owns BLUEVERSE integration | A genuine model-backed prediction and supplied model/provenance/uncertainty metadata through a private inference API. | The IT3091 workstream supplies the trained model/service. Member 3 owns the ASP.NET Core consumer adapter and validated public result contract, not the model/service implementation. Member 1 consumes the result for user-facing context. This ML integration is separate from Agentic AI and is implemented before G07. |
-| **Authorized person/device location** | Member 1 — Experience and biodiversity | A user-initiated, one-time device reading or manually selected destination/region used as a nearby-discovery input. | Member 1 validates the query through the public API; location is not background-tracked or retained as a movement history. Device coordinates are not canonical destination data. |
+| **Selected map API provider** | Member 1 — Experience and biodiversity | Map/place/geocoding or other location context for the explicitly selected discovery features. | Member 1's private service owns the BLUEVERSE consumer adapter; the public API mediates client access. Provider results are untrusted and cannot create or overwrite canonical destinations. Provider choice and feature scope remain open. |
+| **IT3091 biodiversity model/inference workstream** | External supplier; Member 3 owns BLUEVERSE integration | A genuine model-backed prediction and supplied model/provenance/uncertainty metadata through a private inference API. | The IT3091 workstream supplies the trained model/service. Member 3's private service owns the consumer adapter and validated public result contract, not the model/service implementation. Member 1 consumes the result for user-facing context. This ML integration is separate from Agentic AI and is implemented before G07. |
+| **Authorized person/device location** | Member 1 — Experience and biodiversity | A user-initiated, one-time device reading or manually selected destination/region used as a nearby-discovery input. | Member 1's service validates the query routed through the public API; location is not background-tracked or retained as a movement history. Device coordinates are not canonical destination data. |
 | **Authorized operator image evidence** | Member 4 — Coastal operations | Optional image evidence attached to a BLUEVERSE-managed assessment/version and displayed to authorized reviewers. | Member 4 owns upload authorization, private storage, content validation, versioning and audit. Raw media is not public and is not passed to the future Agentic AI agent. |
 
 The first nine rows describe the internal BLUEVERSE component relationships;
