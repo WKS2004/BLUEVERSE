@@ -144,7 +144,7 @@ flowchart LR
     Safety[Member 4 Safety and Operations Agent]
     Validate[Deterministic application validation]
     Human[Authorized human reviewer]
-    Execute[Member 4 API execution and audit]
+    Execute[Member 4 service execution and audit]
 
     Planner -->|delegates read-only requests| Experience
     Planner -->|delegates read-only requests| Marine

@@ -19,9 +19,15 @@ host ─► edge-nginx ─┬─► frontend (React static files)
 `blueverse_edge` connects edge-nginx and frontend.
 `blueverse_internal` connects edge-nginx, API and Auth and is marked
 internal. `blueverse_database` connects Auth and PostgreSQL. The
-gateway publishes host port 80 by default; PostgreSQL is bound to
-`127.0.0.1:5432` for local pgAdmin4. API and Auth expose container ports
-to their networks, not direct host-facing application ports.
+gateway publishes host port 80 by default. Development Compose publishes
+PostgreSQL with `5432:5432`, bound on all host interfaces; Auth uses the
+private database network. Use this development mapping only on a trusted
+network with the local database secret and host firewall. When promoting
+Compose from `dev` to `main`, use `127.0.0.1:5432:5432` for loopback-only host
+access. Both mappings use host port `5432`, so the bind-address choice does
+not avoid a collision with a PostgreSQL process already using that port. API
+and Auth expose container ports to their networks, not direct host-facing
+application ports.
 
 The edge routes `/api/*` to API and frontend paths to the React container.
 API/YARP forwards `/api/auth/*` to Auth. The stack uses environment

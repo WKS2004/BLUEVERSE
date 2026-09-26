@@ -14,7 +14,16 @@ summarizes the implemented Auth model and its verification boundary.
 postgres:5432
 ```
 
-Local Compose publishes PostgreSQL on `127.0.0.1:5432` so pgAdmin4 on the Windows host can connect without exposing the database to the local network. The DHI volume is mounted at `/var/lib/postgresql`, allowing the image to manage its versioned `16/data` directory. This is intended for local development only; production databases must remain privately managed.
+The development Compose configuration publishes PostgreSQL with the host
+mapping `5432:5432`, bound on all host interfaces. Use it only on a trusted
+development network with the local database secret and host firewall. When
+promoting Compose from `dev` to `main`, change the mapping to
+`127.0.0.1:5432:5432` for loopback-only host access. Both forms reserve host
+port `5432`, so changing the bind address does not fix a port collision with
+another local PostgreSQL process. The DHI volume is mounted at
+`/var/lib/postgresql`, allowing the image to manage its versioned `16/data`
+directory. This is for local development only; production databases must
+remain privately managed.
 
 Use these pgAdmin4 connection settings:
 

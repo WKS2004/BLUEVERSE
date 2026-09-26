@@ -198,11 +198,17 @@ transactions protect account, permission and session behavior. Active
 sessions authorize access; ended-session logs record history and never
 authenticate.
 
-Only owning backend services access PostgreSQL. The local Compose stack keeps
-the database on a private service network and binds host access to
-`127.0.0.1:5432` for local tooling. Provider-specific migration, constraint,
-query and concurrency behavior requires evidence against real PostgreSQL;
-provider-independent tests alone cannot establish it.
+Only owning backend services access PostgreSQL. The development Compose
+configuration keeps service-to-service access on the private Docker network
+and currently publishes the host mapping `5432:5432` on all interfaces for
+development. Use it only on a trusted development network with the local
+database secret and host firewall. When promoting the Compose configuration
+from `dev` to `main`, switch to `127.0.0.1:5432:5432` for loopback-only host
+access. Both mappings still use host port `5432`, so neither resolves a port
+collision with another host process. Production databases remain privately
+managed. Provider-specific migration, constraint, query and concurrency
+behavior requires evidence against real PostgreSQL; provider-independent
+tests alone cannot establish it.
 
 ## 3.8 Docker and Local Network
 
@@ -1610,7 +1616,7 @@ Final enumeration names may change during implementation.
 
 ## Step 7 — Deterministic Validation
 
-Application code validates the recommendation against:
+The owning component service validates the recommendation against:
 
 * schema;
 * business rules;
@@ -1674,28 +1680,32 @@ The LLM never directly changes the protected operational state.
 
 ## Step 10 — Flutter Status Return
 
-The initiating operator retrieves the updated workflow/result from the shared ASP.NET Core API. Both clients can display the same authoritative status.
+The initiating operator retrieves the updated workflow/result from the shared
+public ASP.NET Core API. The owning component service remains authoritative
+for the business state and both clients display the same public status.
 
 The final assessed flow is:
 
 ```text
 Flutter
   ↓
-ASP.NET Core
+Public ASP.NET Core API
   ↓
-PostgreSQL
+Member 4 private .NET service → PostgreSQL business workflow
   ↓
-Agentic AI
+Private Agentic AI runtime (after G07)
   ↓
-Controlled Tools
+Allowlisted tools → private member services
   ↓
-Deterministic Validation
+Member 4 deterministic validation
   ↓
-React Human Approval
+React reviewer through the public API
   ↓
-ASP.NET Core Execution
+Member 4 service revalidates and executes (routed by the Public API)
   ↓
-PostgreSQL
+Member 4 service → PostgreSQL
+  ↓
+Public API
   ↓
 Flutter Updated Status
 ```

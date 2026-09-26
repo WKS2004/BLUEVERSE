@@ -40,8 +40,9 @@ views must also be available in both clients.
    operations; an upload failure is never reported as a successful
    attachment.
 3. The [Planning & Coordination Agent](agents/member-3-planning-coordination-agent.md)
-   persists a structured plan with assigned agents, dependencies, tools and
-   expected outputs.
+   creates a structured execution plan with assigned agents, dependencies,
+   tools and expected outputs. The private Agentic AI runtime persists the
+   logical execution state after G07 using its accepted state boundary.
 4. The [Marine Conditions Intelligence Agent](agents/member-2-marine-conditions-intelligence-agent.md)
    returns sourced weather and marine context with time, freshness and missing
    data. The [Coastal Experience & Biodiversity Agent](agents/member-1-coastal-experience-biodiversity-agent.md)
@@ -85,12 +86,14 @@ exposed as uncertainty, never invented.
 
 ## Shared state and failure
 
-The owning member service persists the workflow ID and type, initiator,
-objective, plan, status,
-completed/current steps, structured outputs or auditable tool summaries,
-validation, errors, bounded retries, approval decision, result and timestamps
-as needed. Include correlated step/tool-call outcome and elapsed time where
-needed for audit, recovery and performance evidence. Never store hidden model
+The owning member service persists its business workflow ID/type, initiator,
+objective, business status, component state, approval decision, result and
+necessary timestamps. After G07, the Agentic AI runtime owns the logical plan,
+agent-step/tool execution and recovery state; its physical storage boundary
+and call path are finalized through ADR-0008 and the accepted service
+contracts. Correlate both records using the agreed workflow/correlation IDs.
+Include structured outcomes, bounded retries and elapsed time where required
+for audit, recovery and performance evidence. Never store hidden model
 reasoning, tokens or secrets.
 
 The Member 3/4 business request, assessment, proposal and reviewer-decision

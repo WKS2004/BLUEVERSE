@@ -29,13 +29,26 @@ documented targets, not yet implemented behavior.
 The system is intentionally designed as one integrated system:
 
 ```text
-React Web Client ───────┐
-                         ├──> ASP.NET Core Web API ───> PostgreSQL
-Flutter Mobile Client ──┘             │
-                                     └──> internal Agentic AI services
+React Web / Flutter Mobile
+              │
+              ▼
+     Public ASP.NET Core API
+        ├──> Auth service ───────────────> PostgreSQL
+        └──> Private Member 1–4 services ─> PostgreSQL
+                      └──> Private Agentic AI runtime (after G07)
 ```
 
-React and Flutter must not call Agentic AI services directly. The ASP.NET Core API remains the authoritative public application layer.
+The diagram combines the implemented v0 foundation and the v1 target. Today,
+the API integrates Auth, which owns its PostgreSQL-backed behavior. For v1, each
+member's private .NET service owns its component business rules, persistence
+and assigned provider adapters. The API remains the only client-facing
+boundary and receives only the authentication/permission and routing
+integration needed to expose those services. After all four member components
+pass G07, the owning service dispatches to the private Agentic AI runtime.
+React and Flutter never call member services or Agentic AI directly. See
+[ADR-0020](docs/adr/ADR-0020-member-component-service-boundaries.md), the
+[v1 documentation index](docs/v1/README.md) and the
+[Agentic AI integration boundary](docs/v1/agentic-ai-integration-boundary.md).
 
 React Web and Flutter Mobile are equally complete product surfaces. Every
 participating role can perform every permitted business workflow in either
@@ -222,11 +235,16 @@ never commit `.env`. Keep `AUTH_SERVICE_URL=http://auth:8080` because it is the
 Docker-internal API-to-Auth address. `ADMIN_EMAIL` and `ADMIN_PASSWORD` are
 used for the local administrator account.
 
-The gateway is published on host port `80` by default, and PostgreSQL is
-available to host tools such as pgAdmin at `127.0.0.1:5432`. Make sure these
-ports are available. If port 80 is already in use, set `BLUEVERSE_HTTP_PORT=8080`
-in `.env` and use `http://localhost:8080` below. PostgreSQL's host port is
-currently fixed at `5432` in `compose.yaml`.
+The gateway is published on host port `80` by default. On the development
+branch, PostgreSQL is published as `5432:5432`, which binds the host port on
+all network interfaces for the team's current development configuration.
+Use this only on a trusted development network and protect the database with
+the local secret and host firewall. Make sure host ports `80` and `5432` are
+available. If port 80 is already in use, set `BLUEVERSE_HTTP_PORT=8080` in
+`.env` and use `http://localhost:8080` below. Both the development mapping and
+the loopback-only mapping planned for `main` use host port `5432`; changing the
+bind address does not resolve a host-port collision with a PostgreSQL process
+already listening on `5432`.
 
 ### Build and start the stack
 
@@ -287,8 +305,11 @@ curl --fail --silent --show-error http://localhost/api/auth/health
 
 In `docker compose ps`, PostgreSQL should report `healthy`
 and the frontend, API, Auth and gateway containers should be running. The
-Docker stack also exposes PostgreSQL to host database tools only on
-`127.0.0.1:5432`; Auth itself connects to it over the Docker network.
+development Compose stack exposes PostgreSQL on host port `5432` across all
+interfaces; Auth connects over the Docker network. When promoting the Compose
+configuration from `dev` to `main`, change the host mapping to
+`127.0.0.1:5432:5432` so host access is loopback-only. Production databases
+remain privately managed and are not configured through this local binding.
 
 If a service does not start or a health URL fails, inspect its recent logs:
 

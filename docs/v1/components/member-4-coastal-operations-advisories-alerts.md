@@ -338,7 +338,7 @@ evaluation under [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-bound
 ## 12. Acceptance and evidence checklist
 
 - the canonical operator → four distinct agent roles → deterministic
-  validation → reviewer → API execution → shared status flow is demonstrated;
+  validation → reviewer → Member 4 service execution → shared status flow is demonstrated;
 - only permitted users can initiate, inspect protected details, decide,
   execute or manage alerts;
 - all required evidence and validation are visible before a high-impact

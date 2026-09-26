@@ -24,6 +24,16 @@ a distinct Agentic AI contribution. Open-Meteo conditions, internal
 biodiversity-ML integration, a deterministic safety layer, authorized human
 approval and the complete operational-assessment workflow are in scope.
 
+Each member implements its complete component in one feature branch and owns
+one private .NET service under `services/`; the existing public API is limited
+to the integration needed to expose those services. The four feature branches
+can proceed in parallel. Only after all four are integrated and G07 passes do
+members implement actual agents, tools, orchestration and AI execution state
+on `agentic-ai/**` branches. Feature services may prepare the private AI
+adapter and not-connected/unavailable behavior before that gate. See the
+[member branch workflow](../v1/member-branch-workflow.md) and
+[ADR-0020](../adr/ADR-0020-member-component-service-boundaries.md).
+
 React and Flutter provide the same permitted business workflows to tourists,
 operators, reviewers and administrators. Neither platform has a stakeholder
 or workflow priority. See the [v1 guide](../v1/README.md) and the

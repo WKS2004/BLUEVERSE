@@ -21,9 +21,16 @@ Set a unique `JWT_SIGNING_KEY` with at least 32 UTF-8 bytes, local PostgreSQL
 and administrator passwords, and confirm `AUTH_SERVICE_URL=http://auth:8080`
 in `.env`.
 
-PostgreSQL is available to host tools such as pgAdmin4 at `127.0.0.1:5432`
-using the database credentials from `.env`. Auth applies its EF Core migrations
-and conditionally seeds the configured administrator account at startup.
+On the development branch, PostgreSQL is available to host tools such as
+pgAdmin4 through `5432:5432`, which binds all host interfaces. Use that
+development setting only on a trusted network with the database credentials
+from `.env` and a host firewall. When promoting the Compose configuration
+from `dev` to `main`, change the mapping to `127.0.0.1:5432:5432` for
+loopback-only access. Both mappings use host port `5432`; if another local
+PostgreSQL process already owns that port, stop or reconfigure that process
+so the development Compose mapping can keep the required host port. Auth
+applies its EF Core migrations and conditionally seeds the configured
+administrator account at startup.
 
 ## Build
 

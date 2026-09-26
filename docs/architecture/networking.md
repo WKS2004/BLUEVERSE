@@ -29,9 +29,19 @@ the separate database network. The API reaches Auth through
 
 Auth is not connected to the edge network and has no public gateway route. Clients cannot call it directly.
 
-The v1 map provider is a planned outbound dependency of the ASP.NET Core API,
-not a host route or a client network target. The provider and egress policy
-are not configured in the current stack; see
+## v1 private service target (not configured in the current stack)
+
+The public API will route member-owned operations to one private .NET service
+per component. Component services own domain behavior and data access; clients
+never address their hostnames or internal routes. Service IDs, network
+membership, transport, actor/permission propagation and data/schema ownership
+are agreed at G00. The current Compose networks above describe the implemented
+v0 stack only. See [ADR-0020](../adr/ADR-0020-member-component-service-boundaries.md)
+and the [member service boundaries](service-boundaries.md).
+
+The selected map API is an outbound dependency of Member 1's private service,
+not of `services/api`, a host route or a client network target. Its provider
+and egress policy are not configured in the current stack; see
 [ADR-0017](../adr/ADR-0017-map-provider-integration-boundary.md). React and
 Flutter must not call the map provider directly.
 

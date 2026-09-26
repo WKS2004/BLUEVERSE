@@ -25,10 +25,13 @@ documents. The [endpoint catalog](../../api/endpoint-catalog.md) is the exact
 current inventory; the [API reference](../../api/README.md) explains
 transport and session semantics.
 
-New domain routes must keep DTOs, server validation, named permissions,
-application services, structured errors, OpenAPI and tests at the public
-boundary. A new internal service is registered behind that boundary; a
-client must never call its container hostname.
+New domain operations are implemented in the owning private member service:
+that service owns domain DTO handling, validation, business/application
+logic, persistence and service-local tests. `services/api` keeps only the
+necessary public route, existing authentication/permission integration,
+service routing/forwarding and gateway error/OpenAPI integration. A new
+internal service is registered behind that boundary; a client must never call
+its container hostname.
 
 ## Liveness and future dependency availability
 

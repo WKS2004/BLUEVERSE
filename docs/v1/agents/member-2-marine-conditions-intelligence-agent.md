@@ -129,7 +129,7 @@ cannot replace raw structured evidence needed by deterministic validation.
    that result and do not contradict it.
 7. Do not authorize operation continuation, suspension, cancellation or alert
    publication. Those belong to deterministic validation, human approval and
-   the Member 4 API execution flow.
+   the Member 4 service execution flow through the public API.
 8. Explain that conditions are decision support and not professional marine
    navigation guidance.
 

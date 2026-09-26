@@ -58,12 +58,12 @@ evidence.
   `MOB-AUTH-013`; existing test names remain unchanged pending approval. No
   `integration_test` directory is checked in.
 - ASP.NET/API: `services/api` and its foundation test project are checked in;
-  the API suite currently passes 21 cases covering health, OpenAPI/Swagger,
+  the current test source defines 21 cases covering health, OpenAPI/Swagger,
   CORS, forwarded headers, safe gateway errors, YARP forwarding/failure
   isolation and JWT issuer/audience/lifetime/algorithm/cookie boundaries.
-- Auth: `services/auth` has a package-local test project with 67 passing
-  default test cases covering endpoint behavior, Auth OpenAPI/health and safe
-  exception contracts, malformed-input validation, administration and
+- Auth: `services/auth` has a package-local test project whose current source
+  defines 77 default test cases covering endpoint behavior, Auth OpenAPI/health
+  and safe exception contracts, malformed-input validation, administration and
   administrative mutation authorization, escalation, server-issued
   installations and proof failures, five-account device capacity, five-session
   account eviction, account/device/everywhere logout including cookie cleanup,

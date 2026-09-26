@@ -269,8 +269,9 @@ Implement cases for:
 
 ### 4.4 Auth service (`services/auth/tests`)
 
-The current default suite passes 67 deterministic cases and implements these
-behaviors:
+The current test sources define 77 default deterministic cases and cover these
+behaviors. Consult recorded run evidence separately; source counts alone do
+not mean the suite passed during this documentation audit:
 
 - valid and invalid registration/login;
 - server-issued device installations, proof-key validation and cookie/native
@@ -355,10 +356,13 @@ and Safety and Operations Agent. Their separate target contracts are in
 responsibilities; its code location and package-local tests must match the
 implemented boundary rather than a speculative directory name.
 
-If an AI capability is implemented inside the API rather than as a separate
-service, its tests remain in `services/api/tests` for API orchestration behavior
-and in the capability’s package-local `tests/` directory for AI-specific
-evaluation behavior.
+Keep the public API tests focused on public routing, authentication/permission
+integration, request/response translation and failure isolation. The actual
+Agentic AI runtime and agents are post-G07 private implementation work under
+`agentic-ai/**`; their tests and evaluations belong to their owning package or
+service. Member-service tests cover the typed private dispatch seam and its
+safe unavailable behavior. Do not move domain or Agentic AI orchestration
+logic into `services/api`.
 
 ### 4.7 Shared integration and operational tests
 
@@ -369,9 +373,10 @@ location for behavior that cannot be proven by one component alone:
 - gateway routing exposes `/api/...` without introducing `/api/v1`;
 - clients cannot reach internal Auth or AI services;
 - login → authorized request → business workflow → approval → updated status;
-- API → PostgreSQL persistence and retrieval;
-- API → AI recommendation → deterministic validation → human approval →
-  execution/audit;
+- owning member service → PostgreSQL persistence and retrieval, with Auth
+  persistence separately tested by `services/auth`;
+- public API → owning member service → private Agentic AI runtime →
+  deterministic validation → human approval → owner-service execution/audit;
 - failure recovery across service boundaries;
 - Compose startup, health endpoints, gateway headers and dependency health;
 - deployment smoke checks for the selected environment.

@@ -24,9 +24,10 @@ managed session, another restrictive operational state or a high-severity
 BLUEVERSE alert requires deterministic validation, a named permission and
 authorized human approval. The workflow pauses while approval is pending.
 Reject and request-revision record a decision without executing the
-proposed protected action. ASP.NET Core rechecks the action's eligibility
-before transactional execution and writes an auditable history. Agents
-cannot mutate the record directly.
+proposed protected action. The Member 4 service rechecks the action's
+eligibility and current state before transactional execution and writes an
+auditable history; the public API supplies the existing authentication and
+permission integration. Agents cannot mutate the record directly.
 
 BLUEVERSE does not issue governmental beach closures, emergency orders
 or professional marine-navigation decisions.

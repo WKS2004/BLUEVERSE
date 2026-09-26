@@ -91,8 +91,10 @@ data.
 ## Dependency availability and safe failure
 
 Treat Agentic AI as an optional, independently monitored backend dependency
-while its runtime is absent or unavailable. The API must distinguish at least
-these meanings in its accepted implementation contract:
+while its runtime is absent or unavailable. The owning member service checks
+the configured private dependency and maps its result to the accepted public
+workflow/readiness contract. The API routes that contract after its existing
+authentication/permission integration. At minimum, distinguish these meanings:
 
 - **Not connected:** no private endpoint/runtime is configured, deployed or
   registered yet. Before G07 this is an expected state. It is not a successful
@@ -121,10 +123,10 @@ The readiness behavior follows the repository's existing distinction:
   that service-owned dependency-status pattern as a reference, but keep
   database health separate from Agentic AI dependency health; an AI outage
   must not be reported as a database failure.
-- The backend must add an AI-specific, server-side availability/readiness
-  check against the configured private dependency, similar in purpose to a
-  database dependency check. It should report a coarse connected,
-  not-connected, unavailable or equivalent state, use a short bounded
+- The owning member service must add an AI-specific, server-side
+  availability/readiness check against its configured private dependency,
+  similar in purpose to a database dependency check. It should report a coarse
+  state such as connected, not connected or unavailable, use a short bounded
   timeout, and avoid blocking service startup or unrelated requests when the
   optional runtime is absent.
 - Decide at G00 whether the check is exposed through a general readiness

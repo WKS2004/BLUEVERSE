@@ -33,6 +33,13 @@ session-management contract are checked in at `services/api` and
 remain implementation targets unless a page explicitly says the behavior is
 currently available.
 
+Each v1 member component is assigned its own private .NET service. The public
+API remains the only client boundary and receives integration code only; the
+actual Agentic AI runtime and agents are gated until all four components pass
+G07. See [ADR-0020](adr/ADR-0020-member-component-service-boundaries.md), the
+[v1 index](v1/README.md) and the
+[member branch workflow](v1/member-branch-workflow.md).
+
 React Web and Flutter Mobile provide equal capability coverage for every
 permitted role and workflow. Device input or layout does not allocate business
 responsibility to a platform. Read the

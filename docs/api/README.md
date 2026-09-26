@@ -162,10 +162,10 @@ dotnet test services/api/tests/Blueverse.Api.Tests/Blueverse.Api.Tests.csproj --
 dotnet test services/auth/tests/Blueverse.Auth.Tests/Blueverse.Auth.Tests.csproj --configuration Release
 ```
 
-The current default evidence is 21 API cases and 67 Auth cases. The
-PostgreSQL-backed Auth concurrency test is opt-in and must receive its
-connection string through the environment; it is never committed to the
-repository.
+The current test sources define 21 API cases and 77 default Auth cases. This
+documentation audit did not execute the suites. The PostgreSQL-backed Auth
+concurrency test is opt-in and must receive its connection string through the
+environment; it is never committed to the repository.
 
 ## Postman verification
 

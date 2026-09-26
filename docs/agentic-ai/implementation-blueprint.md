@@ -18,7 +18,8 @@ domain objective, make a structured plan, request verified context through
 approved tools, produce typed reports and recommendations, and hand those
 results to ordinary application code for deterministic validation. The system
 must preserve the source component's authority and expose progress and final
-status through the public ASP.NET Core API to both clients.
+status through the public ASP.NET Core API to both clients. The owning member
+service remains authoritative for business state and protected operations.
 
 It is not a general-purpose chatbot, free-form autonomous operator, source of
 truth for BLUEVERSE records, safety-rules engine, biodiversity model, or
@@ -28,12 +29,14 @@ executed.
 
 The v1 Agentic AI implementation begins only after all four `features/**`
 component PRs are merged, integrated compatibility corrections are complete,
-and G07 is accepted. Before G07, member branches implement the public business
-workflow and typed private integration seam, including bounded availability
-and safe `not connected`/unavailable behavior. The member branches do not
-implement prompts, model calls, tools, orchestration, agents, or AI-owned
-execution state. See the [member integration boundary](../v1/agentic-ai-integration-boundary.md)
-and [branch workflow](../v1/member-branch-workflow.md).
+and G07 is accepted. Before G07, each member's private .NET service implements
+its business workflow and typed private integration seam, including bounded
+availability and safe `not connected`/unavailable behavior. The public API
+receives only the authentication/permission and routing integration needed
+to expose that service. Member branches do not implement prompts, model calls,
+tools, orchestration, agents or AI-owned execution state. See the
+[member integration boundary](../v1/agentic-ai-integration-boundary.md) and
+[branch workflow](../v1/member-branch-workflow.md).
 
 ## 2. Terms and boundaries
 
@@ -165,8 +168,9 @@ tool must be allowlisted and auditable like every other tool.
 ```mermaid
 flowchart LR
     Client[React Web or Flutter Mobile] -->|public authenticated API| API[ASP.NET Core public API]
-    API -->|persist business request and authorize| DB[(PostgreSQL via owning backend)]
-    API -->|typed private dispatch| ORCH[Private Agentic AI runtime]
+    API -->|auth/permission integration and routing| OWNER[Owning private member service]
+    OWNER -->|business validation and persistence| DB[(PostgreSQL through owning service)]
+    OWNER -->|typed private dispatch after G07| ORCH[Private Agentic AI runtime]
     ORCH -->|versioned role prompt and typed context| MODEL[Approved language-model provider/runtime]
     ORCH -->|allowlisted typed calls| TOOLS[Private backend tools/adapters]
     TOOLS --> M1[Member 1 backend contract]
@@ -178,29 +182,32 @@ flowchart LR
     M3 --> DB
     M4 --> DB
     MODEL -->|untrusted structured result| ORCH
-    ORCH -->|typed progress, result and execution summary| API
-    API -->|deterministic validation and approval state| DB
-    API -->|authorized transactional action only| M4
+    ORCH -->|typed progress, result and execution summary| OWNER
+    OWNER -->|deterministic validation and approval state| DB
+    API -->|authorized operation integration| M4
+    M4 -->|revalidate and execute approved action| DB
     API -->|public workflow status/result| Client
 ```
 
-The diagram shows logical boundaries, not a selected number of services or a
-frozen network topology. Follow the accepted service-boundary ADRs. The AI
-runtime must not connect directly to PostgreSQL, Auth storage, client devices,
-or arbitrary Internet destinations. External model access, if selected, occurs
-from the private backend runtime with server-side secrets and approved data
+The diagram shows logical boundaries, not a selected network topology or
+internal transport. Follow the accepted service-boundary ADRs and G00 service
+contracts. The API routes to the owning member service; that service owns
+business state, deterministic validation and protected execution. The AI
+runtime must not connect directly to PostgreSQL, Auth storage, client devices
+or arbitrary Internet destinations. External model access, if selected,
+occurs from the private AI runtime with server-side secrets and approved data
 minimization. The clients call only the public API.
 
 ### Domain and model data sources
 
 | Information | Authoritative owner/source | How the AI may receive it |
 |---|---|---|
-| Destinations, activities, offerings, publication, schedule, availability and favourites | Member 1 public/business API and its backend data | Typed, scoped lookup tools; never direct table access. |
+| Destinations, activities, offerings, publication, schedule, availability and favourites | Member 1 private component service and its owned data | Typed, scoped lookup tools; never direct table access. |
 | Biodiversity prediction | Separate IT3091 inference integration mediated by the Member 3 backend adapter; Member 1 consumes the validated public result for experience-facing context. | Optional genuine prediction with model/version/location/time/provenance/uncertainty. It is not an LLM-generated substitute, safety signal or Agentic AI output. The service adapter is delivered on Member 3's `features/**` branch before G07; the post-G07 Member 1 tool may use only the allowlisted Member 3 contract, never IT3091 directly. |
 | Weather and marine conditions | Member 2 backend-mediated Open-Meteo integration, normalized and validated by Member 2 | Typed condition tools with provider, units, requested/forecast/observed/retrieval times, freshness and gaps. The LLM does not call Open-Meteo directly. |
 | Activity safety profile and suitability | Member 2 deterministic application rules | Read the configured profile/result and evidence; never let an agent or model tune or override it. |
-| Operational state, proposals, reviewer decisions and alerts | Member 4 API/application logic | Read-only evidence tools for agents. Protected state changes go through authorized API logic after required approval and revalidation. |
-| Tourist recommendation, itinerary and business request | Member 3 API/application logic | The planner may prepare a proposal; Member 3 remains the owner of business request and itinerary state. |
+| Operational state, proposals, reviewer decisions and alerts | Member 4 private component service | Read-only evidence tools for agents. The public API applies its existing authentication/permission integration; Member 4 revalidates and executes protected state changes after required approval. |
+| Tourist recommendation, itinerary and business request | Member 3 private component service | The planner may prepare a proposal; Member 3 remains the owner of business request and itinerary state. |
 | Model output | Selected model provider/runtime | Treat as untrusted, version/correlate it, validate schema, then apply deterministic checks. It is not an authoritative source. |
 
 ## 6. Four roles and their interaction
@@ -225,10 +232,11 @@ independent Member 1 and Member 2 evidence steps can run in parallel when the
 plan and configured policy allow it; the planner validates/assembles their
 reports; then the Member 4 agent prepares its read-only proposal. Application
 code validates the result and may pause for an authorized human reviewer.
-ASP.NET Core rechecks permission, target version, current state and allowed
-transition before any protected operation. If required evidence is absent or
-invalid, the outcome is blocked, requires revision, or safe failure according
-to the accepted state contract.
+The Member 4 service rechecks the authorized actor context, target version,
+current state and allowed transition before any protected operation; the
+public API provides the authentication/permission integration. If required
+evidence is absent or invalid, the outcome is blocked, requires revision, or
+safe failure according to the accepted state contract.
 
 For a tourist recommendation, the planner coordinates Member 1 and Member 2
 context, then application-owned deterministic constraints determine eligible
@@ -362,8 +370,9 @@ Member 4 agents can only propose. A high-impact proposal pauses pending an
 authorized human decision. Approve/reject/request-revision must be validated
 for permission, current proposal and decision state. Reject/revision must not
 execute. Approval requires fresh revalidation and transactional application
-through ASP.NET Core, with business and audit/history state kept consistent.
-The LLM never executes the change.
+through the Member 4 service, with business and audit/history state kept
+consistent. The public API remains the client-facing route and permission
+integration point. The LLM never executes the change.
 
 Normal tourist recommendations do not need staff approval, but eligibility,
 availability and safety remain deterministic. The model cannot change
@@ -372,9 +381,9 @@ missing-required-evidence, revoked authorization, or unavailable state.
 
 ## 11. Security, privacy and external model integration
 
-- Keep the Agentic AI runtime and tools behind the public ASP.NET Core API;
-  clients never call model providers, agents, private tools or internal health
-  endpoints.
+- Keep the Agentic AI runtime and tools private behind the owning member
+  service and public ASP.NET Core API boundary; clients never call model
+  providers, agents, private tools or internal health endpoints.
 - Use a private, authenticated service-to-service boundary and least-privilege
   service identity. Do not give an agent database credentials or broad
   service/network access.
@@ -499,7 +508,7 @@ actual AI runtime. The branch names and gates are tracked in the shared
 Before declaring v1 Agentic AI implemented, reviewers should be able to
 answer “yes” to each item:
 
-- [ ] G07 passed and all four member APIs/adapters are integrated.
+- [ ] G07 passed and all four member services, clients and API integration seams are integrated.
 - [ ] ADR-0007 and ADR-0008 are accepted with reviewed implementation evidence.
 - [ ] The selected model/provider/runtime meets the documented capability,
       privacy, reproducibility, no-cost/institution and deployment constraints.
@@ -511,8 +520,9 @@ answer “yes” to each item:
       Member 3/4 business state; hidden reasoning and secrets are absent.
 - [ ] All model/tool outputs are validated and all protected business rules
       remain deterministic.
-- [ ] Member 4 agents cannot approve or execute; authorized humans and
-      ASP.NET Core own those steps.
+- [ ] Member 4 agents cannot approve or execute; authorized humans decide, the
+      Member 4 service revalidates/executes, and the public API supplies its
+      authentication/permission integration.
 - [ ] Not-connected/outage/malformed/retry-exhausted paths return safe state
       with no fabricated success or unauthorized side effect.
 - [ ] Both clients observe the same public workflow identity and authorized

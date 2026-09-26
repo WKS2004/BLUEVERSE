@@ -42,9 +42,10 @@ failure diagnosis and the assignment's observability/performance evidence.
 Lookup results and external responses are untrusted data. Validate tool
 inputs before execution and outputs before they enter downstream planning
 or business validation. No agent tool directly publishes, suspends,
-cancels or modifies a protected BLUEVERSE record. ASP.NET Core owns
-authorized business execution after deterministic validation and required
-human approval.
+cancels or modifies a protected BLUEVERSE record. The owning member service
+owns authorized business execution after the public API's authentication and
+permission integration, deterministic validation and required human
+approval. For Member 4 protected operations, that means the Member 4 service.
 
 See the [four agent contracts](../v1/README.md),
 [safety controls](safety.md) and

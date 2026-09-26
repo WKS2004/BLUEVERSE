@@ -54,10 +54,12 @@ Docker networks:
 - `blueverse_internal` — API and Auth only; Docker marks it internal
 - `blueverse_database` — Auth and PostgreSQL
 
-The edge gateway is the only application entry point. PostgreSQL is explicitly
-published on `127.0.0.1:5432` for local pgAdmin4 access; Auth uses the
-database network rather than that host port. The API has no database
-credential or database-network attachment in the v0 stack.
+The edge gateway is the only application entry point. Development Compose
+publishes PostgreSQL as `5432:5432` on all host interfaces; Auth uses the
+private database network rather than the host-published port. The API has no
+database credential or database-network attachment in the v0 stack.
+Promotion from `dev` to `main` changes the host mapping to
+`127.0.0.1:5432:5432`; both mappings still require host port `5432`.
 
 ### v1 member-service target (not implemented in the current Compose stack)
 
@@ -100,7 +102,10 @@ applications never connect directly to Auth or a member service.
 
 ## AI boundary
 
-If internal Python Agentic AI or ML inference services are introduced:
+After G07, the private Agentic AI runtime is reached through the member
+component service that owns the business workflow. The clients still enter
+through the public API; the API does not own member workflow persistence,
+agent dispatch or protected domain execution:
 
 ```text
 React / Flutter
@@ -109,15 +114,19 @@ React / Flutter
 ASP.NET Core API
        |
        v
-Internal Agentic AI or ML inference service
-       |
-       +--> tools / data sources
+Owning private member service
+       ├──► private Agentic AI runtime
+       ├──► approved private tools / member-service data
+       └──► PostgreSQL through the owning service
 ```
 
-The clients never call AI or ML inference services directly. The assessed
-operational workflow uses four distinct agents, deterministic validation and
-authorized human approval before a high-impact business action. See
-[Agentic AI architecture](../agentic-ai/architecture.md).
+The member service validates and persists business state, handles the
+pre-G07 not-connected/unavailable behavior, and revalidates any protected
+operation after an authorized human decision. The runtime and tools never
+connect directly to PostgreSQL or Auth. The separate IT3091 inference adapter
+is owned by Member 3's service. Exact private tool transport is a G00/Agentic
+AI design decision. See the [Agentic AI architecture](../agentic-ai/architecture.md)
+and [ADR-0020](../adr/ADR-0020-member-component-service-boundaries.md).
 
 ## Cross-client UI integration
 

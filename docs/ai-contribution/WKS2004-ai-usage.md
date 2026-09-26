@@ -1424,3 +1424,16 @@ runtime lacks PyYAML.
 - Summary of what the AI Agent did: Updated the member branch/file-ownership workflow, four component contracts and phase plans, API/service architecture, relationship and workflow guides, paired agent contracts, requirements, relevant ADRs, and PR acceptance guidance. Added ADR-0020 for the accepted one-service-per-member boundary and clarified that the public API performs only public authentication/permission and routing integration while component services own business logic, integrations, persistence and domain workflow state.
 - AI output accepted/changed/rejected: Accepted the user's separate-service architecture and API integration-only boundary. Corrected prior guide language that placed member business behavior in `services/api`. Kept exact service identifiers, transport, identity propagation, schema and health details as G00 decisions. No application code or tests were changed.
 - Verification/evidence: `git diff --check` passed with only LF-to-CRLF notices; 443 local Markdown links and anchors resolved across 28 changed Markdown files; stale API/service ownership claims were searched and reconciled. No application tests were run.
+
+## 2026-09-26 — Recheck and finalize repository documentation
+
+- Date/time or time range: 2026-09-26 16:54 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Python and Git
+- AI Model: GPT-6
+- Summary of the user's request: Recheck the repository's documentation for completeness and consistency with the implemented repository foundation, the v1 architecture and the supplied guideline context, then finalize the guides.
+- Summary of what the AI Agent did: Reconciled architecture, networking, API, member-service and Agentic AI ownership references; clarified the pre-G07 unavailable dependency behavior and post-G07 runtime/state boundary; synchronized development/main PostgreSQL host-binding policy and its port-collision limitation; and corrected current Auth test-source counts while preserving historical run evidence. Preserved the user's existing `compose.yaml` change and updated documentation only.
+- AI output accepted/changed/rejected: Retained the confirmed one-private-.NET-service-per-member design, integration-only public API/Auth rule, G07 gate and `5432:5432` development to `127.0.0.1:5432:5432` main-promotion policy. Clarified that changing the bind address does not resolve a process already using host port 5432. No tests, application code, Compose configuration or `.agents` guidance were changed.
+- Verification/evidence: Endpoint catalog validation passed (33 public endpoints, 22 frontend routes, no AI endpoints implemented); UI integration validation passed; all 23 repository agent skills validated; 852 local Markdown links across 215 tracked Markdown files resolve; and `git diff --check` passed. The documentation audit did not execute application tests.

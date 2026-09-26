@@ -35,10 +35,15 @@ transaction boundaries around multi-step session and permission changes;
 persist hashes and minimum necessary audit fields, never raw credentials
 or hidden model reasoning.
 
-Compose binds PostgreSQL to `127.0.0.1:5432` for local host tools while
-Auth uses the private database network. A production database must remain
-privately managed. The [database reference](../../database/README.md) and
-[schema guide](../../database/schema.md) provide the operational details.
+Development Compose binds PostgreSQL as `5432:5432` on all host interfaces,
+while Auth uses the private database network. Use the development mapping
+only on a trusted network with the local database secret and host firewall.
+When promoting Compose from `dev` to `main`, change it to
+`127.0.0.1:5432:5432` for loopback-only access. Both mappings use host port
+`5432`, so the address change does not resolve an existing port collision. A
+production database must remain privately managed. The
+[database reference](../../database/README.md) and
+[schema guide](../../database/schema.md) provide operational details.
 
 Deterministic provider-independent tests can use an isolated substitute.
 SQL translation, migrations, constraints, indexes, locking and concurrency

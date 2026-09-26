@@ -41,23 +41,26 @@ Renaming or cloning one prompt is insufficient.
 
 ## Execution boundary
 
-React and Flutter call only the public ASP.NET Core API. ASP.NET Core
-authenticates, authorizes, validates and persists a workflow before invoking
-private orchestration. The planning agent delegates to the marine and
-experience agents; the safety agent consumes their structured results for
-the operational-assessment path. Application code then performs
-deterministic validation. A high-impact proposal pauses for authorized
-human approval. ASP.NET Core alone executes an eligible approved action
-and records history.
+React and Flutter call only the public ASP.NET Core API. The API applies the
+existing authentication/permission boundary and routes the public operation
+to its owning private member service. That service validates domain input,
+owns business workflow persistence and, after G07, dispatches the private
+Agentic AI runtime. The planner delegates to the marine and experience agents;
+the safety agent consumes their structured results for operational
+assessment. The owning member service performs deterministic validation. A
+high-impact proposal pauses for authorized human approval; the Member 4
+service revalidates and executes an eligible approved action and records its
+business/audit history.
 
-Before G07, the public API and business workflow records are implemented by
-the four member components, along with typed private adapters and dependency
-availability behavior. No agent implementation is required for those member
-branches to exercise the `not connected`/unavailable outcome. The eventual
-AI service readiness check remains server-to-server and separate from
-`GET /api/health` liveness and database readiness. A healthy probe is not a
-guarantee that a later dispatch will succeed; each dispatch still needs a
-bounded timeout and a persisted safe result.
+Before G07, each member service implements its business workflow and typed
+private adapter/availability behavior. No agent implementation is needed for
+the member branches to report `not connected` or `unavailable`. The owning
+member service checks its configured private AI dependency and exposes only
+the accepted coarse workflow/readiness state through the public contract;
+the private probe remains server-to-server. Keep this distinct from
+`GET /api/health` liveness and database readiness. A healthy probe does not
+guarantee a later dispatch will succeed; dispatches need bounded timeouts and
+safe persisted outcomes.
 
 The [canonical assessed flow](../v1/workflows.md) demonstrates Flutter
 operator initiation and React reviewer approval, but both roles' permitted
@@ -72,12 +75,14 @@ cannot override a blocked result or directly mutate protected state.
 
 ## Durable state and service design
 
-Persist only the workflow ID/type, initiator, objective, structured plan,
-status, steps, structured outputs or auditable tool summaries, validation,
-errors/retries, approval and final result with timestamps as needed. Do not
-persist hidden reasoning, credentials or unnecessary sensitive data.
-Exact schemas and service boundaries are implementation decisions to be
-recorded in the relevant ADRs and database documentation.
+The member service owns durable business workflow state. The Agentic AI
+runtime owns the logical execution state after G07; its physical storage
+boundary is still subject to ADR-0008. Persist only required workflow
+references, structured plan and step state, validated output/tool summaries,
+validation, errors/retries, approval linkage and final outcome with necessary
+timestamps. Do not persist hidden reasoning, credentials or unnecessary
+sensitive data. Exact schemas and transport boundaries belong in the
+accepted ADRs and data/service contracts.
 
 The eventual orchestration framework remains undecided in
 [ADR-0007](../adr/ADR-0007-agentic-ai-framework.md). Whether the agents run
