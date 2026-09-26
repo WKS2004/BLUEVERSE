@@ -1,6 +1,10 @@
 # ADR-0015: Cross-platform Role Coverage and User-Centered UI Experience
 
-**Status:** Accepted
+**Status:** Superseded by [ADR-0016](ADR-0016-equal-client-capability-for-all-roles.md).
+
+This record preserves the earlier decision and its rationale. ADR-0016
+defines the current v1 rule: equal capability coverage in both clients
+without a stakeholder or workflow emphasis.
 
 ## Context
 

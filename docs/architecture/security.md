@@ -35,7 +35,12 @@ protected requests.
   `rememberMe`. Refreshing does not extend that lifetime. Expired sessions and
   refresh tokens are archived/revoked by request checks and periodic cleanup;
   `ActiveSessions` contains only the operational session set.
-- PostgreSQL is published on local host port `5432` for pgAdmin4 only; production database access remains private.
+- Development Compose publishes PostgreSQL as `5432:5432` on all host
+  interfaces. Use it only on a trusted development network with the local
+  database secret and host firewall. Promotion from `dev` to `main` changes
+  this to `127.0.0.1:5432:5432` for loopback-only host access; both mappings
+  still use host port `5432`, so neither resolves a local port collision.
+  Production database access remains privately managed.
 - Agent tools are internal and explicitly authorized.
 - Critical business actions require deterministic validation.
 - High-impact actions use human approval.

@@ -5,6 +5,8 @@ migrations and application persistence code are checked in under
 `services/auth`.
 
 PostgreSQL is the authoritative relational database.
+The [v0 persistence component](../v0/components/postgresql-ef-core.md)
+summarizes the implemented Auth model and its verification boundary.
 
 ## Local service
 
@@ -12,7 +14,16 @@ PostgreSQL is the authoritative relational database.
 postgres:5432
 ```
 
-Local Compose explicitly publishes PostgreSQL on host port `5432` so pgAdmin4 can connect to it. The DHI volume is mounted at `/var/lib/postgresql`, allowing the image to manage its versioned `16/data` directory. This is intended for local development only; production databases must remain privately managed.
+The development Compose configuration publishes PostgreSQL with the host
+mapping `5432:5432`, bound on all host interfaces. Use it only on a trusted
+development network with the local database secret and host firewall. When
+promoting Compose from `dev` to `main`, change the mapping to
+`127.0.0.1:5432:5432` for loopback-only host access. Both forms reserve host
+port `5432`, so changing the bind address does not fix a port collision with
+another local PostgreSQL process. The DHI volume is mounted at
+`/var/lib/postgresql`, allowing the image to manage its versioned `16/data`
+directory. This is for local development only; production databases must
+remain privately managed.
 
 Use these pgAdmin4 connection settings:
 

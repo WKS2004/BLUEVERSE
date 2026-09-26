@@ -21,6 +21,8 @@ testing, design or review task:
 - AI Model: Model name
 - Summary of the user's request: Concise paraphrase
 - Summary of what the AI Agent did: Concise, factual summary
+- AI output accepted/changed/rejected: State what was retained, revised or
+  discarded after review; write `none` where a category does not apply.
 - Verification/evidence: Checks performed and relevant files, tests, commit or PR
 ```
 
@@ -40,6 +42,10 @@ Use the actual team member name supplied by the team, not a GitHub display name.
    earlier contribution must not be logged as a new contribution.
 5. Do not include passwords, access tokens, API keys, hidden model reasoning or
    confidential personal data.
+6. The approximately one-page assessed individual AI reflection belongs in
+   the student's Individual Report and must be written by that student. It
+   addresses the tools used, strengths and mistakes of AI output, changes or
+   rejections, and the student's own learning. Do not generate it with AI.
 
 ## Example
 
@@ -54,5 +60,6 @@ Use the actual team member name supplied by the team, not a GitHub display name.
 - AI Model: GPT-5
 - Summary of the user's request: Describe the requested work.
 - Summary of what the AI Agent did: Describe the implemented work.
+- AI output accepted/changed/rejected: Describe the reviewed result and revisions.
 - Verification/evidence: List checks and changed files.
 ```

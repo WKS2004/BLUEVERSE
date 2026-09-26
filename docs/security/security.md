@@ -41,3 +41,12 @@ implemented or has not yet been verified in the current repository.
 - [ ] human approval for high-impact actions
 - [ ] no hidden reasoning persistence
 - [ ] safe failure
+
+The v1 target has four distinct agents with typed input/output contracts,
+allowlisted tools and durable workflow state. The
+[canonical assessment](../v1/workflows.md) requires server-side
+permission checks, deterministic validation and authorized human approval
+before a BLUEVERSE-managed high-impact state change. Rejection and revision
+must not execute that change. Stale conditions, malformed output, tool
+failure, prompt injection and retry exhaustion need recorded safe outcomes.
+These unchecked controls are not implementation evidence.

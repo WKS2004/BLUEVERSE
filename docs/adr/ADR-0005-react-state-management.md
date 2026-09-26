@@ -1,15 +1,25 @@
 # ADR-0005: React State Management
 
-**Status:** Proposed
+**Status:** Accepted for the React Auth foundation
 
 ## Context
 
-SE3090 requires a justified state-management approach, but the current foundation should not invent an implementation choice before the React codebase is generated.
+The React application is checked in. Its Auth experience needs predictable
+form, request, loading, user and session state without a separate global
+state library. The application can revisit state management as additional
+workflows add cross-route coordination.
 
 ## Decision
 
-Select a justified React state-management approach during frontend foundation implementation; do not lock the repository foundation to an unchosen library.
+Use React's built-in `useState` and `useEffect` for the implemented
+Auth flow, with public API requests isolated in `apps/web/src/auth.ts`.
+Keep permission and business decisions server-owned. Introduce a broader
+state-management library only with a demonstrated product need and an ADR
+update; do not add one merely because a new screen exists.
 
 ## Consequences
 
-The chosen library/pattern must be recorded here before production feature work.
+The current pattern is small and easy to test. Added workflows should keep
+request adapters separate from presentation, handle loading/error/denied
+states and preserve the shared React/Flutter API contract. See the
+[v0 React component](../v0/components/react-web-client.md).

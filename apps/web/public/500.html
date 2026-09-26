@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f7f6f0" />
+    <title>500 · A temporary pause | BLUEVERSE</title>
+    <style>
+      :root { color-scheme: light; font-family: Manrope, Aptos, "Segoe UI", sans-serif; color: #18394c; background: #f7f6f0; }
+      * { box-sizing: border-box; }
+      body { min-width: 320px; min-height: 100vh; margin: 0; overflow-x: hidden; background: radial-gradient(ellipse at 78% 28%, #e4f0ee 0, transparent 32rem), #f7f6f0; }
+      .page { display: flex; min-height: 100vh; flex-direction: column; width: min(100% - 40px, 1180px); margin: auto; }
+      header, footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+      header { padding: 25px 0; }
+      footer { margin-top: auto; padding: 18px 0 24px; border-top: 1px solid #d6e2e7; color: #5c7481; font-size: 12px; }
+      .brand { display: inline-flex; align-items: center; gap: 11px; color: #205c79; font-size: 15px; font-weight: 850; letter-spacing: -.04em; text-decoration: none; }
+      .brand-mark { display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid #d6e2e7; border-radius: 50%; background: white; }
+      .brand-mark svg { width: 29px; height: 29px; }
+      .place { color: #5c7481; font-size: 10px; font-weight: 800; letter-spacing: .18em; }
+      main { display: grid; flex: 1; align-items: center; grid-template-columns: .88fr 1.12fr; gap: clamp(38px, 7vw, 88px); padding: 30px 0 48px; }
+      .eyebrow { display: inline-flex; align-items: center; gap: 9px; padding: 9px 13px; border: 1px solid #d6e2e7; border-radius: 99px; background: #ffffffb8; color: #347b9b; font-size: 10px; font-weight: 850; letter-spacing: .18em; }
+      .eyebrow::before { width: 8px; height: 8px; border-radius: 50%; background: #43858a; content: ""; }
+      h1 { max-width: 520px; margin: 22px 0 15px; font-family: Sora, Manrope, sans-serif; font-size: clamp(42px, 5vw, 66px); font-weight: 650; letter-spacing: -.065em; line-height: 1.04; }
+      p { max-width: 530px; margin: 0; color: #5c7481; font-size: 17px; line-height: 1.8; }
+      .actions { display: flex; flex-wrap: wrap; gap: 11px; margin-top: 29px; }
+      .button { display: inline-flex; min-height: 48px; align-items: center; justify-content: center; padding: 0 21px; border: 1px solid #d6e2e7; border-radius: 999px; background: #ffffffc9; color: #205c79; font-size: 13px; font-weight: 800; text-decoration: none; transition: transform .18s ease, background .18s ease; }
+      .button:hover { transform: translateY(-2px); background: white; }
+      .button.primary { border-color: #205c79; background: #205c79; color: white; box-shadow: 0 12px 26px #205c7930; }
+      .code { display: inline-block; margin-top: 25px; color: #5c7481; font-size: 11px; font-weight: 700; letter-spacing: .08em; }
+      .scene { position: relative; min-height: 370px; overflow: hidden; border: 1px solid #ffffffc9; border-radius: 38px; background: linear-gradient(150deg, #e4f0f1, #f7f6f0 57%, #d6e8e9); box-shadow: 0 35px 90px #18394c29; }
+      .sun { position: absolute; top: 12%; right: 17%; width: 88px; aspect-ratio: 1; border-radius: 50%; background: #d3e6dc; box-shadow: 0 0 56px #d3e6dcbf; }
+      .chart { position: absolute; top: 14%; left: 9%; padding: 10px 13px; border: 1px solid #ffffffbf; border-radius: 99px; background: #ffffff8c; color: #347b9b; font-size: 9px; font-weight: 850; letter-spacing: .17em; }
+      .error { position: absolute; z-index: 1; top: 34%; left: 50%; display: grid; width: 176px; height: 152px; place-items: center; transform: translateX(-50%) rotate(-5deg); border: 1px solid #ffffffd1; border-radius: 30px; background: #ffffffa6; box-shadow: 0 24px 60px #18394c24; color: #205c79; font-family: Sora, Manrope, sans-serif; font-size: 64px; font-weight: 650; letter-spacing: -.08em; backdrop-filter: blur(10px); }
+      .waves { position: absolute; inset: auto 0 0; width: 100%; height: 73%; }
+      .speck { position: absolute; z-index: 2; width: 7px; height: 7px; border-radius: 50%; background: white; box-shadow: 0 0 14px 5px #ffffffa6; }
+      .speck.one { bottom: 14%; left: 13%; }
+      .speck.two { right: 14%; bottom: 19%; width: 5px; height: 5px; }
+      @media (max-width: 760px) { .page { width: min(100% - 32px, 560px); } .place { display: none; } main { grid-template-columns: 1fr; gap: 26px; padding: 14px 0 30px; } .copy { order: 2; } .scene { order: 1; min-height: 280px; border-radius: 28px; } .error { width: 142px; height: 120px; font-size: 51px; } h1 { font-size: clamp(40px, 11vw, 54px); } p { font-size: 15px; } }
+      @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <a class="brand" href="/" aria-label="BLUEVERSE home">
+          <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 44 44" fill="none"><circle cx="22" cy="22" r="20" fill="#F7F6F0" stroke="#205C79" stroke-width="1.5"/><path d="M7 25c5.2 0 5.2-4.2 10.4-4.2S22.6 25 27.8 25 33 20.8 38 20.8M7 31c5.2 0 5.2-4.2 10.4-4.2S22.6 31 27.8 31 33 26.8 38 26.8" stroke="#205C79" stroke-linecap="round" stroke-width="1.7"/><circle cx="28.5" cy="13" r="3" fill="#43858A"/></svg></span>
+          BLUEVERSE
+        </a>
+        <span class="place">COASTAL DISCOVERY · SRI LANKA</span>
+      </header>
+      <main>
+        <section class="copy">
+          <span class="eyebrow">A TEMPORARY PAUSE</span>
+          <h1>A current interrupted the journey.</h1>
+          <p>Something went wrong while bringing this part of BLUEVERSE to shore. Your account and saved details are safe.</p>
+          <div class="actions"><a class="button primary" href="">↻ &nbsp; Try again</a><a class="button" href="/">Back to the coast</a></div>
+          <span class="code">500 · SOMETHING WENT WRONG</span>
+        </section>
+        <div class="scene" role="img" aria-label="Layered blue coastal waves beneath a quiet morning sun">
+          <span class="sun"></span><span class="chart">WE’LL BE READY WHEN THE TIDE SETTLES</span>
+          <div class="error" aria-hidden="true">500</div>
+          <svg class="waves" viewBox="0 0 600 420" preserveAspectRatio="none" aria-hidden="true"><path d="M0 112C85 79 143 145 226 114S371 73 451 111s108 25 149 4v305H0V112Z" fill="#8dbfc1" fill-opacity=".52"/><path d="M0 162c75-35 142 28 221 0s143-36 222-4 110 20 157-5v267H0V162Z" fill="#4d94a5" fill-opacity=".62"/><path d="M0 222c69-32 129 25 204 0s139-29 210-2 120 22 186-9v209H0V222Z" fill="#205c79" fill-opacity=".92"/><path d="M0 162c75-35 142 28 221 0s143-36 222-4 110 20 157-5" stroke="#f7f6f0" stroke-opacity=".8" stroke-width="3"/><path d="M0 235c69-32 129 25 204 0s139-29 210-2 120 22 186-9" stroke="#c9e0e6" stroke-opacity=".8" stroke-width="2"/></svg>
+          <span class="speck one"></span><span class="speck two"></span>
+        </div>
+      </main>
+      <footer><span>BLUEVERSE · Our coast, more connected</span><a class="brand" href="/" style="font-size:12px">Return home ↗</a></footer>
+    </div>
+  </body>
+</html>

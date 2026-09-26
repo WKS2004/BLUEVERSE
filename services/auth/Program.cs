@@ -7,6 +7,7 @@ using Microsoft.OpenApi;
 using Blueverse.Auth.Authorization;
 using Blueverse.Auth.Data;
 using Blueverse.Auth.Services;
+using Blueverse.Auth.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -101,7 +102,21 @@ builder.Services.AddAuthentication(options =>
         {
             if (string.IsNullOrWhiteSpace(context.Token))
             {
-                context.Token = context.Request.Cookies["blueverse_access_token"];
+                var selectedAccount = context.Request.Cookies[AuthCookieNames.ActiveAccountId];
+                if (Guid.TryParse(selectedAccount, out var userId))
+                {
+                    context.Token = context.Request.Cookies[AuthCookieNames.AccessTokenFor(userId)];
+                    var legacyToken = context.Request.Cookies[AuthCookieNames.LegacyAccessToken];
+                    if (string.IsNullOrWhiteSpace(context.Token) &&
+                        AuthCookieNames.ReadUserId(legacyToken) == userId)
+                    {
+                        context.Token = legacyToken;
+                    }
+                }
+                else
+                {
+                    context.Token = context.Request.Cookies[AuthCookieNames.LegacyAccessToken];
+                }
             }
 
             return Task.CompletedTask;

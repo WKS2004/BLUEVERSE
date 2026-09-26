@@ -4,7 +4,8 @@ The concrete implementation sequence, framework-default test layout, case-ID rul
 service-specific coverage and CI changes are defined in
 [`implementation-plan.md`](implementation-plan.md).
 
-Testing will cover the current foundation and the later business workflows:
+Testing covers the current foundation and the four defined
+[v1 business components and agents](../v1/README.md) as they are implemented:
 
 - ASP.NET Core unit tests
 - API/integration tests
@@ -19,10 +20,10 @@ Testing will cover the current foundation and the later business workflows:
 - Agentic AI workflow evaluation in each AI service’s local `tests/` directory
 - deployment smoke tests
 
-The React and Flutter suites must cover the same product workflows for the
-roles that use them. Test differences should reflect browser versus mobile
-interaction, not an assumption that administration belongs to React or
-client-facing work belongs to Flutter. UI behavior should also be reviewed
+The React and Flutter suites must cover every permitted role and business
+action in the same v1 workflows. Test differences may reflect input or
+screen context, never reduced capability coverage. UI behavior should also
+be reviewed
 against [`../project/ui-experience-principles.md`](../project/ui-experience-principles.md)
 so passing technical request tests does not hide an unrealistic or confusing
 user experience.
@@ -36,22 +37,35 @@ evidence.
 
 ## Current evidence
 
-- React: the Node 24 built-in test runner covers three deterministic Auth
-  request-boundary cases (request construction, RFC 7807 error normalization
-  and 204 logout handling), while lint and the production build validate the
-  implemented cookie-based Auth surface. Component and browser workflow tests
-  remain a later increment.
-- Flutter: five visible package-level tests cover the gateway configuration,
-  build-time API override and starter widget interaction; the Auth session UI,
-  secure-storage boundary and static-analysis workflow are also present. No
-  `integration_test` directory is checked in yet.
+- React: Node 24 `node:test` covers public Auth/Admin request contracts, saved
+  account/session workflows, form boundaries, profile and security actions,
+  role/user administration, protected and recovery routes, navigation,
+  loading feedback, route scrolling, app notices and the shared footer. DOM
+  tests use JSDOM and React Testing Library; request tests stub the registered
+  public API. The current baseline passes 157 cases (2026-09-25). Lint,
+  production build and shared UI integration validation are separate gates.
+  Real-browser and deployed-gateway workflows remain separate integration
+  evidence.
+- Flutter: historical local evidence from 2026-09-25 records 86 package tests
+  passing across 12 then-runnable files and `flutter analyze --no-pub lib`
+  passing. The previously excluded `apps/mobile/test/widget_test.dart` was
+  corrected on 2026-09-26 to use `MobileLaunchPage` and stable case ID
+  `MOB-LAUNCH-001`; it verifies the signed-out launch transitions to onboarding.
+  The final documentation audit confirmed clean Dart formatting and no
+  remaining `MyHomePage` reference in `apps/mobile`, but Flutter analysis and
+  tests could not run locally because the sandbox cannot write the SDK cache
+  lockfile under `Program Files`; a green CI run is still required to confirm
+  the corrected test. `apps/mobile/test/auth_api_service_test.dart` still
+  contains duplicate labels for `MOB-AUTH-011`, `MOB-AUTH-012` and
+  `MOB-AUTH-013`; changing those existing test names requires separate user
+  approval. No `integration_test` directory is checked in.
 - ASP.NET/API: `services/api` and its foundation test project are checked in;
-  the API suite currently passes 21 cases covering health, OpenAPI/Swagger,
+  the current test source defines 21 cases covering health, OpenAPI/Swagger,
   CORS, forwarded headers, safe gateway errors, YARP forwarding/failure
   isolation and JWT issuer/audience/lifetime/algorithm/cookie boundaries.
-- Auth: `services/auth` has a package-local test project with 67 passing
-  default test cases covering endpoint behavior, Auth OpenAPI/health and safe
-  exception contracts, malformed-input validation, administration and
+- Auth: `services/auth` has a package-local test project whose current source
+  defines 77 default test cases covering endpoint behavior, Auth OpenAPI/health
+  and safe exception contracts, malformed-input validation, administration and
   administrative mutation authorization, escalation, server-issued
   installations and proof failures, five-account device capacity, five-session
   account eviction, account/device/everywhere logout including cookie cleanup,
@@ -86,7 +100,10 @@ explicit permission before changing, deleting, skipping or relaxing one. If
 both the implementation and test are wrong, correct them together only after
 approval and add the missing boundary/regression cases.
 
-Agentic AI evaluation must include the complete assessed workflow and should not depend solely on an LLM judge.
+Agentic AI evaluation must include the complete assessed operational
+workflow, all four distinct agents, deterministic validation, authorized
+approval and safe failure. It must not depend solely on an LLM judge. The
+tourist recommendation path also needs deterministic constraint evidence.
 
 ## UI integration evidence
 

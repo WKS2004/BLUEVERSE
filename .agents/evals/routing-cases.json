@@ -46,10 +46,41 @@
     },
     {
       "id": "agentic-safety",
-      "task": "Design an Agentic AI approval and tool-validation workflow.",
+      "task": "Review or design an Agentic AI approval and tool-validation workflow; follow the v1 G07 gate before executable implementation.",
       "expectedSkills": ["blueverse-agentic-ai-workflow"],
-      "expectedRules": ["architecture", "security", "testing", "validation"],
-      "mustExclude": ["direct client access", "hidden reasoning persistence", "LLM-only authorization"]
+      "expectedRules": ["v1-development", "architecture", "security", "testing", "validation"],
+      "mustExclude": ["direct client access", "hidden reasoning persistence", "LLM-only authorization", "implementing the v1 runtime before G07"]
+    },
+    {
+      "id": "v1-member-component",
+      "task": "Implement a v1 member component after G00, including its private service, public API integration, both clients and the pre-G07 Agentic AI access seam.",
+      "expectedSkills": [
+        "blueverse-backend-service",
+        "blueverse-client-contract",
+        "blueverse-postgresql-efcore",
+        "blueverse-docker-gateway",
+        "blueverse-test-design",
+        "blueverse-ci-validation"
+      ],
+      "expectedRules": [
+        "v1-development",
+        "architecture",
+        "security",
+        "testing",
+        "documentation",
+        "validation",
+        "endpoint-catalog",
+        "data-access",
+        "docker"
+      ],
+      "mustExclude": ["member business logic in services/api", "changing Auth logical flows", "a branch per phase", "executable Agentic AI before G07", "direct client access to a private service"]
+    },
+    {
+      "id": "v1-post-g07-runtime",
+      "task": "After all four v1 member components pass G07, implement an Agentic AI specialist on its assigned agentic-ai branch.",
+      "expectedSkills": ["blueverse-agentic-ai-workflow"],
+      "expectedRules": ["v1-development", "architecture", "security", "testing", "documentation", "validation"],
+      "mustExclude": ["implementing runtime code on a features branch", "direct React or Flutter access to the agent service", "treating external ML integration as an agent"]
     },
     {
       "id": "resource-audit",

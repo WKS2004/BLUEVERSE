@@ -34,10 +34,38 @@ the agent configuration itself.
 - Flutter: `apps/mobile`
 - Public API: `services/api`
 - Auth: `services/auth`
+- Future v1 member-owned private services: distinct
+  `services/<component-service>/` subfolders; verify each exists before
+  treating it as implemented
 - Docker infrastructure: `infrastructure/docker`
 - Architecture/docs: `docs`
 
-Do not generate replacement sample applications into this foundation package.
+Do not replace repository applications with sample applications.
+
+## v1 implementation gates
+
+For v1 member components or Agentic AI work, follow
+[`.agents/rules/v1-development.md`](.agents/rules/v1-development.md) and the
+linked source-of-truth documents under `docs/v1/`:
+
+- Complete and record G00 shared-contract decisions before member component
+  coding. Each owner implements one complete component on the assigned
+  `features/**` branch; all four may proceed in parallel. The relationship map
+  describes compatibility dependencies, not a member implementation order.
+- A member's new private .NET service owns its domain behavior and persistence.
+  `services/api` receives only the narrow public route, existing auth/permission
+  and private-service integration needed to expose it. Reuse Auth and preserve
+  existing API/Auth logical flows except for a separately justified essential
+  integration change. Preserve the established v0 behavior.
+- Before G07, member branches may implement their business workflows and typed
+  private Agentic AI access seam, including availability checks and safe
+  `not connected`/unavailable outcomes. Do not implement executable agents,
+  model calls, tools, orchestration or AI-owned execution state until all four
+  member components are integrated and G07 is accepted. Actual Agentic AI work
+  then uses the assigned `agentic-ai/**` branches. Member-owned external ML
+  service integration remains distinct from Agentic AI.
+- Treat v1 documentation as target specifications. Confirm behavior and
+  implementation status in source, tests and CI before reporting completion.
 
 ## Docker
 
@@ -60,12 +88,17 @@ The ASP.NET runtime image is intentionally treated as a minimal runtime image. P
 - ASP.NET Core 10
 - SDK pinned by `global.json`
 - RESTful routes
-- DTOs and application/service layers
+- DTOs and application/service layers at their owning service boundary
 - asynchronous I/O
 - validation
 - structured error handling
 - Swagger/OpenAPI
 - tests
+
+For v1 member work, business logic, provider adapters and persistence belong
+to the owner's private component service; do not place them in `services/api`
+or change Auth behavior as a shortcut. The v1 implementation rule defines
+the allowed API/Auth integration surface.
 
 ## Security
 
@@ -89,6 +122,10 @@ Validate model/tool output deterministically before it can influence business op
 
 Protect agent tools and workflows against prompt injection and unauthorized tool execution.
 
+For Agentic AI work, read the applicable requirements and owning agent
+contract. Documentation of a workflow is not evidence that its service or
+tools are implemented.
+
 ## Database
 
 Use PostgreSQL and EF Core migrations.
@@ -103,11 +140,19 @@ Persist only the data required for the application and Agentic AI workflow. Use 
 
 React and Flutter must use the same backend contract and authorization model.
 
-React Web and Flutter Mobile are co-equal product surfaces for clients, staff
-and administrators. New product workflows are cross-platform by default; do
-not assign administration permanently to React or client-facing work
-permanently to Flutter. Platform-specific layouts and interactions are
-encouraged when they fit the context, but they do not define role ownership.
+For the React Web client, use Tailwind CSS utility classes for page and
+component styling. Keep shared design tokens and base styles in the web
+Tailwind entry stylesheet; add standalone component CSS only when a behavior
+cannot be expressed clearly with Tailwind utilities. Use Flutter's native
+widget styling for the mobile client.
+
+React Web and Flutter Mobile must offer the same authorized roles, business
+capabilities and workflow actions. Neither frontend has priority, design
+emphasis or ownership for management, tourists, field work or any other
+stakeholder group. Layout and device integrations may differ while the
+business outcome, permission checks and public API contract remain equivalent.
+Read the applicable requirements and
+[UI integration guidance](docs/development/ui-integration.md) for each workflow.
 
 Do not create client-side business rules that contradict the API.
 
@@ -168,6 +213,16 @@ boundary cases that prevent the error from returning.
 
 Prefer focused commits with descriptive messages.
 
+Do not create commits or push branches automatically. Create a local commit or
+push to GitHub only when the user explicitly requests that action; a request
+to implement or finalize changes alone does not authorize a commit or push.
+
+This restriction governs agent-initiated Git actions. It does not prohibit
+repository-approved GitHub Actions automation. Preserve the existing backup
+rescue/synchronization and GitHub configuration synchronization workflows;
+change or disable them only when the user explicitly requests a workflow
+change.
+
 Never commit generated secrets, `.env`, local IDE state, build artifacts or machine-specific configuration.
 
 ## Documentation
@@ -175,6 +230,11 @@ Never commit generated secrets, `.env`, local IDE state, build artifacts or mach
 Architecture changes require an ADR when they materially affect a documented architectural decision.
 
 Keep setup and operational documentation synchronized with the actual repository.
+Always update the root `README.md` in the same change when prerequisites,
+local setup commands, environment configuration, Docker Compose behavior,
+deployment URLs, health checks, or shutdown/data-reset steps change. The README
+must remain a complete, reproducible local setup and deployment entry point;
+keep it aligned with the detailed setup and deployment documents.
 
 ## AI Usage Contributions
 
@@ -189,10 +249,13 @@ actual name. If either value is unknown, does not match the repository mapping,
 or is otherwise ambiguous, ask the user to confirm it before changing the log.
 Do not guess a team member's identity.
 
-Each record must include the date/time or time range, GitHub username, actual
+Each new record must include the date/time or time range, GitHub username, actual
 team member name, agent name, tool/app, AI model, user-request summary,
-agent-action summary, and verification/evidence. Never record secrets, tokens,
-hidden model reasoning or confidential personal data.
+agent-action summary, what AI output was accepted, changed or rejected, and
+verification/evidence. Never record secrets, tokens, hidden model reasoning or
+confidential personal data. Each student's assessed individual AI reflection
+must be written by that student; agents may document the requirement but must
+not author the reflection.
 
 Do not edit earlier contribution records unless the user explicitly requests
 that historical change. A request whose sole purpose is correcting, rewriting

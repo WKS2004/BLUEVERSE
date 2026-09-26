@@ -32,24 +32,23 @@ Before changing a part of the repository, an agent must:
 
 ## Cross-platform product and UI scope
 
-React Web and Flutter Mobile are co-equal BLUEVERSE product surfaces for
-clients, staff and administrators. New product workflows are cross-platform
-by default: both clients use the same workflow intent, role → permission
-behavior and public API contract. Do not assign administration permanently to
-React or client-facing work permanently to Flutter.
+React Web and Flutter Mobile must expose the same authorized roles, business
+capabilities and workflow actions for tourists, coastal operators, operations
+reviewers, platform administrators and later authorized roles. Neither
+frontend has priority, design emphasis or ownership
+for a stakeholder group. Both use the same workflow intent, role → permission
+behavior and public API contract.
 
-The clients may adapt layout and interaction to their contexts. React may use
-wide browser workspaces, keyboard operation and review patterns; Flutter may
-use quick mobile actions, field interaction, location, camera, offline-aware
-drafts and notifications where they genuinely help. These are experience
-adaptations, not role-based access rules.
+Layouts and device integrations may differ, but the authorized business
+outcome must remain available on both clients. Read the applicable
+requirements and owning component or workflow documentation under
+[`docs/`](../docs/README.md).
 
 For UI work, read
 [`docs/project/ui-experience-principles.md`](../docs/project/ui-experience-principles.md).
 Interfaces should be user-friendly, scope-aligned and realistic for the
 coastal domain; technical or analytical detail is secondary unless the user's
-actual task requires it. A platform-specific workflow requires an explicit
-product decision and ADR.
+actual task requires it.
 
 ## Mandatory endpoint-documentation workflow
 
@@ -97,7 +96,7 @@ directory or tool actually exists before modifying or reporting on it.
 .agents/
 ├── README.md                 # This guide and completion standard
 ├── routing.md                # Task-to-rule and validation routing
-├── repository-map.md         # Current paths and foundation facts
+├── repository-map.md         # Repository paths and persistent conventions
 ├── rules/
     ├── architecture.md       # Boundaries and architectural discipline
     ├── change-safety.md       # Scope, permissions and context discipline
@@ -106,6 +105,7 @@ directory or tool actually exists before modifying or reporting on it.
     ├── endpoint-catalog.md    # Fast endpoint lookup and source escalation
     ├── data-access.md         # PostgreSQL, EF Core and provider-test policy
     ├── git.md                 # Commit, pull-request and contribution hygiene
+    ├── v1-development.md      # Member-service ownership and the G00/G07 gate
     ├── ai-usage.md            # AI contribution logging and identity checks
     ├── security.md            # Input, secrets, authorization and AI safety
     ├── testing.md             # Mandatory test-case implementation rules
@@ -147,7 +147,7 @@ instead of copying them.
 | `blueverse-client-contract` | React/Flutter public-contract work |
 | `blueverse-test-design` | Test cases, IDs, matrices, fixtures and runners |
 | `blueverse-postgresql-efcore` | PostgreSQL/EF Core persistence, migrations and provider-specific tests |
-| `blueverse-agentic-ai-workflow` | AI orchestration, tools, approvals and evaluation |
+| `blueverse-agentic-ai-workflow` | Agentic AI design/review; executable v1 runtime only after G07 |
 | `blueverse-docker-gateway` | DHI, Compose, edge-nginx, networks and health |
 | `blueverse-ci-validation` | GitHub Actions, discovery, metrics and artifacts |
 
@@ -190,7 +190,7 @@ architectural structure. It reinforces that:
 - React and Flutter communicate with the public ASP.NET Core API;
 - internal services remain private;
 - material architectural changes receive an ADR;
-- premature domain services are avoided while the repository is still v0.
+- new services require a justified boundary, source, tests and operational wiring.
 
 Also consult the architecture documents under `docs/architecture/`, the ADRs
 under `docs/adr/`, and the root instructions before introducing a new service
@@ -230,9 +230,14 @@ individual records belong under `docs/ai-contribution/`.
 
 ### `rules/git.md`
 
-Use this for source-control decisions. Keep commits focused and explainable,
-use pull requests for shared changes, preserve meaningful individual
-contribution, and do not commit `.env` files or generated build artifacts.
+Use this for source-control decisions. Agents do not create commits or push
+branches unless the user explicitly requests that action. When authorized,
+keep commits focused and explainable, use pull requests for shared changes,
+preserve meaningful individual contribution, and do not commit `.env` files or
+generated build artifacts. This limits agent-initiated Git actions; it does
+not disable the repository's approved GitHub Actions. Preserve the
+`dev-backup` rescue/synchronization and `.github` configuration-sync workflows
+unless the user explicitly requests a workflow change.
 
 Follow the repository’s branch and contribution guidance in
 `docs/development/git-workflow.md` and `docs/project/contribution.md`.
@@ -259,6 +264,18 @@ The complete implementation sequence and test matrix are in
 [`docs/testing/implementation-plan.md`](../docs/testing/implementation-plan.md).
 Agents must consult both documents when adding or changing tests.
 
+### `rules/v1-development.md`
+
+Use this for every v1 member component or Agentic AI task. It binds the G00
+shared-contract gate, one complete component per assigned feature branch,
+private member-service ownership, API/Auth integration limits, equal client
+capabilities, provider ownership and the G07 gate. Member branches may prepare
+their private Agentic AI adapter and safe unavailable behavior before G07;
+actual agents, tools, model calls, orchestration and AI-owned execution state
+wait until the four component integrations pass G07. The rule links the full
+member, phase, relationship and Agentic AI contracts instead of duplicating
+their detailed feature specifications.
+
 ## Repository scope and boundaries
 
 The expected application and service locations are:
@@ -268,7 +285,9 @@ apps/web       React client
 apps/mobile    Flutter client
 services/api   Public ASP.NET Core API
 services/auth  Internal authentication service
-services/*     Additional internal backend services and their local tests
+services/<component-service>
+               Future v1 member-owned internal service; confirm it exists
+               before treating it as implemented
 services/ai/*,
 services/ai-agents/*,
 services/agents/*
@@ -286,14 +305,21 @@ docs/api/endpoint-catalog.md
 The system boundary is:
 
 ```text
-React / Flutter → public ASP.NET Core API → PostgreSQL
-                                      └── internal Agentic AI services
+React / Flutter → public ASP.NET Core API → private member services → PostgreSQL
+                                         └→ private Agentic AI runtime after G07
 ```
 
 Clients must not call internal Auth or Agentic AI services directly. Agents
 must not introduce API version path segments such as `/api/v1`, replace the
 role-to-permission model with hard-coded role checks, expose database access to
 clients, or move the edge gateway out of its intended role.
+
+The v1 component-service and Agentic AI target order is governed by
+[`rules/v1-development.md`](rules/v1-development.md),
+[`docs/v1/member-branch-workflow.md`](../docs/v1/member-branch-workflow.md) and
+the owning contracts. Before G07, component branches implement only the
+business features and their backend AI access seams. Treat every target as
+planned until source and CI provide implementation evidence.
 
 For UI work, `docs/contracts/ui-integration.json` is the canonical mapping
 from a shared workflow ID to the React route, Flutter route and public API
@@ -309,27 +335,16 @@ routes. Update `docs/api/endpoint-catalog.json`, regenerate the Markdown
 view and run `.agents/scripts/validate_endpoint_catalog.py` whenever a route,
 endpoint, client API literal or gateway mapping changes.
 
-## Current foundation status
+## Implementation evidence
 
-This repository is a v0 foundation. At the time these resources were written:
-
-- the React and Flutter starter clients are present;
-- the implemented shared Auth session workflow is present in both clients;
-- `services/api` and `services/auth` contain tracked ASP.NET Core projects,
-  controller routes, tests and OpenAPI configuration;
-- `services/auth` currently owns the implemented EF Core/Npgsql PostgreSQL
-  model and checked-in migrations; the default suite uses an isolated test
-  provider while provider-specific PostgreSQL coverage is explicitly enabled;
-- Agentic AI service implementations are described by target architecture and
-  safety documentation but are not assumed to exist;
-- the endpoint catalog intentionally lists no implemented Agentic AI API;
-- ignored `bin/` and `obj/` output is not implementation evidence.
-
-Agents must distinguish current implementation from target architecture. Do
-not create replacement sample applications or a repository-root centralized
-`test/` tree to fill a foundation gap, and do
-not claim a workflow, service, test suite or deployment is complete merely
-because its documentation or Docker configuration exists.
+Use the [repository map](repository-map.md), current source, endpoint catalog,
+tests and [documentation index](../docs/README.md) to establish what exists
+for the requested work. Release-specific requirements and component details
+belong in the corresponding documents under `docs/`, not in these agent
+rules. A reserved directory, ignored `bin/` or `obj/` output, Docker
+stub or prose plan is not implementation evidence. Do not create replacement
+sample applications or a repository-root centralized `test/` tree to fill
+a missing implementation.
 
 ## Change workflow for agents
 

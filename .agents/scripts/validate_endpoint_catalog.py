@@ -310,14 +310,49 @@ def _source_text(text: str) -> str:
     )
 
 
-def _authorization(attributes: str, errors: list[str], source: str) -> str:
+def _permission_constants(repo_root: Path) -> dict[str, str]:
+    source = repo_root / "services" / "auth" / "Authorization" / "PermissionCodes.cs"
+    if not source.is_file():
+        return {}
+    text = _source_text(source.read_text(encoding="utf-8-sig"))
+    return {
+        name: code
+        for name, code in re.findall(
+            r'\bconst\s+string\s+(\w+)\s*=\s*"([^\"]+)"\s*;', text
+        )
+    }
+
+
+def _authorization(
+    attributes: str,
+    errors: list[str],
+    source: str,
+    permission_constants: dict[str, str],
+) -> str:
     if re.search(r"\[\s*AllowAnonymous\s*\]", attributes):
         return "anonymous"
-    permissions = re.findall(r'\[\s*HasPermission\s*\(\s*"([^"]+)"\s*\)\s*\]', attributes)
+    permission_arguments = re.findall(
+        r"\[\s*HasPermission\s*\(\s*([^)]*?)\s*\)\s*\]", attributes
+    )
+    permissions: list[str] = []
+    for argument in permission_arguments:
+        literal = re.fullmatch(r'"([^\"]+)"', argument.strip())
+        constant = re.fullmatch(r"PermissionCodes\.(\w+)", argument.strip())
+        if literal:
+            permissions.append(literal.group(1))
+        elif constant and constant.group(1) in permission_constants:
+            permissions.append(permission_constants[constant.group(1)])
+        else:
+            errors.append(f"unsupported HasPermission argument in {source}; use a literal or PermissionCodes constant")
+    if re.search(r"\[\s*HasPermission\b", attributes) and not permission_arguments:
+        errors.append(f"unsupported HasPermission declaration in {source}; extend source validation")
     if len(permissions) == 1:
         return "permission:" + permissions[0]
     if len(permissions) > 1:
-        errors.append(f"unsupported combined permission declaration in {source}; extend source validation")
+        # Multiple HasPermission attributes are ANDed by ASP.NET Core's
+        # authorization policy. Preserve that all-of relationship in the
+        # catalog rather than flattening it to a single permission.
+        return "permission:all(" + ",".join(permissions) + ")"
     if re.search(r"\[\s*Authorize\s*\(", attributes):
         errors.append(f"unsupported authorization options in {source}; extend source validation")
     return "authenticated" if re.search(r"\[\s*Authorize\b", attributes) else "anonymous"
@@ -355,6 +390,7 @@ def discover_endpoints(repo_root: Path, errors: list[str]) -> dict[tuple[str, st
     Each discovered route retains its source identity and exposure category.
     """
     endpoints: dict[tuple[str, str, str], dict[str, str]] = {}
+    permission_constants = _permission_constants(repo_root)
     declaration = re.compile(
         r'(?P<attributes>(?:\s*\[(?:[^\]"]|"(?:\\.|[^"\\])*")*\])+\s*)'
         r'public\s+(?P<signature>[^\n{;]+)'
@@ -415,7 +451,12 @@ def discover_endpoints(repo_root: Path, errors: list[str]) -> dict[tuple[str, st
             if routes or not class_route or "[" in class_route:
                 errors.append(f"unsupported controller route form in {source_name}; use a literal class prefix and HTTP suffix")
                 continue
-            auth = _authorization(class_attributes + attributes, errors, source_name)
+            auth = _authorization(
+                class_attributes + attributes,
+                errors,
+                source_name,
+                permission_constants,
+            )
             for route in http_routes:
                 suffix = route.group(2) or ""
                 path = suffix[1:] if suffix.startswith("~/") else (

@@ -9,10 +9,10 @@ public interface IAuthService
     Task<AuthResponseDto> RefreshAsync(RefreshTokenRequestDto dto);
     Task<int> ArchiveExpiredSessionsAsync(CancellationToken cancellationToken = default);
     Task<List<SessionDto>> GetSessionsAsync(Guid userId, Guid? currentSessionId);
-    Task<bool> RevokeSessionAsync(Guid userId, Guid sessionId);
+    Task<bool> RevokeSessionAsync(Guid userId, Guid sessionId, Guid? currentSessionId, string? currentPassword);
     Task<bool> LogoutCurrentDeviceAsync(Guid userId, Guid sessionId);
     Task<bool> LogoutAccountOnCurrentDeviceAsync(Guid actorUserId, Guid sessionId, Guid targetUserId);
-    Task<bool> LogoutAllDevicesAsync(Guid userId);
+    Task<bool> LogoutAllDevicesAsync(Guid userId, string currentPassword);
     Task<bool> ChangePasswordAsync(Guid userId, ChangePasswordDto dto);
     Task<UserDto?> GetUserByIdAsync(Guid userId);
     Task<List<UserDto>> GetAllUsersAsync();

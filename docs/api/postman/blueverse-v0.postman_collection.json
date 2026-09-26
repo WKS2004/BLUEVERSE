@@ -1,0 +1,478 @@
+{
+  "info": {
+    "name": "BLUEVERSE v0 API verification",
+    "description": "Run in collection order against the local edge gateway. Set userEmail and userPassword to an existing non-administrator account. The collection uses only public gateway paths, checks health/OpenAPI/Auth behavior, and logs out the Postman device session at the end. No credentials are committed.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Frontend health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/health",
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "['accessToken','refreshToken','deviceId','deviceKey','revokedToken'].forEach(key => pm.collectionVariables.unset(key));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"OPS-API-001 frontend health\", function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(pm.response.text().trim()).to.eql('healthy');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Public API health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/health",
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"OPS-API-002 public API health\", function () {",
+              "  pm.response.to.have.status(200);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.service).to.eql('api');",
+              "  pm.expect(body.status).to.eql('healthy');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth and PostgreSQL health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/auth/health",
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"OPS-API-003 Auth and database health\", function () {",
+              "  pm.response.to.have.status(200);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.service).to.eql('auth');",
+              "  pm.expect(body.status).to.eql('healthy');",
+              "  pm.expect(body.database).to.eql('connected');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Public API OpenAPI document",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/swagger/v1.json",
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"OPS-API-004 public API OpenAPI\", function () {",
+              "  pm.response.to.have.status(200);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.openapi || body.swagger).to.be.a('string');",
+              "  pm.expect(body.paths).to.be.an('object');",
+              "  pm.expect(body.paths).to.have.property('/api/health');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth OpenAPI document",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/auth/swagger/v1/swagger.json",
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"OPS-API-005 Auth OpenAPI\", function () {",
+              "  pm.response.to.have.status(200);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.openapi || body.swagger).to.be.a('string');",
+              "  pm.expect(body.paths).to.be.an('object');",
+              "  pm.expect(body.paths).to.have.property('/api/auth/login');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Unauthenticated profile is denied",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/auth/me",
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"OPS-AUTH-001 unauthenticated profile\", function () {",
+              "  pm.response.to.have.status(401);",
+              "  pm.expect(pm.response.text()).not.to.include('person@example.test');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Incorrect login is denied",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"absent@example.invalid\",\n  \"password\": \"synthetic-invalid-password\",\n  \"rememberMe\": false,\n  \"useCookies\": false\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{baseUrl}}/api/auth/login",
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"OPS-AUTH-002 invalid login\", function () {",
+              "  pm.response.to.have.status(401);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.status).to.eql(401);",
+              "  pm.expect(body.title).to.be.a('string').and.not.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login as a normal user",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\",\n  \"rememberMe\": false,\n  \"useCookies\": false\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{baseUrl}}/api/auth/login",
+        "description": "Set userEmail and userPassword to a non-administrator account before running the collection. This request creates a new Postman device session."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"OPS-AUTH-003 native login contract\", function () {",
+              "  pm.response.to.have.status(200);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.token).to.be.a('string').and.not.empty;",
+              "  pm.expect(body.refreshToken).to.be.a('string').and.not.empty;",
+              "  pm.expect(body.deviceId).to.be.a('string').and.not.empty;",
+              "  pm.expect(body.deviceKey).to.be.a('string').and.not.empty;",
+              "  pm.expect(body.user.email.toLowerCase()).to.eql(pm.collectionVariables.get('userEmail').toLowerCase());",
+              "  pm.collectionVariables.set('accessToken', body.token);",
+              "  pm.collectionVariables.set('refreshToken', body.refreshToken);",
+              "  pm.collectionVariables.set('deviceId', body.deviceId);",
+              "  pm.collectionVariables.set('deviceKey', body.deviceKey);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Read current user",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/auth/me",
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"OPS-AUTH-004 authenticated profile\", function () {",
+              "  pm.response.to.have.status(200);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.id).to.be.a('string').and.not.empty;",
+              "  pm.expect(body.email.toLowerCase()).to.eql(pm.collectionVariables.get('userEmail').toLowerCase());",
+              "  pm.expect(body.roles).to.be.an('array');",
+              "  pm.expect(body.permissions).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "List active sessions",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/auth/sessions",
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"OPS-AUTH-005 active sessions\", function () {",
+              "  pm.response.to.have.status(200);",
+              "  const sessions = pm.response.json();",
+              "  pm.expect(sessions).to.be.an('array').that.is.not.empty;",
+              "  pm.expect(sessions.some(session => session.isCurrent === true)).to.eql(true);",
+              "  pm.expect(sessions.every(session => typeof session.id === 'string')).to.eql(true);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Refresh the session",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\",\n  \"deviceId\": \"{{deviceId}}\",\n  \"deviceKey\": \"{{deviceKey}}\",\n  \"useCookies\": false\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{baseUrl}}/api/auth/refresh",
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"OPS-AUTH-006 refresh rotation\", function () {",
+              "  pm.response.to.have.status(200);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.token).to.be.a('string').and.not.empty;",
+              "  pm.expect(body.refreshToken).to.be.a('string').and.not.empty;",
+              "  pm.expect(body.refreshToken).not.to.eql(pm.collectionVariables.get('refreshToken'));",
+              "  pm.expect(body.deviceId).to.eql(pm.collectionVariables.get('deviceId'));",
+              "  pm.collectionVariables.set('accessToken', body.token);",
+              "  pm.collectionVariables.set('refreshToken', body.refreshToken);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Normal user cannot read roles",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/auth/roles",
+        "description": "Requires the normal user configured for login to lack auth.role.read permission."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"OPS-AUTH-007 permission denial\", function () {",
+              "  pm.response.to.have.status(403);",
+              "  pm.expect(pm.response.text()).not.to.include('auth.role.manage');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Log out current device",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/auth/logout",
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"OPS-AUTH-008 device logout\", function () {",
+              "  pm.response.to.have.status(204);",
+              "  pm.expect(pm.response.text()).to.eql('');",
+              "  pm.collectionVariables.set('revokedToken', pm.collectionVariables.get('accessToken'));",
+              "  ['accessToken','refreshToken','deviceId','deviceKey'].forEach(key => pm.collectionVariables.unset(key));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Revoked session is denied",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{revokedToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/auth/me",
+        "description": ""
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"OPS-AUTH-009 revoked token cannot authenticate\", function () {",
+              "  pm.collectionVariables.unset('revokedToken');",
+              "  pm.response.to.have.status(401);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost"
+    },
+    {
+      "key": "userEmail",
+      "value": ""
+    },
+    {
+      "key": "userPassword",
+      "value": ""
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "deviceId",
+      "value": ""
+    },
+    {
+      "key": "deviceKey",
+      "value": ""
+    },
+    {
+      "key": "revokedToken",
+      "value": ""
+    }
+  ]
+}

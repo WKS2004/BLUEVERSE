@@ -2,6 +2,14 @@
 
 - Keep setup, CI, deployment and operational instructions executable against
   the current checkout; state prerequisites and known foundation gaps.
+- Keep the root [`README.md`](../../README.md) as a complete local setup and
+  deployment entry point. Whenever prerequisites or installation guidance,
+  environment values, Compose commands or behavior, public local URLs, health
+  checks, or shutdown/data-reset steps change, update the README in the same
+  change even when a detailed `docs/` guide is also updated. Include the actual
+  host/container requirements, environment setup, build/start commands,
+  deployment verification, and safe shutdown; link the detailed guides and
+  keep their instructions aligned.
 - Update the narrowest relevant document when behavior, commands, paths,
   boundaries, workflows or ownership change. Avoid duplicating conflicting
   instructions across README, docs and `.agents`.
@@ -9,6 +17,9 @@
   state-management, data or deployment decision.
 - Distinguish implemented behavior from target architecture. Do not document a
   reserved service, future workflow or planned test suite as available.
+- Use `PROJECT_REQUIREMENTS.md` for project scope and the applicable
+  release/component documents under `docs/` for detailed behavior. Keep
+  those documents aligned with the owning implementation and contracts.
 - Prefer links to detailed source-of-truth docs over copying long matrices into
   agent rules; verify links and commands during validation.
 - For database documentation, use `docs/database/` as the detailed source of
@@ -20,9 +31,9 @@
   workflow subset of actual React, Flutter, gateway and public API routes.
 - Cross-platform product scope and user-facing UI quality are documented in
   [`docs/project/ui-experience-principles.md`](../../docs/project/ui-experience-principles.md).
-  Keep agent guidance aligned with its default of both React and Flutter for
-  participating clients, staff and administrators; platform adaptations must
-  not become role ownership rules.
+  Keep agent guidance aligned with equal role, capability and workflow-action
+  coverage across React and Flutter. Neither frontend has stakeholder
+  priority or design emphasis; layout and device integrations may vary.
 - The complete quick-reference inventory is
   [`docs/api/endpoint-catalog.md`](../../docs/api/endpoint-catalog.md). Update
   its [JSON source](../../docs/api/endpoint-catalog.json) and regenerate the

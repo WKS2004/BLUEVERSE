@@ -33,21 +33,31 @@ apps/web
 apps/mobile
 ```
 
-Both clients retain starter shells outside the implemented Auth workflow. The
-shared `/login` workflow uses the public gateway for login, refresh, current
-user/session reads and scoped logout; browser state uses protected cookies and
-mobile state uses platform secure storage. The ASP.NET projects are available
-under `services/api` and `services/auth`; do not add business rules to the
-clients that contradict the API contract. For every UI change, also update and
-validate the shared [UI integration contract](ui-integration.md) so React and
-Flutter use the same workflow ID and public `/api/...` endpoint references.
+Both clients provide the shared home, `/signin`, `/signup`, `/profile`,
+`/dashboard` and permission-aware `/admin` workflows. The Auth experience uses
+the public gateway for registration, sign-in, refresh, profile and session
+management, account deletion, and user/role/permission administration. Browser
+state uses protected cookies and mobile state uses platform secure storage.
+The ASP.NET projects are available under `services/api` and `services/auth`;
+do not add business rules to the clients that contradict the API contract. For
+every UI change, also update and validate the shared [UI integration
+contract](ui-integration.md) so React and Flutter use the same workflow ID and
+public `/api/...` endpoint references.
 
-React Web and Flutter Mobile are peer product surfaces for clients, staff and
-administrators. Do not route a business capability to one platform solely
-because of the user's role; use platform strengths to adapt the interaction
-while keeping the workflow, permission behavior and public API contract shared.
+React Web and Flutter Mobile provide the same authorized roles, business
+capabilities and workflow actions. Neither has priority or design emphasis
+for a stakeholder group. Layout and device integrations may vary while
+workflow outcomes, permission behavior and the public API contract remain
+shared. See the
+[cross-platform product rule](../project/ui-experience-principles.md)
+and the applicable component documentation in the
+[documentation index](../README.md).
 
 ## Agent resources
+
+The repository validation scripts require Python 3 on `PATH`; they use the
+standard library and do not need third-party packages. Check with
+`python --version` before running the commands below.
 
 Before making a repository change, read the root [`AGENTS.md`](../../AGENTS.md),
 the [`agent-resources.md`](agent-resources.md) overview and
@@ -179,7 +189,7 @@ After execution completes, restore the restricted policy:
 Set-ExecutionPolicy Restricted
 ```
 
-Once the backend projects are present and the stack is running, verify:
+With the checked-in API and Auth projects running in the stack, verify:
 
 ```text
 GET http://localhost/health

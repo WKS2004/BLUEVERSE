@@ -15,5 +15,12 @@ public class RefreshTokenRequestDto
     [MaxLength(256)]
     public string? DeviceKey { get; set; }
 
+    /// <summary>
+    /// Optional browser account selection. Cookie clients use it to activate a
+    /// previously signed-in account without replacing its protected cookie set.
+    /// Native clients continue to send their refresh token directly.
+    /// </summary>
+    public Guid? AccountId { get; set; }
+
     public bool UseCookies { get; set; }
 }

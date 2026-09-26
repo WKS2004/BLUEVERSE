@@ -10,7 +10,10 @@ Run it from the repository root:
 dotnet test services/auth/tests/Blueverse.Auth.Tests/Blueverse.Auth.Tests.csproj --configuration Release
 ```
 
-The default suite currently passes 67 cases. It covers registration/login with
+The current source defines 77 default test cases. The latest recorded passing
+run is the 2026-09-24 AI contribution entry; this count describes the current
+test definitions and is not a result from this documentation audit. The suite
+covers registration/login with
 server-issued device sessions, one-day and remember-me session lifetimes,
 hashed refresh-token rotation, device-proof and replay failures, protected
 cookie transport and cookie clearing, the five-account device boundary,

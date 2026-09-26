@@ -144,25 +144,59 @@ public sealed class AuthInfrastructureTests
 
     [Fact]
     [Trait("TestId", "AUTH-AUTHORIZATION-UNIT-001")]
-    public async Task PermissionAuthorizationIsCaseInsensitiveButDoesNotSucceedWithoutTheClaim()
+    public async Task PermissionAuthorizationUsesCurrentRolesAndRequiresEveryRequestedGrant()
     {
-        var requirement = new PermissionRequirement("auth.user.read");
-        var handler = new PermissionHandler();
-        var allowedContext = new AuthorizationHandlerContext(
-            [requirement],
-            new ClaimsPrincipal(new ClaimsIdentity([new Claim("permission", "AUTH.USER.READ")])),
-            resource: null);
-        var deniedContext = new AuthorizationHandlerContext(
-            [requirement],
-            new ClaimsPrincipal(new ClaimsIdentity([new Claim("permission", "auth.role.read")])),
-            resource: null);
+        var options = new DbContextOptionsBuilder<AuthDbContext>()
+            .UseInMemoryDatabase($"auth-permission-check-{Guid.NewGuid():N}")
+            .Options;
+        await using var db = new AuthDbContext(options);
+        await db.Database.EnsureCreatedAsync();
 
-        await handler.HandleAsync(allowedContext);
-        await handler.HandleAsync(deniedContext);
+        var role = new Role { Name = "Authorization test role" };
+        var read = new Permission { Code = PermissionCodes.RoleRead, Description = "Read roles" };
+        var user = new User { Email = "authorization-test@blueverse.local", FullName = "Authorization Test" };
+        var unassigned = new User { Email = "unassigned-test@blueverse.local", FullName = "Unassigned Test" };
+        var inactive = new User { Email = "inactive-test@blueverse.local", FullName = "Inactive Test", IsActive = false };
+        role.RolePermissions.Add(new RolePermission { Role = role, Permission = read });
+        user.UserRoles.Add(new UserRole { User = user, Role = role });
+        inactive.UserRoles.Add(new UserRole { User = inactive, Role = role });
+        db.Roles.Add(role);
+        db.Permissions.Add(read);
+        db.Users.AddRange(user, unassigned, inactive);
+        await db.SaveChangesAsync();
 
-        Assert.True(allowedContext.HasSucceeded);
-        Assert.False(deniedContext.HasSucceeded);
-        Assert.False(deniedContext.HasFailed);
+        var handler = new PermissionHandler(db);
+        var readRequirement = new PermissionRequirement(PermissionCodes.RoleRead);
+        var updateRequirement = new PermissionRequirement(PermissionCodes.RoleUpdate);
+        var editorPrincipal = new ClaimsPrincipal(new ClaimsIdentity(
+        [
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim("permission", PermissionCodes.RoleRead),
+            new Claim("permission", PermissionCodes.RoleUpdate)
+        ], "test"));
+        var combinedContext = new AuthorizationHandlerContext(
+            [readRequirement, updateRequirement], editorPrincipal, resource: null);
+        var forgedPrincipal = new ClaimsPrincipal(new ClaimsIdentity(
+        [
+            new Claim(ClaimTypes.NameIdentifier, unassigned.Id.ToString()),
+            new Claim("permission", PermissionCodes.RoleRead)
+        ], "test"));
+        var forgedContext = new AuthorizationHandlerContext([readRequirement], forgedPrincipal, resource: null);
+        var inactivePrincipal = new ClaimsPrincipal(new ClaimsIdentity(
+        [
+            new Claim(ClaimTypes.NameIdentifier, inactive.Id.ToString()),
+            new Claim("permission", PermissionCodes.RoleRead)
+        ], "test"));
+        var inactiveContext = new AuthorizationHandlerContext([readRequirement], inactivePrincipal, resource: null);
+
+        await handler.HandleAsync(combinedContext);
+        await handler.HandleAsync(forgedContext);
+        await handler.HandleAsync(inactiveContext);
+
+        Assert.False(combinedContext.HasSucceeded);
+        Assert.Contains(updateRequirement, combinedContext.PendingRequirements);
+        Assert.False(forgedContext.HasSucceeded);
+        Assert.False(inactiveContext.HasSucceeded);
     }
 
     [Fact]

@@ -8,8 +8,16 @@ The assignment explicitly requires persisted workflow state and execution eviden
 
 ## Decision
 
-Persist only the Agentic AI workflow state and execution summaries required by the final design; never persist hidden model reasoning.
+The [v1 workflow](../v1/workflows.md) now requires durable workflow ID and
+type, initiator, objective, structured plan, step progress, structured
+outputs or auditable tool summaries, validation, errors/retries, approval
+status and decision, final result and timestamps as relevant. Persist only
+what is needed to operate and audit the workflow; never persist hidden
+model reasoning, secrets or unnecessary sensitive data.
 
 ## Consequences
 
-The schema must be finalized alongside the Agentic AI workflow design and database model.
+The four-agent responsibilities and assessed flow are defined, but the
+table design, ownership, retention and restart/recovery strategy remain
+open. Finalize those with the PostgreSQL/EF Core schema before accepting
+this ADR. This proposed record is not evidence of an implemented schema.

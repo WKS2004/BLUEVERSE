@@ -275,8 +275,23 @@ public class AuthService : IAuthService
         }).ToList();
     }
 
-    public async Task<bool> RevokeSessionAsync(Guid userId, Guid sessionId)
+    public async Task<bool> RevokeSessionAsync(Guid userId, Guid sessionId, Guid? currentSessionId, string? currentPassword)
     {
+        if (currentSessionId != sessionId)
+        {
+            var user = await _dbContext.Users.FirstOrDefaultAsync(item => item.Id == userId);
+            if (user == null)
+            {
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(currentPassword) ||
+                !_passwordHasher.VerifyPassword(currentPassword, user.PasswordHash))
+            {
+                throw new UnauthorizedAccessException("Enter your current password to end a session on another device.");
+            }
+        }
+
         var session = await _dbContext.ActiveSessions
             .FirstOrDefaultAsync(item => item.Id == sessionId && item.UserId == userId);
         if (session == null)
@@ -303,7 +318,7 @@ public class AuthService : IAuthService
         }
 
         var sessions = await _dbContext.ActiveSessions
-            .Where(session => session.DeviceId == currentSession.DeviceId)
+            .Where(session => session.UserId == userId && session.DeviceId == currentSession.DeviceId)
             .ToListAsync();
         var revokedAt = DateTime.UtcNow;
         await ArchiveSessionsAsync(sessions, revokedAt, "device-logout");
@@ -311,7 +326,8 @@ public class AuthService : IAuthService
         await _dbContext.SaveChangesAsync();
 
         _logger.LogInformation(
-            "Logged out all accounts on device {DeviceId}; revoked {SessionCount} sessions",
+            "Logged out user {UserId} on device {DeviceId}; revoked {SessionCount} sessions",
+            userId,
             currentSession.DeviceId,
             sessions.Count);
         return true;
@@ -319,6 +335,11 @@ public class AuthService : IAuthService
 
     public async Task<bool> LogoutAccountOnCurrentDeviceAsync(Guid actorUserId, Guid sessionId, Guid targetUserId)
     {
+        if (actorUserId != targetUserId)
+        {
+            return false;
+        }
+
         var actorSession = await _dbContext.ActiveSessions
             .AsNoTracking()
             .FirstOrDefaultAsync(session =>
@@ -348,12 +369,18 @@ public class AuthService : IAuthService
         return true;
     }
 
-    public async Task<bool> LogoutAllDevicesAsync(Guid userId)
+    public async Task<bool> LogoutAllDevicesAsync(Guid userId, string currentPassword)
     {
         var user = await _dbContext.Users.FirstOrDefaultAsync(currentUser => currentUser.Id == userId);
         if (user == null)
         {
             return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(currentPassword) ||
+            !_passwordHasher.VerifyPassword(currentPassword, user.PasswordHash))
+        {
+            throw new UnauthorizedAccessException("Enter your current password to sign out this account everywhere.");
         }
 
         var sessions = await _dbContext.ActiveSessions
@@ -546,6 +573,13 @@ public class AuthService : IAuthService
 
     public async Task<RoleDto?> AssignPermissionsToRoleAsync(Guid actorUserId, Guid roleId, AssignPermissionsDto dto)
     {
+        if (!await HasPermissionAsync(actorUserId, PermissionCodes.RoleRead) ||
+            !await HasPermissionAsync(actorUserId, PermissionCodes.RoleUpdate) ||
+            !await HasPermissionAsync(actorUserId, PermissionCodes.PermissionRead))
+        {
+            throw new UnauthorizedAccessException("Reading roles and permissions and updating roles are required to change a role's permissions.");
+        }
+
         var role = await _dbContext.Roles
             .Include(r => r.RolePermissions)
                 .ThenInclude(rp => rp.Permission)
@@ -617,6 +651,13 @@ public class AuthService : IAuthService
 
     public async Task<UserDto?> AssignRolesToUserAsync(Guid actorUserId, Guid userId, AssignRolesDto dto)
     {
+        if (!await HasPermissionAsync(actorUserId, PermissionCodes.UserRead) ||
+            !await HasPermissionAsync(actorUserId, PermissionCodes.UserUpdate) ||
+            !await HasPermissionAsync(actorUserId, PermissionCodes.RoleRead))
+        {
+            throw new UnauthorizedAccessException("Reading users and roles and updating users are required to change a user's roles.");
+        }
+
         var user = await _dbContext.Users
             .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
@@ -692,6 +733,11 @@ public class AuthService : IAuthService
 
     public async Task<UserDto> AdminCreateUserAsync(Guid actorUserId, AdminCreateUserDto dto)
     {
+        if (dto.RoleNames.Count > 0 && !await HasPermissionAsync(actorUserId, PermissionCodes.RoleRead))
+        {
+            throw new UnauthorizedAccessException("Reading roles is required to assign roles while creating a user.");
+        }
+
         var normalizedEmail = dto.Email.Trim().ToLowerInvariant();
 
         var existingUser = await _dbContext.Users
@@ -818,11 +864,7 @@ public class AuthService : IAuthService
         }
 
         // System-role accounts are the last-resort administrative recovery path.
-        var isAdmin = targetUser.UserRoles.Any(ur => ur.Role.IsSystemRole);
-        if (isAdmin)
-        {
-            throw new InvalidOperationException("System-role accounts cannot be deleted.");
-        }
+        ThrowIfSystemRolesAssigned(targetUser.UserRoles);
 
         _dbContext.Users.Remove(targetUser);
         await _dbContext.SaveChangesAsync();
@@ -866,11 +908,7 @@ public class AuthService : IAuthService
         }
 
         // System-role accounts cannot self-delete and remove the recovery path.
-        var isAdmin = user.UserRoles.Any(ur => ur.Role.IsSystemRole);
-        if (isAdmin)
-        {
-            throw new InvalidOperationException("System-role accounts cannot be deleted.");
-        }
+        ThrowIfSystemRolesAssigned(user.UserRoles);
 
         _dbContext.Users.Remove(user);
         await _dbContext.SaveChangesAsync();
@@ -878,6 +916,25 @@ public class AuthService : IAuthService
         _logger.LogInformation("User {UserId} self-deleted account", user.Id);
 
         return true;
+    }
+
+    private static void ThrowIfSystemRolesAssigned(IEnumerable<UserRole> userRoles)
+    {
+        var systemRoleNames = userRoles
+            .Where(userRole => userRole.Role.IsSystemRole)
+            .Select(userRole => userRole.Role.Name)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(roleName => roleName, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        if (systemRoleNames.Length == 0)
+        {
+            return;
+        }
+
+        var roleLabel = systemRoleNames.Length == 1 ? "system role" : "system roles";
+        throw new InvalidOperationException(
+            $"This account cannot be deleted because it is assigned the {roleLabel}: {string.Join(", ", systemRoleNames)}.");
     }
 
     private async Task<SessionIssueResult> CreateOrReactivateSessionAsync(
@@ -1335,11 +1392,15 @@ public class AuthService : IAuthService
 
     private async Task<bool> HasPermissionAsync(Guid userId, string permissionCode)
     {
+        var acceptedCodes = PermissionCodes.LegacyGrantAliases(permissionCode)
+            .Append(permissionCode)
+            .ToArray();
+
         return await _dbContext.Users
             .Where(user => user.Id == userId && user.IsActive)
             .SelectMany(user => user.UserRoles)
             .SelectMany(userRole => userRole.Role.RolePermissions)
-            .AnyAsync(rolePermission => rolePermission.Permission.Code == permissionCode);
+            .AnyAsync(rolePermission => acceptedCodes.Contains(rolePermission.Permission.Code));
     }
 
     private async Task InvalidateUsersAsync(IEnumerable<Guid> userIds)

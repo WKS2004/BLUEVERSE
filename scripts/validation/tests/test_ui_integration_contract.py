@@ -61,6 +61,12 @@ class UiIntegrationContractTests(unittest.TestCase):
             errors = validate_repository(root)
             self.assertTrue(any("frontend route '/wrong-route'" in error for error in errors))
 
+    def test_hash_fragment_link_uses_its_declared_page_route(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_checkout(root, web_source='<a href="/#our-coast">Coast</a>')
+            self.assertEqual(validate_repository(root), [])
+
     def test_unregistered_route_configuration_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -175,6 +181,31 @@ class UiIntegrationContractTests(unittest.TestCase):
             )
             errors = validate_repository(root)
             self.assertTrue(any("public path '/api/health'" in error for error in errors))
+
+    def test_registered_template_request_matches_composed_controller_route(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = json.loads(json.dumps(FOUNDATION_MANIFEST))
+            manifest["workflows"][0]["apiRefs"] = ["role.get"]
+            manifest["endpoints"] = [
+                {
+                    "id": "role.get",
+                    "method": "GET",
+                    "path": "/api/auth/roles/{id:guid}",
+                    "publicBoundary": "api",
+                    "ownerService": "auth",
+                    "operationId": "GetRoleById",
+                }
+            ]
+            write_checkout(root, web_source="fetch(`/api/auth/roles/${id}`)", manifest=manifest)
+            controller = root / "services/auth/Controllers/RolesController.cs"
+            controller.parent.mkdir(parents=True)
+            controller.write_text(
+                '[Route("api/auth/roles")] public class RolesController { '
+                '[HttpGet("{id:guid}")] public void GetRoleById() {} }',
+                encoding="utf-8",
+            )
+            self.assertEqual(validate_repository(root), [])
 
 
 if __name__ == "__main__":

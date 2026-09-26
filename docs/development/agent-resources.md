@@ -7,8 +7,7 @@ workflow skills under `.agents/`. These resources help coding agents load the
 smallest useful context while preserving the repository's architecture,
 security, testing and contribution requirements.
 
-The resource set is finalized for the current v0 foundation checkout. It
-contains eight BLUEVERSE-owned skills and fifteen source-pinned supplementary
+The resource set contains eight BLUEVERSE-owned skills and fifteen source-pinned supplementary
 skills. Technology guidance covers the stack that is actually present or
 explicitly planned: React 19 + Vite, Flutter, ASP.NET Core, PostgreSQL, EF Core
 and test-quality workflows. The set also includes the optional `caveman`
@@ -45,11 +44,12 @@ claiming implementation or test completion.
 | Path | Responsibility |
 |---|---|
 | `.agents/README.md` | Agent-resource operating guide and completion standard |
-| `.agents/repository-map.md` | Current paths, boundaries and foundation facts |
+| `.agents/repository-map.md` | Repository paths, boundaries and persistent conventions |
 | `.agents/routing.md` | Minimal rule/skill routing matrix |
 | `.agents/rules/` | Focused repository constraints |
 | `.agents/rules/endpoint-catalog.md` | Fast endpoint lookup and source-escalation rule |
 | `.agents/rules/data-access.md` | PostgreSQL, EF Core, migration and test-provider policy |
+| `.agents/rules/v1-development.md` | v1 member ownership, API/Auth limits and G00/G07 sequencing gates |
 | `docs/api/endpoint-catalog.md` | Fast, readable endpoint and route lookup |
 | `docs/api/endpoint-catalog.json` | Machine-checked source for the readable catalog |
 | `.agents/skills/` | On-demand project and supplementary workflows |
@@ -79,8 +79,8 @@ For every implementation or review task:
 8. For persistence, migration, EF Core or PostgreSQL work, read
    `.agents/rules/data-access.md`, `docs/database/README.md` and
    `docs/database/schema.md` before scanning the complete service.
-9. Inspect the targeted source, tests, workflow and detailed documentation
-   named by the routing row.
+9. Inspect the targeted source, tests, workflow and applicable release or
+   component documentation named by the routing row.
 10. Run the narrowest useful validation first and report missing tools,
    services, credentials or foundation projects exactly.
 
@@ -97,7 +97,7 @@ large requirements matrices into skills or load every skill for every task.
 | PostgreSQL/EF Core persistence, migrations and provider-specific tests | `blueverse-postgresql-efcore` | deferred PostgreSQL/Testcontainers skills only when approved and needed |
 | React/Flutter API contracts and permission-aware clients | `blueverse-client-contract` | matching Flutter skills; `vercel-react-best-practices` for React/Vite performance |
 | Test design, IDs, fixtures and discovery | `blueverse-test-design` | `run-tests`, `assertion-quality`, `test-anti-patterns`, `test-gap-analysis`, `grade-tests` |
-| Agentic AI orchestration, tools, approvals and evaluation | `blueverse-agentic-ai-workflow` | deferred governance/OWASP skills until executable AI workflows exist |
+| Agentic AI design, orchestration, tools, approvals and evaluation | `blueverse-agentic-ai-workflow` | executable v1 runtime only after G07; deferred governance/OWASP skills until needed |
 | Docker, Compose, edge-nginx, networks and health | `blueverse-docker-gateway` | — |
 | GitHub Actions, path filters, metrics and artifacts | `blueverse-ci-validation` | — |
 | Response-style compression | — | `caveman` for explicit, user-requested conversational compression |
@@ -112,11 +112,23 @@ run the route/API contract validator described in
 [`ui-integration.md`](ui-integration.md). Shared workflow IDs connect the
 relevant React and Flutter surfaces; the clients never call each other or
 internal service hostnames.
-React Web and Flutter Mobile are co-equal surfaces for clients, staff and
-administrators, so agent guidance must plan both clients for a shared workflow
-by default. Platform adaptation is about interaction context, not stakeholder
-ownership. User-facing work also follows
+React Web and Flutter Mobile are equal surfaces for every authorized role
+and business action, with no stakeholder priority or design emphasis.
+Layout and device integrations may differ while business outcomes stay
+equivalent. Select the applicable component and workflow reference through
+the [documentation index](../README.md). User-facing work also follows
 [`../project/ui-experience-principles.md`](../project/ui-experience-principles.md).
+
+For all v1 work, follow the agent-enforced
+[`v1 development rule`](../../.agents/rules/v1-development.md) and the source
+contracts in [`../v1/`](../v1/README.md). G00 precedes component coding; the
+four complete member components may be developed concurrently on their
+assigned branches. Member branches may prepare their private Agentic AI access
+seam and safe unavailable behavior, but executable agents, tools, model calls,
+orchestration and AI-owned state wait until the four components pass G07.
+External ML provider integration remains owned by its member component and is
+not Agentic AI implementation.
+
 For every frontend route, client API target, gateway/YARP/Nginx mapping,
 backend or internal service endpoint, health/OpenAPI route, test-only fixture
 endpoint or Agentic AI endpoint addition, update, rename, move or removal,
@@ -185,18 +197,19 @@ prove runtime authorization or the accuracy of prose usage descriptions;
 review those against implementation and the application contract tests.
 
 The Windows foundation verifier and application/Docker checks are separate
-from agent-resource validation. They may remain blocked while the expected
-ASP.NET service projects, credentials, Docker runtime or elevated shell are
-unavailable. Report those conditions; never call a blocked check successful.
+from agent-resource validation. Report missing credentials, Docker runtime,
+elevated shell or source projects exactly; never call a blocked check
+successful.
 
 ## Current repository boundary
 
-The current checkout contains React and Flutter starter projects with the
-implemented shared Auth workflow, plus the tracked `services/api` and
-`services/auth` ASP.NET projects. Executable
-Agentic AI services are not present. Ignored `bin/` and `obj/` output is not
-implementation evidence. See the [foundation gap analysis](../project/foundation-gap-analysis.md)
-for the current repository status and the next implementation gates.
+The current checkout contains the React and Flutter shared Auth workflow and
+the `services/api` and `services/auth` ASP.NET projects. See the
+[v0 foundation guide](../v0/README.md) for their component contracts.
+Executable Agentic AI services are not present. Ignored `bin/` and
+`obj/` output is not implementation evidence. The
+[foundation gap analysis](../project/foundation-gap-analysis.md) records
+current evidence and next implementation gates.
 
 The current database implementation is the Auth EF Core/Npgsql model with
 checked-in PostgreSQL migrations. The default Auth tests intentionally use an

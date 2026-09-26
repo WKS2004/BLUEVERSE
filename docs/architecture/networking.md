@@ -12,14 +12,14 @@ blueverse_internal (internal=true)
   auth
 
 blueverse_database
-  api
   auth
   postgres
 ```
 
 The edge gateway is connected to the edge and internal networks so it can
-receive host traffic and proxy to internal services. API/Auth/PostgreSQL use
-the separate database network.
+receive host traffic and proxy to internal services. Auth and PostgreSQL use
+the separate database network. The API reaches Auth through
+`blueverse_internal` and has no PostgreSQL credential in v0.
 
 ## Routing
 
@@ -28,6 +28,22 @@ the separate database network.
 - everything else → frontend
 
 Auth is not connected to the edge network and has no public gateway route. Clients cannot call it directly.
+
+## v1 private service target (not configured in the current stack)
+
+The public API will route member-owned operations to one private .NET service
+per component. Component services own domain behavior and data access; clients
+never address their hostnames or internal routes. Service IDs, network
+membership, transport, actor/permission propagation and data/schema ownership
+are agreed at G00. The current Compose networks above describe the implemented
+v0 stack only. See [ADR-0020](../adr/ADR-0020-member-component-service-boundaries.md)
+and the [member service boundaries](service-boundaries.md).
+
+The selected map API is an outbound dependency of Ushan Srinuka's private service,
+not of `services/api`, a host route or a client network target. Its provider
+and egress policy are not configured in the current stack; see
+[ADR-0017](../adr/ADR-0017-map-provider-integration-boundary.md). React and
+Flutter must not call the map provider directly.
 
 No `/api/v1` style path versioning is planned.
 

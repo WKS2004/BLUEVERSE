@@ -162,7 +162,10 @@ public sealed class AuthSessionLifecycleTests : IClassFixture<AuthWebApplication
         var sessions = await sessionsResponse.Content.ReadFromJsonAsync<JsonElement>();
         var sessionId = sessions[0].GetProperty("id").GetGuid();
 
-        using var revokeRequest = new HttpRequestMessage(HttpMethod.Delete, $"/api/auth/sessions/{sessionId}");
+        using var revokeRequest = new HttpRequestMessage(HttpMethod.Delete, $"/api/auth/sessions/{sessionId}")
+        {
+            Content = JsonContent.Create(new { currentPassword = string.Empty })
+        };
         revokeRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var revokeResponse = await _client.SendAsync(revokeRequest);
         Assert.Equal(HttpStatusCode.NoContent, revokeResponse.StatusCode);

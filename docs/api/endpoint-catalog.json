@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "status": "active",
-  "auditedAt": "2026-09-22",
+  "auditedAt": "2026-09-25",
   "purpose": "Fast, repository-local inventory of implemented frontend routes, gateway routes, public API endpoints, test-only routes, and Agentic AI endpoint status.",
   "authority": {
     "uiWorkflowRegistry": "docs/contracts/ui-integration.json",
@@ -35,21 +35,51 @@
       "id": "web-home",
       "client": "react",
       "route": "/",
-      "source": "apps/web/src/App.tsx",
+      "source": "apps/web/src/app/routes.tsx",
       "workflowId": "foundation-home",
-      "status": "starter",
-      "description": "Starter web application home route.",
-      "usage": "Loads the foundation entry screen; it currently has no public API dependency."
+      "status": "implemented",
+      "description": "Coastal-scope landing page and signed-in account/session entry route.",
+      "usage": "Introduces BLUEVERSE's coastal purpose and restores the signed-in account. Profile and dashboard links are available from the shared account menu; account switching is kept there rather than presented as a home session-management section."
     },
     {
-      "id": "web-login",
+      "id": "web-signin",
       "client": "react",
-      "route": "/login",
-      "source": "apps/web/src/App.tsx",
+      "route": "/signin",
+      "source": "apps/web/src/app/routes.tsx",
       "workflowId": "auth-session-management",
       "status": "implemented",
-      "description": "Web authentication and session-management route.",
-      "usage": "Uses the public Auth API for login, refresh, current-user, session listing, logout, and logout-all-devices operations."
+      "description": "Sign-in route for the React client. Uses the public Auth API and preserves a safe post-sign-in destination.",
+      "usage": "Sign-in route for the React client. Uses the public Auth API and preserves a safe post-sign-in destination."
+    },
+    {
+      "id": "web-signup",
+      "client": "react",
+      "route": "/signup",
+      "source": "apps/web/src/app/routes.tsx",
+      "workflowId": "auth-registration",
+      "status": "implemented",
+      "description": "Account creation route for the React client. Registration opens Profile after the new account is signed in.",
+      "usage": "Account creation route for the React client. Registration opens Profile after the new account is signed in."
+    },
+    {
+      "id": "web-profile",
+      "client": "react",
+      "route": "/profile",
+      "source": "apps/web/src/app/routes.tsx",
+      "workflowId": "auth-profile-management",
+      "status": "implemented",
+      "description": "Authenticated profile, password-security, and login-session management route.",
+      "usage": "Shows and updates editable profile details, changes the password, and reviews or ends login sessions through the public Auth API."
+    },
+    {
+      "id": "web-dashboard",
+      "client": "react",
+      "route": "/dashboard",
+      "source": "apps/web/src/app/routes.tsx",
+      "workflowId": "coastal-overview-dashboard",
+      "status": "implemented",
+      "description": "Signed-in account and coastal-services overview route.",
+      "usage": "Shows the current account overview and clearly marked future BLUEVERSE coastal service areas. Login sessions remain in Profile."
     },
     {
       "id": "mobile-home",
@@ -57,19 +87,169 @@
       "route": "/",
       "source": "apps/mobile/lib/main.dart",
       "workflowId": "foundation-home",
-      "status": "starter",
-      "description": "Starter mobile application home route.",
-      "usage": "Loads the foundation entry screen; it currently has no public API dependency."
+      "status": "implemented",
+      "description": "Coastal onboarding and signed-in launch route for Flutter Mobile.",
+      "usage": "Restores the saved session at launch and opens Dashboard for an authenticated user. Signed-out users see a full-screen coastal onboarding carousel; Skip opens the final Sign in/Create account choices, and signing out of the final active device account returns to the carousel."
     },
     {
-      "id": "mobile-login",
+      "id": "mobile-signin",
       "client": "flutter",
-      "route": "/login",
+      "route": "/signin",
       "source": "apps/mobile/lib/main.dart",
       "workflowId": "auth-session-management",
       "status": "implemented",
-      "description": "Mobile authentication and session-management route.",
-      "usage": "Uses the same public Auth API contract as the React workflow."
+      "description": "Sign-in route for Flutter. Uses the shared public Auth API and saved-account switching.",
+      "usage": "Sign-in route for Flutter. Uses the shared public Auth API and saved-account switching."
+    },
+    {
+      "id": "mobile-signup",
+      "client": "flutter",
+      "route": "/signup",
+      "source": "apps/mobile/lib/main.dart",
+      "workflowId": "auth-registration",
+      "status": "implemented",
+      "description": "Account creation route for Flutter. Registration opens Profile after the new account is signed in.",
+      "usage": "Account creation route for Flutter. Registration opens Profile after the new account is signed in."
+    },
+    {
+      "id": "mobile-profile",
+      "client": "flutter",
+      "route": "/profile",
+      "source": "apps/mobile/lib/main.dart",
+      "workflowId": "auth-profile-management",
+      "status": "implemented",
+      "description": "Adaptive profile, password-security, and login-session management route.",
+      "usage": "Shows and updates profile details, changes the password, and reviews or ends login sessions through the public Auth API."
+    },
+    {
+      "id": "mobile-dashboard",
+      "client": "flutter",
+      "route": "/dashboard",
+      "source": "apps/mobile/lib/main.dart",
+      "workflowId": "coastal-overview-dashboard",
+      "status": "implemented",
+      "description": "Adaptive signed-in account and coastal-services overview route.",
+      "usage": "Shows the current account overview and clearly marked future BLUEVERSE coastal service areas. Login sessions remain in Profile."
+    },
+    {
+      "id": "react-admin-entry",
+      "client": "react",
+      "route": "/admin",
+      "source": "apps/web/src/app/routes.tsx",
+      "workflowId": "auth-admin-entry",
+      "status": "implemented",
+      "description": "Administration entry.",
+      "usage": "Routes authorized accounts to the first administration area allowed by current profile grants."
+    },
+    {
+      "id": "react-admin-permissions",
+      "client": "react",
+      "route": "/admin/permissions",
+      "source": "apps/web/src/app/routes.tsx",
+      "workflowId": "auth-permission-administration",
+      "status": "implemented",
+      "description": "Permission catalogue.",
+      "usage": "Lists application-defined permission codes and directs permitted role editors to manage grants."
+    },
+    {
+      "id": "react-admin-roles",
+      "client": "react",
+      "route": "/admin/roles",
+      "source": "apps/web/src/app/routes.tsx",
+      "workflowId": "auth-role-administration",
+      "status": "implemented",
+      "description": "Role administration.",
+      "usage": "Lists roles and provides permission-checked role create, update, permission-assignment and delete actions."
+    },
+    {
+      "id": "react-admin-users",
+      "client": "react",
+      "route": "/admin/users",
+      "source": "apps/web/src/app/routes.tsx",
+      "workflowId": "auth-user-administration",
+      "status": "implemented",
+      "description": "User administration.",
+      "usage": "Lists accounts and provides permission-checked account, password, active-state and role-assignment actions."
+    },
+    {
+      "id": "flutter-admin-entry",
+      "client": "flutter",
+      "route": "/admin",
+      "source": "apps/mobile/lib/main.dart",
+      "workflowId": "auth-admin-entry",
+      "status": "implemented",
+      "description": "Administration entry.",
+      "usage": "Routes authorized accounts to the first administration area allowed by current profile grants."
+    },
+    {
+      "id": "flutter-admin-permissions",
+      "client": "flutter",
+      "route": "/admin/permissions",
+      "source": "apps/mobile/lib/main.dart",
+      "workflowId": "auth-permission-administration",
+      "status": "implemented",
+      "description": "Permission catalogue.",
+      "usage": "Lists application-defined permission codes and directs permitted role editors to manage grants."
+    },
+    {
+      "id": "flutter-admin-roles",
+      "client": "flutter",
+      "route": "/admin/roles",
+      "source": "apps/mobile/lib/main.dart",
+      "workflowId": "auth-role-administration",
+      "status": "implemented",
+      "description": "Role administration.",
+      "usage": "Lists roles and provides permission-checked role create, update, permission-assignment and delete actions."
+    },
+    {
+      "id": "flutter-admin-users",
+      "client": "flutter",
+      "route": "/admin/users",
+      "source": "apps/mobile/lib/main.dart",
+      "workflowId": "auth-user-administration",
+      "status": "implemented",
+      "description": "User administration.",
+      "usage": "Lists accounts and provides permission-checked account, password, active-state and role-assignment actions."
+    },
+    {
+      "id": "react-not-found",
+      "client": "react",
+      "route": "/404",
+      "source": "apps/web/src/app/routes.tsx",
+      "workflowId": "not-found-recovery",
+      "status": "implemented",
+      "description": "Dedicated not-found page and unknown-route fallback in the shared React site shell.",
+      "usage": "Explains the missing page in coastal language while preserving the requested browser path, then offers home and sign-in actions."
+    },
+    {
+      "id": "react-server-error",
+      "client": "react",
+      "route": "/500",
+      "source": "apps/web/src/app/routes.tsx",
+      "workflowId": "server-error-recovery",
+      "status": "implemented",
+      "description": "Global server and unhandled-render recovery page in the shared React site shell.",
+      "usage": "Explains the temporary interruption between the shared header and footer, provides retry and home actions, and keeps implementation details hidden."
+    },
+    {
+      "id": "flutter-not-found",
+      "client": "flutter",
+      "route": "/404",
+      "source": "apps/mobile/lib/main.dart",
+      "workflowId": "not-found-recovery",
+      "status": "implemented",
+      "description": "Dedicated not-found page and unknown-route fallback within Flutter app navigation.",
+      "usage": "Explains the missing page in coastal language and routes users back to the home page."
+    },
+    {
+      "id": "flutter-server-error",
+      "client": "flutter",
+      "route": "/500",
+      "source": "apps/mobile/lib/main.dart",
+      "workflowId": "server-error-recovery",
+      "status": "implemented",
+      "description": "Global server and unhandled-render recovery page within Flutter app navigation.",
+      "usage": "Explains the temporary interruption, provides retry and home actions, and keeps implementation details hidden."
     }
   ],
   "gatewayRoutes": [
@@ -132,6 +312,86 @@
       "source": "services/api/Program.cs",
       "description": "API Swagger UI mounted below the public API boundary.",
       "usage": "Provides interactive API documentation for local development and contract inspection."
+    },
+    {
+      "id": "edge-not-found-asset-redirect",
+      "method": "ANY",
+      "path": "/404.html",
+      "type": "canonical-redirect",
+      "upstream": "edge-nginx",
+      "source": "infrastructure/docker/edge-nginx/nginx.conf",
+      "description": "Redirects direct fallback-asset requests to the extensionless React recovery route.",
+      "usage": "Converts /404.html to /404 so the error asset filename is not exposed as the browser route."
+    },
+    {
+      "id": "edge-server-error-asset-redirect",
+      "method": "ANY",
+      "path": "/500.html",
+      "type": "canonical-redirect",
+      "upstream": "edge-nginx",
+      "source": "infrastructure/docker/edge-nginx/nginx.conf",
+      "description": "Redirects direct fallback-asset requests to the extensionless React recovery route.",
+      "usage": "Converts /500.html to /500 so the error asset filename is not exposed as the browser route."
+    },
+    {
+      "id": "frontend-not-found-asset-redirect",
+      "method": "ANY",
+      "path": "/404.html",
+      "type": "canonical-redirect",
+      "upstream": "frontend-nginx",
+      "source": "infrastructure/docker/frontend/nginx.conf",
+      "description": "Redirects direct fallback-asset requests to the extensionless React recovery route.",
+      "usage": "Converts /404.html to /404 so the error asset filename is not exposed as the browser route."
+    },
+    {
+      "id": "frontend-server-error-asset-redirect",
+      "method": "ANY",
+      "path": "/500.html",
+      "type": "canonical-redirect",
+      "upstream": "frontend-nginx",
+      "source": "infrastructure/docker/frontend/nginx.conf",
+      "description": "Redirects direct fallback-asset requests to the extensionless React recovery route.",
+      "usage": "Converts /500.html to /500 so the error asset filename is not exposed as the browser route."
+    },
+    {
+      "id": "edge-not-found-page",
+      "method": "ANY",
+      "path": "/_blueverse/errors/404",
+      "type": "static-error",
+      "upstream": "edge-nginx",
+      "source": "infrastructure/docker/edge-nginx/nginx.conf",
+      "description": "Extensionless internal error URI mapped to the edge Nginx 404 fallback asset.",
+      "usage": "Shows the branded recovery page without changing the requested browser URL or exposing a file extension."
+    },
+    {
+      "id": "edge-server-error-page",
+      "method": "ANY",
+      "path": "/_blueverse/errors/500",
+      "type": "static-error",
+      "upstream": "edge-nginx",
+      "source": "infrastructure/docker/edge-nginx/nginx.conf",
+      "description": "Extensionless internal error URI mapped to the edge Nginx 500 fallback asset.",
+      "usage": "Displays a friendly recovery page if the frontend service is unavailable; API upstream errors retain their structured responses."
+    },
+    {
+      "id": "frontend-not-found-page",
+      "method": "ANY",
+      "path": "/_blueverse/errors/404",
+      "type": "static-error",
+      "upstream": "frontend",
+      "source": "infrastructure/docker/frontend/nginx.conf",
+      "description": "Extensionless internal error URI mapped to the frontend Nginx 404 fallback asset.",
+      "usage": "Serves the branded not-found page for frontend Nginx 404 responses while SPA routes continue to load through index.html."
+    },
+    {
+      "id": "frontend-server-error-page",
+      "method": "ANY",
+      "path": "/_blueverse/errors/500",
+      "type": "static-error",
+      "upstream": "frontend",
+      "source": "infrastructure/docker/frontend/nginx.conf",
+      "description": "Extensionless internal error URI mapped to the frontend Nginx 500 fallback asset.",
+      "usage": "Serves the branded temporary-error page when the frontend Nginx layer raises a server error."
     }
   ],
   "publicApiEndpoints": [
@@ -210,7 +470,7 @@
       "status": "implemented",
       "auth": "anonymous",
       "description": "Creates a new user account and establishes the initial authentication result.",
-      "usage": "Used by an onboarding client flow when registration is enabled.",
+      "usage": "Creates accounts from the shared React and Flutter registration workflow and returns the first session through browser cookies or native credentials.",
       "source": "services/auth/Controllers/AuthController.cs"
     },
     {
@@ -238,11 +498,12 @@
       "operationId": "Refresh",
       "status": "implemented",
       "auth": "anonymous",
-      "description": "Refreshes an access token using an approved refresh token.",
-      "usage": "Keeps an existing client session alive without asking for credentials again.",
+      "description": "Refreshes an access token using an approved refresh token and can activate a previously signed-in browser account.",
+      "usage": "Keeps an existing client session alive and lets the React browser account switcher select one of its protected account-scoped cookie sessions without replacing other accounts.",
       "source": "services/auth/Controllers/AuthController.cs",
       "uiWorkflowIds": [
-        "auth-session-management"
+        "auth-session-management",
+        "foundation-home"
       ]
     },
     {
@@ -254,11 +515,12 @@
       "operationId": "Logout",
       "status": "implemented",
       "auth": "authenticated",
-      "description": "Logs out all signed-in accounts on the current device and archives their sessions.",
-      "usage": "Used when a signed-in React or Flutter user signs out of the current device.",
+      "description": "Ends only the authenticated account's current-device session.",
+      "usage": "Signs out the active account from this device while leaving other accounts on the same browser and this account's sessions on other devices active.",
       "source": "services/auth/Controllers/AuthController.cs",
       "uiWorkflowIds": [
-        "auth-session-management"
+        "auth-session-management",
+        "foundation-home"
       ]
     },
     {
@@ -270,9 +532,26 @@
       "operationId": "LogoutAccount",
       "status": "implemented",
       "auth": "authenticated",
-      "description": "Ends the selected account session identified by a user ID.",
-      "usage": "Supports an authenticated account-management operation when a specific account session must be closed.",
+      "description": "Ends the authenticated account's session on the current device; an account cannot end a different account's session.",
+      "usage": "Provides a guarded account-specific current-device sign-out route for the authenticated account only.",
       "source": "services/auth/Controllers/AuthController.cs"
+    },
+    {
+      "id": "auth-remove-account",
+      "method": "POST",
+      "path": "/api/auth/logout-account",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "LogoutSelectedAccount",
+      "status": "implemented",
+      "auth": "authenticated",
+      "description": "Ends only the authenticated account's session on the current device; other signed-in accounts must sign out separately.",
+      "usage": "Used by the React and Flutter account menus to sign out the active account while keeping other saved accounts and sessions available; requests targeting a different account are forbidden.",
+      "source": "services/auth/Controllers/AuthController.cs",
+      "uiWorkflowIds": [
+        "auth-session-management",
+        "foundation-home"
+      ]
     },
     {
       "id": "auth-logout-all-devices",
@@ -283,11 +562,11 @@
       "operationId": "LogoutAllDevices",
       "status": "implemented",
       "auth": "authenticated",
-      "description": "Revokes all sessions for the authenticated account across devices.",
-      "usage": "Used by the React and Flutter Auth workflow for account-wide session protection.",
+      "description": "Revokes all sessions for the authenticated account across devices after verifying the current password.",
+      "usage": "Available only from Login Sessions in the Profile workflows; password verification is required before any session is revoked.",
       "source": "services/auth/Controllers/AuthController.cs",
       "uiWorkflowIds": [
-        "auth-session-management"
+        "auth-profile-management"
       ]
     },
     {
@@ -300,10 +579,10 @@
       "status": "implemented",
       "auth": "authenticated",
       "description": "Lists active sessions for the authenticated account.",
-      "usage": "Used by the React and Flutter Auth workflow to display device/session state.",
+      "usage": "Used by Profile in React Web and Flutter Mobile to review and end login sessions for the current account.",
       "source": "services/auth/Controllers/AuthController.cs",
       "uiWorkflowIds": [
-        "auth-session-management"
+        "auth-profile-management"
       ]
     },
     {
@@ -315,9 +594,12 @@
       "operationId": "RevokeSession",
       "status": "implemented",
       "auth": "authenticated",
-      "description": "Revokes one selected authenticated session.",
-      "usage": "Supports an account-management screen that lets a user remove one device/session.",
-      "source": "services/auth/Controllers/AuthController.cs"
+      "description": "Revokes one selected authenticated session; the current session may be ended directly, while another device session requires current-password verification.",
+      "usage": "Supports Profile in React Web and Flutter Mobile with session-scoped end actions and server-verified password confirmation for remote devices.",
+      "source": "services/auth/Controllers/AuthController.cs",
+      "uiWorkflowIds": [
+        "auth-profile-management"
+      ]
     },
     {
       "id": "auth-change-password",
@@ -329,8 +611,11 @@
       "status": "implemented",
       "auth": "authenticated",
       "description": "Changes the authenticated user's password after validating the current credential.",
-      "usage": "Used by an authenticated account-security flow.",
-      "source": "services/auth/Controllers/AuthController.cs"
+      "usage": "Used by the Profile account-security section in React Web and Flutter Mobile.",
+      "source": "services/auth/Controllers/AuthController.cs",
+      "uiWorkflowIds": [
+        "auth-profile-management"
+      ]
     },
     {
       "id": "auth-me",
@@ -342,10 +627,13 @@
       "status": "implemented",
       "auth": "authenticated",
       "description": "Returns the current authenticated user's profile and authorization context.",
-      "usage": "Used by the React and Flutter Auth workflow to restore the signed-in account.",
+      "usage": "Used by the React and Flutter Auth workflow to restore the signed-in account, by profile management to show server-owned details, and by the dashboard to personalize the account overview.",
       "source": "services/auth/Controllers/AuthController.cs",
       "uiWorkflowIds": [
-        "auth-session-management"
+        "auth-session-management",
+        "foundation-home",
+        "auth-profile-management",
+        "coastal-overview-dashboard"
       ]
     },
     {
@@ -358,8 +646,11 @@
       "status": "implemented",
       "auth": "authenticated",
       "description": "Updates editable profile data for the current authenticated user.",
-      "usage": "Supports an authenticated profile-management flow.",
-      "source": "services/auth/Controllers/AuthController.cs"
+      "usage": "Updates the current user's editable full name from the shared React and Flutter profile-management workflow.",
+      "source": "services/auth/Controllers/AuthController.cs",
+      "uiWorkflowIds": [
+        "auth-profile-management"
+      ]
     },
     {
       "id": "auth-delete-me",
@@ -370,9 +661,12 @@
       "operationId": "DeleteCurrentUser",
       "status": "implemented",
       "auth": "authenticated",
-      "description": "Deletes or deactivates the current authenticated account according to the Auth service policy.",
-      "usage": "Supports an authenticated account-deletion flow.",
-      "source": "services/auth/Controllers/AuthController.cs"
+      "description": "Deletes the current authenticated account, except accounts assigned a system role, which are prohibited from self-deletion.",
+      "usage": "Called after the user confirms the red account-deletion warning in Profile; a denied deletion names the system role or roles assigned to that account.",
+      "source": "services/auth/Controllers/AuthController.cs",
+      "uiWorkflowIds": [
+        "auth-profile-management"
+      ]
     },
     {
       "id": "auth-health",
@@ -447,8 +741,8 @@
       "publicBoundary": "api",
       "operationId": "CreateRole",
       "status": "implemented",
-      "auth": "permission:auth.role.manage",
-      "description": "Creates a role with the supplied authorization metadata.",
+      "auth": "permission:all(auth.role.read,auth.role.create)",
+      "description": "Creates a role when the caller has both role-read and role-create permission.",
       "usage": "Supports authorized role administration.",
       "source": "services/auth/Controllers/RolesController.cs"
     },
@@ -460,8 +754,8 @@
       "publicBoundary": "api",
       "operationId": "UpdateRole",
       "status": "implemented",
-      "auth": "permission:auth.role.manage",
-      "description": "Updates an existing role.",
+      "auth": "permission:all(auth.role.read,auth.role.update)",
+      "description": "Updates role details when the caller has both role-read and role-update permission.",
       "usage": "Supports authorized role administration.",
       "source": "services/auth/Controllers/RolesController.cs"
     },
@@ -473,8 +767,8 @@
       "publicBoundary": "api",
       "operationId": "DeleteRole",
       "status": "implemented",
-      "auth": "permission:auth.role.manage",
-      "description": "Deletes a role when it is safe to do so under authorization policy.",
+      "auth": "permission:all(auth.role.read,auth.role.delete)",
+      "description": "Deletes an eligible non-system role when the caller has both role-read and role-delete permission.",
       "usage": "Supports authorized role administration.",
       "source": "services/auth/Controllers/RolesController.cs"
     },
@@ -486,9 +780,9 @@
       "publicBoundary": "api",
       "operationId": "AssignPermissions",
       "status": "implemented",
-      "auth": "permission:auth.role.manage",
-      "description": "Assigns permissions to a role.",
-      "usage": "Supports authorized role-to-permission administration.",
+      "auth": "permission:all(auth.role.read,auth.role.update,auth.permission.read)",
+      "description": "Replaces a non-system role’s permission set. Requires role read, role update and permission catalogue read together; system-role grants remain protected.",
+      "usage": "Role editors can grant or remove permissions from eligible non-system roles. The Auth service checks the caller’s current role assignments and invalidates affected user sessions.",
       "source": "services/auth/Controllers/RolesController.cs"
     },
     {
@@ -525,8 +819,8 @@
       "publicBoundary": "api",
       "operationId": "CreateUser",
       "status": "implemented",
-      "auth": "permission:auth.user.manage",
-      "description": "Creates a user through the authorized administration boundary.",
+      "auth": "permission:all(auth.user.read,auth.user.create)",
+      "description": "Creates an account with user read and user create grants together; assigning initial roles also requires role read and any applicable system-role grant.",
       "usage": "Supports authorized user administration.",
       "source": "services/auth/Controllers/UsersController.cs"
     },
@@ -538,8 +832,8 @@
       "publicBoundary": "api",
       "operationId": "UpdateUser",
       "status": "implemented",
-      "auth": "permission:auth.user.manage",
-      "description": "Updates an existing user through the authorized administration boundary.",
+      "auth": "permission:all(auth.user.read,auth.user.update)",
+      "description": "Updates account details, active state or password with user read and user update grants together.",
       "usage": "Supports authorized user administration.",
       "source": "services/auth/Controllers/UsersController.cs"
     },
@@ -551,9 +845,9 @@
       "publicBoundary": "api",
       "operationId": "DeleteUser",
       "status": "implemented",
-      "auth": "permission:auth.user.manage",
-      "description": "Deletes a user through the authorized administration boundary.",
-      "usage": "Supports authorized user administration.",
+      "auth": "permission:all(auth.user.read,auth.user.delete)",
+      "description": "Deletes an account with user read and user delete grants together, subject to protected system-role rules.",
+      "usage": "Supports authorized user administration; a protected account's assigned system role names are included in the deletion rejection.",
       "source": "services/auth/Controllers/UsersController.cs"
     },
     {
@@ -564,9 +858,9 @@
       "publicBoundary": "api",
       "operationId": "AssignRoles",
       "status": "implemented",
-      "auth": "permission:auth.user.manage",
-      "description": "Assigns roles to a user.",
-      "usage": "Supports authorized user-to-role administration.",
+      "auth": "permission:all(auth.user.read,auth.user.update,auth.role.read)",
+      "description": "Replaces an account’s roles with user read, user update and role read grants together; system-role changes require the dedicated grant.",
+      "usage": "Authorized user editors can add or remove user roles; the service checks current caller grants, system-role constraints and invalidates the affected account sessions.",
       "source": "services/auth/Controllers/UsersController.cs"
     }
   ],

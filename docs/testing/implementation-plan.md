@@ -10,10 +10,13 @@ The plan is intentionally staged because the current checkout is a v0
 foundation:
 
 - `apps/web` is a Vite React client with an implemented cookie-based Auth
-  session workflow, lint/build scripts and a dependency-free Node 24
-  request-boundary test runner; no web component test runner exists yet.
-- `apps/mobile` is a Flutter client with the Auth session workflow, secure
-  storage/API-boundary tests and the original starter widget test.
+  session workflow, lint/build scripts and a Node 24 native test runner. Its
+  tests include mocked public-API contracts plus JSDOM/React Testing Library
+  coverage for pages, navigation, routing and shared shell components.
+- `apps/mobile` is a Flutter client with public-API and in-memory
+  credential-store tests, Auth/session view-model and widget coverage, and
+  dashboard, profile/security, onboarding and permission-aware administration
+  workflows. Device-dependent behavior still requires live device evidence.
 - `services/api` and `services/auth` are checked-in ASP.NET services with
   package-local test projects under their owning service directories.
 - No executable Agentic AI service is present yet; the AI documentation defines
@@ -22,10 +25,10 @@ foundation:
   no repository-root `test/` directory is used for authoritative cases.
 
 The remaining phases describe future client/domain/Agentic AI coverage; the
-current API/Auth foundation evidence is recorded in `test-matrix.md`. Future
-domain workflow coverage is cross-platform by default: the same participating
-roles must be exercised through React Web and Flutter Mobile, with test
-differences limited to interaction context and device capabilities.
+current API/Auth foundation evidence is recorded in `test-matrix.md`. Every
+authorized role and business action in a v1 domain workflow must be exercised
+through React Web and Flutter Mobile, with equivalent outcomes and permission
+semantics. Layout and device interactions may have additional cases.
 
 ## 2. Default framework test locations
 
@@ -37,7 +40,7 @@ test name identify the layer and behavior. Do not create a repository-root
 ```text
 apps/web/
 ├── src/
-│   ├── **/*.test.ts(x)       unit/component/request-boundary tests
+│   ├── **/*.test.{js,jsx,ts,tsx} unit/component/request-boundary tests
 │   └── **/__tests__/         colocated React test suites
 └── e2e/                      browser workflows when adopted
 
@@ -106,7 +109,7 @@ written in the test name and in the test matrix, for example:
 
 ```text
 WEB-UI-001       React permission-aware navigation
-MOB-WF-001       Flutter field-report workflow
+MOB-WF-001       Flutter operational-assessment workflow
 API-AUTH-001     API rejects an unauthenticated request
 AUTH-PERM-001    Permission allow/deny behavior
 SVC-<NAME>-001   Service-specific business rule
@@ -165,14 +168,14 @@ thought.
 
 ### 4.1 React web (`apps/web/src` and optional `apps/web/e2e`)
 
-The current dependency-free Auth request-boundary suite uses Node 24's built-in
-test runner and mocks `fetch`; it does not depend on a live backend. When UI
-component and browser workflow coverage is introduced, use Vitest and React
-Testing Library (with MSW or an equivalent request boundary) for deterministic
-tests.
+The React suite uses Node 24's built-in `node:test` runner. Request-contract
+tests mock `fetch`; component and route tests use JSDOM, React Testing Library
+and `user-event`, with Vite SSR loading for the app's TypeScript modules and
+aliases. The suite is deterministic and does not require a live backend or a
+real browser. Run it with `npm run test:ci` from `apps/web`.
 
-The current `/login` surface is the first product workflow. Implement cases
-for it and later workflows covering:
+The current `/signin` and `/signup` surfaces are the Auth entry workflows.
+Keep their cases and later workflow cases covering:
 
 - rendering, loading, empty, success and error states;
 - form validation, server validation errors and retry behavior;
@@ -186,11 +189,13 @@ for it and later workflows covering:
 - browser-level smoke flows for login, one representative business workflow,
   approval and logout after the public API exists.
 
-The existing Auth surface is the first web product-test target and currently
-has request-boundary cases for login, RFC 7807 error mapping and
-everywhere-logout. Extend it with component and browser workflow cases before
-using the generated home surface as quality evidence for future domain
-workflows.
+The implemented React test set covers Auth request construction and failures,
+session restoration and account switching, sign-in and registration forms,
+protected routes, profile/session/password/deletion actions, permission-aware
+role and user administration, home/dashboard states, navigation disclosures,
+recovery, loading feedback, route scrolling and the footer. It tests browser
+DOM behavior with deterministic public-API stubs; live gateway/database and
+real-browser end-to-end workflows remain separate integration evidence.
 
 ### 4.2 Flutter mobile (`apps/mobile/test` and `apps/mobile/integration_test`)
 
@@ -198,20 +203,39 @@ Use `flutter_test` for widget tests and Dart unit tests. Add `integration_test`
 only for workflows that need the real application shell, navigation, platform
 permissions or device behavior.
 
-The current Auth surface already exercises the public gateway and platform
-secure-storage boundary. Continue implementing cases for:
+The checked-in suite now covers:
 
-- startup, routing, loading, offline, empty, success and error states;
-- shared API contract behavior with the React client;
-- authentication persistence, expiry and logout;
-- permission-aware mobile actions;
-- field workflows, draft/save/retry behavior and safe duplicate submission;
-- GPS/location permission denial, unavailable location and valid location;
-- camera/evidence capture permission denial, cancellation and successful
-  attachment;
-- notification handling where notifications are part of the delivery scope;
-- responsive layouts and accessibility semantics for supported device sizes;
-- prevention of direct calls to Auth or AI service URLs.
+- gateway configuration, build-time override and public Auth endpoint
+  construction;
+- sign-in/registration API boundaries, malformed and failed responses,
+  credential persistence, restoration, account switching and account limits;
+- profile reads/updates, password changes, session listing/revocation, logout
+  scopes and account deletion;
+- onboarding navigation/swipe/skip, compact layout, sign-in and registration
+  validation, dashboard/profile/security actions and recovery states;
+- permission-gated administration navigation, role/user creation and edits,
+  role/permission assignment, system-role protections and invalid forms;
+- loading/error/404/500 behavior and dependency-failure recovery.
+
+Historical local evidence from 2026-09-25: 86 tests passed across the 12 then-
+runnable mobile test files, and `flutter analyze --no-pub lib` reported no
+issues. The formerly failing `test/widget_test.dart` reference to removed
+`MyHomePage` was replaced on 2026-09-26 with `MOB-LAUNCH-001`, covering the
+current signed-out `MobileLaunchPage` to onboarding transition. The final
+documentation audit confirmed the stale symbol is absent and Dart formatting
+is clean, but could not run Flutter analysis or tests because the sandbox
+cannot write the Flutter SDK cache lockfile under `Program Files`; CI must
+confirm the revised test. `test/auth_api_service_test.dart` still reuses the
+IDs `MOB-AUTH-011`, `MOB-AUTH-012` and `MOB-AUTH-013`; changing those existing
+test names requires separate user approval. No `integration_test` suite exists
+yet.
+
+Future device or domain workflows should add applicable GPS/location
+permission-denial and unavailable-location cases, camera/evidence capture
+permission and cancellation cases, notifications when in scope, and any
+field-work draft/save/retry behavior. Keep those tests in
+`apps/mobile/integration_test` when they need the real application shell or
+platform behavior.
 
 Use Flutter’s package-default `apps/mobile/test` location for unit/widget tests
 and `apps/mobile/integration_test` for application/device workflows. Run both
@@ -251,8 +275,9 @@ Implement cases for:
 
 ### 4.4 Auth service (`services/auth/tests`)
 
-The current default suite passes 67 deterministic cases and implements these
-behaviors:
+The current test sources define 77 default deterministic cases and cover these
+behaviors. Consult recorded run evidence separately; source counts alone do
+not mean the suite passed during this documentation audit:
 
 - valid and invalid registration/login;
 - server-issued device installations, proof-key validation and cookie/native
@@ -329,21 +354,21 @@ For the orchestrator and every specialized AI service, implement:
 - audit record completeness without hidden reasoning;
 - regression evaluation against a versioned fixture set.
 
-The initial AI service test directories should follow the actual selected
-service boundaries. The planned names are examples only:
+AI test directories should follow the actual selected service boundaries.
+The four v1 responsibility areas are the Coastal Experience and Biodiversity
+Agent, Marine Conditions Intelligence Agent, Planning and Coordination Agent,
+and Safety and Operations Agent. Their separate target contracts are in
+[`docs/v1/agents/`](../v1/agents/). An orchestrator may coordinate these
+responsibilities; its code location and package-local tests must match the
+implemented boundary rather than a speculative directory name.
 
-```text
-services/ai/orchestrator/tests/
-services/ai/planner/tests/
-services/ai/marine-climate/tests/
-services/ai/marine-biodiversity/tests/
-services/ai/safety-sustainability/tests/
-```
-
-If an AI capability is implemented inside the API rather than as a separate
-service, its tests remain in `services/api/tests` for API orchestration behavior
-and in the capability’s package-local `tests/` directory for AI-specific
-evaluation behavior.
+Keep the public API tests focused on public routing, authentication/permission
+integration, request/response translation and failure isolation. The actual
+Agentic AI runtime and agents are post-G07 private implementation work under
+`agentic-ai/**`; their tests and evaluations belong to their owning package or
+service. Member-service tests cover the typed private dispatch seam and its
+safe unavailable behavior. Do not move domain or Agentic AI orchestration
+logic into `services/api`.
 
 ### 4.7 Shared integration and operational tests
 
@@ -354,9 +379,10 @@ location for behavior that cannot be proven by one component alone:
 - gateway routing exposes `/api/...` without introducing `/api/v1`;
 - clients cannot reach internal Auth or AI services;
 - login → authorized request → business workflow → approval → updated status;
-- API → PostgreSQL persistence and retrieval;
-- API → AI recommendation → deterministic validation → human approval →
-  execution/audit;
+- owning member service → PostgreSQL persistence and retrieval, with Auth
+  persistence separately tested by `services/auth`;
+- public API → owning member service → private Agentic AI runtime →
+  deterministic validation → human approval → owner-service execution/audit;
 - failure recovery across service boundaries;
 - Compose startup, health endpoints, gateway headers and dependency health;
 - deployment smoke checks for the selected environment.
@@ -384,21 +410,23 @@ case ID, and can run each available suite locally.
 
 ### Phase 1 — React test harness and foundation cases
 
-The first product-level Auth request-boundary cases now run through Node 24's
-built-in test runner with JUnit output and complete assertion checks. Extend
-this foundation with Vitest, React Testing Library, request mocking and
-coverage reporting when component/workflow tests are introduced; do not rely
-on the generated home surface as quality evidence.
+The React harness now combines Node 24's built-in test runner, request stubs,
+JSDOM and React Testing Library. Its current baseline passes 157 cases
+(2026-09-25). CI runs the package's lint, build and test commands and publishes
+JUnit output with case IDs. Coverage instrumentation is not configured yet and
+must be added before line-coverage thresholds are enforced.
 
-Exit criteria: `lint`, build and web tests run in CI; failures produce readable
-case IDs and JUnit artifacts. Coverage reporting remains part of the future
-component/workflow harness.
+Exit criteria met: package tests run locally and in CI with readable case IDs;
+lint/build remain separate web gates. Live-browser coverage is still needed
+for behavior that depends on a real rendering engine or deployed gateway.
 
 ### Phase 2 — Flutter test harness and foundation cases
 
-Use the default Flutter test locations. Extend the existing Auth API-boundary
-and widget fixtures with startup, persistence, device and workflow cases. Keep
-`flutter analyze` mandatory.
+Use the default Flutter test locations. The package now has 86 passing selected
+unit/widget/API-contract tests and a clean production-source analysis run.
+Keep `flutter analyze` and the complete `flutter test` suite mandatory as the
+existing legacy widget test is approved and migrated; add device integration
+cases only when platform behavior requires them.
 
 Exit criteria: analyzer, unit/widget tests and any selected integration tests
 run in CI on a supported Flutter channel.

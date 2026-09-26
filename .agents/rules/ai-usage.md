@@ -8,10 +8,13 @@ These rules apply whenever an AI agent assists with a repository task.
   `docs/ai-contribution/<GitHub-Username>-ai-usage.md` file.
 - Use the exact GitHub username in the filename and the actual team member name
   in the record; do not substitute a GitHub display name for the real name.
-- Every meaningful task record must include the date/time or time range,
+- Every new meaningful task record must include the date/time or time range,
   timezone, GitHub username, actual team member name, agent name, tool/app, AI
-  model, user-request summary, agent-action summary and verification/evidence.
+  model, user-request summary, agent-action summary, what AI output was
+  accepted, changed or rejected, and verification/evidence.
 - Use the format in `docs/project/ai-usage-log-template.md`.
+- The assessed individual AI reflection is the student's own writing; an
+  agent must not author it.
 
 ## Identity verification
 

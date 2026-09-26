@@ -19,6 +19,8 @@ route declarations or client API literals change.
 
 1. Derive expected behavior from the requirement or contract independently of
    the implementation.
+   Use the applicable owning component, agent, workflow and acceptance
+   documents under `docs/`.
    For cross-client UI work, use
    `docs/contracts/ui-integration.json` as the route/API traceability
    contract, read `docs/project/ui-experience-principles.md`, and run
@@ -37,9 +39,9 @@ route declarations or client API literals change.
 5. Use deterministic synthetic fixtures and ensure the matching workflow
    discovers tests and reports complete failures and metrics.
    UI request-boundary tests must call only the registered public gateway
-   endpoint and route/workflow tests must cover both relevant clients and every
-   participating role. Differences between clients should reflect interaction
-   context or device capabilities, not role-based frontend ownership.
+   endpoint and route/workflow tests must cover both clients and every
+   authorized role and business action. Differences between clients may
+   reflect layout or device integrations while preserving business outcomes.
 6. For .NET test execution, read `.agents/skill-overlays/dotnet-test/run-tests.md`
    before using the portable `run-tests` skill. Use the other imported test
    quality skills only for their narrow stated purpose.

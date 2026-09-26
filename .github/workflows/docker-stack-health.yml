@@ -236,6 +236,7 @@ jobs:
             echo "Checking $endpoint"
             curl \
               --fail-with-body \
+              --location \
               --silent \
               --show-error \
               --retry 15 \
@@ -272,6 +273,16 @@ jobs:
             echo "::error::Backend API health endpoint failed: $base_url/api/health (curl exit code $status)."
             show_compose_diagnostics "$status"
           fi
+
+          for swagger_path in /api/swagger /api/swagger/v1.json /api/auth/swagger/v1/swagger.json; do
+            if check_endpoint "$base_url$swagger_path"; then
+              :
+            else
+              status=$?
+              echo "::error::Swagger endpoint failed: $base_url$swagger_path (curl exit code $status)."
+              show_compose_diagnostics "$status"
+            fi
+          done
 
           if [[ -d services ]]; then
             while IFS= read -r -d '' service_dir; do

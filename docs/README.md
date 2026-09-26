@@ -12,6 +12,9 @@
 - `development/agent-resources.md` — agent routing, skills, provenance and validation
 - `project/` — roadmap, contribution and AI-use documentation
 - `project/ui-experience-principles.md` — cross-platform product and UI direction
+- `../DESIGN.md` — shared React Web and Flutter Mobile visual system and design tokens
+- `v0/` — implemented foundation components, shared Auth flow and extension contracts
+- `v1/` — finalized v1 scope, separate member components and agents, shared workflows and acceptance
 - `ai-contribution/` — one AI usage record per participating GitHub account
 - `security/` — security practices
 - `testing/` — test strategy and acceptance evidence
@@ -20,19 +23,34 @@
 
 ## Reading the documentation
 
-The repository is a v0 foundation and the documentation deliberately separates
-the checked-in state from the target contract. The clients retain starter
-surfaces outside the implemented Auth workflow. The public API gateway,
-internal Auth service, Auth persistence, authorization and session-management
-contract are checked in at `services/api` and `services/auth`. Domain
-workflows and executable Agentic AI workflows remain implementation targets
-unless a page explicitly says the behavior is currently available.
+The checked-in application provides the v0 foundation; v0 plus v1 is the
+submission target. Documentation separates the checked-in state from the
+target contract. React and Flutter implement shared account registration,
+session, profile and permission-aware Auth administration workflows. The
+public API gateway, internal Auth service, Auth persistence, authorization and
+session-management contract are checked in at `services/api` and
+`services/auth`. V1 domain workflows and executable Agentic AI workflows
+remain implementation targets unless a page explicitly says the behavior is
+currently available.
 
-React Web and Flutter Mobile are both intended to serve clients, staff and
-administrators. Platform differences describe interaction strengths rather than
-ownership of a stakeholder group. See
+Each v1 member component is assigned its own private .NET service. The public
+API remains the only client boundary and receives integration code only; the
+actual Agentic AI runtime and agents are gated until all four components pass
+G07. See [ADR-0020](adr/ADR-0020-member-component-service-boundaries.md), the
+[v1 index](v1/README.md) and the
+[member branch workflow](v1/member-branch-workflow.md).
+
+React Web and Flutter Mobile provide equal capability coverage for every
+permitted role and workflow. Device input or layout does not allocate business
+responsibility to a platform. Read the
+[v0 foundation guide](v0/README.md) for technical components and the
+[v1 index](v1/README.md) for the four member components, four agents and
+integrated workflows. See
 [`project/ui-experience-principles.md`](project/ui-experience-principles.md)
-for the product-facing UI standard.
+for the product-facing UI standard, and the
+[BLUEVERSE Design System](../DESIGN.md) for the shared palette,
+typography hierarchy, image treatment, component character and platform
+implementation guidance.
 
 For a current-state summary, see
 [`project/foundation-gap-analysis.md`](project/foundation-gap-analysis.md).

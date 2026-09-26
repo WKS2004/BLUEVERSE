@@ -11,7 +11,8 @@ Most validation workflows use `contents: read`. The workflows that mutate
 repository state are intentionally limited to the permissions they need:
 
 - `branch-policy.yml` can delete a newly created invalid branch;
-- `dev-backup.yml` can create the backup/rescue refs and update `dev-backup`;
+- `dev-backup.yml` can create backup/rescue refs, create a rescue merge commit
+  and force-update `dev-backup`;
 - `github-config-sync.yml` can create sync branches and pull requests.
 
 Configure the following repository secrets before expecting Docker checks to
@@ -41,14 +42,15 @@ pulled.
 | `backend-tests.yml` | Supported work branches; service, catalog, helper or test-workflow paths | Runs every discovered backend test project with aggregate and per-service evidence. |
 | `agentic-ai-tests.yml` | Supported work branches; Agentic AI, helper or AI-test workflow paths | Runs every discovered AI test suite with aggregate and per-service evidence. |
 | `branch-policy.yml` | Branch creation | Enforces lowercase approved branch names and deletes invalid branches. |
-| `dev-backup.yml` | Pushes to `dev` or `dev-backup` | Creates and synchronizes the exact `dev-backup` ref while preserving mistaken history. |
+| `dev-backup.yml` | Pushes to `dev` or `dev-backup` | On divergence, creates a timestamped rescue branch containing the mistaken history in a merge commit, then force-with-lease synchronizes `dev-backup` to the exact `dev` SHA. |
 | `github-config-sync.yml` | `.github/**` pushes | Creates focused `.github`-only pull requests for other branches and queues auto-merge. |
 
 The supported active work families are `features/**`, `agentic-ai/**`,
 `claude/**`, `codex/**`, `antigravity/**`, `gemini/**`, `maintenance/**` and
-`bug-fixes/**`. Automation branches such as `github-sync/**`,
-`docker-workflow-changes/**` and `dev-backup-mistaken-commits/**` are excluded
-from normal source/test workflow triggers.
+`bug-fixes/**`. Automation branches such as `github-sync/**` and
+`docker-workflow-changes/**`, plus recovery branches such as
+`dev-backup-mistaken-commits/**`, are excluded from normal source/test workflow
+triggers.
 
 ## Branch and path-aware behavior
 
@@ -72,6 +74,13 @@ pull request. Use required checks that match the repository's branch/path
 policy, or retain a lightweight always-triggered gate when a branch rule
 requires a check on every pull request.
 
+The SE3090 assignment separately requires a workflow that restores, builds
+and runs backend tests on every push and pull request to `main`. The
+current backend source/test workflows have path filters, so this trigger
+requirement is not yet met for unrelated changes. Preserve the per-area
+workflows if useful, but add an always-triggered main-branch backend gate
+before the final submission; document its passing hosted run.
+
 ## UI and API integration contract
 
 `docs/contracts/ui-integration.json` is the source of truth for shared client
@@ -91,8 +100,9 @@ validator for their affected client paths. The checks reject:
   Docker hostname; and
 - `/api/v1`-style path versioning.
 
-For any route, gateway, service or client contract change, update both JSON
-sources and regenerate the endpoint-catalog Markdown in the same change:
+For any route or gateway change, update the endpoint-catalog JSON and
+regenerate its Markdown view in the same change. Update the UI-registry JSON
+when a client workflow, frontend route or its public API references change:
 
 ```bash
 python .agents/scripts/validate_endpoint_catalog.py --write-markdown
@@ -139,7 +149,7 @@ Docker checks remain separate from source/test checks:
 |---|---|---|
 | `docker-web-build.yml` | Supported work branches; web/Docker/Compose paths | Synchronizes the React lockfile and builds the web image. |
 | `docker-backend-build.yml` | Supported work branches; service/Docker/Compose paths | Builds the public API first, then each discovered ASP.NET backend service. |
-| `docker-stack-health.yml` | Successful Docker build workflows for a PR targeting `main` only | Checks the complete Compose network and public health endpoints. |
+| `docker-stack-health.yml` | Successful Docker build workflows for a PR targeting `main` only | Checks the complete Compose network, public health endpoints and API/Auth Swagger routes. |
 
 The web and backend image workflows start only when their relevant application,
 service, Docker infrastructure, lockfile, Compose, global SDK or workflow
@@ -165,27 +175,29 @@ originating run was a pull request targeting `main`, determines which required
 image workflows were triggered for that exact comparison range, waits for
 those runs to succeed, and then checks out the exact commit. It validates
 `compose.yaml` or `docker-compose.yml`, starts the stack on host port `8080`,
-checks `/health`, `/api/health` and each discovered backend
-`/api/<service-name>/health`, prints Compose diagnostics on failure and always
+checks `/health`, `/api/health`, the Swagger UI and both API/Auth OpenAPI documents,
+and each discovered backend `/api/<service-name>/health`, prints Compose diagnostics on failure and always
 tears the stack down.
 
 ## GitHub configuration synchronization
 
 When a push changes `.github/**`, `github-config-sync.yml` copies only that
-folder from the source branch onto each durable development branch except
-`main` and `dev-backup`, using a temporary `github-sync/<target>/<run-id>`
-branch. Its own `github-sync/**`, `docker-workflow-changes/**` and
-`dev-backup-mistaken-commits/**` automation branches are excluded as sources
-and targets because they are temporary or recovery refs. The workflow creates
-a focused pull request, requests automatic squash merging and asks GitHub to
-delete the temporary branch after merge. Existing open PRs for the same
-temporary branch are reused on a retry. Pushes created by the standard sync
-commit title are ignored to prevent a propagation loop.
+folder from the source branch to durable development branches other than
+`main` and `dev-backup`. It uses a temporary
+`github-sync/<target>/<run-id>` branch, creates a focused pull request, queues
+automatic squash merging and requests deletion of the temporary branch after
+merge. Recovery and automation branches are excluded as sources and targets;
+application and service files are not copied.
 
-For this to work, repository settings must permit GitHub Actions to create pull
-requests and queue automatic merges. Required checks or review rules can still
-leave a sync PR open; the workflow reports that condition rather than changing
-branch protections.
+The workflow skips its standard synchronization commit subject to avoid a
+second propagation wave. If repository rules do not permit auto-merge, the
+pull request remains available for a collaborator and the workflow reports
+the target as failed. Repository settings must allow GitHub Actions to create
+pull requests and queue auto-merges for this automation to complete.
+
+This is repository-managed GitHub Actions behavior. It does not authorize an
+AI agent to create or push commits; agents follow the explicit authorization
+rule in the root [`AGENTS.md`](../../AGENTS.md) and [Git rules](../../.agents/rules/git.md).
 
 ## Local validation
 

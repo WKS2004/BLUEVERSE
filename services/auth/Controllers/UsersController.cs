@@ -18,7 +18,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet]
-    [HasPermission("auth.user.read")]
+    [HasPermission(PermissionCodes.UserRead)]
     [ProducesResponseType(typeof(List<UserDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAllUsers()
     {
@@ -27,7 +27,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    [HasPermission("auth.user.read")]
+    [HasPermission(PermissionCodes.UserRead)]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetUserById(Guid id)
@@ -47,7 +47,8 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost]
-    [HasPermission("auth.user.manage")]
+    [HasPermission(PermissionCodes.UserRead)]
+    [HasPermission(PermissionCodes.UserCreate)]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateUser([FromBody] AdminCreateUserDto dto)
@@ -79,7 +80,8 @@ public class UsersController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [HasPermission("auth.user.manage")]
+    [HasPermission(PermissionCodes.UserRead)]
+    [HasPermission(PermissionCodes.UserUpdate)]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -118,7 +120,8 @@ public class UsersController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [HasPermission("auth.user.manage")]
+    [HasPermission(PermissionCodes.UserRead)]
+    [HasPermission(PermissionCodes.UserDelete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -157,7 +160,9 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost("{id:guid}/roles")]
-    [HasPermission("auth.user.manage")]
+    [HasPermission(PermissionCodes.UserRead)]
+    [HasPermission(PermissionCodes.UserUpdate)]
+    [HasPermission(PermissionCodes.RoleRead)]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> AssignRoles(Guid id, [FromBody] AssignRolesDto dto)

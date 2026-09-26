@@ -30,6 +30,37 @@ class AuthUser {
   }
 }
 
+class AuthAccountSummary {
+  const AuthAccountSummary({
+    required this.id,
+    required this.fullName,
+    required this.email,
+  });
+
+  final String id;
+  final String fullName;
+  final String email;
+
+  factory AuthAccountSummary.fromUser(AuthUser user) => AuthAccountSummary(
+    id: user.id,
+    fullName: user.fullName,
+    email: user.email,
+  );
+
+  factory AuthAccountSummary.fromJson(Map<String, dynamic> json) =>
+      AuthAccountSummary(
+        id: _requiredString(json, 'id'),
+        fullName: _requiredString(json, 'fullName'),
+        email: _requiredString(json, 'email'),
+      );
+
+  Map<String, String> toJson() => {
+    'id': id,
+    'fullName': fullName,
+    'email': email,
+  };
+}
+
 class AuthResponse {
   const AuthResponse({
     required this.token,
@@ -42,22 +73,22 @@ class AuthResponse {
     required this.user,
   });
 
-  final String? token;
+  final String token;
   final DateTime expiresAt;
   final String deviceId;
   final String? deviceKey;
-  final String? refreshToken;
+  final String refreshToken;
   final DateTime sessionExpiresAt;
   final bool rememberMe;
   final AuthUser user;
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
     return AuthResponse(
-      token: json['token'] as String?,
+      token: _requiredString(json, 'token'),
       expiresAt: DateTime.parse(_requiredString(json, 'expiresAt')),
       deviceId: _requiredString(json, 'deviceId'),
       deviceKey: json['deviceKey'] as String?,
-      refreshToken: json['refreshToken'] as String?,
+      refreshToken: _requiredString(json, 'refreshToken'),
       sessionExpiresAt: DateTime.parse(
         _requiredString(json, 'sessionExpiresAt'),
       ),

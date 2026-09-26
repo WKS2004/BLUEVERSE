@@ -121,7 +121,7 @@ public sealed class AuthSessionBoundaryTests : IClassFixture<AuthWebApplicationF
 
     [Fact]
     [Trait("TestId", "AUTH-SESSION-BOUNDARY-003")]
-    public async Task AccountSpecificLogoutIsIdempotentAndDoesNotExpandItsDeviceScope()
+    public async Task AccountSpecificLogoutRequiresTheTargetAccountAndPreservesOtherAccounts()
     {
         var deviceId = $"account-logout-{Guid.NewGuid():N}";
         var first = await AuthTestSupport.RegisterAsync(_client, fullName: "Account Logout First", deviceId: deviceId);
@@ -132,17 +132,17 @@ public sealed class AuthSessionBoundaryTests : IClassFixture<AuthWebApplicationF
             $"/api/auth/logout/{second.UserId}",
             first.Token);
         using var logoutSecondResponse = await _client.SendAsync(logoutSecondRequest);
-        Assert.Equal(HttpStatusCode.NoContent, logoutSecondResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, logoutSecondResponse.StatusCode);
 
         using var secondMeRequest = AuthTestSupport.AuthorizedRequest(HttpMethod.Get, "/api/auth/me", second.Token);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await _client.SendAsync(secondMeRequest)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await _client.SendAsync(secondMeRequest)).StatusCode);
 
         using var missingAccountRequest = AuthTestSupport.AuthorizedRequest(
             HttpMethod.Post,
             $"/api/auth/logout/{Guid.NewGuid()}",
             first.Token);
         using var missingAccountResponse = await _client.SendAsync(missingAccountRequest);
-        Assert.Equal(HttpStatusCode.NoContent, missingAccountResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, missingAccountResponse.StatusCode);
 
         using var firstMeRequest = AuthTestSupport.AuthorizedRequest(HttpMethod.Get, "/api/auth/me", first.Token);
         Assert.Equal(HttpStatusCode.OK, (await _client.SendAsync(firstMeRequest)).StatusCode);
@@ -156,6 +156,12 @@ public sealed class AuthSessionBoundaryTests : IClassFixture<AuthWebApplicationF
 
         using var selfMeRequest = AuthTestSupport.AuthorizedRequest(HttpMethod.Get, "/api/auth/me", first.Token);
         Assert.Equal(HttpStatusCode.Unauthorized, (await _client.SendAsync(selfMeRequest)).StatusCode);
+
+        using var secondAfterLogoutRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Get,
+            "/api/auth/me",
+            second.Token);
+        Assert.Equal(HttpStatusCode.OK, (await _client.SendAsync(secondAfterLogoutRequest)).StatusCode);
     }
 
     [Fact]
@@ -213,7 +219,12 @@ public sealed class AuthSessionBoundaryTests : IClassFixture<AuthWebApplicationF
             .GetProperty("id")
             .GetGuid();
 
-        using var revokeResponse = await client.DeleteAsync($"/api/auth/sessions/{currentSessionId}");
+        using var revokeResponse = await client.SendAsync(new HttpRequestMessage(
+            HttpMethod.Delete,
+            $"/api/auth/sessions/{currentSessionId}")
+        {
+            Content = JsonContent.Create(new { currentPassword = string.Empty })
+        });
         var revokeCookies = revokeResponse.Headers.GetValues("Set-Cookie").ToList();
         Assert.Equal(HttpStatusCode.NoContent, revokeResponse.StatusCode);
         Assert.Empty(await revokeResponse.Content.ReadAsStringAsync());
@@ -255,7 +266,9 @@ public sealed class AuthSessionBoundaryTests : IClassFixture<AuthWebApplicationF
             email,
             deviceId: $"cookie-logout-all-{Guid.NewGuid():N}");
 
-        using var logoutResponse = await cookieClient.PostAsync("/api/auth/logout-all-devices", content: null);
+        using var logoutResponse = await cookieClient.PostAsJsonAsync(
+            "/api/auth/logout-all-devices",
+            new { currentPassword = "UserPassword-123!" });
         var logoutCookies = logoutResponse.Headers.GetValues("Set-Cookie").ToList();
         Assert.Equal(HttpStatusCode.NoContent, logoutResponse.StatusCode);
         Assert.Empty(await logoutResponse.Content.ReadAsStringAsync());
@@ -390,14 +403,16 @@ public sealed class AuthSessionBoundaryTests : IClassFixture<AuthWebApplicationF
         using var crossUserRequest = AuthTestSupport.AuthorizedRequest(
             HttpMethod.Delete,
             $"/api/auth/sessions/{otherSessionId}",
-            first.Token);
+            first.Token,
+            new { currentPassword = "UserPassword-123!" });
         using var crossUserResponse = await _client.SendAsync(crossUserRequest);
         Assert.Equal(HttpStatusCode.NotFound, crossUserResponse.StatusCode);
 
         using var unknownRequest = AuthTestSupport.AuthorizedRequest(
             HttpMethod.Delete,
             $"/api/auth/sessions/{Guid.NewGuid()}",
-            first.Token);
+            first.Token,
+            new { currentPassword = "UserPassword-123!" });
         using var unknownResponse = await _client.SendAsync(unknownRequest);
         Assert.Equal(HttpStatusCode.NotFound, unknownResponse.StatusCode);
 
@@ -412,7 +427,8 @@ public sealed class AuthSessionBoundaryTests : IClassFixture<AuthWebApplicationF
         using var revokeOwnRequest = AuthTestSupport.AuthorizedRequest(
             HttpMethod.Delete,
             $"/api/auth/sessions/{ownSessionId}",
-            first.Token);
+            first.Token,
+            new { currentPassword = string.Empty });
         using var revokeOwnResponse = await _client.SendAsync(revokeOwnRequest);
         Assert.Equal(HttpStatusCode.NoContent, revokeOwnResponse.StatusCode);
 

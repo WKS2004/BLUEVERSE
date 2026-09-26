@@ -5,18 +5,44 @@
 Authentication, authorization, permissions, API/Auth, PostgreSQL, React/Flutter
 foundations, the shared UI route/API integration contract, Docker, gateway, CI
 and documentation. The public API/Auth foundation and shared Auth workflow are
-checked in; the starter contract has no non-Auth domain endpoints yet.
+checked in. The [v0 guide](../v0/README.md) maps their component contracts;
+domain endpoints are introduced with their owning later workflows.
 
-Every later business workflow is planned for both React Web and Flutter Mobile
-for the roles that use it. The platforms may present the workflow differently
-for browser and mobile context, but a role is not assigned to only one client.
+Every authorized business workflow belongs in both React Web and Flutter
+Mobile. Presentation and device input may differ without changing role,
+action or outcome coverage.
 User-facing work follows the principles in
 [`ui-experience-principles.md`](ui-experience-principles.md).
 
 ## v1 — Coastal Tourism & Operations
 
-Tourism and coastal-management workflows for clients, staff and authorized
-administrators across both client surfaces.
+The SE3090 submission target includes v0 and a fully integrated v1. V1 has
+four member-owned business components: Coastal Experience & Biodiversity
+Discovery; Marine Conditions & Safety Intelligence; Smart Coastal Planner &
+Itinerary Management; and Coastal Operations, Advisories & Alerts. Each has
+a distinct Agentic AI contribution. Open-Meteo conditions, internal
+biodiversity-ML integration, a deterministic safety layer, authorized human
+approval and the complete operational-assessment workflow are in scope.
+
+Each member implements its complete component in one feature branch and owns
+one private .NET service under `services/`; the existing public API is limited
+to the integration needed to expose those services. The four feature branches
+can proceed in parallel. Only after all four are integrated and G07 passes do
+members implement actual agents, tools, orchestration and AI execution state
+on `agentic-ai/**` branches. Feature services may prepare the private AI
+adapter and not-connected/unavailable behavior before that gate. See the
+[member branch workflow](../v1/member-branch-workflow.md) and
+[ADR-0020](../adr/ADR-0020-member-component-service-boundaries.md).
+
+React and Flutter provide the same permitted business workflows to tourists,
+operators, reviewers and administrators. Neither platform has a stakeholder
+or workflow priority. See the [v1 guide](../v1/README.md) and the
+[requirements baseline](../../PROJECT_REQUIREMENTS.md).
+
+Marine Biodiversity Intelligence is part of v1 integration. Its trained model
+comes from the separate IT3091 workstream; BLUEVERSE must expose genuine
+inference when the model is available and an explicit unavailable state when
+it is not. The current repository does not yet contain that integration.
 
 ## v2 — Environmental Resilience
 
@@ -26,5 +52,3 @@ client surfaces, with permission-aware experiences for each participating role.
 ## v3 — Fisheries & Coastal Livelihoods
 
 Fisheries and coastal-resource workflows across both client surfaces.
-
-Marine Biodiversity Intelligence is planned as a genuine intelligence capability and is expected to be integrated during the appropriate later phase.

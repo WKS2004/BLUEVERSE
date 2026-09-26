@@ -7,7 +7,7 @@ class ApiGatewayConfig {
   const ApiGatewayConfig();
 
   static const gatewayPort = 80;
-  static const androidEmulatorHost = '10.0.2.2';
+  static const androidEmulatorHost = '10.247.90.188';
   static const androidUsbReverseHost = '127.0.0.1';
 
   // Flutter embeds this value at compile time. A physical device must receive

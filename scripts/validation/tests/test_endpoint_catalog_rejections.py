@@ -94,9 +94,22 @@ class EndpointCatalogRejectionTests(unittest.TestCase):
     def test_source_permission_change_is_rejected(self) -> None:
         source = "services/auth/Controllers/RolesController.cs"
         self.source_changes[source] = (ROOT / source).read_text().replace(
-            'HasPermission("auth.role.read")', 'HasPermission("auth.role.manage")'
+            "HasPermission(PermissionCodes.RoleRead)",
+            "HasPermission(PermissionCodes.RoleManage)",
+            1,
         )
         self.assertTrue(any("auth mismatch" in error for error in self.check_catalog()))
+
+    def test_multiple_permission_constants_are_recorded_as_all_of(self) -> None:
+        errors: list[str] = []
+        routes = VALIDATOR.discover_endpoints(ROOT, errors)
+        route = routes[(
+            "services/auth/Controllers/RolesController.cs",
+            "POST",
+            "/api/auth/roles",
+        )]
+        self.assertEqual(errors, [])
+        self.assertEqual(route["auth"], "permission:all(auth.role.read,auth.role.create)")
 
     def test_wrong_owner_is_rejected(self) -> None:
         self.endpoint("api-health")["ownerService"] = "auth"
