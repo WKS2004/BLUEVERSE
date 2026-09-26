@@ -563,10 +563,13 @@ permission is denied. The same location-aware business workflow must remain
 usable in React through an appropriate location input; GPS is a mobile input
 method, not ownership of coastal discovery.
 
-The selected additional in-scope device interactions are Member 3's
-date/time selection for coastal planning and Member 4's optional image
-evidence attachments for BLUEVERSE-managed operational assessments. The
-specific cross-platform behavior and security boundary are in the
+Additional in-scope device interactions are Member 2's date/time or interval
+selection for direct marine-condition queries, Member 3's date/time selection
+for coastal planning, and Member 4's optional image evidence attachments for
+BLUEVERSE-managed operational assessments. Member 2's query period and Member
+3's itinerary schedule are distinct business inputs even if both clients
+reuse a date/time control. The specific cross-platform behavior and security
+boundary are in the
 [v1 device-capability contract](docs/v1/device-capabilities.md). They do not
 replace the required Flutter GPS capability.
 
@@ -720,11 +723,15 @@ without reducing any permitted business action on either client.
 Use a one-time, user-initiated location reading for nearby discovery; do not
 add background tracking. React may offer browser geolocation as a convenience,
 but must retain manual destination/region entry. The Member 1 work-area
-contract defines permission, timeout, privacy and fallback behavior. Member 3
-captures its already-scoped itinerary date/time inputs with appropriate web
-and native picker controls. Member 4 may accept optional image evidence on a
-managed operational assessment; this does not include generic uploads or
-environmental-incident reporting. See the [v1 device-capability
+contract defines permission, timeout, privacy and fallback behavior. For a
+direct Member 2 marine-condition query, both clients must let the user select
+a supported forecast/observation time or interval and submit its agreed
+semantics to the API; planner-originated assessments preserve Member 3's
+validated itinerary period. Member 3 captures its already-scoped itinerary
+date/time inputs with appropriate web and native picker controls. Member 4
+may accept optional image evidence on a managed operational assessment; this
+does not include generic uploads or environmental-incident reporting. See the
+[v1 device-capability
 contract](docs/v1/device-capabilities.md).
 
 Member 1 owns BLUEVERSE's consumer integration for the selected map API as
@@ -931,6 +938,9 @@ The LLM must not invent thresholds during runtime.
 Both clients must support the complete authorized Component B workflow:
 
 * look up current and forecast marine conditions by destination and activity;
+* for direct condition/suitability requests, select a supported forecast or
+  observation time/interval; when evaluating a planner candidate, preserve
+  the validated itinerary period supplied by Member 3;
 * show source, timestamps, freshness, unavailable fields and relevant warnings;
 * show activity-specific suitability, caution and condition summaries;
 * navigate between destination/activity details and marine information;
@@ -942,7 +952,11 @@ Both clients must support the complete authorized Component B workflow:
 
 Each client may present condition information to fit its screen and input
 method. Both must preserve the same evidence, permission-gated actions and
-server-calculated suitability result.
+server-calculated suitability result. Flutter may use native date/time or
+interval controls; React must offer equivalent accessible controls. The API
+defines the supported period horizon, granularity, time-zone interpretation
+and provider coverage. Clients must report unsupported periods and must not
+silently clamp, shift or replace a requested period.
 
 ---
 
@@ -3022,6 +3036,21 @@ sequence. Image evidence is not generic file sharing, is not sent to the
 Agentic AI runtime, and does not add v2 environmental-incident or pollution
 reporting. See [device capabilities](docs/v1/device-capabilities.md) and
 [ADR-0018](docs/adr/ADR-0018-assessment-evidence-storage-boundary.md).
+
+## Recorded Member 2 device-input allocation — 2026-09-26
+
+The team assigned Member 2 an accessible date/time or interval selector for
+direct marine-condition lookups and deterministic suitability assessments.
+This is an input to Member 2's existing location/activity/period contract, not
+a separate member branch or a new domain component. It is distinct from
+Member 3's itinerary scheduling. When the planner supplies a candidate
+period, Member 2 must use that validated period without prompting for or
+substituting another one. React and Flutter must submit equivalent period
+semantics; the Member 2 API contract must set provider-supported bounds,
+interval granularity and time-zone/DST behavior. See the [Member 2 component
+contract](docs/v1/components/member-2-marine-conditions-safety-intelligence.md),
+[Member 2 work plan](docs/v1/phases/member-2-phase-plan.md) and [device
+capability guide](docs/v1/device-capabilities.md).
 
 Otherwise:
 

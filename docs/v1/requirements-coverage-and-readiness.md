@@ -49,7 +49,7 @@ relevant sections are listed for assessment traceability.
 | Owner | Repository baseline | Simplified guide / formal assignment | Contract coverage |
 |---|---|---|---|
 | Member 1 | Requirements §§11–13, 28–30, 53 | Guide pp. 7, 11–14, 17; assignment §§3, 5–9, 11–12 | [Experience and biodiversity component](components/member-1-coastal-experience-biodiversity-discovery.md) and [agent](agents/member-1-coastal-experience-biodiversity-agent.md): catalogue, publication/availability, location, favourites, selected map-provider adapter, BLUEVERSE's IT3091 inference-service adapter, read-only tools, uncertainty and explicit unavailable states. |
-| Member 2 | Requirements §§14–15, 21, 31, 53 | Guide pp. 8, 11–12, 14–15, 17; assignment §§3, 5–6, 9, 11–12 | [Marine and safety component](components/member-2-marine-conditions-safety-intelligence.md) and [agent](agents/member-2-marine-conditions-intelligence-agent.md): Open-Meteo acquisition, source/time/freshness, configured profiles, deterministic suitability and sourced AI report. |
+| Member 2 | Requirements §§14–15, 21, 31, 53 | Guide pp. 8, 11–12, 14–15, 17; assignment §§3, 5–6, 9, 11–12 | [Marine and safety component](components/member-2-marine-conditions-safety-intelligence.md) and [agent](agents/member-2-marine-conditions-intelligence-agent.md): Open-Meteo acquisition, source/time/freshness, cross-client condition-query period selection, configured profiles, deterministic suitability and sourced AI report. |
 | Member 3 | Requirements §§16–17, 20–27, 53 | Guide pp. 9, 11–13, 17; assignment §§3, 5, 9–10, 12 | [Planner and itinerary component](components/member-3-smart-coastal-planner-itinerary-management.md) and [agent](agents/member-3-planning-coordination-agent.md): constraints, recommendations, itinerary changes/re-evaluation, structured plan, delegation, safe assembly and cross-client date/time selection. |
 | Member 4 | Requirements §§18–19, 21–27, 53 | Guide pp. 10–13, 15, 17; assignment §§3, 5, 9–10, 12 | [Operations component](components/member-4-coastal-operations-advisories-alerts.md) and [agent](agents/member-4-safety-operations-agent.md): assessments, optional private image evidence, managed state, proposals, reviewer decisions, alerts, read-only recommendation, revalidation, execution and audit. |
 | Shared system | Requirements §§4–11, 20–27, 32–48, 54–55; accepted ADR-0016 | Guide pp. 2–5, 11–18, 21; assignment §§1–14, 17 | [Workflows](workflows.md), [client parity and permissions](cross-platform-and-permissions.md), [device capabilities](device-capabilities.md), [quality and delivery](quality-and-delivery.md), [Agentic AI architecture](../agentic-ai/architecture.md), [implementation blueprint](../agentic-ai/implementation-blueprint.md), [tools](../agentic-ai/tools.md), [safety](../agentic-ai/safety.md) and [evaluation](../agentic-ai/evaluation.md) cover common API, device, media, data, security, cross-client, test and assessed-flow rules. |
@@ -62,9 +62,12 @@ the different user experiences. Flutter GPS and a React location input are
 the concrete v1 example.
 
 The selected device interactions are target requirements, not current
-implementation claims: Member 1 owns one-time GPS/location discovery, Member 3
-owns date/time selection for existing planner inputs, and Member 4 owns
-optional image evidence on operations assessments. See the complete
+implementation claims: Member 1 owns one-time GPS/location discovery, Member 2
+owns condition-query date/time/interval selection, Member 3 owns date/time
+selection for itinerary inputs, and Member 4 owns optional image evidence on
+operations assessments. Member 2 periods and Member 3 itinerary times have
+different workflow semantics even if the clients reuse a date/time control.
+See the complete
 [device-capability contract](device-capabilities.md). The v1 client routes and
 service APIs needed to use them are still to be implemented with their owner
 branches.

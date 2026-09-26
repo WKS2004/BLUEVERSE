@@ -1385,3 +1385,16 @@ runtime lacks PyYAML.
 - Summary of what the AI Agent did: Assigned one-time GPS/location discovery and the map boundary to Member 1, accessible date/time selection for planner inputs to Member 3, and optional private image evidence capture/upload for BLUEVERSE-managed assessments to Member 4. Added a shared device-capability contract, an assessment-image storage-boundary ADR, and cross-links/acceptance requirements across the v1 requirements, components, member work plans, relationship map, workflows, Agentic AI contracts and readiness guide. Kept all work within the existing single feature branch per member and post-G07 Agentic AI boundary; left current route/endpoint inventories unchanged because those v1 workflows are not yet implemented.
 - AI output accepted/changed/rejected: Accepted the user's GPS direction and interest in camera/image selection and upload. Scoped uploads to optional assessment image evidence; excluded generic file sharing and v2 environmental-incident/pollution reporting. Kept concrete image limits, provider/configuration, sanitization and retention as decisions required before Member 4 implementation.
 - Verification/evidence: UI integration validator passed; endpoint catalog validator passed (33 public endpoints, 22 frontend routes, no Agentic AI endpoints); local Markdown link paths passed for 34 changed/untracked Markdown files; `git diff --check` passed with LF-to-CRLF notices only. No application code or application tests were changed or run.
+
+## 2026-09-26 — Assign a marine-query device interaction to Member 2
+
+- Date/time or time range: 2026-09-26 14:14–14:27 (Asia/Colombo; Member 2 device-capability documentation update)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Python and Git
+- AI Model: GPT-6
+- Summary of the user's request: Add a device capability to Member 2 if it fits the component and helps distribute relevant device-capability work across all four members.
+- Summary of what the AI Agent did: Assigned Member 2 an accessible forecast/condition-period selector for direct marine queries and suitability assessment. Distinguished it from Member 3's itinerary scheduling, specified that planner-originated periods pass through unchanged, and updated the Member 2 component contract, work plan, shared device guide, project requirements, component relationship map, cross-platform guidance, v1 indexes and paired agent input constraints.
+- AI output accepted/changed/rejected: Accepted date/time or interval selection because Member 2 already queries conditions by activity, location and period. Kept provider-supported bounds, interval granularity and time-zone/DST semantics as explicit API decisions. Rejected adding a separate sensor permission, notification workflow, feature branch or Agentic AI behavior; no live UI or endpoint is claimed implemented.
+- Verification/evidence: Local Markdown link targets exist in all 10 changed Markdown files; `git diff --check` passed with Git's LF-to-CRLF working-copy notices; searched v1 docs and `PROJECT_REQUIREMENTS.md` for stale device ownership wording. Documentation-only update; no application tests were run.

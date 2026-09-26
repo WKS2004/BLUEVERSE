@@ -61,6 +61,12 @@ The logical typed input must carry, as relevant:
 | Existing context | Optional authorized snapshot reference or known constraints, including what is not known. |
 | Tool policy | Runtime-provided allowlist, per-tool limits and output schema. The agent cannot select new tools or raise limits. |
 
+The requested period is supplied by the validated public workflow. The agent
+may retrieve only that approved interval (or an explicitly authorized,
+deterministic normalization of it); it must not independently select, widen,
+shift or silently truncate the time window. For planner-originated work, the
+candidate itinerary period remains the input authority.
+
 These concepts do not freeze wire-level field names, DTO versions, units or
 nullable annotations. The implementation schema must define them explicitly
 and validate requests before provider access.

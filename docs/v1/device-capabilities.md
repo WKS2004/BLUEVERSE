@@ -10,21 +10,24 @@ device-only branches.
 | Owner | In-scope capability | Business use | Client behavior |
 |---|---|---|---|
 | Member 1 — Coastal Experience & Biodiversity Discovery | GPS/device location and location-aware discovery; selected map-provider integration remains a separate backend-mediated responsibility | Find nearby coastal destinations and activities, with user permission and a manual alternative | Flutter offers a one-time current-location action. React supports location search/manual entry and may offer browser geolocation as an explicit convenience. Both produce the same nearby-discovery outcome. |
+| Member 2 — Marine Conditions & Safety Intelligence | Date/time or interval selection for a direct marine-condition query and deterministic suitability assessment | Request weather/marine evidence for a supported forecast/observation time or interval for a selected activity/location | Flutter offers accessible native date/time or interval controls. React offers accessible semantic date/time controls. Both submit the same period meaning. A Member 3 planner handoff keeps the planner's validated period and does not open a competing Member 2 selection. |
 | Member 3 — Smart Coastal Planner & Itinerary Management | Date/time selection | Set the requested planning period and itinerary schedule | Flutter uses native date/time picker controls. React uses accessible date/time inputs. Both submit equivalent, validated values to the public API. |
 | Member 4 — Coastal Operations, Advisories & Alerts | Optional photo evidence capture/selection and image-file upload | Attach visual evidence to a BLUEVERSE-managed operational assessment for the authorized reviewer | Flutter supports camera capture and image selection/upload. React supports image-file selection/upload; on camera-capable browsers, direct capture may be offered as a convenience. The reviewer-visible business outcome is equivalent. |
 
 The assignment minimum is met by the required Flutter GPS/device-location
-workflow. Member 3's date/time selection and Member 4's optional evidence
-images are additional interactions chosen because they directly support the
-v1 planner and operations contracts. They do not replace GPS and do not
-authorize adding every device feature in the assignment's example list.
+workflow. Member 2's condition-query period selection, Member 3's itinerary
+date/time selection and Member 4's optional evidence images are additional
+interactions chosen because they directly support their existing v1
+workflows. They do not replace GPS and do not authorize adding every device
+feature in the assignment's example list.
 
 These allocations are workflow ownership, not an hours-equalization formula.
-Date/time controls are a focused part of Member 3's larger planner/API/
-itinerary/re-evaluation scope; Member 4's evidence upload adds storage and
-security work to its existing assessment/review/approval scope. The complete
-component responsibilities and evidence remain with each member as defined
-in the [single-branch workflow](member-branch-workflow.md).
+Member 2's period selector is a focused input to its existing provider-query
+and deterministic suitability scope; Member 3's date/time controls serve its
+planner/API/itinerary/re-evaluation scope; Member 4's evidence upload adds
+storage and security work to its existing assessment/review/approval scope.
+The complete component responsibilities and evidence remain with each
+member as defined in the [single-branch workflow](member-branch-workflow.md).
 
 ## Shared cross-client and architecture rules
 
@@ -40,6 +43,9 @@ in the [single-branch workflow](member-branch-workflow.md).
 - A permission prompt, file picker or native widget is not the business
   operation. The owning API validates, authorizes, persists and returns the
   authoritative result.
+- A date/time picker is an input mechanism, not server validation. The API
+  owns supported time bounds, interval granularity, zone interpretation,
+  provider coverage and the resulting condition/suitability evidence.
 - These capabilities are implemented inside the complete owning
   `features/<component>` branch. The work-area numbers in member plans help
   coverage and local dependency analysis; they do not create new branches or
@@ -93,6 +99,56 @@ the same manual fallback. Never loop permission prompts.
   credential handling and supported features in the implementation contract.
 - Provider outage must leave the manual/list discovery path usable and must
   not make provider content authoritative over BLUEVERSE's catalogue.
+
+## Member 2 — marine-condition query-period selection
+
+The Member 2 query starts with an activity, location and requested condition
+time/interval. A date/time or interval selector is therefore a direct input
+to an already-required marine/weather lookup and deterministic suitability
+assessment. It is a distinct business use from Member 3's date/time selector:
+Member 2 selects the period whose environmental evidence is being assessed;
+Member 3 schedules an activity and manages itinerary timing. A shared control
+may be reused, but the API fields, copy, validation, owner and handoff
+semantics stay distinct.
+
+### Direct condition/suitability query
+
+1. The user selects or navigates to a destination/activity and chooses either
+   the server-defined current-conditions action or a supported forecast/
+   observation time or interval.
+2. React and Flutter show the selected destination/location and applicable
+   time-zone context. Their accessible controls may differ, but the
+   submitted semantic period must match.
+3. The public API validates the selected activity/location, period bounds,
+   interval granularity, supported source coverage and permission. The
+   implementation must decide and document the supported horizon, period
+   representation, local-time/zone semantics and daylight-saving gaps or
+   overlaps before the member branch is accepted.
+4. The backend obtains validated provider data for that period, preserves
+   forecast/observation time separately from retrieval time, evaluates data
+   freshness and runs the deterministic profile. A result outside provider
+   coverage or with insufficient/stale required evidence is explicit; it is
+   never clipped into another period or presented as safe.
+5. The clients display the returned period, source timestamps, freshness,
+   missing factors and server classification. The period selection does not
+   imply availability, booking, itinerary creation or a reminder.
+
+A period outside the supported source/API horizon receives an actionable
+validation or unavailable response. Clients must not silently replace it
+with “now,” the nearest supported time or a different interval. The
+server-defined current-conditions shortcut must likewise distinguish a
+current observation from a forecast and show the relevant time/freshness.
+
+### Handoff from Member 3
+
+When the planner asks Member 2 to assess a candidate itinerary period, use the
+validated period from that candidate as the assessment input. Do not ask the
+user to select the condition period a second time or change it to a more
+convenient provider interval without an explicit, reviewed normalization
+contract. If the requested interval is unsupported or data is unavailable,
+return the agreed unavailable/`UNKNOWN` evidence for Member 3 to preserve.
+This maintains Member 2 ownership of environmental evidence while Member 3
+remains authoritative for itinerary timing.
 
 ## Member 3 — date/time selection for planning
 
@@ -182,9 +238,15 @@ The owning branch must demonstrate:
   permission/failure cases and manual fallback;
 - the same authorized nearby discovery result and API request semantics from
   manual and current-location input;
+- equivalent Member 2 condition-period selection and request semantics in
+  React and Flutter, including current-conditions shortcut, supported and
+  unsupported boundaries, interval granularity, time-zone/DST interpretation,
+  and provider coverage; prove that planner-originated periods pass through
+  unchanged and that Member 2 never opens a competing time picker for them;
 - equivalent valid/invalid date, time, duration and time-zone behavior on
-  React and Flutter, including boundary and daylight-saving cases where the
-  selected zone observes them;
+  React and Flutter for Member 3 itinerary scheduling, including boundary and
+  daylight-saving cases where the selected zone observes them; these values
+  retain distinct planner semantics from Member 2 condition-query periods;
 - optional image selection/capture and authorized upload/review from both
   clients, with identical API validation and assessment state;
 - rejection of unauthorized, oversized, disallowed, malformed or spoofed
@@ -203,6 +265,8 @@ register target-only endpoints or routes in advance.
 
 - [Member 1 component and work plan](components/member-1-coastal-experience-biodiversity-discovery.md)
   · [Member 1 phases](phases/member-1-phase-plan.md)
+- [Member 2 component and work plan](components/member-2-marine-conditions-safety-intelligence.md)
+  · [Member 2 phases](phases/member-2-phase-plan.md)
 - [Member 3 component and work plan](components/member-3-smart-coastal-planner-itinerary-management.md)
   · [Member 3 phases](phases/member-3-phase-plan.md)
 - [Member 4 component and work plan](components/member-4-coastal-operations-advisories-alerts.md)
