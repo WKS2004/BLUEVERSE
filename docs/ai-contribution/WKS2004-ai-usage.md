@@ -1502,3 +1502,16 @@ runtime lacks PyYAML.
 - Summary of what the AI Agent did: Added a focused v1 development rule and connected it to root instructions, task routing, architecture guidance, the repository map, backend/client/Agentic AI/CI/foundation-audit skills and the routing evaluation cases. Enforced G00 before member coding, one complete component branch per owner, private member-service ownership, narrow API/Auth integration, equal React/Flutter outcomes, distinct map/Open-Meteo/ML ownership, and the G07 gate for executable Agentic AI. Clarified that the agent no-commit rule does not disable the GitHub Actions backup rescue/synchronization or configuration-sync workflows. Linked the new rule from the v1 guide and agent-resources documentation.
 - AI output accepted/changed/rejected: Kept the existing v1 contracts as the detailed product source of truth and added enforceable routing/gating instructions instead of duplicating every member requirement. Preserved member-owned integration scaffolding and safe unavailable behavior before G07 while deferring actual agents, tools, model calls, orchestration and AI-owned state. Kept the Member 3 IT3091 integration classified as external ML, not Agentic AI. No application or workflow implementation was changed in this task.
 - Verification/evidence: `validate_agent_resources.py` passed and validated all 23 repository skills, routing fixtures, overlays, metadata and Markdown links; `git diff --check` passed; the new rule has no trailing whitespace. No application tests, builds or GitHub workflows were run. No commit or push was made.
+
+## 2026-09-26 — Fix stale Flutter launch widget test
+
+- Date/time or time range: 2026-09-26 18:58 (Asia/Colombo; Flutter CI failure fix)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Dart SDK and Git
+- AI Model: GPT-6
+- Summary of the user's request: Diagnose and quickly fix the Flutter Mobile Tests workflow failure caused by an undefined `MyHomePage` test reference.
+- Summary of what the AI Agent did: Replaced the obsolete starter-page test with a stable-ID widget test for the current `MobileLaunchPage` signed-out launch and onboarding flow. Kept the API 401 fixture deterministic and asserted splash-to-onboarding state and expected controls. No production code changed.
+- AI output accepted/changed/rejected: Accepted the CI output identifying the removed widget reference as the compiler/analyzer failure. Changed the test to use the current launch page and verify the current onboarding state; rejected the stale home-page and sample-route assumptions.
+- Verification/evidence: Dart formatting completed and a repeat check reported 0 changed files; `git diff --check` passed; repository search found no remaining `MyHomePage` reference in `apps/mobile`. Flutter analysis and widget tests could not run locally because the sandbox cannot write Flutter's SDK cache lockfile under `D:\Program Files\Flutter\flutter`; the reported package update notices were informational. See `apps/mobile/test/widget_test.dart`.

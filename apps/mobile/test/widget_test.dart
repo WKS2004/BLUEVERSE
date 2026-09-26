@@ -26,43 +26,38 @@ class MemoryCredentialStore implements AuthCredentialStore {
 }
 
 void main() {
-  testWidgets('BLUEVERSE home offers coastal discovery and account entry', (
-    tester,
-  ) async {
-    final client = MockClient(
-      (_) async =>
-          http.Response('{"status":401,"detail":"No active account."}', 401),
-    );
-    addTearDown(client.close);
-    final viewModel = AuthViewModel(
-      repository: AuthRepository(
-        apiService: AuthApiService(
-          client: client,
-          storage: MemoryCredentialStore(),
+  testWidgets(
+    'MOB-LAUNCH-001 signed-out launch shows onboarding after restore',
+    (tester) async {
+      final client = MockClient(
+        (_) async =>
+            http.Response('{"status":401,"detail":"No active account."}', 401),
+      );
+      addTearDown(client.close);
+      final viewModel = AuthViewModel(
+        repository: AuthRepository(
+          apiService: AuthApiService(
+            client: client,
+            storage: MemoryCredentialStore(),
+          ),
         ),
-      ),
-    );
-    addTearDown(viewModel.dispose);
+      );
+      addTearDown(viewModel.dispose);
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: MyHomePage(title: 'BLUEVERSE', viewModel: viewModel),
-        routes: {
-          '/signin': (_) => const Scaffold(body: Text('Sign in flow')),
-          '/signup': (_) => const Scaffold(body: Text('Registration flow')),
-        },
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        MaterialApp(home: MobileLaunchPage(viewModel: viewModel)),
+      );
+      expect(find.text('BLUEVERSE'), findsOneWidget);
+      expect(find.text('Closer to the coast.'), findsNothing);
 
-    expect(find.text('BLUEVERSE'), findsOneWidget);
-    expect(find.textContaining('Closer to the coast.'), findsOneWidget);
-    expect(find.text('Sign in'), findsOneWidget);
-    expect(find.text('Create an account'), findsOneWidget);
-    expect(find.byIcon(Icons.add), findsNothing);
+      await viewModel.restore();
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Sign in'));
-    await tester.pumpAndSettle();
-    expect(find.text('Sign in flow'), findsOneWidget);
-  });
+      expect(find.text('BLUEVERSE'), findsOneWidget);
+      expect(find.text('Closer to the coast.'), findsOneWidget);
+      expect(find.text('Next'), findsOneWidget);
+      expect(find.text('Skip'), findsOneWidget);
+      expect(find.text('I already have an account · Sign in'), findsNothing);
+    },
+  );
 }
