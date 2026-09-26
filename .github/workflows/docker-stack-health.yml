@@ -274,7 +274,7 @@ jobs:
             show_compose_diagnostics "$status"
           fi
 
-          for swagger_path in /api/swagger /api/swagger/v1.json /api/auth/swagger/v1/swagger.json /api/experiences/openapi/v1.json; do
+          for swagger_path in /api/swagger /api/swagger/v1.json /api/auth/swagger/v1/swagger.json /api/experiences/swagger/v1/swagger.json; do
             if check_endpoint "$base_url$swagger_path"; then
               :
             else
