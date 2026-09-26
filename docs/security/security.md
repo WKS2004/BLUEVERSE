@@ -13,6 +13,9 @@ implemented or has not yet been verified in the current repository.
 ## API
 
 - [x] JWT authentication with required 32-byte minimum signing key
+- [x] Experience & Biodiversity component routes require an Auth-issued JWT at
+  the API gateway; health and Swagger document routes are explicit anonymous
+  exceptions
 - [x] permission-based authorization with system-role escalation protection
 - [x] persisted device sessions with five-account-per-device and five-session-per-account limits, scoped logout and logout-all-devices support
 - [x] active sessions separated from ended-session lifecycle logs; archived rows cannot authenticate

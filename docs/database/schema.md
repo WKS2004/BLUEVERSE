@@ -13,6 +13,16 @@ revocation state, system-role protection and `CreatedAt`/`UpdatedAt` fields
 where applicable. Auth enforces a maximum of five active account sessions for
 one installation and five active sessions per account across installations.
 
+## Experience & Biodiversity connection foundation
+
+Experience & Biodiversity connects to the same PostgreSQL database and with
+the same configured login as Auth. Its EF Core context uses PostgreSQL's
+default `public` schema; its migrations are tracked in
+`__EFMigrationsHistory_ExperienceBiodiversity` in that same schema. No second
+database, service-specific login or SQL provisioning file is used. The current
+scaffold has no domain entities, domain tables or migrations; the shared G00
+data-ownership contract remains pending.
+
 ## Auth session tables
 
 | Table | Important fields and constraints |

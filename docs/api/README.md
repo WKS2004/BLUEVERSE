@@ -145,6 +145,16 @@ Auth health route through the public API boundary:
 GET /api/auth/health
 ```
 
+Experience & Biodiversity reports its service and database status through:
+
+```text
+GET /api/experiences/health
+```
+
+It returns `200` with `status: healthy` and `database: connected`, or `503`
+with `status: unhealthy` and `database: unavailable`. The health endpoint is
+anonymous, matching Auth's health-check access.
+
 ## Error and validation contract
 
 Auth validation and expected business failures return structured RFC 7807
@@ -197,7 +207,13 @@ GET /api/swagger
 GET /api/swagger/v1/swagger.json
 ```
 
-The Swagger UI is configured only in the API service and provides both the public API and Auth API documents in one interface. The Auth OpenAPI document is available through the API boundary at `/api/auth/swagger/v1/swagger.json`; Auth's container is internal-only.
+The Swagger UI is configured only in the API service and provides the public
+API, Auth API and Experience & Biodiversity service documents in one interface.
+The Auth OpenAPI document is available through the API boundary at
+`/api/auth/swagger/v1/swagger.json`; the Experience & Biodiversity document is
+available at `/api/experiences/swagger/v1/swagger.json`. The component uses
+the same Swashbuckle setup as API and Auth and does not emit a `servers` field.
+Both service containers remain internal-only.
 
 Use the `Authorize` button in the unified UI to enter a native-client JWT as
 `Bearer {token}`. Browser clients use the protected access-token cookie. The

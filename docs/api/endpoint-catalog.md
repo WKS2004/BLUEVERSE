@@ -43,6 +43,9 @@ the smaller shared-client workflow contract.
 | `GET` | `/health` | `frontend` | Used by Docker-stack health checks to confirm the frontend server is reachable. |
 | `ANY` | `/api/` | `api` | Forwards client API requests to the API gateway; clients must not target Auth, Agentic AI, database, or other internal hosts directly. |
 | `ANY` | `/api/auth/{**catch-all}` | `auth` | Keeps Auth internal while exposing its approved endpoints through the public API boundary. |
+| `ANY` | `/api/experiences/health` | `experience-biodiversity` | Forwards the health endpoint without requiring an Auth-issued JWT; it reports database availability while keeping the private service host inaccessible to clients. |
+| `ANY` | `/api/experiences/swagger/{documentName}/swagger.json` | `experience-biodiversity` | Exposes the service contract to the unified Swagger UI without requiring a JWT or exposing the private service host. |
+| `ANY` | `/api/experiences/{**catch-all}` | `experience-biodiversity` | Requires an Auth-issued JWT validated by the API default authorization policy before forwarding component requests. |
 | `GET` | `/api/swagger` | `api` | Provides interactive API documentation for local development and contract inspection. |
 | `ANY` | `/404.html` | `edge-nginx` | Converts /404.html to /404 so the error asset filename is not exposed as the browser route. |
 | `ANY` | `/500.html` | `edge-nginx` | Converts /500.html to /500 so the error asset filename is not exposed as the browser route. |
@@ -97,6 +100,13 @@ the smaller shared-client workflow contract.
 | `PUT` | `/api/auth/users/{id:guid}` | `permission:all(auth.user.read,auth.user.update)` | Updates account details, active state or password with user read and user update grants together. Supports authorized user administration. |
 | `DELETE` | `/api/auth/users/{id:guid}` | `permission:all(auth.user.read,auth.user.delete)` | Deletes an account with user read and user delete grants together, subject to protected system-role rules. Supports authorized user administration; a protected account's assigned system role names are included in the deletion rejection. |
 | `POST` | `/api/auth/users/{id:guid}/roles` | `permission:all(auth.user.read,auth.user.update,auth.role.read)` | Replaces an account’s roles with user read, user update and role read grants together; system-role changes require the dedicated grant. Authorized user editors can add or remove user roles; the service checks current caller grants, system-role constraints and invalidates the affected account sessions. |
+
+### experience-biodiversity
+
+| Method | Path | Authorization | Purpose and use |
+|---|---|---|---|
+| `GET` | `/api/experiences/health` | `anonymous` | Reports Experience & Biodiversity service and PostgreSQL connectivity; returns 503 when the database is unavailable. Used by the API gateway and Docker-stack health diagnostics. The response includes service, overall status and database connection status without exposing the private service host. |
+| `GET` | `/api/experiences/swagger/{documentName}/swagger.json` | `anonymous` | Returns the Experience & Biodiversity Swashbuckle document through the API gateway. Supports the unified Swagger UI and service contract inspection without exposing the private service host or requiring a JWT. |
 
 ## Test host only
 

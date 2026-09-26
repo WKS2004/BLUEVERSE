@@ -2,7 +2,8 @@
 
 The following boundaries are implemented for the current foundation. The edge,
 client starter projects with the shared Auth workflow, public API gateway and
-internal Auth service are checked in; future domain services remain separate
+internal Auth service are checked in. The Member 1 branch also has a private
+service and database-connection scaffold; its domain workflow remains future
 implementation work.
 
 ## edge-nginx
@@ -87,13 +88,18 @@ default is no Auth service change.
 
 ## v1 member component services
 
-These four separately owned internal services are v1 target architecture and
-are **not implemented in the current repository**. Each member implements one
-service on the same `features/<component>` branch as its React and Flutter
-work. The service owns its component's domain operations, domain validation,
-application/data-access code, EF Core migrations and PostgreSQL records,
-third-party adapter, tests, health/readiness contract and prepared private
-Agentic AI client seam as required by its component contract.
+These four separately owned internal services are the v1 target architecture.
+The Member 1 branch now contains a private service scaffold at
+`services/experience-biodiversity/` with process liveness, OpenAPI, an EF Core
+context, startup migration hook and PostgreSQL connection check using the same
+database configuration as Auth. It has no domain entities, tables, migrations,
+provider integration, client workflow or service-local tests. The other three
+services are not present. Each member
+implements one complete service on the same `features/<component>` branch as
+its React and Flutter work. A completed service owns its component's domain
+operations, validation, application/data-access code, EF Core migrations and
+PostgreSQL records, third-party adapter, tests, health/readiness contract and
+prepared private Agentic AI client seam as required by its component contract.
 
 | Owner | Service-owned responsibilities |
 |---|---|
@@ -108,7 +114,10 @@ or forwards client operations. Component services never call Auth directly.
 G00 must settle service identifiers, the API-to-service transport and route
 map, actor/permission propagation, PostgreSQL/schema ownership, and
 health/readiness semantics before parallel implementation. Keep each service
-isolated so its owner does not need to edit another member's service.
+isolated so its owner does not need to edit another member's service. The
+Member 1 branch currently uses Auth's shared database connection configuration
+and PostgreSQL default schema; G00 remains pending and this scaffold does not
+establish shared contract agreement.
 
 ## postgres
 

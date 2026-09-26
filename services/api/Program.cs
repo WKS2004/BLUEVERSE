@@ -146,8 +146,8 @@ app.UseCors("BlueverseCorsPolicy");
 // OpenAPI doc for the public API gateway
 app.MapOpenApi("/api/swagger/{documentName}.json");
 
-// Swagger UI is hosted only by the public API service. Auth is represented in
-// the same UI through its OpenAPI document exposed via the API gateway.
+// Swagger UI is hosted only by the public API service. Auth and private
+// component services are represented through documents exposed by the gateway.
 app.UseSwagger(options =>
 {
     options.RouteTemplate = "api/swagger/{documentName}/swagger.json";
@@ -159,6 +159,9 @@ app.UseSwaggerUI(options =>
     options.DocumentTitle = "BLUEVERSE API Documentation";
     options.SwaggerEndpoint("/api/swagger/v1/swagger.json", "BLUEVERSE Public API");
     options.SwaggerEndpoint("/api/auth/swagger/v1/swagger.json", "BLUEVERSE Auth API");
+    options.SwaggerEndpoint(
+        "/api/experiences/swagger/v1/swagger.json",
+        "BLUEVERSE Experience & Biodiversity Service");
 });
 
 app.UseAuthentication();

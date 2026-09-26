@@ -1,6 +1,9 @@
 @Blueverse.ExperienceBiodiversity_HostAddress = http://localhost:5298
 
-GET {{Blueverse.ExperienceBiodiversity_HostAddress}}/weatherforecast/
+GET {{Blueverse.ExperienceBiodiversity_HostAddress}}/api/experiences/health
 Accept: application/json
 
 ###
+
+GET {{Blueverse.ExperienceBiodiversity_HostAddress}}/api/experiences/swagger/v1/swagger.json
+Accept: application/json

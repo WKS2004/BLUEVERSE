@@ -149,7 +149,7 @@ Docker checks remain separate from source/test checks:
 |---|---|---|
 | `docker-web-build.yml` | Supported work branches; web/Docker/Compose paths | Synchronizes the React lockfile and builds the web image. |
 | `docker-backend-build.yml` | Supported work branches; service/Docker/Compose paths | Builds the public API first, then each discovered ASP.NET backend service. |
-| `docker-stack-health.yml` | Successful Docker build workflows for a PR targeting `main` only | Checks the complete Compose network, public health endpoints and API/Auth Swagger routes. |
+| `docker-stack-health.yml` | Successful Docker build workflows for a PR targeting `main` only | Checks the complete Compose network, public health endpoints and API/Auth/Experience OpenAPI routes. |
 
 The web and backend image workflows start only when their relevant application,
 service, Docker infrastructure, lockfile, Compose, global SDK or workflow
@@ -175,9 +175,13 @@ originating run was a pull request targeting `main`, determines which required
 image workflows were triggered for that exact comparison range, waits for
 those runs to succeed, and then checks out the exact commit. It validates
 `compose.yaml` or `docker-compose.yml`, starts the stack on host port `8080`,
-checks `/health`, `/api/health`, the Swagger UI and both API/Auth OpenAPI documents,
-and each discovered backend `/api/<service-name>/health`, prints Compose diagnostics on failure and always
-tears the stack down.
+checks `/health`, `/api/health`, the Swagger UI and the API, Auth and Experience
+& Biodiversity OpenAPI documents, and each discovered backend health route.
+Its ephemeral Compose environment supplies the same PostgreSQL credentials to
+Auth and Experience & Biodiversity, which use the same database. Experience &
+Biodiversity uses the public alias `/api/experiences/health` while its internal
+service name remains `experience-biodiversity`. The workflow prints
+Compose diagnostics on failure and always tears the stack down.
 
 ## GitHub configuration synchronization
 

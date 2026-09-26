@@ -6,8 +6,10 @@ PostgreSQL 16 is the relational store. The implemented Auth persistence
 model is `services/auth/Data/AuthDbContext.cs` with checked-in migrations
 under `services/auth/Data/Migrations/`. Auth uses Npgsql/EF Core and
 applies relational migrations at startup before bootstrap administrator
-seeding. The public API does not carry a database credential in the local
-Compose topology; clients never connect to PostgreSQL.
+seeding. Experience & Biodiversity has an EF Core/Npgsql connection foundation
+to the same configured database and with the same login; it has no domain
+entities or migrations. The public API does not carry a database credential in
+local Compose; clients never connect to PostgreSQL.
 
 ## Implemented model
 
@@ -30,7 +32,11 @@ an upgrade path for existing rows.
 
 ## Access and verification
 
-Auth alone accesses its data through the service/EF Core layer. Keep
+Auth and Experience & Biodiversity access their own data through their
+service/EF Core layers in the single configured PostgreSQL database. Both
+currently use the default `public` schema; Experience & Biodiversity uses a
+separate EF migration-history table to keep its migration state independent.
+Keep
 transaction boundaries around multi-step session and permission changes;
 persist hashes and minimum necessary audit fields, never raw credentials
 or hidden model reasoning.

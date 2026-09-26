@@ -19,18 +19,19 @@ four members may begin their complete component implementations concurrently
 only after the G00 exit criteria below are agreed and recorded. This is a
 shared start gate, not a member-by-member implementation order.
 
-The current source contains the public API and Auth services, but no v1 domain
-service. The endpoint catalog currently records 33 public endpoints and 22
-frontend routes, all for the foundation; it records no Agentic AI endpoint.
-Those are honest baseline counts, not missing documentation. Actual component
-services, feature routes, provider integrations, device workflows and the
-Agentic AI runtime remain implementation work.
+The 2026-09-26 audit found only the public API and Auth services. Since then,
+the Member 1 branch has added a private Experience & Biodiversity scaffold
+with process liveness, OpenAPI, a shared PostgreSQL connection foundation and
+Docker/gateway wiring. The current endpoint catalog records 35 public endpoints and
+22 frontend routes; the two new endpoints describe the scaffold only. No v1
+domain workflow, domain tables/migrations, provider integration, client feature
+or Agentic AI endpoint is implemented.
 
 | Area | Final assessment | Evidence and next gate |
 |---|---|---|
 | v0 foundation and shared contracts | Ready as the starting baseline | Existing API/Auth, React/Flutter, Docker/Compose, role-to-permission model, endpoint catalog, UI registry and agent resources are present. Static catalog, UI-integration and agent-resource validators passed on this audit. This does not assert that application builds, tests or live infrastructure were rerun. |
 | v1 requirements and member plans | Ready as implementation specifications | Four complete member contracts, four paired-agent contracts, work-area plans, relationship map, workflow, device, integration, quality and branch guides link the scope. These are target contracts, not implementation evidence. |
-| Four member services and workflows | Not implemented; expected before kickoff | `services/` currently contains only `api` and `auth`. Each new private component service, its persistence, public API integration, React and Flutter workflow, provider adapters and tests must be built on its assigned feature branch. |
+| Four member services and workflows | Domain implementations not started; expected after G00 | `services/experience-biodiversity/` contains a host, anonymous process-liveness endpoint, OpenAPI setup and a PostgreSQL connection foundation using Auth's database configuration. It has no domain behavior, tables/migrations, provider integration, client workflow or service-local test project. The other three member services are not present. |
 | G00 shared contract freeze | Pending; required before component coding | Named owners and branch assignments are confirmed in the [canonical owner map](../project/ai-team-members.md). Settle the shared contracts listed below, record decisions in their owning contracts, and mark G00 accepted in the [branch tracker](member-branch-workflow.md#component-branch-status). |
 | External integrations and device behavior | Interfaces can be planned at G00; live decisions are owner gates | Agree cross-member data contracts and adapter boundaries before parallel work. Select and verify the map provider, Open-Meteo data policy, IT3091 wire/auth contract and Wanshaja Sooriyabandara (Member 4) image storage policy before accepting each live integration. |
 | Executable Agentic AI | Correctly deferred; prohibited before G07 | Member branches prepare only their business workflow and typed, bounded, unavailable-aware AI integration seams. Start executable agents, tools, orchestration, model calls and AI-owned state on `agentic-ai/**` only after all four components pass G07. |

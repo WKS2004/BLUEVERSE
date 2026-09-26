@@ -1,13 +1,14 @@
 {
   "schema": 1,
   "status": "active",
-  "auditedAt": "2026-09-25",
+  "auditedAt": "2026-09-27",
   "purpose": "Fast, repository-local inventory of implemented frontend routes, gateway routes, public API endpoints, test-only routes, and Agentic AI endpoint status.",
   "authority": {
     "uiWorkflowRegistry": "docs/contracts/ui-integration.json",
     "backendSources": [
       "services/api",
-      "services/auth"
+      "services/auth",
+      "services/experience-biodiversity"
     ],
     "gatewaySources": [
       "infrastructure/docker/edge-nginx/nginx.conf",
@@ -302,6 +303,36 @@
       "source": "services/api/appsettings.json",
       "description": "API-gateway route that forwards public Auth paths to the internal Auth service.",
       "usage": "Keeps Auth internal while exposing its approved endpoints through the public API boundary."
+    },
+    {
+      "id": "experience-biodiversity-health-yarp-route",
+      "method": "ANY",
+      "path": "/api/experiences/health",
+      "type": "reverse-proxy",
+      "upstream": "experience-biodiversity",
+      "source": "services/api/appsettings.json",
+      "description": "Anonymous API-gateway route for Experience & Biodiversity service and database readiness.",
+      "usage": "Forwards the health endpoint without requiring an Auth-issued JWT; it reports database availability while keeping the private service host inaccessible to clients."
+    },
+    {
+      "id": "experience-biodiversity-swagger-yarp-route",
+      "method": "ANY",
+      "path": "/api/experiences/swagger/{documentName}/swagger.json",
+      "type": "reverse-proxy",
+      "upstream": "experience-biodiversity",
+      "source": "services/api/appsettings.json",
+      "description": "Anonymous API-gateway route for the Experience & Biodiversity OpenAPI document.",
+      "usage": "Exposes the service contract to the unified Swagger UI without requiring a JWT or exposing the private service host."
+    },
+    {
+      "id": "experience-biodiversity-protected-yarp-route",
+      "method": "ANY",
+      "path": "/api/experiences/{**catch-all}",
+      "type": "reverse-proxy",
+      "upstream": "experience-biodiversity",
+      "source": "services/api/appsettings.json",
+      "description": "Authenticated API-gateway route to the private Experience & Biodiversity service.",
+      "usage": "Requires an Auth-issued JWT validated by the API default authorization policy before forwarding component requests."
     },
     {
       "id": "public-swagger-ui",
@@ -680,6 +711,32 @@
       "description": "Reports Auth service and database readiness.",
       "usage": "Used by the API gateway and Docker-stack health diagnostics.",
       "source": "services/auth/Controllers/HealthControllers.cs"
+    },
+    {
+      "id": "experience-biodiversity-health",
+      "method": "GET",
+      "path": "/api/experiences/health",
+      "ownerService": "experience-biodiversity",
+      "publicBoundary": "api",
+      "operationId": "Get",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Reports Experience & Biodiversity service and PostgreSQL connectivity; returns 503 when the database is unavailable.",
+      "usage": "Used by the API gateway and Docker-stack health diagnostics. The response includes service, overall status and database connection status without exposing the private service host.",
+      "source": "services/experience-biodiversity/Controllers/HealthController.cs"
+    },
+    {
+      "id": "experience-biodiversity-swagger-document",
+      "method": "GET",
+      "path": "/api/experiences/swagger/{documentName}/swagger.json",
+      "ownerService": "experience-biodiversity",
+      "publicBoundary": "api",
+      "operationId": "ExperienceSwaggerDocument",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Returns the Experience & Biodiversity Swashbuckle document through the API gateway.",
+      "usage": "Supports the unified Swagger UI and service contract inspection without exposing the private service host or requiring a JWT.",
+      "source": "services/experience-biodiversity/Program.cs"
     },
     {
       "id": "auth-permissions",

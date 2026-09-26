@@ -3,13 +3,15 @@
 - **Owner:** Ushan Srinuka (`Ushan-Srinuka`)
 - **Feature branch:** `features/experience-biodiversity`
 - **Status:** Ushan's proposal for G00 review; shared-owner agreement is pending.
-- **Gate effect:** This record does not accept G00 and does not authorize member implementation.
+- **Gate effect:** This record does not accept G00 or claim the business component is implemented.
 
 This record captures the Member 1 decisions and proposals needed to review the
 G00 shared contracts. The four owners still need to agree the cross-component
 items in this record and the other members' inputs before G00 can be accepted.
-The service folder and project currently present on the feature branch are
-untracked starter files, not evidence of a completed service.
+The user-requested service bootstrap now also provides a PostgreSQL connection
+to the same database and using the same configured login as Auth, alongside
+the host, liveness, OpenAPI and Docker/gateway wiring. It includes no domain
+tables or business behavior and does not settle the remaining shared contracts.
 
 ## 1. Ownership and canonical identity
 
@@ -44,10 +46,12 @@ restriction references before consumers implement them.
 | .NET project/assembly | `Blueverse.ExperienceBiodiversity` |
 | Compose service/DNS identity | `experience-biodiversity` |
 | Container port | `8080`, private on the existing internal Docker network |
-| Internal service prefix | `/internal/experiences`; only the public API and explicitly authorized private service callers reach it |
-| PostgreSQL | Existing PostgreSQL 16 instance; service-owned `experience_biodiversity` schema and migrations |
-| Database identity | Dedicated least-privilege service credential, supplied through environment/secret configuration |
-| Health | Private `/health/live` for process liveness and `/health/ready` for required database readiness; optional Agentic AI state stays separate |
+| Public API route prefix | `/api/experiences`; YARP forwards this path unchanged to the private `experience-biodiversity` service |
+| PostgreSQL | Existing PostgreSQL 16 instance and the same configured database used by Auth; domain migrations remain future work |
+| Database identity | Uses the same `POSTGRES_USER` and `POSTGRES_PASSWORD` configuration as Auth; no separate database or service login |
+| Health | `GET /api/experiences/health` through the API gateway; anonymous service/database readiness with `200` when connected and `503` when unavailable, matching Auth |
+| Swagger/OpenAPI | `/api/experiences/swagger/{documentName}/swagger.json` through the API gateway |
+| Gateway security | API validates Auth-issued JWTs and applies its default authorization policy to component paths; only health and the Swagger document are anonymous |
 
 The service owns all catalogue business rules and persistence. Its relational
 records use UUID primary keys, UTC instants (`timestamptz`), and
@@ -56,9 +60,21 @@ with schedules for local interpretation; evaluate requested intervals as
 half-open `[start, end)` ranges. `user_id` on favourites is an opaque Auth UUID,
 not a local user record.
 
-**For shared agreement:** settle the per-service schema and migration-history
-ownership, database credential approach, internal network membership, service
-host/port names, and UTC/time-zone/interval semantics for all components.
+The bootstrap now registers an EF Core context and performs a bounded database
+connection check followed by EF Core migration startup, following Auth's
+pattern. It uses the shared database credentials and PostgreSQL default
+schema. This is connection infrastructure only: there are no domain entities,
+domain migrations or business persistence yet. Shared G00 data ownership and
+migration-history decisions remain pending.
+
+The current gateway integration validates Auth-issued JWTs before forwarding
+component paths. The health and Swagger document routes are anonymous. This
+does not decide the still-pending G00 permissions for future business routes.
+
+**For shared agreement:** settle the shared database/schema and per-service
+migration-history approach, confirm the database credential approach, internal
+network membership, service host/port names, any later database-readiness
+contract, and UTC/time-zone/interval semantics for all components.
 
 ## 3. Proposed public capability and permission contract
 

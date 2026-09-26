@@ -1,7 +1,9 @@
 # Local Deployment
 
-The local Compose topology is defined. The public API and internal Auth source
-are checked in at `services/api` and `services/auth`.
+The local Compose topology runs the public API, internal Auth and the
+Experience & Biodiversity host scaffold. The latter provides process health,
+OpenAPI and PostgreSQL connectivity, but no v1 business workflow or domain
+tables yet.
 
 ## Prerequisites
 
@@ -17,8 +19,11 @@ are checked in at `services/api` and `services/auth`.
 cp .env.example .env
 ```
 
-Set a unique `JWT_SIGNING_KEY` with at least 32 UTF-8 bytes, local PostgreSQL
-and administrator passwords, and confirm `AUTH_SERVICE_URL=http://auth:8080`
+Set a unique `JWT_SIGNING_KEY` with at least 32 UTF-8 bytes and local PostgreSQL
+and administrator passwords. Auth and Experience & Biodiversity use the same
+`POSTGRES_DB`, `POSTGRES_USER` and `POSTGRES_PASSWORD` values, and both connect
+to the single database configured for the stack. Confirm `AUTH_SERVICE_URL=http://auth:8080`
+and `EXPERIENCE_BIODIVERSITY_SERVICE_URL=http://experience-biodiversity:8080`
 in `.env`.
 
 On the development branch, PostgreSQL is available to host tools such as
@@ -30,7 +35,10 @@ loopback-only access. Both mappings use host port `5432`; if another local
 PostgreSQL process already owns that port, stop or reconfigure that process
 so the development Compose mapping can keep the required host port. Auth
 applies its EF Core migrations and conditionally seeds the configured
-administrator account at startup.
+administrator account at startup. Experience & Biodiversity uses the same
+database connection settings and applies its own EF Core migrations at
+startup. It requires no per-service database creation or SQL initialization
+step, including when reusing an existing PostgreSQL volume.
 
 ## Build
 
@@ -72,6 +80,7 @@ Health:
 http://localhost/health
 http://localhost/api/health
 http://localhost/api/auth/health
+http://localhost/api/experiences/health
 ```
 
 Additional ASP.NET services are checked through the API gateway at:
@@ -85,6 +94,10 @@ Swagger UI:
 ```text
 http://localhost/api/swagger
 ```
+
+The Experience & Biodiversity OpenAPI document is available through the same
+gateway and appears in the Swagger UI at
+`/api/experiences/swagger/v1/swagger.json`.
 
 The local gateway uses host port `80`. The CI health workflow overrides the
 Compose host mapping to `http://127.0.0.1:8080` on the runner. For Android,
