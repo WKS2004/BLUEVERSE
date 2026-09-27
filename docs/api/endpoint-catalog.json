@@ -311,17 +311,7 @@
       "upstream": "coastal-planner",
       "source": "services/api/appsettings.json",
       "description": "API-gateway route that forwards public Coastal Planner paths to the internal coastal-planner service.",
-      "usage": "Forwards planning, recommendations, itinerary, and biodiversity prediction requests to coastal-planner service."
-    },
-    {
-      "id": "coastal-planner-swagger-yarp-route",
-      "method": "ANY",
-      "path": "/api/coastal-planner/{**catch-all}",
-      "type": "reverse-proxy",
-      "upstream": "coastal-planner",
-      "source": "services/api/appsettings.json",
-      "description": "API-gateway route that forwards Coastal Planner Swagger documentation paths to coastal-planner service.",
-      "usage": "Forwards documentation requests to the internal coastal-planner service."
+      "usage": "Forwards planning, recommendations, itinerary, biodiversity prediction, health, and Swagger requests to the internal coastal-planner service."
     },
     {
       "id": "public-swagger-ui",
@@ -884,6 +874,32 @@
       "source": "services/auth/Controllers/UsersController.cs"
     },
     {
+      "id": "planner-health",
+      "method": "GET",
+      "path": "/api/planner/health",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "operationId": "Get",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Reports Coastal Planner service and database readiness.",
+      "usage": "Used by the API gateway and Docker-stack health diagnostics.",
+      "source": "services/coastal-planner/Controllers/HealthController.cs"
+    },
+    {
+      "id": "planner-swagger-document",
+      "method": "GET",
+      "path": "/api/planner/swagger/{documentName}/swagger.json",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "operationId": "SwaggerDocument",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Returns the Coastal Planner OpenAPI document through the public API gateway.",
+      "usage": "Used by the unified Swagger UI and contract inspection without exposing the internal service host.",
+      "source": "services/coastal-planner/Program.cs"
+    },
+    {
       "id": "planner-recommendations-create",
       "method": "POST",
       "path": "/api/planner/recommendations",
@@ -891,9 +907,9 @@
       "publicBoundary": "api",
       "operationId": "CreateRecommendations",
       "status": "implemented",
-      "auth": "authenticated",
-      "description": "Submit coastal preferences/constraints and generate candidate recommendations.",
-      "usage": "Used by React and Flutter planner workflows to obtain eligible coastal recommendations.",
+      "auth": "permission:planner.recommendations.create",
+      "description": "Submit coastal preferences and generate candidates from validated catalogue, marine, and operations evidence.",
+      "usage": "Completes with explicit uncertainty notes and no candidates when required peer services do not respond.",
       "source": "services/coastal-planner/Controllers/RecommendationsController.cs"
     },
     {
@@ -904,7 +920,7 @@
       "publicBoundary": "api",
       "operationId": "GetRecommendation",
       "status": "implemented",
-      "auth": "authenticated",
+      "auth": "permission:planner.recommendations.read",
       "description": "Retrieve recommendation candidate details, suitability, and evidence.",
       "usage": "Retrieves the candidates and peer status notes for a recommendation session.",
       "source": "services/coastal-planner/Controllers/RecommendationsController.cs"
@@ -917,7 +933,7 @@
       "publicBoundary": "api",
       "operationId": "GetWorkflow",
       "status": "implemented",
-      "auth": "authenticated",
+      "auth": "permission:planner.workflows.read",
       "description": "Get status and lifecycle of a planning workflow.",
       "usage": "Tracks asynchronous or completed planning workflow status and audit records.",
       "source": "services/coastal-planner/Controllers/WorkflowsController.cs"
@@ -930,7 +946,7 @@
       "publicBoundary": "api",
       "operationId": "CreateItinerary",
       "status": "implemented",
-      "auth": "authenticated",
+      "auth": "permission:planner.itineraries.manage",
       "description": "Create a user-owned saved itinerary.",
       "usage": "Saves an itinerary with ordered items for the authenticated user.",
       "source": "services/coastal-planner/Controllers/ItinerariesController.cs"
@@ -943,7 +959,7 @@
       "publicBoundary": "api",
       "operationId": "ListItineraries",
       "status": "implemented",
-      "auth": "authenticated",
+      "auth": "permission:planner.itineraries.manage",
       "description": "List the caller's saved itineraries.",
       "usage": "Returns paginated itineraries owned by the calling user.",
       "source": "services/coastal-planner/Controllers/ItinerariesController.cs"
@@ -956,7 +972,7 @@
       "publicBoundary": "api",
       "operationId": "GetItinerary",
       "status": "implemented",
-      "auth": "authenticated",
+      "auth": "permission:planner.itineraries.manage",
       "description": "Retrieve a specific itinerary with ordered items.",
       "usage": "Gets details of an itinerary owned by the authenticated caller.",
       "source": "services/coastal-planner/Controllers/ItinerariesController.cs"
@@ -969,7 +985,7 @@
       "publicBoundary": "api",
       "operationId": "UpdateItinerary",
       "status": "implemented",
-      "auth": "authenticated",
+      "auth": "permission:planner.itineraries.manage",
       "description": "Update itinerary details, reorder items, or adjust dates.",
       "usage": "Updates an itinerary with optimistic concurrency control.",
       "source": "services/coastal-planner/Controllers/ItinerariesController.cs"
@@ -982,7 +998,7 @@
       "publicBoundary": "api",
       "operationId": "DeleteItinerary",
       "status": "implemented",
-      "auth": "authenticated",
+      "auth": "permission:planner.itineraries.manage",
       "description": "Delete a caller-owned itinerary.",
       "usage": "Removes an itinerary owned by the authenticated caller.",
       "source": "services/coastal-planner/Controllers/ItinerariesController.cs"
@@ -995,7 +1011,7 @@
       "publicBoundary": "api",
       "operationId": "ReEvaluateItinerary",
       "status": "implemented",
-      "auth": "authenticated",
+      "auth": "permission:planner.itineraries.manage",
       "description": "Evaluate existing itinerary against current marine suitability, availability, and operational restrictions.",
       "usage": "Non-CRUD operation re-evaluating itinerary items against peer service facts.",
       "source": "services/coastal-planner/Controllers/ItinerariesController.cs"
@@ -1008,7 +1024,7 @@
       "publicBoundary": "api",
       "operationId": "GetPredictions",
       "status": "implemented",
-      "auth": "authenticated",
+      "auth": "permission:planner.biodiversity.read",
       "description": "Query validated biodiversity prediction context for a canonical destination/location.",
       "usage": "Returns validated ML prediction context consumed by Experience Catalogue (Member 1).",
       "source": "services/coastal-planner/Controllers/BiodiversityController.cs"

@@ -280,13 +280,14 @@ migrations and seeds the configured administrator account.
 
 Open the web app at `http://localhost` (or the port configured by
 `BLUEVERSE_HTTP_PORT`). The unified Swagger UI is at
-`http://localhost/api/swagger`. Check the frontend, public API and Auth health
-routes; each should return HTTP 200:
+`http://localhost/api/swagger`. Check the frontend, public API, Auth and
+Coastal Planner health routes; each should return HTTP 200:
 
 ```powershell
 curl.exe -f http://localhost/health
 curl.exe -f http://localhost/api/health
 curl.exe -f http://localhost/api/auth/health
+curl.exe -f http://localhost/api/planner/health
 ```
 
 The React and Flutter clients show branded 404 and 500 recovery screens for
@@ -303,10 +304,11 @@ On macOS, Linux or WSL2, run:
 curl --fail --silent --show-error http://localhost/health
 curl --fail --silent --show-error http://localhost/api/health
 curl --fail --silent --show-error http://localhost/api/auth/health
+curl --fail --silent --show-error http://localhost/api/planner/health
 ```
 
-In `docker compose ps`, PostgreSQL should report `healthy`
-and the frontend, API, Auth and gateway containers should be running. The
+In `docker compose ps`, PostgreSQL should report `healthy` and the frontend,
+API, Auth, Coastal Planner and gateway containers should be running. The
 development Compose stack exposes PostgreSQL on host port `5432` across all
 interfaces; Auth connects over the Docker network. When promoting the Compose
 configuration from `dev` to `main`, change the host mapping to

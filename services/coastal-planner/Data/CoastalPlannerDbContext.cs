@@ -23,6 +23,9 @@ public class CoastalPlannerDbContext : DbContext
 
         modelBuilder.Entity<PlanningWorkflow>(entity =>
         {
+            entity.ToTable("planning_workflows", "coastal_planner", table =>
+                table.HasCheckConstraint("CK_planning_workflows_status",
+                    "\"Status\" IN ('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED')"));
             entity.HasIndex(e => e.CreatedAtUtc);
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.InitiatorUserId);
@@ -30,6 +33,8 @@ public class CoastalPlannerDbContext : DbContext
 
         modelBuilder.Entity<Itinerary>(entity =>
         {
+            entity.ToTable("itineraries", "coastal_planner", table =>
+                table.HasCheckConstraint("CK_itineraries_date_range", "\"EndsAtUtc\" > \"StartsAtUtc\""));
             entity.HasIndex(e => e.OwnerUserId);
             entity.HasIndex(e => e.CreatedAtUtc);
             entity.Property(e => e.ConcurrencyVersion).IsConcurrencyToken();
@@ -42,13 +47,27 @@ public class CoastalPlannerDbContext : DbContext
 
         modelBuilder.Entity<ItineraryItem>(entity =>
         {
-            entity.HasIndex(e => new { e.ItineraryId, e.OrderIndex });
+            entity.ToTable("itinerary_items", "coastal_planner", table =>
+            {
+                table.HasCheckConstraint("CK_itinerary_items_order_non_negative", "\"OrderIndex\" >= 0");
+                table.HasCheckConstraint("CK_itinerary_items_date_range", "\"ScheduledEndUtc\" > \"ScheduledStartUtc\"");
+            });
+            entity.HasIndex(e => new { e.ItineraryId, e.OrderIndex }).IsUnique();
         });
 
         modelBuilder.Entity<RecommendationSession>(entity =>
         {
-            entity.HasIndex(e => e.WorkflowId);
+            entity.ToTable("recommendations", "coastal_planner", table =>
+            {
+                table.HasCheckConstraint("CK_recommendations_date_range", "\"EndsAtUtc\" > \"StartsAtUtc\"");
+                table.HasCheckConstraint("CK_recommendations_duration_positive", "\"DurationHours\" > 0");
+            });
+            entity.HasIndex(e => e.WorkflowId).IsUnique();
             entity.HasIndex(e => e.UserId);
+            entity.HasOne<PlanningWorkflow>()
+                .WithMany()
+                .HasForeignKey(e => e.WorkflowId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<BiodiversityPredictionCache>(entity =>

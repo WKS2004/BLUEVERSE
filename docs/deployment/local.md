@@ -72,19 +72,25 @@ Health:
 http://localhost/health
 http://localhost/api/health
 http://localhost/api/auth/health
+http://localhost/api/planner/health
 ```
 
 Additional ASP.NET services are checked through the API gateway at:
 
 ```text
-http://localhost/api/<service-name>/health
+http://localhost/api/<service-route>/health
 ```
+
+For Coastal Planner, `<service-route>` is `planner`.
 
 Swagger UI:
 
 ```text
 http://localhost/api/swagger
 ```
+
+Coastal Planner's OpenAPI document is available at
+`http://localhost/api/planner/swagger/v1/swagger.json`.
 
 The local gateway uses host port `80`. The CI health workflow overrides the
 Compose host mapping to `http://127.0.0.1:8080` on the runner. For Android,

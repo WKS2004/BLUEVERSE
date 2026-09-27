@@ -1,5 +1,6 @@
-using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
+using Blueverse.CoastalPlanner.Authorization;
 using Blueverse.CoastalPlanner.Models.Dtos;
 using Blueverse.CoastalPlanner.Services;
 
@@ -17,12 +18,18 @@ public class WorkflowsController : ControllerBase
     }
 
     [HttpGet("{workflowId:guid}")]
-    [Authorize]
+    [HasPermission("planner.workflows.read")]
     public async Task<ActionResult<WorkflowStatusDto>> GetWorkflow(
         [FromRoute] Guid workflowId, 
         CancellationToken ct)
     {
-        var result = await _plannerService.GetWorkflowStatusAsync(workflowId, ct);
+        var subject = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        if (!Guid.TryParse(subject, out var ownerUserId) || ownerUserId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _plannerService.GetWorkflowStatusAsync(workflowId, ownerUserId, ct);
         if (result == null)
         {
             return NotFound(new ProblemDetails

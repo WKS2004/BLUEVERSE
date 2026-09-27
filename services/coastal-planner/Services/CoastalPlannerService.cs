@@ -28,17 +28,14 @@ public class CoastalPlannerService : ICoastalPlannerService
         Guid? userId, 
         CancellationToken ct = default)
     {
-        if (request.EndsAt <= request.StartsAt)
-        {
-            throw new ArgumentException("EndsAt must be after StartsAt");
-        }
+        ValidateRecommendationRequest(request, userId);
 
         var workflow = new PlanningWorkflow
         {
             WorkflowId = Guid.NewGuid(),
             WorkflowType = "TOURIST_RECOMMENDATION",
             Status = "PROCESSING",
-            InitiatorUserId = userId,
+            InitiatorUserId = userId!.Value,
             Objective = $"Coastal planning for destination {request.TargetDestinationId}",
             CreatedAtUtc = DateTime.UtcNow
         };
@@ -50,66 +47,104 @@ public class CoastalPlannerService : ICoastalPlannerService
         var candidates = new List<RecommendationCandidateDto>();
         var uncertaintyNotes = new List<string>();
 
-        // 1. Fetch catalogue offerings from Member 1
-        var (catalogueItems, catalogueResponded, catalogueNote) = await _peerClient.GetCatalogueOfferingsAsync(
-            request.TargetDestinationId, 
-            request.PreferredActivityIds, 
-            ct);
+        // These are independent peers: both calls are bounded and convert peer
+        // failures into an unavailable result, so the planning workflow can still
+        // complete and report which evidence was missing.
+        var catalogueTask = _peerClient.GetCatalogueOfferingsAsync(
+            request.TargetDestinationId, request.PreferredActivityIds, ct);
+        var operationsTask = _peerClient.GetOperationalStatusAsync(request.TargetDestinationId, ct);
+        await Task.WhenAll(catalogueTask, operationsTask);
 
-        if (!catalogueResponded && catalogueNote != null)
+        var (catalogueItems, catalogueResponded, catalogueNote) = await catalogueTask;
+        var (opStatus, opResponded, opNote) = await operationsTask;
+        AddNote(uncertaintyNotes, catalogueNote);
+        AddNote(uncertaintyNotes, opNote);
+
+        var eligibleOfferings = catalogueResponded
+            ? catalogueItems.Where(item => item.DestinationId == request.TargetDestinationId &&
+                item.ActivityId != Guid.Empty && item.OfferingId is { } offeringId && offeringId != Guid.Empty &&
+                !string.IsNullOrWhiteSpace(item.Title) &&
+                string.Equals(item.PublicationState, "PUBLISHED", StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(item.AvailabilityStatus, "AVAILABLE", StringComparison.OrdinalIgnoreCase) &&
+                (request.PreferredActivityIds is not { Count: > 0 } || request.PreferredActivityIds.Contains(item.ActivityId)))
+                .ToList()
+            : [];
+
+        if (catalogueResponded && eligibleOfferings.Count == 0)
         {
-            uncertaintyNotes.Add(catalogueNote);
+            AddNote(uncertaintyNotes, catalogueItems.Count == 0
+                ? "The catalogue responded but returned no offerings for the requested destination."
+                : "No catalogue offerings met the published, available, destination, and preference requirements.");
         }
 
-        // 2. Fetch coastal operational alerts from Member 4
-        var (opStatus, opResponded, opNote) = await _peerClient.GetOperationalStatusAsync(request.TargetDestinationId, ct);
-        if (!opResponded && opNote != null)
+        foreach (var item in eligibleOfferings)
         {
-            uncertaintyNotes.Add(opNote);
-        }
-
-        // 3. For each candidate item, fetch marine suitability from Member 2
-        foreach (var item in catalogueItems)
-        {
-            var start = request.StartsAt.AddHours(1);
-            var end = request.StartsAt.AddHours(3);
-
-            var (suitability, suitResponded, suitNote) = await _peerClient.GetMarineSuitabilityAsync(
-                item.DestinationId, 
-                item.ActivityId, 
-                start, 
-                end, 
-                ct);
-
-            if (!suitResponded && suitNote != null && !uncertaintyNotes.Contains(suitNote))
+            if (!opResponded || opStatus is null || opStatus.DestinationId != request.TargetDestinationId)
             {
-                uncertaintyNotes.Add(suitNote);
+                continue;
+            }
+
+            if (opStatus.OperationalStatus is not ("OPEN" or "CAUTION"))
+            {
+                AddNote(uncertaintyNotes, $"Offering {item.ActivityId} was omitted because operations status is {opStatus.OperationalStatus}.");
+                continue;
+            }
+
+            var start = request.StartsAt;
+            var end = start.AddHours(request.DurationHours);
+            var (suitability, suitResponded, suitNote) = await _peerClient.GetMarineSuitabilityAsync(
+                item.DestinationId, item.ActivityId, start, end, ct);
+            AddNote(uncertaintyNotes, suitNote);
+
+            if (!suitResponded || suitability is null ||
+                suitability.DestinationId != item.DestinationId || suitability.ActivityId != item.ActivityId ||
+                suitability.Status is not ("SUITABLE" or "CAUTION") ||
+                suitability.SafetyProfileId.GetValueOrDefault() == Guid.Empty ||
+                suitability.ConditionTimestamp == default ||
+                suitability.ConditionTimestamp.Kind != DateTimeKind.Utc ||
+                suitability.ConditionTimestamp > DateTime.UtcNow.AddMinutes(1))
+            {
+                if (suitResponded && suitability?.Status == "UNSUITABLE")
+                {
+                    AddNote(uncertaintyNotes, $"Offering {item.ActivityId} was omitted because marine suitability is UNSUITABLE.");
+                }
+                else if (suitResponded && suitability is not null)
+                {
+                    AddNote(uncertaintyNotes, $"Offering {item.ActivityId} was omitted because required marine suitability evidence is incomplete or unknown.");
+                }
+
+                continue;
             }
 
             BiodiversityContextDto? bioContext = null;
             if (request.IncludeBiodiversityContext)
             {
-                var (bioResult, bioResponded, bioNote) = await _peerClient.GetBiodiversityInferenceAsync(item.DestinationId, item.ActivityId, ct);
-                if (bioResponded && bioResult?.Species?.Any() == true)
+                var (bioResult, bioResponded, bioNote) = await _peerClient.GetBiodiversityInferenceAsync(
+                    item.DestinationId, item.ActivityId, ct);
+                AddNote(uncertaintyNotes, bioNote);
+                if (bioResponded && bioResult?.Species?.FirstOrDefault() is { } topSpecies && bioResult.Timestamp is { } timestamp)
                 {
-                    var topSpecies = bioResult.Species.First();
                     bioContext = new BiodiversityContextDto(
                         SpeciesName: $"{topSpecies.ScientificName} ({topSpecies.CommonName})",
                         Probability: topSpecies.HabitatSuitability,
                         Uncertainty: topSpecies.ConfidenceLevel,
-                        PredictionTimestamp: bioResult.Timestamp ?? DateTime.UtcNow
-                    );
-                }
-                else if (!bioResponded && bioNote != null && !uncertaintyNotes.Contains(bioNote))
-                {
-                    uncertaintyNotes.Add(bioNote);
+                        PredictionTimestamp: timestamp);
                 }
             }
 
-            // Exclude unsuitable items deterministically
-            if (suitability?.Status == "UNSUITABLE" || opStatus?.OperationalStatus == "TEMPORARILY_SUSPENDED")
+            var reasons = new List<string>
             {
-                continue;
+                "Published and available in the requested destination.",
+                suitability.Status == "SUITABLE"
+                    ? "Marine conditions are suitable for the requested time window."
+                    : "Marine conditions include a caution for the requested time window.",
+                opStatus.OperationalStatus == "OPEN"
+                    ? "Coastal operations are open."
+                    : "Coastal operations report a caution."
+            };
+            if (request.PreferredActivityIds?.Contains(item.ActivityId) == true)
+            {
+                reasons.Add("Matches a preferred activity.");
             }
 
             candidates.Add(new RecommendationCandidateDto(
@@ -121,15 +156,23 @@ public class CoastalPlannerService : ICoastalPlannerService
                 ScheduledEnd: end,
                 AvailabilityStatus: item.AvailabilityStatus,
                 Suitability: new SuitabilitySummaryDto(
-                    Status: suitability?.Status ?? "UNKNOWN",
-                    MarineConditionTime: suitability?.ConditionTimestamp ?? start,
-                    SafetyProfileId: suitability?.SafetyProfileId ?? Guid.NewGuid()
-                ),
-                OperationalStatus: opStatus?.OperationalStatus ?? "OPEN",
+                    Status: suitability.Status,
+                    MarineConditionTime: suitability.ConditionTimestamp,
+                    SafetyProfileId: suitability.SafetyProfileId),
+                OperationalStatus: opStatus.OperationalStatus,
                 BiodiversityContext: bioContext,
-                FitScore: suitability?.Status == "SUITABLE" ? 0.95 : 0.70,
-                Reasons: new List<string> { "Candidate matches planning window and requested destination." }
-            ));
+                FitScore: suitability.Status == "SUITABLE" && opStatus.OperationalStatus == "OPEN" ? 0.95 : 0.70,
+                Reasons: reasons));
+        }
+
+        if (eligibleOfferings.Count > 0 && !opResponded)
+        {
+            AddNote(uncertaintyNotes, "No recommendation candidates were returned because the operations endpoint did not respond; operating restrictions could not be verified.");
+        }
+
+        if (eligibleOfferings.Count > 0 && catalogueResponded && opResponded && candidates.Count == 0)
+        {
+            AddNote(uncertaintyNotes, "No recommendation candidates passed the available operations and marine safety checks.");
         }
 
         var candidatesJson = JsonSerializer.Serialize(candidates);
@@ -138,7 +181,7 @@ public class CoastalPlannerService : ICoastalPlannerService
         {
             RecommendationId = recommendationId,
             WorkflowId = workflow.WorkflowId,
-            UserId = userId,
+            UserId = userId!.Value,
             TargetDestinationId = request.TargetDestinationId,
             StartsAtUtc = request.StartsAt,
             EndsAtUtc = request.EndsAt,
@@ -146,6 +189,7 @@ public class CoastalPlannerService : ICoastalPlannerService
             ExperienceLevel = request.ExperienceLevel ?? "INTERMEDIATE",
             IncludeBiodiversityContext = request.IncludeBiodiversityContext,
             CandidatesJson = candidatesJson,
+            UncertaintyNotesJson = JsonSerializer.Serialize(uncertaintyNotes),
             ExcludedCandidatesCount = catalogueItems.Count - candidates.Count,
             CreatedAtUtc = DateTime.UtcNow
         };
@@ -169,9 +213,10 @@ public class CoastalPlannerService : ICoastalPlannerService
         );
     }
 
-    public async Task<RecommendationResultDto?> GetRecommendationAsync(Guid recommendationId, CancellationToken ct = default)
+    public async Task<RecommendationResultDto?> GetRecommendationAsync(Guid recommendationId, Guid ownerUserId, CancellationToken ct = default)
     {
-        var session = await _db.Recommendations.FirstOrDefaultAsync(r => r.RecommendationId == recommendationId, ct);
+        var session = await _db.Recommendations.FirstOrDefaultAsync(
+            r => r.RecommendationId == recommendationId && r.UserId == ownerUserId, ct);
         if (session == null) return null;
 
         var candidates = string.IsNullOrWhiteSpace(session.CandidatesJson)
@@ -185,13 +230,14 @@ public class CoastalPlannerService : ICoastalPlannerService
             GeneratedAt: session.CreatedAtUtc,
             Candidates: candidates,
             ExcludedCandidatesCount: session.ExcludedCandidatesCount,
-            UncertaintyNotes: new List<string>()
+            UncertaintyNotes: DeserializeNotes(session.UncertaintyNotesJson)
         );
     }
 
-    public async Task<WorkflowStatusDto?> GetWorkflowStatusAsync(Guid workflowId, CancellationToken ct = default)
+    public async Task<WorkflowStatusDto?> GetWorkflowStatusAsync(Guid workflowId, Guid ownerUserId, CancellationToken ct = default)
     {
-        var workflow = await _db.PlanningWorkflows.FirstOrDefaultAsync(w => w.WorkflowId == workflowId, ct);
+        var workflow = await _db.PlanningWorkflows.FirstOrDefaultAsync(
+            w => w.WorkflowId == workflowId && w.InitiatorUserId == ownerUserId, ct);
         if (workflow == null) return null;
 
         return new WorkflowStatusDto(
@@ -209,6 +255,9 @@ public class CoastalPlannerService : ICoastalPlannerService
 
     public async Task<ItineraryDto> CreateItineraryAsync(CreateItineraryRequestDto request, Guid ownerUserId, CancellationToken ct = default)
     {
+        ArgumentNullException.ThrowIfNull(request);
+        ValidateItinerary(ownerUserId, request.Title, request.Description, request.StartsAt, request.EndsAt, request.Items);
+
         var itinerary = new Itinerary
         {
             ItineraryId = Guid.NewGuid(),
@@ -230,9 +279,9 @@ public class CoastalPlannerService : ICoastalPlannerService
                 OrderIndex = item.OrderIndex,
                 ScheduledStartUtc = item.ScheduledStart,
                 ScheduledEndUtc = item.ScheduledEnd,
-                LastSuitabilityStatus = "SUITABLE",
-                LastAvailabilityStatus = "AVAILABLE",
-                LastOperationalStatus = "OPEN"
+                LastSuitabilityStatus = "UNKNOWN",
+                LastAvailabilityStatus = "UNKNOWN",
+                LastOperationalStatus = "UNKNOWN"
             }).ToList()
         };
 
@@ -266,6 +315,8 @@ public class CoastalPlannerService : ICoastalPlannerService
 
     public async Task<ItineraryDto?> UpdateItineraryAsync(Guid itineraryId, UpdateItineraryRequestDto request, Guid ownerUserId, CancellationToken ct = default)
     {
+        ArgumentNullException.ThrowIfNull(request);
+        ValidateItinerary(ownerUserId, request.Title, request.Description, request.StartsAt, request.EndsAt, request.Items);
         var itinerary = await _db.Itineraries
             .Include(i => i.Items)
             .FirstOrDefaultAsync(i => i.ItineraryId == itineraryId && i.OwnerUserId == ownerUserId, ct);
@@ -296,9 +347,9 @@ public class CoastalPlannerService : ICoastalPlannerService
             OrderIndex = item.OrderIndex,
             ScheduledStartUtc = item.ScheduledStart,
             ScheduledEndUtc = item.ScheduledEnd,
-            LastSuitabilityStatus = "SUITABLE",
-            LastAvailabilityStatus = "AVAILABLE",
-            LastOperationalStatus = "OPEN"
+            LastSuitabilityStatus = "UNKNOWN",
+            LastAvailabilityStatus = "UNKNOWN",
+            LastOperationalStatus = "UNKNOWN"
         }).ToList();
 
         await _db.SaveChangesAsync(ct);
@@ -330,14 +381,31 @@ public class CoastalPlannerService : ICoastalPlannerService
         if (itinerary == null) return null;
 
         var itemsResult = new List<ItineraryReEvaluationItemDto>();
-        bool hasChanges = false;
+        var hasChanges = false;
         var summaryNotes = new List<string>();
+        var destinationEvidence = new Dictionary<Guid, (
+            PeerOperationStatusResponse? Operations,
+            bool OperationsResponded,
+            List<PeerCatalogueItem> Catalogue,
+            bool CatalogueResponded)>();
 
-        // Re-evaluate operational status for destination
-        var (opStatus, opResponded, opNote) = await _peerClient.GetOperationalStatusAsync(itinerary.Items.FirstOrDefault()?.DestinationId ?? Guid.Empty, ct);
-        if (!opResponded && opNote != null)
+        foreach (var destinationId in itinerary.Items.Select(item => item.DestinationId).Distinct())
         {
-            summaryNotes.Add(opNote);
+            var preferredActivityIds = itinerary.Items
+                .Where(item => item.DestinationId == destinationId)
+                .Select(item => item.ActivityId)
+                .Distinct()
+                .ToList();
+            var operationsTask = _peerClient.GetOperationalStatusAsync(destinationId, ct);
+            var catalogueTask = _peerClient.GetCatalogueOfferingsAsync(destinationId, preferredActivityIds, ct);
+            await Task.WhenAll(operationsTask, catalogueTask);
+
+            var (operations, operationsResponded, operationsNote) = await operationsTask;
+            var (catalogue, catalogueResponded, catalogueNote) = await catalogueTask;
+            AddNote(summaryNotes, operationsNote);
+            AddNote(summaryNotes, catalogueNote);
+            destinationEvidence[destinationId] = (
+                operations, operationsResponded, catalogue, catalogueResponded);
         }
 
         foreach (var item in itinerary.Items)
@@ -348,31 +416,66 @@ public class CoastalPlannerService : ICoastalPlannerService
                 item.ScheduledStartUtc, 
                 item.ScheduledEndUtc, 
                 ct);
+            AddNote(summaryNotes, suitNote);
 
-            if (!suitResponded && suitNote != null && !summaryNotes.Contains(suitNote))
+            var (operations, operationsResponded, catalogue, catalogueResponded) = destinationEvidence[item.DestinationId];
+            var catalogueItem = catalogue.FirstOrDefault(candidate => candidate.DestinationId == item.DestinationId &&
+                (item.OfferingId.HasValue ? candidate.OfferingId == item.OfferingId : candidate.ActivityId == item.ActivityId));
+            var currentSuit = suitResponded && suitability is not null &&
+                suitability.DestinationId == item.DestinationId && suitability.ActivityId == item.ActivityId &&
+                suitability.Status is ("SUITABLE" or "CAUTION" or "UNSUITABLE" or "UNKNOWN") &&
+                suitability.ConditionTimestamp != default && suitability.ConditionTimestamp.Kind == DateTimeKind.Utc &&
+                (suitability.Status is "UNSUITABLE" or "UNKNOWN" || suitability.SafetyProfileId.GetValueOrDefault() != Guid.Empty)
+                ? suitability.Status
+                : "UNKNOWN";
+            var currentOp = operationsResponded && operations is not null && operations.DestinationId == item.DestinationId &&
+                operations.OperationalStatus is ("OPEN" or "CAUTION" or "TEMPORARILY_SUSPENDED" or "CANCELLED" or "COMPLETED")
+                ? operations.OperationalStatus
+                : "UNKNOWN";
+            var currentAvail = catalogueResponded && catalogueItem is not null
+                ? string.Equals(catalogueItem.PublicationState, "PUBLISHED", StringComparison.OrdinalIgnoreCase)
+                    ? catalogueItem.AvailabilityStatus is ("AVAILABLE" or "UNAVAILABLE" or "UNKNOWN")
+                        ? catalogueItem.AvailabilityStatus
+                        : "UNKNOWN"
+                    : "NOT_PUBLISHED"
+                : "UNKNOWN";
+
+            if (!catalogueResponded)
             {
-                summaryNotes.Add(suitNote);
+                AddNote(summaryNotes, $"Catalogue availability for destination {item.DestinationId} could not be verified.");
+            }
+            else if (catalogueItem is null)
+            {
+                AddNote(summaryNotes, $"The saved offering for activity {item.ActivityId} was not returned by the catalogue.");
             }
 
-            var currentSuit = suitability?.Status ?? "UNKNOWN";
-            var currentOp = opStatus?.OperationalStatus ?? "OPEN";
-            var currentAvail = item.LastAvailabilityStatus;
-
-            string? advisory = suitability?.Advisory;
+            string? advisory = currentSuit == "UNKNOWN" ? null : suitability?.Advisory;
             string action = "KEEP";
 
-            if (currentSuit == "UNSUITABLE" || currentOp == "TEMPORARILY_SUSPENDED")
+            if (currentSuit == "UNSUITABLE" || currentOp is "TEMPORARILY_SUSPENDED" or "CANCELLED" ||
+                currentAvail is not ("AVAILABLE" or "UNKNOWN"))
             {
                 action = "CANCEL_OR_RESCHEDULE";
-                advisory ??= "Activity is currently marked UNSUITABLE due to marine conditions or operational advisory.";
+                advisory ??= "The activity is unsuitable, unavailable, unpublished, or restricted by current operations.";
                 hasChanges = true;
             }
-            else if (currentSuit == "CAUTION")
+            else if (currentSuit == "UNKNOWN" || currentOp == "UNKNOWN" || currentAvail == "UNKNOWN")
+            {
+                action = "REVIEW_CONDITIONS";
+                advisory ??= "Current safety, availability, or operational information is unavailable. Review conditions before proceeding.";
+                hasChanges = true;
+            }
+            else if (currentSuit == "CAUTION" || currentOp == "CAUTION")
             {
                 action = "REVIEW_CONDITIONS";
                 advisory ??= "Elevated risk caution present for the planned activity window.";
                 hasChanges = true;
             }
+
+            item.LastSuitabilityStatus = currentSuit;
+            item.LastOperationalStatus = currentOp;
+            item.LastAvailabilityStatus = currentAvail;
+            item.AdvisoryNote = advisory;
 
             itemsResult.Add(new ItineraryReEvaluationItemDto(
                 ItemId: item.ItemId,
@@ -385,9 +488,15 @@ public class CoastalPlannerService : ICoastalPlannerService
             ));
         }
 
+        if (itinerary.Items.Count > 0)
+        {
+            itinerary.UpdatedAtUtc = DateTime.UtcNow;
+            await _db.SaveChangesAsync(ct);
+        }
+
         var summary = hasChanges 
             ? "Re-evaluation identified advisories or condition changes requiring review." 
-            : "All planned items remain suitable.";
+            : "All planned items remain suitable based on the available evidence.";
 
         if (summaryNotes.Any())
         {
@@ -427,50 +536,46 @@ public class CoastalPlannerService : ICoastalPlannerService
         // Call IT3091 ML inference via peer client
         var (peerBio, bioResponded, bioNote) = await _peerClient.GetBiodiversityInferenceAsync(destinationId, activityId, ct);
 
-        List<PredictedSpeciesDto> predictedSpecies;
-        string modelVersion = "it3091-v1.2";
-        string limitations = "Contextual prediction only. Not a guarantee of wildlife sighting or site safety.";
-        string status = "AVAILABLE";
+        var now = DateTime.UtcNow;
+        if (!bioResponded || peerBio is null || peerBio.Timestamp is null ||
+            string.IsNullOrWhiteSpace(peerBio.ModelVersion) || peerBio.ModelVersion.Length > 64 || peerBio.Status != "AVAILABLE" ||
+            peerBio.Species is null || peerBio.Species.Any(species =>
+                species is null || species.SpeciesId == Guid.Empty || string.IsNullOrWhiteSpace(species.ScientificName) ||
+                species.ScientificName.Length > 200 || string.IsNullOrWhiteSpace(species.CommonName) || species.CommonName.Length > 200 ||
+                !double.IsFinite(species.HabitatSuitability) ||
+                species.HabitatSuitability is < 0 or > 1 || string.IsNullOrWhiteSpace(species.ConfidenceLevel)) ||
+            peerBio.Timestamp.Value.Kind != DateTimeKind.Utc || peerBio.Timestamp.Value < now.AddHours(-6) ||
+            peerBio.Timestamp.Value > now.AddMinutes(1))
+        {
+            _logger.LogWarning("Biodiversity inference is unavailable: {Note}", bioNote);
+            return new BiodiversityPredictionDto(
+                DestinationId: destinationId,
+                ActivityId: activityId,
+                Status: "UNAVAILABLE",
+                PredictedSpecies: [],
+                ModelMetadata: null,
+                Limitations: bioNote ?? "Biodiversity inference endpoint did not respond; no prediction is available.");
+        }
 
-        if (bioResponded && peerBio?.Species?.Any() == true)
-        {
-            predictedSpecies = peerBio.Species.Select(s => new PredictedSpeciesDto(
-                SpeciesId: s.SpeciesId,
-                ScientificName: s.ScientificName,
-                CommonName: s.CommonName,
-                HabitatSuitability: s.HabitatSuitability,
-                ConfidenceLevel: s.ConfidenceLevel
-            )).ToList();
-            modelVersion = peerBio.ModelVersion ?? modelVersion;
-            limitations = peerBio.Limitations ?? limitations;
-            status = peerBio.Status ?? status;
-        }
-        else
-        {
-            _logger.LogWarning("IT3091 Biodiversity inference unavailable ({Note}); returning default contextual prediction fallback.", bioNote);
-            predictedSpecies = new List<PredictedSpeciesDto>
-            {
-                new PredictedSpeciesDto(
-                    SpeciesId: Guid.NewGuid(),
-                    ScientificName: "Chelonia mydas",
-                    CommonName: "Green Sea Turtle",
-                    HabitatSuitability: 0.82,
-                    ConfidenceLevel: "MEDIUM"
-                )
-            };
-            limitations += $" (Note: {bioNote ?? "ML service unreachable, using fallback"})";
-        }
+        var predictedSpecies = peerBio.Species?.Select(species => new PredictedSpeciesDto(
+            SpeciesId: species.SpeciesId,
+            ScientificName: species.ScientificName,
+            CommonName: species.CommonName,
+            HabitatSuitability: species.HabitatSuitability,
+            ConfidenceLevel: species.ConfidenceLevel)).ToList() ?? [];
+        var modelVersion = peerBio.ModelVersion;
+        var limitations = peerBio.Limitations ?? "Contextual prediction only. Not a guarantee of wildlife sighting or site safety.";
 
         var newCache = new BiodiversityPredictionCache
         {
             PredictionId = Guid.NewGuid(),
             DestinationId = destinationId,
             ActivityId = activityId,
-            Status = status,
+            Status = peerBio.Status,
             SpeciesDataJson = JsonSerializer.Serialize(predictedSpecies),
             ModelVersion = modelVersion,
-            InferenceTimestampUtc = DateTime.UtcNow,
-            ExpiresAtUtc = DateTime.UtcNow.AddHours(6),
+            InferenceTimestampUtc = peerBio.Timestamp.Value,
+            ExpiresAtUtc = peerBio.Timestamp.Value.AddHours(6),
             Limitations = limitations
         };
 
@@ -480,7 +585,7 @@ public class CoastalPlannerService : ICoastalPlannerService
         return new BiodiversityPredictionDto(
             DestinationId: destinationId,
             ActivityId: activityId,
-            Status: status,
+            Status: peerBio.Status,
             PredictedSpecies: predictedSpecies,
             ModelMetadata: new ModelMetadataDto(modelVersion, newCache.InferenceTimestampUtc),
             Limitations: limitations
@@ -515,5 +620,119 @@ public class CoastalPlannerService : ICoastalPlannerService
                 AdvisoryNote: item.AdvisoryNote
             )).ToList()
         );
+    }
+
+    private static void ValidateRecommendationRequest(RecommendationRequestDto request, Guid? userId)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (!userId.HasValue || userId.Value == Guid.Empty)
+        {
+            throw new ArgumentException("An authenticated actor is required.");
+        }
+
+        if (request.TargetDestinationId == Guid.Empty)
+        {
+            throw new ArgumentException("TargetDestinationId must be a non-empty GUID.");
+        }
+
+        if (request.StartsAt.Kind != DateTimeKind.Utc || request.EndsAt.Kind != DateTimeKind.Utc)
+        {
+            throw new ArgumentException("StartsAt and EndsAt must be UTC timestamps.");
+        }
+
+        if (request.EndsAt <= request.StartsAt)
+        {
+            throw new ArgumentException("EndsAt must be after StartsAt.");
+        }
+
+        if (request.DurationHours <= 0 || request.DurationHours > (request.EndsAt - request.StartsAt).TotalHours)
+        {
+            throw new ArgumentException("DurationHours must be positive and fit within the requested time range.");
+        }
+
+        var now = DateTime.UtcNow;
+        if (request.StartsAt < now || request.EndsAt > now.AddDays(30))
+        {
+            throw new ArgumentException("Planning dates must be in the future and within the next 30 days.");
+        }
+
+        if (request.PreferredActivityIds?.Any(id => id == Guid.Empty) == true)
+        {
+            throw new ArgumentException("PreferredActivityIds cannot contain an empty GUID.");
+        }
+    }
+
+    private static void ValidateItinerary(
+        Guid ownerUserId,
+        string title,
+        string? description,
+        DateTime startsAt,
+        DateTime endsAt,
+        List<CreateItineraryItemRequestDto>? items)
+    {
+        if (ownerUserId == Guid.Empty)
+        {
+            throw new ArgumentException("An authenticated owner is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(title) || title.Length > 150 || (description?.Length ?? 0) > 500)
+        {
+            throw new ArgumentException("Title is required and must not exceed 150 characters; description must not exceed 500 characters.");
+        }
+
+        if (startsAt.Kind != DateTimeKind.Utc || endsAt.Kind != DateTimeKind.Utc || endsAt <= startsAt)
+        {
+            throw new ArgumentException("Itinerary start and end must be UTC timestamps with the end after the start.");
+        }
+
+        if (items is null)
+        {
+            throw new ArgumentException("Items are required.");
+        }
+
+        var now = DateTime.UtcNow;
+        if (startsAt < now || endsAt > now.AddDays(30))
+        {
+            throw new ArgumentException("Itinerary dates must be in the future and within the next 30 days.");
+        }
+
+        if (items.Any(item => item is null || item.DestinationId == Guid.Empty || item.ActivityId == Guid.Empty ||
+                item.OfferingId == Guid.Empty ||
+                string.IsNullOrWhiteSpace(item.Title) || item.Title.Length > 150 || item.OrderIndex < 0 ||
+                item.ScheduledStart.Kind != DateTimeKind.Utc || item.ScheduledEnd.Kind != DateTimeKind.Utc ||
+                item.ScheduledEnd <= item.ScheduledStart || item.ScheduledStart < startsAt || item.ScheduledEnd > endsAt))
+        {
+            throw new ArgumentException("Each itinerary item must have valid IDs, a title, a unique non-negative order, and a UTC schedule inside the itinerary range.");
+        }
+
+        if (items.Select(item => item.OrderIndex).Distinct().Count() != items.Count)
+        {
+            throw new ArgumentException("Itinerary item order values must be unique.");
+        }
+    }
+
+    private static void AddNote(List<string> notes, string? note)
+    {
+        if (!string.IsNullOrWhiteSpace(note) && !notes.Contains(note, StringComparer.Ordinal))
+        {
+            notes.Add(note);
+        }
+    }
+
+    private static List<string> DeserializeNotes(string? notesJson)
+    {
+        if (string.IsNullOrWhiteSpace(notesJson))
+        {
+            return [];
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<string>>(notesJson) ?? [];
+        }
+        catch (JsonException)
+        {
+            return ["Stored uncertainty notes could not be read."];
+        }
     }
 }

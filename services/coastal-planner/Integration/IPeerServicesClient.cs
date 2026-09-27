@@ -3,7 +3,7 @@ namespace Blueverse.CoastalPlanner.Integration;
 public record PeerCatalogueItem(
     Guid DestinationId,
     Guid ActivityId,
-    Guid OfferingId,
+    Guid? OfferingId,
     string Title,
     string AvailabilityStatus,
     string PublicationState
@@ -14,7 +14,7 @@ public record PeerSuitabilityResponse(
     Guid ActivityId,
     string Status, // SUITABLE, CAUTION, UNSUITABLE, UNKNOWN
     DateTime ConditionTimestamp,
-    Guid SafetyProfileId,
+    Guid? SafetyProfileId,
     string? Advisory
 );
 

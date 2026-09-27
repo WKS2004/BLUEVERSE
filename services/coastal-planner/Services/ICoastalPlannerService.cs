@@ -5,8 +5,8 @@ namespace Blueverse.CoastalPlanner.Services;
 public interface ICoastalPlannerService
 {
     Task<RecommendationResultDto> GenerateRecommendationsAsync(RecommendationRequestDto request, Guid? userId, CancellationToken ct = default);
-    Task<RecommendationResultDto?> GetRecommendationAsync(Guid recommendationId, CancellationToken ct = default);
-    Task<WorkflowStatusDto?> GetWorkflowStatusAsync(Guid workflowId, CancellationToken ct = default);
+    Task<RecommendationResultDto?> GetRecommendationAsync(Guid recommendationId, Guid ownerUserId, CancellationToken ct = default);
+    Task<WorkflowStatusDto?> GetWorkflowStatusAsync(Guid workflowId, Guid ownerUserId, CancellationToken ct = default);
 
     Task<ItineraryDto> CreateItineraryAsync(CreateItineraryRequestDto request, Guid ownerUserId, CancellationToken ct = default);
     Task<List<ItineraryDto>> ListItinerariesAsync(Guid ownerUserId, int page, int pageSize, CancellationToken ct = default);

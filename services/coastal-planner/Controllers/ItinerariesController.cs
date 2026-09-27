@@ -1,7 +1,7 @@
 using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Blueverse.CoastalPlanner.Authorization;
 using Blueverse.CoastalPlanner.Models.Dtos;
 using Blueverse.CoastalPlanner.Services;
 
@@ -21,23 +21,30 @@ public class ItinerariesController : ControllerBase
     private bool TryGetUserId(out Guid userId)
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
-        return Guid.TryParse(userIdStr, out userId);
+        return Guid.TryParse(userIdStr, out userId) && userId != Guid.Empty;
     }
 
     [HttpPost]
-    [Authorize]
+    [HasPermission("planner.itineraries.manage")]
     public async Task<ActionResult<ItineraryDto>> CreateItinerary(
         [FromBody] CreateItineraryRequestDto request, 
         CancellationToken ct)
     {
         if (!TryGetUserId(out var userId)) return Unauthorized();
 
-        var result = await _plannerService.CreateItineraryAsync(request, userId, ct);
-        return CreatedAtAction(nameof(GetItinerary), new { itineraryId = result.ItineraryId }, result);
+        try
+        {
+            var result = await _plannerService.CreateItineraryAsync(request, userId, ct);
+            return CreatedAtAction(nameof(GetItinerary), new { itineraryId = result.ItineraryId }, result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new ProblemDetails { Title = "Invalid itinerary", Status = StatusCodes.Status400BadRequest, Detail = ex.Message });
+        }
     }
 
     [HttpGet]
-    [Authorize]
+    [HasPermission("planner.itineraries.manage")]
     public async Task<ActionResult<List<ItineraryDto>>> ListItineraries(
         [FromQuery] int page = 1, 
         [FromQuery] int pageSize = 20, 
@@ -50,7 +57,7 @@ public class ItinerariesController : ControllerBase
     }
 
     [HttpGet("{itineraryId:guid}")]
-    [Authorize]
+    [HasPermission("planner.itineraries.manage")]
     public async Task<ActionResult<ItineraryDto>> GetItinerary(
         [FromRoute] Guid itineraryId, 
         CancellationToken ct)
@@ -73,7 +80,7 @@ public class ItinerariesController : ControllerBase
     }
 
     [HttpPut("{itineraryId:guid}")]
-    [Authorize]
+    [HasPermission("planner.itineraries.manage")]
     public async Task<ActionResult<ItineraryDto>> UpdateItinerary(
         [FromRoute] Guid itineraryId, 
         [FromBody] UpdateItineraryRequestDto request, 
@@ -106,10 +113,14 @@ public class ItinerariesController : ControllerBase
                 Detail = "The itinerary was modified by another process. Refresh and retry."
             });
         }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new ProblemDetails { Title = "Invalid itinerary", Status = StatusCodes.Status400BadRequest, Detail = ex.Message });
+        }
     }
 
     [HttpDelete("{itineraryId:guid}")]
-    [Authorize]
+    [HasPermission("planner.itineraries.manage")]
     public async Task<IActionResult> DeleteItinerary(
         [FromRoute] Guid itineraryId, 
         CancellationToken ct)
@@ -132,7 +143,7 @@ public class ItinerariesController : ControllerBase
     }
 
     [HttpPost("{itineraryId:guid}/re-evaluations")]
-    [Authorize]
+    [HasPermission("planner.itineraries.manage")]
     public async Task<ActionResult<ItineraryReEvaluationResultDto>> ReEvaluateItinerary(
         [FromRoute] Guid itineraryId, 
         [FromBody] ItineraryReEvaluationRequestDto request, 

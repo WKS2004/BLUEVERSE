@@ -3,13 +3,12 @@ using System.Text.Json;
 
 namespace Blueverse.CoastalPlanner.Integration;
 
-public class PeerServicesClient : IPeerServicesClient
+public sealed class PeerServicesClient : IPeerServicesClient
 {
     private readonly HttpClient _http;
     private readonly IConfiguration _config;
     private readonly ILogger<PeerServicesClient> _logger;
-
-    private readonly int _timeoutSeconds;
+    private readonly TimeSpan _timeout;
     private readonly int _retryCount;
 
     public PeerServicesClient(HttpClient http, IConfiguration config, ILogger<PeerServicesClient> logger)
@@ -18,143 +17,262 @@ public class PeerServicesClient : IPeerServicesClient
         _config = config;
         _logger = logger;
 
-        _timeoutSeconds = _config.GetValue<int>("PeerServices:TimeoutSeconds", 3);
-        _retryCount = _config.GetValue<int>("PeerServices:RetryCount", 2);
+        var timeoutSeconds = config.GetValue<int?>("PeerServices:TimeoutSeconds") ?? 3;
+        if (timeoutSeconds is < 1 or > 30)
+        {
+            throw new InvalidOperationException("PeerServices:TimeoutSeconds must be between 1 and 30.");
+        }
+
+        _timeout = TimeSpan.FromSeconds(timeoutSeconds);
+        _retryCount = config.GetValue<int?>("PeerServices:RetryCount") ?? 1;
+        if (_retryCount is < 0 or > 5)
+        {
+            throw new InvalidOperationException("PeerServices:RetryCount must be between 0 and 5.");
+        }
     }
 
     public async Task<(List<PeerCatalogueItem> Items, bool Responded, string? Note)> GetCatalogueOfferingsAsync(
-        Guid destinationId, 
-        List<Guid>? preferredActivityIds, 
+        Guid destinationId,
+        List<Guid>? preferredActivityIds,
         CancellationToken ct = default)
     {
-        var baseUrl = _config["PeerServices:ExperienceCatalogueUrl"];
-        var endpoint = $"{baseUrl}/api/experiences/catalogue?destinationId={destinationId}";
-
-        var (data, responded, error) = await ExecuteWithRetryAsync<List<PeerCatalogueItem>>(endpoint, ct);
-        if (responded && data != null)
+        var query = $"destinationId={Uri.EscapeDataString(destinationId.ToString())}";
+        if (preferredActivityIds is { Count: > 0 })
         {
-            return (data, true, null);
+            query += "&activityIds=" + Uri.EscapeDataString(string.Join(",", preferredActivityIds));
         }
 
-        _logger.LogWarning("Experience Catalogue service unreachable or failed. Falling back to default planner items. Reason: {Reason}", error);
-        
-        // Fallback default candidate set so planner keeps functioning autonomously
-        var fallbackItems = new List<PeerCatalogueItem>
+        var url = BuildEndpoint(_config["PeerServices:ExperienceCatalogueUrl"], "api/experiences/catalogue", query);
+        if (url is null)
         {
-            new PeerCatalogueItem(
-                DestinationId: destinationId,
-                ActivityId: preferredActivityIds?.FirstOrDefault() ?? Guid.NewGuid(),
-                OfferingId: Guid.NewGuid(),
-                Title: "Coastal Snorkeling & Reef Discovery",
-                AvailabilityStatus: "UNKNOWN",
-                PublicationState: "PUBLISHED"
-            )
-        };
+            return ([], false, UnavailableNote("Experience Catalogue", "endpoint URL is not configured"));
+        }
 
-        return (fallbackItems, false, $"Experience catalogue service did not respond after {_retryCount} retries. Used fallback candidates.");
+        var (data, responded, note) = await ExecuteWithRetryAsync<List<PeerCatalogueItem>>(
+            url, "Experience Catalogue", ct);
+
+        if (responded && data is not null)
+        {
+            var matchingItems = data
+                .Where(item => item is not null && item.DestinationId == destinationId &&
+                    item.ActivityId != Guid.Empty && item.OfferingId is { } offeringId && offeringId != Guid.Empty &&
+                    !string.IsNullOrWhiteSpace(item.Title) &&
+                    item.AvailabilityStatus is ("AVAILABLE" or "UNAVAILABLE" or "UNKNOWN") &&
+                    item.PublicationState is ("DRAFT" or "PUBLISHED" or "ARCHIVED"))
+                .ToList();
+
+            if (matchingItems.Count != data.Count)
+            {
+                _logger.LogWarning("Experience Catalogue returned {InvalidCount} malformed or mismatched offerings.",
+                    data.Count - matchingItems.Count);
+            }
+
+            return (matchingItems, true, matchingItems.Count == data.Count
+                ? null
+                : "Experience Catalogue returned invalid or mismatched offerings; those records were omitted.");
+        }
+
+        _logger.LogWarning("Experience Catalogue endpoint is unavailable: {Reason}", note);
+        return ([], false, note);
     }
 
     public async Task<(PeerSuitabilityResponse? Result, bool Responded, string? Note)> GetMarineSuitabilityAsync(
-        Guid destinationId, 
-        Guid activityId, 
-        DateTime windowStart, 
-        DateTime windowEnd, 
+        Guid destinationId,
+        Guid activityId,
+        DateTime windowStart,
+        DateTime windowEnd,
         CancellationToken ct = default)
     {
-        var baseUrl = _config["PeerServices:MarineConditionsUrl"];
-        var endpoint = $"{baseUrl}/api/marine/suitability?destinationId={destinationId}&activityId={activityId}&start={windowStart:O}&end={windowEnd:O}";
-
-        var (data, responded, error) = await ExecuteWithRetryAsync<PeerSuitabilityResponse>(endpoint, ct);
-        if (responded && data != null)
+        var query = $"destinationId={Uri.EscapeDataString(destinationId.ToString())}" +
+                    $"&activityId={Uri.EscapeDataString(activityId.ToString())}" +
+                    $"&start={Uri.EscapeDataString(windowStart.ToUniversalTime().ToString("O"))}" +
+                    $"&end={Uri.EscapeDataString(windowEnd.ToUniversalTime().ToString("O"))}";
+        var url = BuildEndpoint(_config["PeerServices:MarineConditionsUrl"], "api/marine/suitability", query);
+        if (url is null)
         {
-            return (data, true, null);
+            return (null, false, UnavailableNote("Marine Conditions", "endpoint URL is not configured"));
         }
 
-        _logger.LogWarning("Marine conditions service unreachable. Defaulting suitability to UNKNOWN. Reason: {Reason}", error);
-        return (new PeerSuitabilityResponse(
-            DestinationId: destinationId,
-            ActivityId: activityId,
-            Status: "UNKNOWN",
-            ConditionTimestamp: DateTime.UtcNow,
-            SafetyProfileId: Guid.NewGuid(),
-            Advisory: "Marine conditions service did not respond. Live safety intelligence is currently unknown."
-        ), false, "Marine conditions service did not respond. Suitability marked UNKNOWN.");
+        var (data, responded, note) = await ExecuteWithRetryAsync<PeerSuitabilityResponse>(
+            url, "Marine Conditions", ct);
+        if (!responded || data is null)
+        {
+            _logger.LogWarning("Marine Conditions endpoint is unavailable: {Reason}", note);
+            return (null, false, note);
+        }
+
+        if (data.DestinationId != destinationId || data.ActivityId != activityId ||
+            data.ConditionTimestamp == default || data.ConditionTimestamp.Kind != DateTimeKind.Utc ||
+            data.Status is not ("SUITABLE" or "CAUTION" or "UNSUITABLE" or "UNKNOWN") ||
+            ((data.Status is "SUITABLE" or "CAUTION") && data.SafetyProfileId.GetValueOrDefault() == Guid.Empty))
+        {
+            return (null, false, "Marine Conditions returned an invalid suitability response; the candidate was omitted.");
+        }
+
+        return (data, true, null);
     }
 
     public async Task<(PeerOperationStatusResponse? Result, bool Responded, string? Note)> GetOperationalStatusAsync(
-        Guid destinationId, 
+        Guid destinationId,
         CancellationToken ct = default)
     {
-        var baseUrl = _config["PeerServices:CoastalOperationsUrl"];
-        var endpoint = $"{baseUrl}/api/operations/status?destinationId={destinationId}";
-
-        var (data, responded, error) = await ExecuteWithRetryAsync<PeerOperationStatusResponse>(endpoint, ct);
-        if (responded && data != null)
+        var query = $"destinationId={Uri.EscapeDataString(destinationId.ToString())}";
+        var url = BuildEndpoint(_config["PeerServices:CoastalOperationsUrl"], "api/operations/status", query);
+        if (url is null)
         {
-            return (data, true, null);
+            return (null, false, UnavailableNote("Coastal Operations", "endpoint URL is not configured"));
         }
 
-        _logger.LogWarning("Coastal operations service unreachable. Defaulting status to CAUTION. Reason: {Reason}", error);
-        return (new PeerOperationStatusResponse(
-            DestinationId: destinationId,
-            OperationalStatus: "CAUTION",
-            ActiveAlerts: new List<string> { "Coastal operations service not responding. Operational alerts could not be verified." }
-        ), false, "Coastal operations service did not respond. Status marked CAUTION.");
+        var (data, responded, note) = await ExecuteWithRetryAsync<PeerOperationStatusResponse>(
+            url, "Coastal Operations", ct);
+        if (!responded || data is null)
+        {
+            _logger.LogWarning("Coastal Operations endpoint is unavailable: {Reason}", note);
+            return (null, false, note);
+        }
+
+        if (data.DestinationId != destinationId ||
+            data.OperationalStatus is not ("OPEN" or "CAUTION" or "TEMPORARILY_SUSPENDED" or "CANCELLED" or "COMPLETED"))
+        {
+            return (null, false, "Coastal Operations returned an invalid status response; the candidate was omitted.");
+        }
+
+        return (data, true, null);
     }
 
     public async Task<(PeerBiodiversityInferenceResponse? Result, bool Responded, string? Note)> GetBiodiversityInferenceAsync(
-        Guid destinationId, 
-        Guid? activityId, 
+        Guid destinationId,
+        Guid? activityId,
         CancellationToken ct = default)
     {
-        var baseUrl = _config["PeerServices:BiodiversityMlUrl"];
-        var endpoint = $"{baseUrl}/predict?destinationId={destinationId}&activityId={activityId}";
-
-        var (data, responded, error) = await ExecuteWithRetryAsync<PeerBiodiversityInferenceResponse>(endpoint, ct);
-        if (responded && data != null)
+        var query = $"destinationId={Uri.EscapeDataString(destinationId.ToString())}";
+        if (activityId.HasValue)
         {
-            return (data, true, null);
+            query += $"&activityId={Uri.EscapeDataString(activityId.Value.ToString())}";
         }
 
-        _logger.LogWarning("IT3091 Biodiversity ML inference service unreachable. Reason: {Reason}", error);
-        return (null, false, "IT3091 Biodiversity ML model service did not respond. Contextual predictions unavailable.");
+        var url = BuildEndpoint(_config["PeerServices:BiodiversityMlUrl"], "predict", query);
+        if (url is null)
+        {
+            return (null, false, UnavailableNote("Biodiversity ML", "endpoint URL is not configured"));
+        }
+
+        var (data, responded, note) = await ExecuteWithRetryAsync<PeerBiodiversityInferenceResponse>(
+            url, "Biodiversity ML", ct);
+        if (!responded || data is null)
+        {
+            _logger.LogWarning("Biodiversity ML endpoint is unavailable: {Reason}", note);
+            return (null, false, note);
+        }
+
+        if (data.DestinationId != destinationId || data.ActivityId != activityId ||
+            data.Status != "AVAILABLE" || string.IsNullOrWhiteSpace(data.ModelVersion) ||
+            data.ModelVersion.Length > 64 ||
+            data.Timestamp is null || data.Timestamp.Value.Kind != DateTimeKind.Utc ||
+            data.Timestamp.Value < DateTime.UtcNow.AddHours(-6) || data.Timestamp.Value > DateTime.UtcNow.AddMinutes(1) ||
+            data.Species is null || data.Species.Any(species =>
+                species is null || species.SpeciesId == Guid.Empty || string.IsNullOrWhiteSpace(species.ScientificName) ||
+                species.ScientificName.Length > 200 || string.IsNullOrWhiteSpace(species.CommonName) ||
+                species.CommonName.Length > 200 || !double.IsFinite(species.HabitatSuitability) ||
+                species.HabitatSuitability is < 0 or > 1 || string.IsNullOrWhiteSpace(species.ConfidenceLevel) ||
+                species.ConfidenceLevel.Length > 64))
+        {
+            return (null, false, "Biodiversity ML returned an invalid or unavailable inference; no prediction was cached.");
+        }
+
+        return (data, true, null);
     }
 
-    private async Task<(T? Data, bool Success, string? Error)> ExecuteWithRetryAsync<T>(string url, CancellationToken ct) where T : class
+    private async Task<(T? Data, bool Responded, string? Note)> ExecuteWithRetryAsync<T>(
+        string url,
+        string dependencyName,
+        CancellationToken ct) where T : class
     {
-        string? lastError = null;
+        string? lastFailure = null;
+        var maxAttempts = _retryCount + 1;
 
-        for (int attempt = 1; attempt <= _retryCount; attempt++)
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
+            ct.ThrowIfCancellationRequested();
+
             try
             {
-                using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                cts.CancelAfter(TimeSpan.FromSeconds(_timeoutSeconds));
+                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                timeout.CancelAfter(_timeout);
+                using var response = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
 
-                var response = await _http.GetAsync(url, cts.Token);
                 if (response.IsSuccessStatusCode)
                 {
-                    var result = await response.Content.ReadFromJsonAsync<T>(cancellationToken: cts.Token);
-                    if (result != null) return (result, true, null);
+                    var data = await response.Content.ReadFromJsonAsync<T>(cancellationToken: timeout.Token);
+                    if (data is not null)
+                    {
+                        return (data, true, null);
+                    }
+
+                    lastFailure = "the endpoint returned an empty response";
                 }
+                else
+                {
+                    lastFailure = $"the endpoint returned HTTP {(int)response.StatusCode}";
+                }
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (OperationCanceledException)
+            {
+                lastFailure = $"the request timed out after {_timeout.TotalSeconds:0.#} seconds";
+            }
+            catch (HttpRequestException)
+            {
+                lastFailure = "the endpoint could not be reached";
+            }
+            catch (JsonException)
+            {
+                lastFailure = "the endpoint returned an invalid response";
+            }
+            catch (NotSupportedException)
+            {
+                lastFailure = "the endpoint returned an unsupported response format";
+            }
+            catch (UriFormatException)
+            {
+                lastFailure = "the configured endpoint URL is invalid";
+            }
 
-                lastError = $"Status {(int)response.StatusCode}";
-            }
-            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+            if (attempt < maxAttempts)
             {
-                lastError = $"Timeout after {_timeoutSeconds}s";
-            }
-            catch (Exception ex)
-            {
-                lastError = ex.Message;
-            }
-
-            if (attempt < _retryCount)
-            {
-                await Task.Delay(200 * attempt, ct);
+                await DelayBeforeRetryAsync(TimeSpan.FromMilliseconds(Math.Min(200 * (1 << (attempt - 1)), 1000)), ct);
             }
         }
 
-        return (null, false, lastError);
+        var note = UnavailableNote(dependencyName, lastFailure ?? "the endpoint did not respond");
+        _logger.LogWarning("{DependencyName} endpoint did not respond after {RetryCount} retries ({AttemptCount} attempts): {Failure}",
+            dependencyName, _retryCount, maxAttempts, lastFailure);
+        return (null, false, note);
     }
+
+    private static async Task DelayBeforeRetryAsync(TimeSpan delay, CancellationToken ct)
+    {
+        if (delay > TimeSpan.Zero)
+        {
+            await Task.Delay(delay, ct);
+        }
+    }
+
+    private static string? BuildEndpoint(string? baseUrl, string path, string query)
+    {
+        if (string.IsNullOrWhiteSpace(baseUrl) || !Uri.TryCreate(baseUrl, UriKind.Absolute, out var baseUri) ||
+            baseUri.Scheme is not ("http" or "https") || !string.IsNullOrEmpty(baseUri.UserInfo) ||
+            !string.IsNullOrEmpty(baseUri.Query) || !string.IsNullOrEmpty(baseUri.Fragment))
+        {
+            return null;
+        }
+
+        return $"{baseUrl.TrimEnd('/')}/{path.TrimStart('/')}?{query}";
+    }
+
+    private string UnavailableNote(string dependencyName, string reason) =>
+        $"{dependencyName} endpoint has not responded ({reason}); {_retryCount} retries were configured ({_retryCount + 1} attempts maximum, {_timeout.TotalSeconds:0.#}-second timeout per attempt). Data requiring this dependency is unavailable.";
 }

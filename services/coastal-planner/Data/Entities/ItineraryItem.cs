@@ -38,7 +38,7 @@ public class ItineraryItem
     public string LastAvailabilityStatus { get; set; } = "UNKNOWN";
 
     [MaxLength(64)]
-    public string LastOperationalStatus { get; set; } = "OPEN";
+    public string LastOperationalStatus { get; set; } = "UNKNOWN";
 
     [MaxLength(500)]
     public string? AdvisoryNote { get; set; }

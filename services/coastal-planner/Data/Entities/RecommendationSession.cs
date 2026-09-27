@@ -12,7 +12,7 @@ public class RecommendationSession
     [Required]
     public Guid WorkflowId { get; set; }
 
-    public Guid? UserId { get; set; }
+    public Guid UserId { get; set; }
 
     public Guid TargetDestinationId { get; set; }
 
@@ -26,6 +26,8 @@ public class RecommendationSession
     public bool IncludeBiodiversityContext { get; set; }
 
     public string? CandidatesJson { get; set; }
+
+    public string? UncertaintyNotesJson { get; set; }
 
     public int ExcludedCandidatesCount { get; set; }
 

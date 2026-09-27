@@ -195,8 +195,10 @@ With the checked-in API and Auth projects running in the stack, verify:
 GET http://localhost/health
 GET http://localhost/api/health
 GET http://localhost/api/auth/health
+GET http://localhost/api/planner/health
 GET http://localhost/api/swagger/v1.json
 GET http://localhost/api/auth/swagger/v1/swagger.json
+GET http://localhost/api/planner/swagger/v1/swagger.json
 ```
 
 Open the unified Swagger UI at:
@@ -210,5 +212,8 @@ There is no public `/auth/...` or `/health` backend route. Auth requests must us
 Additional ASP.NET services follow the public gateway convention:
 
 ```text
-GET http://localhost/api/<service-name>/health
+GET http://localhost/api/<service-route>/health
 ```
+
+The Coastal Planner uses the public `/api/planner/health` and
+`/api/planner/swagger/v1/swagger.json` paths.

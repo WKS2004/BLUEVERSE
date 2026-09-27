@@ -175,8 +175,10 @@ originating run was a pull request targeting `main`, determines which required
 image workflows were triggered for that exact comparison range, waits for
 those runs to succeed, and then checks out the exact commit. It validates
 `compose.yaml` or `docker-compose.yml`, starts the stack on host port `8080`,
-checks `/health`, `/api/health`, the Swagger UI and both API/Auth OpenAPI documents,
-and each discovered backend `/api/<service-name>/health`, prints Compose diagnostics on failure and always
+checks `/health`, `/api/health`, `/api/auth/health`,
+`/api/planner/health`, the Swagger UI and the API, Auth and Coastal Planner
+OpenAPI documents. It checks each other discovered backend's
+`/api/<service-route>/health`, prints Compose diagnostics on failure and always
 tears the stack down.
 
 ## GitHub configuration synchronization

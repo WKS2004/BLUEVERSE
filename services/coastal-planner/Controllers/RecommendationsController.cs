@@ -1,6 +1,6 @@
 using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Blueverse.CoastalPlanner.Authorization;
 using Blueverse.CoastalPlanner.Models.Dtos;
 using Blueverse.CoastalPlanner.Services;
 
@@ -18,13 +18,16 @@ public class RecommendationsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize]
+    [HasPermission("planner.recommendations.create")]
     public async Task<ActionResult<RecommendationResultDto>> CreateRecommendations(
         [FromBody] RecommendationRequestDto request, 
         CancellationToken ct)
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
-        Guid? userId = Guid.TryParse(userIdStr, out var parsed) ? parsed : null;
+        if (!Guid.TryParse(userIdStr, out var userId) || userId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
 
         try
         {
@@ -44,12 +47,18 @@ public class RecommendationsController : ControllerBase
     }
 
     [HttpGet("{recommendationId:guid}")]
-    [Authorize]
+    [HasPermission("planner.recommendations.read")]
     public async Task<ActionResult<RecommendationResultDto>> GetRecommendation(
         [FromRoute] Guid recommendationId, 
         CancellationToken ct)
     {
-        var result = await _plannerService.GetRecommendationAsync(recommendationId, ct);
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        if (!Guid.TryParse(userIdStr, out var userId) || userId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _plannerService.GetRecommendationAsync(recommendationId, userId, ct);
         if (result == null)
         {
             return NotFound(new ProblemDetails

@@ -43,8 +43,7 @@ the smaller shared-client workflow contract.
 | `GET` | `/health` | `frontend` | Used by Docker-stack health checks to confirm the frontend server is reachable. |
 | `ANY` | `/api/` | `api` | Forwards client API requests to the API gateway; clients must not target Auth, Agentic AI, database, or other internal hosts directly. |
 | `ANY` | `/api/auth/{**catch-all}` | `auth` | Keeps Auth internal while exposing its approved endpoints through the public API boundary. |
-| `ANY` | `/api/planner/{**catch-all}` | `coastal-planner` | Forwards planning, recommendations, itinerary, and biodiversity prediction requests to coastal-planner service. |
-| `ANY` | `/api/coastal-planner/{**catch-all}` | `coastal-planner` | Forwards documentation requests to the internal coastal-planner service. |
+| `ANY` | `/api/planner/{**catch-all}` | `coastal-planner` | Forwards planning, recommendations, itinerary, biodiversity prediction, health, and Swagger requests to the internal coastal-planner service. |
 | `GET` | `/api/swagger` | `api` | Provides interactive API documentation for local development and contract inspection. |
 | `ANY` | `/404.html` | `edge-nginx` | Converts /404.html to /404 so the error asset filename is not exposed as the browser route. |
 | `ANY` | `/500.html` | `edge-nginx` | Converts /500.html to /500 so the error asset filename is not exposed as the browser route. |
@@ -104,16 +103,18 @@ the smaller shared-client workflow contract.
 
 | Method | Path | Authorization | Purpose and use |
 |---|---|---|---|
-| `POST` | `/api/planner/recommendations` | `authenticated` | Submit coastal preferences/constraints and generate candidate recommendations. Used by React and Flutter planner workflows to obtain eligible coastal recommendations. |
-| `GET` | `/api/planner/recommendations/{recommendationId:guid}` | `authenticated` | Retrieve recommendation candidate details, suitability, and evidence. Retrieves the candidates and peer status notes for a recommendation session. |
-| `GET` | `/api/planner/workflows/{workflowId:guid}` | `authenticated` | Get status and lifecycle of a planning workflow. Tracks asynchronous or completed planning workflow status and audit records. |
-| `POST` | `/api/planner/itineraries` | `authenticated` | Create a user-owned saved itinerary. Saves an itinerary with ordered items for the authenticated user. |
-| `GET` | `/api/planner/itineraries` | `authenticated` | List the caller's saved itineraries. Returns paginated itineraries owned by the calling user. |
-| `GET` | `/api/planner/itineraries/{itineraryId:guid}` | `authenticated` | Retrieve a specific itinerary with ordered items. Gets details of an itinerary owned by the authenticated caller. |
-| `PUT` | `/api/planner/itineraries/{itineraryId:guid}` | `authenticated` | Update itinerary details, reorder items, or adjust dates. Updates an itinerary with optimistic concurrency control. |
-| `DELETE` | `/api/planner/itineraries/{itineraryId:guid}` | `authenticated` | Delete a caller-owned itinerary. Removes an itinerary owned by the authenticated caller. |
-| `POST` | `/api/planner/itineraries/{itineraryId:guid}/re-evaluations` | `authenticated` | Evaluate existing itinerary against current marine suitability, availability, and operational restrictions. Non-CRUD operation re-evaluating itinerary items against peer service facts. |
-| `GET` | `/api/planner/biodiversity/predictions` | `authenticated` | Query validated biodiversity prediction context for a canonical destination/location. Returns validated ML prediction context consumed by Experience Catalogue (Member 1). |
+| `GET` | `/api/planner/health` | `anonymous` | Reports Coastal Planner service and database readiness. Used by the API gateway and Docker-stack health diagnostics. |
+| `GET` | `/api/planner/swagger/{documentName}/swagger.json` | `anonymous` | Returns the Coastal Planner OpenAPI document through the public API gateway. Used by the unified Swagger UI and contract inspection without exposing the internal service host. |
+| `POST` | `/api/planner/recommendations` | `permission:planner.recommendations.create` | Submit coastal preferences and generate candidates from validated catalogue, marine, and operations evidence. Completes with explicit uncertainty notes and no candidates when required peer services do not respond. |
+| `GET` | `/api/planner/recommendations/{recommendationId:guid}` | `permission:planner.recommendations.read` | Retrieve recommendation candidate details, suitability, and evidence. Retrieves the candidates and peer status notes for a recommendation session. |
+| `GET` | `/api/planner/workflows/{workflowId:guid}` | `permission:planner.workflows.read` | Get status and lifecycle of a planning workflow. Tracks asynchronous or completed planning workflow status and audit records. |
+| `POST` | `/api/planner/itineraries` | `permission:planner.itineraries.manage` | Create a user-owned saved itinerary. Saves an itinerary with ordered items for the authenticated user. |
+| `GET` | `/api/planner/itineraries` | `permission:planner.itineraries.manage` | List the caller's saved itineraries. Returns paginated itineraries owned by the calling user. |
+| `GET` | `/api/planner/itineraries/{itineraryId:guid}` | `permission:planner.itineraries.manage` | Retrieve a specific itinerary with ordered items. Gets details of an itinerary owned by the authenticated caller. |
+| `PUT` | `/api/planner/itineraries/{itineraryId:guid}` | `permission:planner.itineraries.manage` | Update itinerary details, reorder items, or adjust dates. Updates an itinerary with optimistic concurrency control. |
+| `DELETE` | `/api/planner/itineraries/{itineraryId:guid}` | `permission:planner.itineraries.manage` | Delete a caller-owned itinerary. Removes an itinerary owned by the authenticated caller. |
+| `POST` | `/api/planner/itineraries/{itineraryId:guid}/re-evaluations` | `permission:planner.itineraries.manage` | Evaluate existing itinerary against current marine suitability, availability, and operational restrictions. Non-CRUD operation re-evaluating itinerary items against peer service facts. |
+| `GET` | `/api/planner/biodiversity/predictions` | `permission:planner.biodiversity.read` | Query validated biodiversity prediction context for a canonical destination/location. Returns validated ML prediction context consumed by Experience Catalogue (Member 1). |
 
 ## Test host only
 

@@ -27,8 +27,8 @@ public record RecommendationCandidateDto(
 
 public record SuitabilitySummaryDto(
     string Status,
-    DateTime MarineConditionTime,
-    Guid SafetyProfileId
+    DateTime? MarineConditionTime,
+    Guid? SafetyProfileId
 );
 
 public record BiodiversityContextDto(
@@ -143,7 +143,7 @@ public record BiodiversityPredictionDto(
     Guid? ActivityId,
     string Status,
     List<PredictedSpeciesDto> PredictedSpecies,
-    ModelMetadataDto ModelMetadata,
+    ModelMetadataDto? ModelMetadata,
     string Limitations
 );
 
@@ -156,6 +156,6 @@ public record PredictedSpeciesDto(
 );
 
 public record ModelMetadataDto(
-    string ModelVersion,
-    DateTime InferenceTimestamp
+    string? ModelVersion,
+    DateTime? InferenceTimestamp
 );

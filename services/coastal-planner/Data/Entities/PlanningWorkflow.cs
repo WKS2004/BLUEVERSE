@@ -17,7 +17,7 @@ public class PlanningWorkflow
     [MaxLength(64)]
     public string Status { get; set; } = "PENDING"; // PENDING, PROCESSING, COMPLETED, FAILED
 
-    public Guid? InitiatorUserId { get; set; }
+    public Guid InitiatorUserId { get; set; }
 
     [MaxLength(128)]
     public string? Objective { get; set; }

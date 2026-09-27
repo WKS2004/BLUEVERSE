@@ -7,6 +7,10 @@ migrations and application persistence code are checked in under
 PostgreSQL is the authoritative relational database.
 The [v0 persistence component](../v0/components/postgresql-ef-core.md)
 summarizes the implemented Auth model and its verification boundary.
+The Coastal Planner feature branch also owns its PostgreSQL schema and
+migrations in `services/coastal-planner/Data/Migrations`; its deployment
+applies them at startup. Planner persistence stores opaque actor UUIDs and
+keeps foreign keys within the planner schema.
 
 ## Local service
 
@@ -46,12 +50,13 @@ the implementation, or the user asks for source-level verification.
 
 ## Test-provider boundary
 
-The Auth suite uses an isolated EF Core provider for deterministic tests whose
-behavior does not depend on PostgreSQL. This is not evidence for PostgreSQL
-SQL translation, migrations, constraints, indexes, transactions, locking or
-concurrency. Those behaviors require the explicitly enabled real PostgreSQL
-test path documented in [`services/auth/tests/README.md`](../../services/auth/tests/README.md)
-or an approved disposable PostgreSQL fixture.
+The Auth and Coastal Planner suites use isolated EF Core providers for
+deterministic tests whose behavior does not depend on PostgreSQL. This is not
+evidence for PostgreSQL SQL translation, migrations, constraints, indexes,
+transactions, locking or concurrency. Those behaviors require a real
+PostgreSQL test path or an approved disposable PostgreSQL fixture. Coastal
+Planner's generated migration SQL is reviewed with the pinned `dotnet-ef`
+tool; a live PostgreSQL apply check is still required before integration.
 
 ## Rules
 

@@ -109,7 +109,24 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("planner.recommendations.create", policy => policy
+        .RequireAuthenticatedUser()
+        .RequireClaim("permission", "planner.recommendations.create"));
+    options.AddPolicy("planner.recommendations.read", policy => policy
+        .RequireAuthenticatedUser()
+        .RequireClaim("permission", "planner.recommendations.read"));
+    options.AddPolicy("planner.workflows.read", policy => policy
+        .RequireAuthenticatedUser()
+        .RequireClaim("permission", "planner.workflows.read"));
+    options.AddPolicy("planner.itineraries.manage", policy => policy
+        .RequireAuthenticatedUser()
+        .RequireClaim("permission", "planner.itineraries.manage"));
+    options.AddPolicy("planner.biodiversity.read", policy => policy
+        .RequireAuthenticatedUser()
+        .RequireClaim("permission", "planner.biodiversity.read"));
+});
 
 var app = builder.Build();
 
@@ -169,7 +186,7 @@ app.UseExceptionHandler(exceptionApp =>
 
 app.UseSwagger(options =>
 {
-    options.RouteTemplate = "api/coastal-planner/swagger/{documentName}/swagger.json";
+    options.RouteTemplate = "api/planner/swagger/{documentName}/swagger.json";
 });
 
 app.UseAuthentication();
