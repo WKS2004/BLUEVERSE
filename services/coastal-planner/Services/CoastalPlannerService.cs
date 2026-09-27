@@ -336,7 +336,7 @@ public class CoastalPlannerService : ICoastalPlannerService
         itinerary.UpdatedAtUtc = DateTime.UtcNow;
 
         _db.ItineraryItems.RemoveRange(itinerary.Items);
-        itinerary.Items = request.Items.Select(item => new ItineraryItem
+        var newItems = request.Items.Select(item => new ItineraryItem
         {
             ItemId = Guid.NewGuid(),
             ItineraryId = itinerary.ItineraryId,
@@ -351,6 +351,8 @@ public class CoastalPlannerService : ICoastalPlannerService
             LastAvailabilityStatus = "UNKNOWN",
             LastOperationalStatus = "UNKNOWN"
         }).ToList();
+        itinerary.Items = newItems;
+        _db.ItineraryItems.AddRange(newItems);
 
         await _db.SaveChangesAsync(ct);
         return MapItineraryToDto(itinerary);
