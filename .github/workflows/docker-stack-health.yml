@@ -274,7 +274,7 @@ jobs:
             show_compose_diagnostics "$status"
           fi
 
-          for swagger_path in /api/swagger /api/swagger/v1.json /api/auth/swagger/v1/swagger.json; do
+          for swagger_path in /api/swagger /api/swagger/v1.json /api/auth/swagger/v1/swagger.json /api/operations/swagger/v1/swagger.json; do
             if check_endpoint "$base_url$swagger_path"; then
               :
             else
@@ -319,7 +319,11 @@ jobs:
                 continue
               fi
 
-              endpoint="$base_url/api/${service_name}/health"
+              if [[ "$service_name" == "coastal-operations" ]]; then
+                endpoint="$base_url/api/operations/health"
+              else
+                endpoint="$base_url/api/${service_name}/health"
+              fi
               if check_endpoint "$endpoint"; then
                 :
               else

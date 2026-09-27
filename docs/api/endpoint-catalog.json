@@ -1,13 +1,14 @@
 {
   "schema": 1,
   "status": "active",
-  "auditedAt": "2026-09-25",
+  "auditedAt": "2026-09-27",
   "purpose": "Fast, repository-local inventory of implemented frontend routes, gateway routes, public API endpoints, test-only routes, and Agentic AI endpoint status.",
   "authority": {
     "uiWorkflowRegistry": "docs/contracts/ui-integration.json",
     "backendSources": [
       "services/api",
-      "services/auth"
+      "services/auth",
+      "services/coastal-operations"
     ],
     "gatewaySources": [
       "infrastructure/docker/edge-nginx/nginx.conf",
@@ -304,6 +305,16 @@
       "usage": "Keeps Auth internal while exposing its approved endpoints through the public API boundary."
     },
     {
+      "id": "coastal-operations-yarp-route",
+      "method": "ANY",
+      "path": "/api/operations/{**catch-all}",
+      "type": "reverse-proxy",
+      "upstream": "coastal-operations",
+      "source": "services/api/appsettings.json",
+      "description": "API-gateway route that forwards Coastal Operations requests to its private service.",
+      "usage": "Keeps the Coastal Operations service private while exposing its approved routes through the public API boundary."
+    },
+    {
       "id": "public-swagger-ui",
       "method": "GET",
       "path": "/api/swagger",
@@ -444,7 +455,7 @@
       "status": "implemented",
       "auth": "anonymous",
       "description": "Serves the interactive Swagger UI for the public API.",
-      "usage": "Used by developers and contract tooling to inspect the API without accessing an internal service host.",
+      "usage": "Used by developers and contract tooling to inspect the public API, Auth and Coastal Operations contracts without accessing internal service hosts.",
       "source": "services/api/Program.cs"
     },
     {
@@ -680,6 +691,32 @@
       "description": "Reports Auth service and database readiness.",
       "usage": "Used by the API gateway and Docker-stack health diagnostics.",
       "source": "services/auth/Controllers/HealthControllers.cs"
+    },
+    {
+      "id": "coastal-operations-health",
+      "method": "GET",
+      "path": "/api/operations/health",
+      "ownerService": "coastal-operations",
+      "publicBoundary": "api",
+      "operationId": "Get",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Reports Coastal Operations service and PostgreSQL connectivity readiness.",
+      "usage": "Used by the API gateway and Docker-stack health diagnostics.",
+      "source": "services/coastal-operations/Controllers/HealthController.cs"
+    },
+    {
+      "id": "coastal-operations-swagger-document",
+      "method": "GET",
+      "path": "/api/operations/swagger/{documentName}/swagger.json",
+      "ownerService": "coastal-operations",
+      "publicBoundary": "api",
+      "operationId": "CoastalOperationsSwaggerDocument",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Returns the Coastal Operations OpenAPI document through the public API gateway.",
+      "usage": "Loaded by the Coastal Operations entry in the shared Swagger UI at `/api/swagger`.",
+      "source": "services/coastal-operations/Program.cs"
     },
     {
       "id": "auth-permissions",

@@ -4,6 +4,12 @@ The final business schema is still deferred, but the current Auth foundation
 defines a PostgreSQL/EF Core schema with checked-in migrations under
 `services/auth/Data/Migrations`.
 
+The Coastal Operations service now has a PostgreSQL-backed EF Core context with
+the proposed `coastal_operations` default schema. The context currently defines
+no domain tables, and no Coastal Operations migrations or dedicated database
+role are present; shared schema provisioning remains part of the pending G00
+agreement.
+
 The Auth schema contains users, roles, permissions, device installations,
 active sessions, session lifecycle logs, rotating refresh-token records and the
 two many-to-many assignment tables. It includes unique email/name/code

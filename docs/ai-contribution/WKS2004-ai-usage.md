@@ -1528,3 +1528,68 @@ runtime lacks PyYAML.
 - Summary of what the AI Agent did: Compared agent guidance and the v0/v1 documentation against repository source, the frozen project requirements, the formal SE3090 assignment specification and the dated Simplified Team Guide. Corrected five current test/readiness documents that still described the removed `MyHomePage` reference and approval as pending. Confirmed the G00/G07 gates, member/service ownership, equal React/Flutter scope, provider/device assignments and GitHub Action boundaries. No application, test, CI or workflow source was changed.
 - AI output accepted/changed/rejected: Accepted the existing G00 conditional-start decision and G07 deferral of executable Agentic AI; changed only stale current-state test claims and audit evidence. Preserved historical contribution records and the separate duplicate Auth test-ID, backend CI path-filter, hosted-mobile and submission gaps.
 - Verification/evidence: Agent-resource validation passed for 23 repository skills; endpoint-catalog validation passed with 33 public endpoints, 22 frontend routes and no implemented AI endpoints; UI integration validation passed; all 35 contract-validator unit tests passed; local Markdown file-target check passed for 216 files and 981 links; `git diff --check` passed. Flutter analysis/tests, application builds, hosted CI and runtime deployments were not run. Local Flutter execution remains blocked because the sandbox cannot write the SDK cache lockfile under `D:\Program Files\Flutter\flutter`. Five documentation files were updated; no commit or push was made.
+
+## 2026-09-27 — Member 4 G00 coastal-operations contract proposal
+
+- Date/time or time range: 2026-09-27 10:35–10:45 (Asia/Colombo; Member 4 G00 proposal)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and Git
+- AI Model: GPT-6
+- Summary of the user's request: Complete the G00 work limited to the Coastal Operations component on `features/coastal-operations` and update the WKS2004 AI-usage log.
+- Summary of what the AI Agent did: Added a Member 4 G00 proposal to the Coastal Operations contract covering component/service identity, IDs and cross-component handoffs, candidate public routes and permissions, statuses/transitions, time/concurrency/error behavior, private service and AI seams, service health, and the minimum safe image-evidence boundary. Kept the shared G00 gate Pending because acceptance by all four owners is not recorded. No service or client implementation was added.
+- AI output accepted/changed/rejected: Accepted the user's branch/component scope and the existing G00-before-coding/G07-before-agent rules. Changed the component contract only as a reviewable proposal and left provider, image limit, storage and retention details at the owner integration gate. Rejected marking G00 accepted or adding candidate routes to the live endpoint/UI registries without shared agreement and implementation source.
+- Verification/evidence: Relative links in both changed documents resolve and `git diff --check` passed; no tests/builds were run for this documentation-only task. Preserved the pre-existing `apps/web/package-lock.json` working-tree change. No commit or push was made.
+
+## 2026-09-27 — Separate Member 4 G00 decision record
+
+- Date/time or time range: 2026-09-27 10:48–10:50 (Asia/Colombo; G00 documentation organization)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, apply_patch and Git
+- AI Model: GPT-6
+- Summary of the user's request: Move the Coastal Operations G00 decisions into a separate Markdown file under `docs/v1/g00` and update the Member 4 component contract accordingly.
+- Summary of what the AI Agent did: Created `docs/v1/g00/member-4-coastal-operations.md` as the standalone Member 4 decision proposal and updated the component contract to link to it, summarize the pending shared-review status and identify remaining owner integration gates.
+- AI output accepted/changed/rejected: Accepted the requested separation and kept the specific coastal decision proposals reviewable in their own file. Changed the component document from inline G00 content to a focused link and status summary. Rejected treating the proposal as accepted G00 or implemented service/API behavior; the global tracker remains Pending until all four owners agree.
+- Verification/evidence: Relative Markdown file links in the new decision record and component contract resolve; the new file has no trailing whitespace; `git diff --check` passed. Confirmed the shared G00 tracker still says Pending. This is documentation-only; no tests/builds were run. Preserved the pre-existing `apps/web/package-lock.json` working-tree change. No commit or push was made.
+
+## 2026-09-27 — Review Member 4 G00 completeness and scope
+
+- Date/time or time range: 2026-09-27 11:02 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, apply_patch and Git
+- AI Model: GPT-6
+- Summary of the user's request: Recheck whether the Coastal Operations G00 work is complete and aligned with the component scope.
+- Summary of what the AI Agent did: Compared the standalone G00 proposal with the Member 4 contract, frozen requirements, G00 exit criteria, relationship and Agentic AI boundaries, and the current checkout. Corrected the proposal's producer-ID ownership, alert draft/decision and operational-history coverage, state and idempotent-replay wording, response/persistence constraints and service-local test path. Updated the component contract's alert severity cross-reference and image-upload decision timing. Listed the shared agreements still needed for G00 acceptance.
+- AI output accepted/changed/rejected: Retained the Member 4 proposal status and G07 separation. Revised concrete inconsistencies and missing component capabilities. Rejected a claim of full G00 completion: the four-owner freeze remains Pending, exact shared schemas and handoffs are unratified, and the newly appeared untracked service directory is only a template scaffold with a project-name mismatch. Did not modify that scaffold or the pre-existing web lockfile change.
+- Verification/evidence: Compared source and documentation; relative Markdown file links resolve, the new G00 file has no trailing whitespace, and `git diff --check` passed. The component metadata remains `target_not_implemented` and the G00 tracker remains Pending. No application tests/builds were run for the documentation review. No commit or push was made.
+
+## 2026-09-27 — Align Coastal Operations project name
+
+- Date/time or time range: 2026-09-27 11:11 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, apply_patch and Git
+- AI Model: GPT-6
+- Summary of the user's request: Confirm `Blueverse.CoastalOperations` as the Coastal Operations .NET project name in place of the G00 proposal's `.Api` suffix.
+- Summary of what the AI Agent did: Updated the project identity in the standalone Member 4 G00 decision record to match `services/coastal-operations/Blueverse.CoastalOperations.csproj`.
+- AI output accepted/changed/rejected: Accepted the user's project-name correction and removed the proposed `.Api` suffix. Kept the shared G00 acceptance status Pending; the naming correction does not ratify the other shared contracts.
+- Verification/evidence: Confirmed the corrected name matches the existing project file, no stale `.Api` project name remains in the Member 4 G00/component documents, and `git diff --check` plus new-file whitespace review passed. No application tests/builds were needed for this documentation correction. No commit or push was made.
+
+## 2026-09-27 — Coastal Operations service infrastructure
+
+- Date/time or time range: 2026-09-27 11:36 (Asia/Colombo; implementation completion)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Python and Git
+- AI Model: GPT-6
+- Summary of the user's request: Add the Coastal Operations Dockerfile and Compose service, connect it to the public API, expose its Swagger document through `/api/swagger` with JWT Bearer authorization, and add PostgreSQL connectivity and a health controller while preserving the API/Auth service patterns.
+- Summary of what the AI Agent did: Added the private `Blueverse.CoastalOperations` container and Compose database/network configuration, YARP routing at `/api/operations`, Coastal Operations selection in the API-hosted Swagger UI, a Bearer JWT OpenAPI scheme, an EF Core/Npgsql context and database-backed health endpoint. Updated the endpoint catalog, stack-health workflow and deployment/database/component documentation. Kept Auth source unchanged because its existing API/Swagger setup already met the needed integration behavior.
+- AI output accepted/changed/rejected: Accepted the confirmed `Blueverse.CoastalOperations` project identity and existing API/Auth conventions. Kept the global G00 tracker Pending and limited this slice to hosting, gateway, Swagger, database connectivity and health; no business workflows, domain tables, migrations or actor-context handoff were added.
+- Verification/evidence: Endpoint catalog generation and validation passed (35 public endpoints, 22 frontend routes); the API project build passed with zero warnings/errors; JSON and project XML parsing plus `git diff --check` passed. The Coastal Operations build stopped during NuGet config loading because sandbox access to `C:\Users\MSI\AppData\Roaming\NuGet\NuGet.Config` is denied, before source compilation. Docker is unavailable locally, and the backend test workflow still needs the service-local Coastal Operations test project before its test-discovery gate can pass. No tests were added or run, and no commit or push was made.

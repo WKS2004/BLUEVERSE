@@ -43,6 +43,7 @@ the smaller shared-client workflow contract.
 | `GET` | `/health` | `frontend` | Used by Docker-stack health checks to confirm the frontend server is reachable. |
 | `ANY` | `/api/` | `api` | Forwards client API requests to the API gateway; clients must not target Auth, Agentic AI, database, or other internal hosts directly. |
 | `ANY` | `/api/auth/{**catch-all}` | `auth` | Keeps Auth internal while exposing its approved endpoints through the public API boundary. |
+| `ANY` | `/api/operations/{**catch-all}` | `coastal-operations` | Keeps the Coastal Operations service private while exposing its approved routes through the public API boundary. |
 | `GET` | `/api/swagger` | `api` | Provides interactive API documentation for local development and contract inspection. |
 | `ANY` | `/404.html` | `edge-nginx` | Converts /404.html to /404 so the error asset filename is not exposed as the browser route. |
 | `ANY` | `/500.html` | `edge-nginx` | Converts /500.html to /500 so the error asset filename is not exposed as the browser route. |
@@ -62,7 +63,7 @@ the smaller shared-client workflow contract.
 | `GET` | `/api/health` | `anonymous` | Reports that the public API process is healthy. Used by local stack health checks and operational diagnostics. |
 | `GET` | `/api/swagger/{documentName}.json` | `anonymous` | Returns the API service OpenAPI document. Used by Swagger UI and tooling that needs the public API contract. |
 | `GET` | `/api/swagger/{documentName}/swagger.json` | `anonymous` | Returns the API service Swagger document at the Swagger UI-compatible path. Used by the mounted API Swagger UI and local contract inspection. |
-| `GET` | `/api/swagger` | `anonymous` | Serves the interactive Swagger UI for the public API. Used by developers and contract tooling to inspect the API without accessing an internal service host. |
+| `GET` | `/api/swagger` | `anonymous` | Serves the interactive Swagger UI for the public API. Used by developers and contract tooling to inspect the public API, Auth and Coastal Operations contracts without accessing internal service hosts. |
 
 ### auth
 
@@ -97,6 +98,13 @@ the smaller shared-client workflow contract.
 | `PUT` | `/api/auth/users/{id:guid}` | `permission:all(auth.user.read,auth.user.update)` | Updates account details, active state or password with user read and user update grants together. Supports authorized user administration. |
 | `DELETE` | `/api/auth/users/{id:guid}` | `permission:all(auth.user.read,auth.user.delete)` | Deletes an account with user read and user delete grants together, subject to protected system-role rules. Supports authorized user administration; a protected account's assigned system role names are included in the deletion rejection. |
 | `POST` | `/api/auth/users/{id:guid}/roles` | `permission:all(auth.user.read,auth.user.update,auth.role.read)` | Replaces an account’s roles with user read, user update and role read grants together; system-role changes require the dedicated grant. Authorized user editors can add or remove user roles; the service checks current caller grants, system-role constraints and invalidates the affected account sessions. |
+
+### coastal-operations
+
+| Method | Path | Authorization | Purpose and use |
+|---|---|---|---|
+| `GET` | `/api/operations/health` | `anonymous` | Reports Coastal Operations service and PostgreSQL connectivity readiness. Used by the API gateway and Docker-stack health diagnostics. |
+| `GET` | `/api/operations/swagger/{documentName}/swagger.json` | `anonymous` | Returns the Coastal Operations OpenAPI document through the public API gateway. Loaded by the Coastal Operations entry in the shared Swagger UI at `/api/swagger`. |
 
 ## Test host only
 

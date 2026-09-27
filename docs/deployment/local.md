@@ -1,7 +1,10 @@
 # Local Deployment
 
-The local Compose topology is defined. The public API and internal Auth source
-are checked in at `services/api` and `services/auth`.
+The local Compose topology includes the public API, internal Auth and private
+Coastal Operations service sources at `services/api`, `services/auth` and
+`services/coastal-operations`. Coastal Operations currently provides its service
+foundation, database connectivity, readiness endpoint and gateway-hosted API
+documentation; its business workflows remain a v1 target.
 
 ## Prerequisites
 
@@ -18,8 +21,9 @@ cp .env.example .env
 ```
 
 Set a unique `JWT_SIGNING_KEY` with at least 32 UTF-8 bytes, local PostgreSQL
-and administrator passwords, and confirm `AUTH_SERVICE_URL=http://auth:8080`
-in `.env`.
+and administrator passwords, and confirm the Docker-internal destinations
+`AUTH_SERVICE_URL=http://auth:8080` and
+`COASTAL_OPERATIONS_SERVICE_URL=http://coastal-operations:8080` in `.env`.
 
 On the development branch, PostgreSQL is available to host tools such as
 pgAdmin4 through `5432:5432`, which binds all host interfaces. Use that
@@ -77,7 +81,7 @@ http://localhost/api/auth/health
 Additional ASP.NET services are checked through the API gateway at:
 
 ```text
-http://localhost/api/<service-name>/health
+http://localhost/api/operations/health
 ```
 
 Swagger UI:
@@ -85,6 +89,10 @@ Swagger UI:
 ```text
 http://localhost/api/swagger
 ```
+
+Select **BLUEVERSE Coastal Operations API** in the Swagger document selector to
+inspect its current service contract. Swagger's Authorize control accepts the
+same bearer JWT format as the other BLUEVERSE API documents.
 
 The local gateway uses host port `80`. The CI health workflow overrides the
 Compose host mapping to `http://127.0.0.1:8080` on the runner. For Android,

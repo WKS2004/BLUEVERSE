@@ -133,11 +133,13 @@ apps/web/          # React
 apps/mobile/       # Flutter
 ```
 
-`services/api/` and `services/auth/` are the service locations referenced by
-Compose, the Dockerfiles, Render and CI. Both backend projects are checked in;
-Auth remains internal and is reachable by clients only through the public API
-gateway. Do not move the Dockerfiles into generated projects; keep them under
-`infrastructure/docker/`.
+`services/api/`, `services/auth/` and `services/coastal-operations/` are the
+service locations referenced by Compose, Dockerfiles and CI. Coastal Operations
+now has its private ASP.NET service foundation, PostgreSQL connection, health
+route and gateway-hosted Swagger document; its v1 business workflows remain a
+target. Auth and Coastal Operations stay internal and are reachable by clients
+only through the public API gateway. Do not move Dockerfiles into generated
+projects; keep them under `infrastructure/docker/`.
 
 ## Local setup and deployment
 
@@ -391,9 +393,9 @@ tree for authoritative cases.
 The web and backend build workflows run on supported branch families when their relevant application, service, Docker infrastructure, lockfile synchronization, Compose, workflow or build-context paths change. The stack-health workflow waits for the required image builds for the same commit and runs only for pull requests targeting `main`; it synchronizes the web lockfile again on its separate runner before running the Compose health checks. Backend build failures are collected across all services so later services are still checked before the workflow fails.
 
 The Docker backend workflow builds `services/api` first and then discovers and
-builds the other ASP.NET service directories, including the internal Auth
-service. The backend test workflow fails if a service source project has no
-discovered service-local test project.
+builds the other ASP.NET service directories, including the internal Auth and
+Coastal Operations services. The backend test workflow fails if a service
+source project has no discovered service-local test project.
 
 `github-config-sync.yml` uses GitHub Actions to copy `.github/**` changes
 through focused pull requests and queues automatic squash merges when allowed

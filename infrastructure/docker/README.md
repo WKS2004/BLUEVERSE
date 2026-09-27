@@ -6,6 +6,7 @@ Custom Dockerfiles remain here so application codebases can stay close to their 
 
 - `api/` — ASP.NET Core public API
 - `auth/` — ASP.NET Core Auth service
+- `coastal-operations/` — ASP.NET Core Coastal Operations service
 - `frontend/` — React build + static Nginx runtime
 - `edge-nginx/` — local reverse proxy configuration
 
@@ -17,6 +18,10 @@ CI uses the `DHI_USERNAME` and `DHI_TOKEN` GitHub Secrets documented in
 `docs/development/ci.md`.
 
 Auth is an internal backend service. It is not attached to the edge network and must be reached through the API's `/api/auth/...` reverse-proxy route.
+
+Coastal Operations is also private, has no host-published port, and is reachable
+through the API's `/api/operations/...` reverse-proxy route. The shared Swagger
+UI at `/api/swagger` loads its OpenAPI document through that gateway route.
 
 Every ASP.NET backend service should keep its Dockerfile in a matching directory under `infrastructure/docker/<service-name>/Dockerfile`. The Docker backend workflow discovers first-level ASP.NET services under `services`, builds the public `api` service first, and then builds the remaining services one by one.
 
@@ -36,14 +41,15 @@ preserves API status codes and structured error bodies.
 
 ## Important
 
-The React/mobile application directories and both ASP.NET applications are
-checked in. Their Docker build contexts are:
+The React/mobile application directories and all three ASP.NET applications
+are checked in. Their Docker build contexts are:
 
 ```text
 apps/web
 apps/mobile
 services/api
 services/auth
+services/coastal-operations
 ```
 
 The Docker web and backend build workflows use branch and path filters on

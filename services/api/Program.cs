@@ -159,6 +159,7 @@ app.UseSwaggerUI(options =>
     options.DocumentTitle = "BLUEVERSE API Documentation";
     options.SwaggerEndpoint("/api/swagger/v1/swagger.json", "BLUEVERSE Public API");
     options.SwaggerEndpoint("/api/auth/swagger/v1/swagger.json", "BLUEVERSE Auth API");
+    options.SwaggerEndpoint("/api/operations/swagger/v1/swagger.json", "BLUEVERSE Coastal Operations API");
 });
 
 app.UseAuthentication();

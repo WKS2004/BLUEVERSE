@@ -2,7 +2,10 @@
 
 PostgreSQL infrastructure is present in Compose. The Auth EF Core model,
 migrations and application persistence code are checked in under
-`services/auth`.
+`services/auth`. Coastal Operations now has an EF Core `DbContext` and uses the
+same Compose PostgreSQL connection pattern, but it has no domain entities,
+migrations or created schema yet. Its configured default schema is a G00
+proposal and remains subject to shared acceptance.
 
 PostgreSQL is the authoritative relational database.
 The [v0 persistence component](../v0/components/postgresql-ef-core.md)
