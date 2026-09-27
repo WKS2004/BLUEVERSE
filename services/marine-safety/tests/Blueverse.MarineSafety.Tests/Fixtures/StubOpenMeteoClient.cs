@@ -12,6 +12,15 @@ public sealed class StubOpenMeteoClient : IOpenMeteoClient
 
     public int CallCount { get; private set; }
 
+    /// <summary>Latitude from the most recent call, for URL/rounding assertions.</summary>
+    public decimal? LastLatitude { get; private set; }
+
+    /// <summary>Longitude from the most recent call, for URL/rounding assertions.</summary>
+    public decimal? LastLongitude { get; private set; }
+
+    /// <summary>Requested time from the most recent call, for time-semantics assertions.</summary>
+    public DateTime? LastRequestedTime { get; private set; }
+
     public StubOpenMeteoClient(
         Func<MarineConditionsResult>? resultFactory = null,
         Func<OpenMeteoUnavailableException?>? failureFactory = null)
@@ -38,6 +47,9 @@ public sealed class StubOpenMeteoClient : IOpenMeteoClient
         CancellationToken cancellationToken)
     {
         CallCount++;
+        LastLatitude = latitude;
+        LastLongitude = longitude;
+        LastRequestedTime = timeUtc;
         var failure = _failureFactory();
         if (failure is not null)
         {

@@ -108,6 +108,37 @@ criteria.
   OpenAPI document listed in the public API Swagger UI. Marine permission
   codes are seeded by the Auth seeder (owner decision restored after the
   provisioner alternative was withdrawn); Auth keeps the grant seed data.
+- Revision 2026-09-27 (3): full-service re-evaluation fixed three defects
+  without changing any endpoint contract: (a) request timestamps without an
+  explicit offset are now parsed as UTC (`MarineTime.ToUtc`) in every entry
+  point instead of the host's local time zone, keeping the time-semantics row
+  below true on any deployment host; (b) profile creation computes the next
+  `Version` from all of the activity's profile rows, so recreating a profile
+  after full deactivation cannot reuse version 1 and make past
+  `ProfileVersion` references ambiguous; (c) PUT on a safety profile with
+  `isActive=true` now explicitly supersedes any other active profile for the
+  activity, upholding the one-active-profile invariant (and the partial unique
+  index) instead of relying on never exercising that path. Regression tests
+  M2-PROF-010/011/012 and M2-SUIT-011 pin all three behaviors; dead DTOs
+  (`ActivityDto`, `ConditionsQueryDto`, `AssessmentHistoryDto`) were removed.
+  Endpoint set, status codes and response shapes are unchanged.
+- Revision 2026-09-27 (4): full test-suite expansion (38 → 87 tests) added
+  direct provider-adapter tests, condition/suitability/profile edge cases,
+  token-level security tests, an OpenAPI contract test and a CaseId
+  uniqueness meta-test. Two defects surfaced and were fixed: (a) an absent
+  `weather_code` variable was not reported in `MissingFields`, contradicting
+  the missing-data row below — the adapter now reports it; (b) creating a
+  safety profile for an inactive activity returned 400 while a nonexistent
+  activity returned 409; both are activity-state conflicts and now map to
+  409 consistently with the error/status row below. No endpoint, route or
+  request/response-shape changes.
+- Revision 2026-09-27 (5): finalization review hardened both supersede paths
+  (profile create, and PUT reactivation) to commit the deactivations before
+  the activation in separate saves, so every intermediate database state
+  satisfies the partial unique (ActivityId, IsActive) index under real
+  PostgreSQL — statement ordering inside a single SaveChanges is an EF
+  implementation detail, not a contract. Final state: 87/87 marine tests,
+  api/auth/marine builds clean, endpoint-catalog and UI validators OK.
 - `dotnet build` and the full test suites pass; migration and Open-Meteo
   behavior were verified against real PostgreSQL and the live provider.
 - Changes to shared files are limited to the entries listed in section 6.

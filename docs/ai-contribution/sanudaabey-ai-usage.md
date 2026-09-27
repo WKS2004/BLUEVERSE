@@ -167,3 +167,163 @@ Member 2, Marine Conditions & Safety Intelligence, branch `features/marine-safet
 - Verification/evidence: marine-safety build clean (0 warnings); 38/38
   marine-safety tests pass including the three new health tests; endpoint
   catalog validator OK (46 endpoints); UI integration validator OK.
+
+## 2026-09-27 — Full marine-safety re-evaluation and defect fixes
+
+- Date/time or time range: 2026-09-27, 20:35–21:30 (Asia/Colombo)
+- GitHub Username: `sanudaabey`
+- Team Member Name (actual): Sanuda Abeysinghe
+- Agent Name: Buffy
+- Tool/App: Codebuff (Freebuff desktop)
+- AI Model: GLM
+- Summary of the user's request: Re-evaluate the whole marine-safety service
+  once again and fix any errors, issues or bugs found.
+- Summary of what the AI Agent did: Read every marine-safety source file
+  (Program, providers, services, controllers, data, authorization, DTOs,
+  migrations) and the full test suite, then fixed three real defects: (1)
+  request DateTime values without an offset were parsed in the host's local
+  time zone (machine in Asia/Colombo, UTC+5:30), contradicting G00's frozen
+  UTC time semantics — normalized via a new `MarineTime.ToUtc` used by
+  ConditionService, SuitabilityService and OpenMeteoClient; (2)
+  SafetyProfileService.CreateProfileAsync computed the next profile Version
+  from active rows only, so recreating a profile after the activity had no
+  active profile could reuse version 1 and corrupt assessment history
+  interpretability — now takes MAX(Version) over all of the activity's rows;
+  (3) UpdateProfileAsync could set isActive=true while another active profile
+  existed, which on PostgreSQL violates the partial unique
+  (ActivityId, IsActive) index and contradicts the one-active-profile
+  invariant — the update now supersedes the other active rows exactly like
+  create. Also removed three unused DTO records (ActivityDto,
+  ConditionsQueryDto, AssessmentHistoryDto) and appended revision (3) to the
+  G00 decision record. Deliberately not changed: the Open-Meteo retry loop's
+  cancellation filter (verified correct) and all frozen contracts.
+- AI output accepted/changed/rejected: Accepted the three defect fixes plus
+  regression tests M2-PROF-010/011/012 and M2-SUIT-011 (requirement-derived,
+  host-timezone-sensitive). Rejected two tempting non-fixes: treating
+  equal-to-limit values as violations (contract says greater-than violates)
+  and adding an invented freshness band for the create-only supersede path.
+  One corrupted intermediate edit to a test file was caught by re-reading the
+  file and fully restored before running.
+- Verification/evidence: marine-safety 42/42 tests pass (38 existing + 4 new
+  regression tests, none weakened or deleted); marine, api and auth builds
+  clean; endpoint catalog validator OK (46 endpoints); UI integration
+  validator OK; host timezone confirmed UTC+5:30 so the naive-time regression
+  test exercises the defect it targets.
+
+## 2026-09-27 — Marine-safety test-suite expansion (42 → 87 tests)
+
+- Date/time or time range: 2026-09-27, 21:35–23:10 (Asia/Colombo)
+- GitHub Username: `sanudaabey`
+- Team Member Name (actual): Sanuda Abeysinghe
+- Agent Name: Buffy
+- Tool/App: Codebuff (Freebuff desktop)
+- AI Model: GLM
+- Summary of the user's request: Fully implement all test cases for the
+  marine-safety service — analyze the whole service and add every test case
+  that can be implemented.
+- Summary of what the AI Agent did: Mapped coverage gaps against the service
+  surface and added 45 tests: 13 direct OpenMeteoClient adapter tests
+  (M2-PROVIDER-001..013) over a scripted HTTP handler covering typed
+  unavailability, deterministic-vs-transient retry, per-attempt timeout,
+  malformed JSON, empty series, marine-only degradation, exact URL/coordinate
+  window construction, negative-value rejection and forecast-hour alignment;
+  6 condition endpoint tests (naive vs offset time semantics, snapshot reuse
+  across rounded coordinates, snapshot 404, history ordering, read-time
+  staleness reclassification); 7 suitability tests (rain disclosure semantics,
+  multi-factor violations, violation/caution independence, strict-profile
+  boundary equality, persisted provenance chain, inactive-activity rejection);
+  8 profile tests (inactive-activity rejection, by-activity/update/deactivate
+  404s, idempotent deactivate, caution-band and non-positive-limit rejections
+  on update); 5 token-level security tests (M2-AUTH-001..005: expired,
+  foreign-key, wrong issuer/audience, database-authoritative permission
+  resolution over JWT claims, subject-less tokens); an OpenAPI contract test
+  asserting the swagger document enumerates all 11 cataloged operations with
+  the bearer scheme and anonymous health; two freshness unit tests; two
+  additional health tests; and a CaseId-uniqueness meta-test. Fixture changes
+  were additive only (stub records last request, factory gained an optional
+  token expiry). Two implementation defects were surfaced by the new tests and
+  fixed: an absent weather_code was not reported in MissingFields (OpenMeteo
+  client), and profile creation for an inactive activity returned 400 instead
+  of the contract-consistent 409. No existing test was weakened or deleted.
+- AI output accepted/changed/rejected: Accepted the two defect fixes and the
+  three requirement-derived test corrections (rain is disclosed but has no
+  rule-bearing limit so its absence cannot force UNKNOWN; caution factors are
+  reported independently of the decided status; OpenAPI 3.0.4 is the document
+  version Swashbuckle 10 emits). Rejected inventing a rain rule or suppressing
+  caution factors on UNSUITABLE results because both would contradict the
+  frozen G00 rule vocabulary. One corrupted intermediate test edit was caught
+  by re-reading the file and fully repaired before running.
+- Verification/evidence: 87/87 marine-safety tests pass (42 existing + 45
+  new, none deleted or weakened); marine-safety service build clean (0
+  warnings); endpoint catalog validator OK (46 endpoints); UI integration
+  validator OK; M2-DOC-001 uniqueness scan confirmed live (>= 60 traced case
+  IDs, all unique); G00 revision (4) records the two contract-surface fixes.
+
+## 2026-09-27 — Final marine-safety backend review and hardening
+
+- Date/time or time range: 2026-09-27, 23:15–23:45 (Asia/Colombo)
+- GitHub Username: `sanudaabey`
+- Team Member Name (actual): Sanuda Abeysinghe
+- Agent Name: Buffy
+- Tool/App: Codebuff (Freebuff desktop)
+- AI Model: GLM
+- Summary of the user's request: Analyze the implemented marine-safety service
+  one last time and finalize the backend.
+- Summary of what the AI Agent did: Ran the final verification sweep (api,
+  auth and marine builds clean; 87/87 marine tests; both validators OK;
+  workspace contains exactly the intended modified/new files; no edit
+  artifacts or stray helpers remain in test sources; README marine setup
+  wording checked). Applied one hardening change before finalization: per the
+  data-access rule ("InMemory is not evidence that PostgreSQL behavior is
+  correct"), both profile-supersede paths (create, and PUT reactivation) now
+  commit the deactivations in a separate SaveChanges before the activation,
+  so every intermediate statement satisfies the real PostgreSQL partial
+  unique (ActivityId, IsActive) index instead of relying on EF's internal
+  command ordering within a single SaveChanges (confirmed by Microsoft
+  community sources as observed behavior, not a documented guarantee). No
+  contracts, routes, DTOs or status codes changed; the G00 record gained
+  revision (5).
+- AI output accepted/changed/rejected: Accepted the two-phase supersede
+  hardening and verified the 87-test suite still passes unchanged. Rejected
+  restructuring the supersede logic into an explicit transaction wrapper —
+  separate sequential saves already make each intermediate state valid, and
+  the added transaction scope would complicate the retry-on-failure path
+  without changing the guarantee. No test was modified or deleted.
+- Verification/evidence: 87/87 marine-safety tests pass; api/auth/marine
+  builds clean; endpoint-catalog validator OK (46 endpoints); UI validator
+  OK; 87 unique CaseId traits confirmed by count; artifact sweep of test
+  sources clean; git status shows only intended files.
+
+## 2026-09-27 — Final backend checkup before the React Web App phase
+
+- Date/time or time range: 2026-09-27, 23:50–00:05 (Asia/Colombo)
+- GitHub Username: `sanudaabey`
+- Team Member Name (actual): Sanuda Abeysinghe
+- Agent Name: Buffy
+- Tool/App: Codebuff (Freebuff desktop)
+- AI Model: GLM
+- Summary of the user's request: Recheck all the tests and do the final last
+  backend checkup right now, because the project moves directly on to
+  creating the React Web App afterwards.
+- Summary of what the AI Agent did: Performed a from-clean final checkup:
+  wiped test bin/obj artifacts, rebuilt all three services individually
+  (api, auth, marine-safety — each 0 warnings/0 errors), ran every test
+  project in the repository (marine-safety 87, auth 77, api 21 = 185/185
+  passed), ran both contract validators, and cross-checked the marine
+  contract surfaces end to end: YARP route in services/api/appsettings.json
+  targets http://marine-safety:8080, the public API Swagger UI lists the
+  marine document at /api/marine/swagger/v1/swagger.json, the marine service
+  declares its swagger RouteTemplate/RoutePrefix, compose.yaml wires the
+  marine-safety service on both required networks, and the endpoint catalog
+  carries the registered marine entries. Confirmed exactly three test
+  projects exist repo-wide and all are green. Git workspace contains only
+  this session's intended files (16 modified + 4 new test files).
+- AI output accepted/changed/rejected: Accepted the no-code-change outcome —
+  the checkup surfaced no new defects, so nothing was edited, preserving the
+  finalized state verified in the previous entry. No test was modified or
+  deleted.
+- Verification/evidence: 185/185 tests pass across all three suites from
+  clean artifacts; endpoint-catalog validator OK (46 public endpoints, 22
+  frontend routes); UI-integration validator OK; YARP/Swagger/compose/catalog
+  marine wiring all confirmed by direct source inspection; backend declared
+  ready as the contract baseline for the React Web App phase.

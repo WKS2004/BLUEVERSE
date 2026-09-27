@@ -298,4 +298,269 @@ public sealed class SuitabilityEndpointTests : IClassFixture<MarineSafetyWebAppl
         Assert.Contains("windSpeed", cautionFactors);
         Assert.Empty(root.GetProperty("violations").EnumerateArray());
     }
+
+    [Fact]
+    [Trait("CaseId", "M2-SUIT-011")]
+    public async Task M2_SUIT_011_naive_request_time_is_interpreted_as_utc()
+    {
+        // G00 time semantics: a timestamp supplied without an offset is UTC,
+        // never the host machine's local time zone. In a UTC+5:30 host a
+        // naive local interpretation would shift the requested hour by 5.5
+        // hours and the reported requestedTime would not echo the input.
+        using var client = await CreateClientAsync();
+
+        var requested = new DateTime(2026, 9, 26, 8, 0, 0, DateTimeKind.Unspecified);
+        using var response = await EvaluateAsync(
+            client,
+            ReaderToken(),
+            windSpeed: 15m,
+            time: requested.ToString("yyyy-MM-ddTHH:mm:ss"));
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var document = JsonDocument.Parse(body);
+        var root = document.RootElement;
+        var echoed = root.GetProperty("requestedTime").GetDateTime();
+        Assert.Equal(TimeSpan.Zero, echoed - requested);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-SUIT-012")]
+    public async Task M2_SUIT_012_missing_rain_is_disclosed_without_inventing_a_rain_rule()
+    {
+        // Rain is acquired and disclosed but no profile rule consumes it
+        // (profiles configure wind/wave/swell limits only), so its absence is
+        // reported in missingFields while the limit-bearing decision stands.
+        // Forcing UNKNOWN here would require an implicit rain rule, which the
+        // frozen rule vocabulary prohibits.
+        using var client = await CreateClientAsync();
+
+        _factory.Provider = new StubOpenMeteoClient(() => new MarineConditionsResult(
+            DateTime.UtcNow,
+            DateTime.UtcNow,
+            WindSpeed: 15m,
+            WaveHeight: 0.8m,
+            SwellHeight: 0.7m,
+            Rain: null,
+            WeatherCode: 0,
+            Source: ConditionSources.OpenMeteo,
+            MissingFields: ["rain"]));
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/marine/evaluate")
+        {
+            Content = JsonContent.Create(new
+            {
+                activityId = MarineSafetyTestSeed.ActivityId,
+                latitude = 6.025m,
+                longitude = 80.216m
+            })
+        };
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", ReaderToken());
+        using var response = await client.SendAsync(request);
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var document = JsonDocument.Parse(body);
+        var root = document.RootElement;
+        Assert.Equal("SUITABLE", root.GetProperty("status").GetString());
+        var missing = root.GetProperty("missingFields").EnumerateArray().Select(item => item.GetString()!).ToList();
+        Assert.Contains("rain", missing);
+        Assert.Null(root.GetProperty("conditions").GetProperty("rain").GetString());
+        Assert.Empty(root.GetProperty("violations").EnumerateArray());
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-SUIT-013")]
+    public async Task M2_SUIT_013_multiple_violations_are_all_reported()
+    {
+        using var client = await CreateClientAsync();
+
+        // Wind 40 exceeds 25; wave 2.0 exceeds 1.5; swell 2 exceeds 1.2.
+        using var response = await EvaluateAsync(client, ReaderToken(), windSpeed: 40m, waveHeight: 2.0m, swellHeight: 2m);
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var document = JsonDocument.Parse(body);
+        var root = document.RootElement;
+        Assert.Equal("UNSUITABLE", root.GetProperty("status").GetString());
+        var violations = root.GetProperty("violations").EnumerateArray().Select(item => item.GetString()!).ToList();
+        Assert.Contains(violations, v => v.StartsWith("windSpeed", StringComparison.Ordinal));
+        Assert.Contains(violations, v => v.StartsWith("waveHeight", StringComparison.Ordinal));
+        Assert.Contains(violations, v => v.StartsWith("swellHeight", StringComparison.Ordinal));
+        Assert.Equal(3, violations.Count);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-SUIT-014")]
+    public async Task M2_SUIT_014_violations_decide_the_status_and_caution_factors_stay_reported()
+    {
+        // Wind 22 sits in its caution band, wave 2.0 hard-violates: the status
+        // is UNSUITABLE (violations decide), while the caution factor remains
+        // reported as the evidence record documents — the two arrays are
+        // independent facts, not mutually exclusive states.
+        using var client = await CreateClientAsync();
+
+        using var response = await EvaluateAsync(client, ReaderToken(), windSpeed: 22m, waveHeight: 2.0m);
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var document = JsonDocument.Parse(body);
+        var root = document.RootElement;
+        Assert.Equal("UNSUITABLE", root.GetProperty("status").GetString());
+        var cautionFactors = root.GetProperty("cautionFactors").EnumerateArray().Select(item => item.GetString()!).ToList();
+        Assert.Contains("windSpeed", cautionFactors);
+        Assert.DoesNotContain("waveHeight", cautionFactors);
+        var violations = root.GetProperty("violations").EnumerateArray().Select(item => item.GetString()!).ToList();
+        Assert.Contains(violations, v => v.StartsWith("waveHeight", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-SUIT-015")]
+    public async Task M2_SUIT_015_wave_caution_band_produces_caution()
+    {
+        using var client = await CreateClientAsync();
+
+        // Seeded profile: caution wave 1.0 below max 1.5.
+        using var response = await EvaluateAsync(client, ReaderToken(), windSpeed: 10m, waveHeight: 1.2m);
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var document = JsonDocument.Parse(body);
+        var root = document.RootElement;
+        Assert.Equal("CAUTION", root.GetProperty("status").GetString());
+        var cautionFactors = root.GetProperty("cautionFactors").EnumerateArray().Select(item => item.GetString()!).ToList();
+        Assert.Contains("waveHeight", cautionFactors);
+        Assert.DoesNotContain("windSpeed", cautionFactors);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-SUIT-016")]
+    public async Task M2_SUIT_016_value_equal_to_the_limit_is_suitable_on_a_strict_profile()
+    {
+        // The contract says only greater-than violates; values exactly at the
+        // limit are within it. A strict profile (no caution bands) isolates
+        // the boundary semantics from band behavior.
+        using var client = await CreateClientAsync();
+        var token = _factory.CreateToken(MarineSafetyTestSeed.ManagerUserId);
+
+        var strictActivityId = Guid.NewGuid();
+        await _factory.SeedAsync(db =>
+        {
+            db.MarineActivities.Add(new MarineActivity
+            {
+                Id = strictActivityId,
+                Name = "Strict Boundary Test " + Guid.NewGuid().ToString("N"),
+                ActivityType = "Diving",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            });
+            return db.SaveChangesAsync();
+        });
+
+        using var create = AuthorizedJson(HttpMethod.Post, "/api/marine/safety-profiles", token, new
+        {
+            activityId = strictActivityId,
+            maxWindSpeed = 25m,
+            maxWaveHeight = 1.5m,
+            maxSwellHeight = 1.2m
+        });
+        using var createResponse = await client.SendAsync(create);
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+
+        _factory.Provider = new StubOpenMeteoClient(() => new MarineConditionsResult(
+            DateTime.UtcNow,
+            DateTime.UtcNow,
+            WindSpeed: 25m,
+            WaveHeight: 1.5m,
+            SwellHeight: 1.2m,
+            Rain: 0m,
+            WeatherCode: 0,
+            Source: ConditionSources.OpenMeteo,
+            MissingFields: []));
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/marine/evaluate")
+        {
+            Content = JsonContent.Create(new
+            {
+                activityId = strictActivityId,
+                latitude = 6.025m,
+                longitude = 80.216m
+            })
+        };
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", ReaderToken());
+        using var response = await client.SendAsync(request);
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var document = JsonDocument.Parse(body);
+        var root = document.RootElement;
+        Assert.Equal("SUITABLE", root.GetProperty("status").GetString());
+        Assert.Empty(root.GetProperty("violations").EnumerateArray());
+        Assert.Empty(root.GetProperty("cautionFactors").EnumerateArray());
+    }
+
+    private static HttpRequestMessage AuthorizedJson(HttpMethod method, string uri, string token, object body)
+    {
+        var request = new HttpRequestMessage(method, uri) { Content = JsonContent.Create(body) };
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        return request;
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-SUIT-017")]
+    public async Task M2_SUIT_017_assessment_is_persisted_with_full_provenance()
+    {
+        using var client = await CreateClientAsync();
+
+        using var response = await EvaluateAsync(client, ReaderToken(), windSpeed: 30m);
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var document = JsonDocument.Parse(body);
+        var root = document.RootElement;
+        var assessmentId = root.GetProperty("assessmentId").GetGuid();
+        var snapshotId = root.GetProperty("snapshotId").GetGuid();
+
+        // The complete evidence chain is stored: profile version, result,
+        // violations, source, freshness and both evidence references.
+        await _factory.SeedAsync(async db =>
+        {
+            var record = await db.SuitabilityAssessments.SingleAsync(a => a.Id == assessmentId);
+            Assert.Equal(MarineSafetyTestSeed.ActivityId, record.ActivityId);
+            Assert.Equal(1, record.ProfileVersion);
+            Assert.Equal(6.025m, record.Latitude);
+            Assert.Equal(80.216m, record.Longitude);
+            Assert.Equal(SuitabilityResults.Unsuitable, record.Result);
+            Assert.Contains(record.Violations, v => v.StartsWith("windSpeed", StringComparison.Ordinal));
+            Assert.Equal(ConditionSources.OpenMeteo, record.Source);
+            Assert.Equal(FreshnessStatuses.Fresh, record.FreshnessStatus);
+            Assert.Equal(snapshotId, record.ConditionSnapshotId);
+            Assert.NotEqual(Guid.Empty, record.SafetyProfileId);
+            await Task.CompletedTask;
+        });
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-SUIT-018")]
+    public async Task M2_SUIT_018_inactive_activity_cannot_be_evaluated()
+    {
+        using var client = await CreateClientAsync();
+
+        // Inactive activities are rejected exactly like unknown ones: without
+        // a profile gate they would otherwise still consume provider calls.
+        await _factory.SeedAsync(async db =>
+        {
+            var activity = await db.MarineActivities.SingleAsync(a => a.Id == MarineSafetyTestSeed.ActivityId);
+            activity.IsActive = false;
+            await db.SaveChangesAsync();
+        });
+
+        using var response = await EvaluateAsync(client, ReaderToken(), windSpeed: 15m);
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        using var document = JsonDocument.Parse(body);
+        Assert.Equal("Activity Not Found", document.RootElement.GetProperty("title").GetString());
+        Assert.Equal(0, _factory.Provider.CallCount); // rejected before any provider call
+    }
 }

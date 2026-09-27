@@ -2,8 +2,6 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Blueverse.MarineSafety.Dtos;
 
-public sealed record ActivityDto(Guid Id, string Name, string ActivityType, bool IsActive);
-
 // Validation attributes sit on the record primary-constructor parameters:
 // ASP.NET Core MVC associates record validation metadata with the parameters,
 // not the generated properties.
@@ -55,11 +53,6 @@ public sealed record ConditionSnapshotDto(
     string FreshnessStatus,
     IReadOnlyList<string> MissingFields);
 
-public sealed record ConditionsQueryDto(
-    [Required, Range(-90, 90)] decimal Latitude,
-    [Required, Range(-180, 180)] decimal Longitude,
-    DateTime? Time);
-
 public sealed record EvaluateSuitabilityDto(
     [Required] Guid? ActivityId,
     [Required, Range(-90, 90)] decimal Latitude,
@@ -83,27 +76,12 @@ public sealed record SuitabilityResultDto(
     Guid AssessmentId,
     Guid SnapshotId);
 
-public sealed record LocationDto(decimal Latitude, decimal Longitude);
-
-public sealed record ConditionsDto(
+public sealed record LocationDto(decimal Latitude, decimal Longitude);public sealed record ConditionsDto(
     decimal? WindSpeed,
     decimal? WaveHeight,
     decimal? SwellHeight,
     decimal? Rain,
     int? WeatherCode);
 
-public sealed record AssessmentHistoryDto(
-    Guid Id,
-    Guid ActivityId,
-    string ActivityName,
-    int ProfileVersion,
-    decimal Latitude,
-    decimal Longitude,
-    DateTime RequestedTime,
-    DateTime EvaluatedAt,
-    string Result,
-    IReadOnlyList<string> Violations,
-    IReadOnlyList<string> CautionFactors,
-    IReadOnlyList<string> MissingFields,
-    string Source,
-    string FreshnessStatus);
+
+

@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 using Blueverse.MarineSafety.Models;
+using Blueverse.MarineSafety.Services;
 
 namespace Blueverse.MarineSafety.Providers;
 
@@ -39,7 +40,7 @@ public sealed class OpenMeteoClient : IOpenMeteoClient
         DateTime timeUtc,
         CancellationToken cancellationToken)
     {
-        var time = timeUtc.ToUniversalTime();
+        var time = MarineTime.ToUtc(timeUtc);
         var start = time.AddHours(-1).ToString("yyyy-MM-ddTHH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
         var end = time.AddHours(1).ToString("yyyy-MM-ddTHH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
         var normalizedLatitude = Normalize(latitude, "latitude", -90, 90);
@@ -118,6 +119,11 @@ public sealed class OpenMeteoClient : IOpenMeteoClient
         if (rain is null)
         {
             missingFields.Add("rain");
+        }
+
+        if (weatherCode is null)
+        {
+            missingFields.Add("weatherCode");
         }
 
         _logger.LogInformation(

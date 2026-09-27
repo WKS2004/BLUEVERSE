@@ -99,7 +99,12 @@ public sealed class SafetyProfilesController : ControllerBase
 
     private IActionResult ToBadRequest(string title, InvalidOperationException exception)
     {
-        var conflict = exception.Message.Contains("does not exist", StringComparison.Ordinal);
+        // A nonexistent or inactive activity is a state conflict, not invalid
+        // input (G00: 400 is reserved for malformed coordinates/ranges/fields),
+        // so both map to 409 like every other activity-state rejection.
+        var conflict =
+            exception.Message.Contains("does not exist", StringComparison.Ordinal) ||
+            exception.Message.Contains("is not active", StringComparison.Ordinal);
         return StatusCode(
             conflict ? StatusCodes.Status409Conflict : StatusCodes.Status400BadRequest,
             new ProblemDetails

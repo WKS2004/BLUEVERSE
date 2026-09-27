@@ -61,20 +61,31 @@ public sealed class SafetyProfileService : ISafetyProfileService
             throw new InvalidOperationException($"Activity '{activity.Name}' is not active.");
         }
 
-        // Supersede the previous active profile; history rows remain.
+        // Supersede the previous active profile; history rows remain. The
+        // highest version so far is taken across all of the activity's profile
+        // rows, not only active ones: reactivating a superseded profile via
+        // create must not collide with the partial unique (ActivityId, IsActive)
+        // index or reuse a version an earlier superseded profile already used.
         var existing = await _db.SafetyProfiles
             .Where(p => p.ActivityId == dto.ActivityId && p.IsActive)
             .ToListAsync(cancellationToken);
 
-        var nextVersion = 1;
-        if (existing.Count > 0)
+        foreach (var profile in existing)
         {
-            nextVersion = existing.Max(p => p.Version) + 1;
-            foreach (var profile in existing)
-            {
-                profile.IsActive = false;
-            }
+            profile.IsActive = false;
         }
+
+        // Commit the deactivations before the new active row is inserted: the
+        // partial unique (ActivityId, IsActive) index is enforced by
+        // PostgreSQL at statement level, and the command ordering inside one
+        // SaveChanges is an implementation detail. Making the ordering
+        // explicit guarantees the batch is valid at every intermediate step.
+        await _db.SaveChangesAsync(cancellationToken);
+
+        var highestVersion = await _db.SafetyProfiles
+            .Where(p => p.ActivityId == activity.Id)
+            .MaxAsync(p => (int?)p.Version, cancellationToken) ?? 0;
+        var nextVersion = highestVersion + 1;
 
         var entity = new SafetyProfile
         {
@@ -117,10 +128,36 @@ public sealed class SafetyProfileService : ISafetyProfileService
         profile.CautionWindSpeed = dto.CautionWindSpeed;
         profile.CautionWaveHeight = dto.CautionWaveHeight;
         profile.CautionSwellHeight = dto.CautionSwellHeight;
-        profile.IsActive = dto.IsActive;
         profile.Version++;
         profile.UpdatedAt = DateTime.UtcNow;
 
+        if (!dto.IsActive)
+        {
+            // Deactivating through the update surface is allowed (soft-delete
+            // parity); only the reverse direction is guarded below.
+            profile.IsActive = false;
+            await _db.SaveChangesAsync(cancellationToken);
+            return ToDto(profile);
+        }
+
+        // Activating would violate the partial unique (ActivityId, IsActive)
+        // index while another active profile exists, and silently leaving the
+        // old active profile in place would make two rows claim to be the
+        // applicable configuration. Supersede explicitly, like create does,
+        // and commit the deactivations before the activation so every
+        // intermediate database state satisfies the partial unique index.
+        var otherActive = await _db.SafetyProfiles
+            .Where(p => p.ActivityId == profile.ActivityId && p.IsActive && p.Id != profile.Id)
+            .ToListAsync(cancellationToken);
+        foreach (var active in otherActive)
+        {
+            active.IsActive = false;
+            active.UpdatedAt = profile.UpdatedAt;
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        profile.IsActive = true;
         await _db.SaveChangesAsync(cancellationToken);
         return ToDto(profile);
     }

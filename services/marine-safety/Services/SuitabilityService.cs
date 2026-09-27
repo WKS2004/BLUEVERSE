@@ -67,7 +67,7 @@ public sealed class SuitabilityService : ISuitabilityService
                 $"No active safety profile is configured for activity '{activity.Name}'.");
         }
 
-        var requestedTime = (request.DateTime ?? DateTime.UtcNow).ToUniversalTime();
+        var requestedTime = MarineTime.ToUtc(request.DateTime ?? DateTime.UtcNow);
         var conditions = await _conditions.GetConditionsAsync(
             request.Latitude, request.Longitude, requestedTime, cancellationToken);
         var evaluatedAt = DateTime.UtcNow;

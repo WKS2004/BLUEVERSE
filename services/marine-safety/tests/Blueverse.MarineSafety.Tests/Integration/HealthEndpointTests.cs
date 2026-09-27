@@ -54,6 +54,45 @@ public sealed class HealthEndpointTests : IClassFixture<MarineSafetyWebApplicati
     }
 
     [Fact]
+    [Trait("CaseId", "M2-HEALTH-004")]
+    public async Task HealthIsNotListedUnderABearerSecurityRequirement()
+    {
+        // G00 health row: dependency failures must be observable without
+        // credentials, so the operation itself must not declare a security
+        // requirement that would make clients send a token proactively.
+        _factory.ResetDatabase();
+        using var client = _factory.CreateClient();
+
+        using var response = await client.GetAsync("/api/marine/swagger/v1/swagger.json");
+        var body = await response.Content.ReadAsStringAsync();
+        using var document = JsonDocument.Parse(body);
+
+        var healthOperation = document.RootElement
+            .GetProperty("paths")
+            .GetProperty("/api/marine/health")
+            .GetProperty("get");
+        var declaresSecurity = healthOperation.TryGetProperty("security", out var security) &&
+                               security.GetArrayLength() > 0;
+
+        Assert.False(declaresSecurity, "Health must not require credentials.");
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-HEALTH-005")]
+    public async Task HealthAnonymousRequestCarriesNoAuthenticationChallenge()
+    {
+        _factory.ResetDatabase();
+        using var client = _factory.CreateClient();
+
+        using var response = await client.GetAsync("/api/marine/health");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.False(
+            response.Headers.WwwAuthenticate.Any(),
+            "A 200 health response must not carry an authentication challenge.");
+    }
+
+    [Fact]
     [Trait("CaseId", "M2-HEALTH-003")]
     public async Task HealthReturnsServiceUnavailableWhenTheDatabaseCannotBeReached()
     {

@@ -281,4 +281,191 @@ public sealed class ConditionEndpointTests : IClassFixture<MarineSafetyWebApplic
         Assert.Subset(missing, new HashSet<string> { "waveHeight", "swellHeight" });
         Assert.Equal("Open-Meteo", root.GetProperty("source").GetString());
     }
+
+    [Fact]
+    [Trait("CaseId", "M2-COND-010")]
+    public async Task M2_COND_010_naive_query_time_is_interpreted_as_utc()
+    {
+        // G00 time semantics: an offset-less time is UTC, not the host's
+        // local zone. The stub captures what the service actually requested.
+        _factory.Provider = new StubOpenMeteoClient();
+        using var client = await CreateClientAsync();
+
+        using var request = Authorized(
+            HttpMethod.Get,
+            "/api/marine/current?latitude=6.025&longitude=80.216&time=2026-09-26T08:00:00",
+            ReaderToken());
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(
+            new DateTime(2026, 9, 26, 8, 0, 0, DateTimeKind.Utc),
+            _factory.Provider.LastRequestedTime);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-COND-011")]
+    public async Task M2_COND_011_explicitly_offest_times_are_honored_as_given()
+    {
+        // An offset-bearing request keeps its absolute instant: 08:00+05:30
+        // is 02:30Z, not 08:00Z.
+        _factory.Provider = new StubOpenMeteoClient();
+        using var client = await CreateClientAsync();
+
+        using var request = Authorized(
+            HttpMethod.Get,
+            "/api/marine/current?latitude=6.025&longitude=80.216&time=2026-09-26T08:00:00%2B05:30",
+            ReaderToken());
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(
+            new DateTime(2026, 9, 26, 2, 30, 0, DateTimeKind.Utc),
+            _factory.Provider.LastRequestedTime);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-COND-012")]
+    public async Task M2_COND_012_same_location_and_hour_within_the_reuse_window_reuses_the_snapshot()
+    {
+        _factory.Provider = new StubOpenMeteoClient();
+        using var client = await CreateClientAsync();
+        var token = ReaderToken();
+
+        using var first = Authorized(
+            HttpMethod.Get,
+            "/api/marine/current?latitude=6.025&longitude=80.216",
+            token);
+        using var firstResponse = await client.SendAsync(first);
+        Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
+        var firstBody = await firstResponse.Content.ReadAsStringAsync();
+        using var firstDocument = JsonDocument.Parse(firstBody);
+        var firstId = firstDocument.RootElement.GetProperty("id").GetGuid();
+
+        using var second = Authorized(
+            HttpMethod.Get,
+            "/api/marine/current?latitude=6.0253&longitude=80.2161", // rounds to the same 3-dp location
+            token);
+        using var secondResponse = await client.SendAsync(second);
+        Assert.Equal(HttpStatusCode.OK, secondResponse.StatusCode);
+        var secondBody = await secondResponse.Content.ReadAsStringAsync();
+        using var secondDocument = JsonDocument.Parse(secondBody);
+        var secondId = secondDocument.RootElement.GetProperty("id").GetGuid();
+
+        Assert.Equal(firstId, secondId);
+        Assert.Equal(1, _factory.Provider.CallCount); // second read came from storage
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-COND-013")]
+    public async Task M2_COND_013_snapshot_read_of_unknown_id_is_not_found()
+    {
+        _factory.Provider = new StubOpenMeteoClient();
+        using var client = await CreateClientAsync();
+
+        using var request = Authorized(
+            HttpMethod.Get,
+            $"/api/marine/snapshots/{Guid.NewGuid()}",
+            ReaderToken());
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-COND-014")]
+    public async Task M2_COND_014_history_is_capped_and_ordered_by_forecast_time_descending()
+
+    {
+        _factory.Provider = new StubOpenMeteoClient();
+        using var client = await CreateClientAsync();
+        var token = ReaderToken();
+
+        var baseTime = DateTime.UtcNow;
+        var ids = new List<Guid>();
+        for (var offsetMinutes = 240; offsetMinutes >= 0; offsetMinutes -= 30)
+        {
+            var forecast = baseTime.AddMinutes(-offsetMinutes);
+            await _factory.SeedAsync(db =>
+            {
+                db.ConditionSnapshots.Add(new ConditionSnapshot
+                {
+                    Id = Guid.NewGuid(),
+                    Latitude = 6.025m,
+                    Longitude = 80.216m,
+                    ForecastTime = forecast,
+                    RetrievedAt = DateTime.UtcNow,
+                    WindSpeed = 10m,
+                    WaveHeight = 1m,
+                    SwellHeight = 1m,
+                    Rain = 0m,
+                    WeatherCode = 0,
+                    Source = ConditionSources.OpenMeteo,
+                    FreshnessStatus = FreshnessStatuses.Fresh,
+                    MissingFields = []
+                });
+                return db.SaveChangesAsync();
+            });
+        }
+
+        using var request = Authorized(
+            HttpMethod.Get,
+            "/api/marine/history?latitude=6.025&longitude=80.216",
+            token);
+        using var response = await client.SendAsync(request);
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var document = JsonDocument.Parse(body);
+        var rows = document.RootElement.EnumerateArray().ToList();
+        Assert.Equal(9, rows.Count); // (240/30)+1 seeded rows
+        Assert.Equal(
+            rows.Select(r => r.GetProperty("forecastTime").GetDateTime()).ToArray(),
+            rows.Select(r => r.GetProperty("forecastTime").GetDateTime()).OrderByDescending(t => t).ToArray());
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-COND-015")]
+    public async Task M2_COND_015_history_reclassifies_stale_rows_at_read_time()
+    {
+        // A snapshot stored as FRESH with an old retrieval time must be
+        // reported STALE by the history endpoint — freshness is a read-time
+        // classification, not the stored value.
+        _factory.Provider = new StubOpenMeteoClient();
+        using var client = await CreateClientAsync();
+
+        await _factory.SeedAsync(db =>
+        {
+            db.ConditionSnapshots.Add(new ConditionSnapshot
+            {
+                Id = Guid.NewGuid(),
+                Latitude = 6.025m,
+                Longitude = 80.216m,
+                ForecastTime = DateTime.UtcNow.AddMinutes(-10),
+                RetrievedAt = DateTime.UtcNow.AddHours(-4),
+                WindSpeed = 10m,
+                WaveHeight = 1m,
+                SwellHeight = 1m,
+                Rain = 0m,
+                WeatherCode = 0,
+                Source = ConditionSources.OpenMeteo,
+                FreshnessStatus = FreshnessStatuses.Fresh,
+                MissingFields = []
+            });
+            return db.SaveChangesAsync();
+        });
+
+        using var request = Authorized(
+            HttpMethod.Get,
+            "/api/marine/history?latitude=6.025&longitude=80.216",
+            ReaderToken());
+        using var response = await client.SendAsync(request);
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var document = JsonDocument.Parse(body);
+        var rows = document.RootElement.EnumerateArray().ToList();
+        Assert.NotEmpty(rows);
+        Assert.All(rows, row => Assert.Equal("STALE", row.GetProperty("freshnessStatus").GetString()));
+    }
 }

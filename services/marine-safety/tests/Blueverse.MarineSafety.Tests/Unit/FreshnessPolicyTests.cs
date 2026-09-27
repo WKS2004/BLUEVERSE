@@ -82,6 +82,47 @@ public sealed class FreshnessPolicyTests
 
         Assert.Equal(FreshnessStatuses.Stale, policy.Classify(justOutside, now));
     }
+
+    [Fact]
+    [Trait("CaseId", "M2-FRESH-005")]
+    public void M2_FRESH_005_future_forecast_time_is_fresh()
+    {
+        // A snapshot for a forecast hour slightly ahead of the evaluation
+        // moment has a negative forecast lag; the policy classifies it fresh
+        // because the evidence is still inside the validity window.
+        var policy = CreatePolicy();
+        var now = DateTime.UtcNow;
+        var ahead = new ConditionSnapshot
+        {
+            ForecastTime = now.AddMinutes(30),
+            RetrievedAt = now.AddMinutes(-5)
+        };
+
+        Assert.Equal(FreshnessStatuses.Fresh, policy.Classify(ahead, now));
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-FRESH-006")]
+    public void M2_FRESH_006_minimum_configured_window_is_respected()
+    {
+        // The narrowest configurable window (1 minute): a one-second-old
+        // retrieval is fresh; anything beyond the window is stale.
+        var policy = CreatePolicy(minutes: 1);
+        var now = DateTime.UtcNow;
+        var justRetrieved = new ConditionSnapshot
+        {
+            ForecastTime = now,
+            RetrievedAt = now.AddSeconds(-1)
+        };
+        Assert.Equal(FreshnessStatuses.Fresh, policy.Classify(justRetrieved, now));
+
+        var beyondWindow = new ConditionSnapshot
+        {
+            ForecastTime = now,
+            RetrievedAt = now.AddMinutes(-2)
+        };
+        Assert.Equal(FreshnessStatuses.Stale, policy.Classify(beyondWindow, now));
+    }
 }
 
 /// <summary>

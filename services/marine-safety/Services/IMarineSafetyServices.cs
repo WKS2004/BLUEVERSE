@@ -41,3 +41,19 @@ public interface ISafetyProfileService
     Task<SafetyProfileDto?> UpdateProfileAsync(Guid id, UpdateSafetyProfileDto dto, CancellationToken cancellationToken);
     Task<bool> DeactivateProfileAsync(Guid id, CancellationToken cancellationToken);
 }
+
+/// <summary>
+/// API time normalization. The public contract exchanges UTC timestamps
+/// (G00 time semantics); a timestamp supplied without an offset is UTC — never
+/// the host machine's local time zone, which would make parsed request times
+/// depend on where the service happens to run.
+/// </summary>
+public static class MarineTime
+{
+    public static DateTime ToUtc(DateTime value) => value.Kind switch
+    {
+        DateTimeKind.Utc => value,
+        DateTimeKind.Local => value.ToUniversalTime(),
+        _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
+    };
+}

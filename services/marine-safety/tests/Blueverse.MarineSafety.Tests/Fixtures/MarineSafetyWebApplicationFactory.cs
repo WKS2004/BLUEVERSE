@@ -102,7 +102,18 @@ public sealed class MarineSafetyWebApplicationFactory : WebApplicationFactory<Pr
     /// permission handler resolves the granted code from the seeded test user,
     /// so tests exercise the full role-to-permission path.
     /// </summary>
-    public string CreateToken(Guid userId, IEnumerable<string>? permissionClaims = null)
+    public string CreateToken(
+        Guid userId,
+        IEnumerable<string>? permissionClaims = null,
+        DateTime? expires = null)
+    {
+        return CreateTokenCore(userId, permissionClaims, expires);
+    }
+
+    private string CreateTokenCore(
+        Guid userId,
+        IEnumerable<string>? permissionClaims,
+        DateTime? expires)
     {
         var claims = new List<Claim>
         {
@@ -122,7 +133,7 @@ public sealed class MarineSafetyWebApplicationFactory : WebApplicationFactory<Pr
             Subject = new ClaimsIdentity(claims),
             Issuer = "Blueverse.Auth",
             Audience = "Blueverse.Client",
-            Expires = DateTime.UtcNow.AddMinutes(15),
+            Expires = expires ?? DateTime.UtcNow.AddMinutes(15),
             SigningCredentials = new SigningCredentials(
                 new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtSigningKey)),
                 SecurityAlgorithms.HmacSha256)

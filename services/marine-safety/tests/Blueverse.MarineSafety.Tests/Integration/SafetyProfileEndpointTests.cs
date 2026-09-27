@@ -290,4 +290,397 @@ public sealed class SafetyProfileEndpointTests : IClassFixture<MarineSafetyWebAp
         });
         Assert.Equal(HttpStatusCode.Unauthorized, anonymous.StatusCode);
     }
+
+    [Fact]
+    [Trait("CaseId", "M2-PROF-010")]
+    public async Task M2_PROF_010_recreating_after_full_deactivation_never_reuses_a_version()
+    {
+        // Regression for the create-path version collision: the next version
+        // must come from all of the activity's profile rows, not only the
+        // active ones. After every profile of the activity has been
+        // deactivated, creating a new profile must still continue the version
+        // sequence instead of restarting at 1 (which would make the
+        // ProfileVersion recorded in past assessments ambiguous).
+        using var client = await CreateClientAsync();
+        var token = _factory.CreateToken(MarineSafetyTestSeed.ManagerUserId);
+
+        // First create supersedes the seeded v1 profile (becomes v2, active).
+        using var first = Authorized(HttpMethod.Post, "/api/marine/safety-profiles", token, new
+        {
+            activityId = MarineSafetyTestSeed.ActivityId,
+            maxWindSpeed = 28m,
+            maxWaveHeight = 1.8m,
+            maxSwellHeight = 1.4m
+        });
+        using var firstResponse = await client.SendAsync(first);
+        Assert.Equal(HttpStatusCode.Created, firstResponse.StatusCode);
+        var firstBody = await firstResponse.Content.ReadAsStringAsync();
+        using var firstDocument = JsonDocument.Parse(firstBody);
+        Assert.Equal(2, firstDocument.RootElement.GetProperty("version").GetInt32());
+        var secondProfileId = firstDocument.RootElement.GetProperty("id").GetGuid();
+
+        // Deactivate it: the activity now has no active profile at all.
+        using var deactivate = Authorized(HttpMethod.Delete, $"/api/marine/safety-profiles/{secondProfileId}", token);
+        using var deactivateResponse = await client.SendAsync(deactivate);
+        Assert.Equal(HttpStatusCode.NoContent, deactivateResponse.StatusCode);
+
+        // Recreating must resume at v3, not collide at v1.
+        using var second = Authorized(HttpMethod.Post, "/api/marine/safety-profiles", token, new
+        {
+            activityId = MarineSafetyTestSeed.ActivityId,
+            maxWindSpeed = 20m,
+            maxWaveHeight = 1.0m,
+            maxSwellHeight = 0.8m
+        });
+        using var secondResponse = await client.SendAsync(second);
+        Assert.Equal(HttpStatusCode.Created, secondResponse.StatusCode);
+        var secondBody = await secondResponse.Content.ReadAsStringAsync();
+        using var secondDocument = JsonDocument.Parse(secondBody);
+        Assert.Equal(3, secondDocument.RootElement.GetProperty("version").GetInt32());
+
+        // Exactly one active profile remains, and the inactive history rows
+        // are still listed with their original versions.
+        using var list = Authorized(HttpMethod.Get, "/api/marine/safety-profiles", token);
+        using var listResponse = await client.SendAsync(list);
+        Assert.Equal(HttpStatusCode.OK, listResponse.StatusCode);
+        var listBody = await listResponse.Content.ReadAsStringAsync();
+        using var listDocument = JsonDocument.Parse(listBody);
+        var forActivity = listDocument.RootElement.EnumerateArray()
+            .Where(p => p.GetProperty("activityId").GetGuid() == MarineSafetyTestSeed.ActivityId)
+            .Select(p => (version: p.GetProperty("version").GetInt32(), isActive: p.GetProperty("isActive").GetBoolean()))
+            .ToList();
+
+        Assert.Equal(3, forActivity.Count);
+        Assert.Equal(1, forActivity.Count(p => p.isActive));
+        Assert.Equal(3, forActivity.Single(p => p.isActive).version);
+        Assert.Equal(new[] { 1, 2, 3 }, forActivity.Select(p => p.version).OrderBy(v => v).ToArray());
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-PROF-011")]
+    public async Task M2_PROF_011_reactivating_an_inactive_profile_supersedes_the_active_one()
+    {
+        // Regression for the update-path partial-unique violation: PUT with
+        // isActive=true on an inactive profile while another active profile
+        // exists must supersede the active one (one active profile per
+        // activity is the documented invariant), not fail the request.
+        using var client = await CreateClientAsync();
+        var token = _factory.CreateToken(MarineSafetyTestSeed.ManagerUserId);
+
+        // Deactivate the seeded active profile through the delete surface.
+        using var current = Authorized(
+            HttpMethod.Get,
+            $"/api/marine/safety-profiles/by-activity/{MarineSafetyTestSeed.ActivityId}",
+            token);
+        using var currentResponse = await client.SendAsync(current);
+        Assert.Equal(HttpStatusCode.OK, currentResponse.StatusCode);
+        var currentBody = await currentResponse.Content.ReadAsStringAsync();
+        using var currentDocument = JsonDocument.Parse(currentBody);
+        var seededId = currentDocument.RootElement.GetProperty("id").GetGuid();
+
+        using var delete = Authorized(HttpMethod.Delete, $"/api/marine/safety-profiles/{seededId}", token);
+        using var deleteResponse = await client.SendAsync(delete);
+        Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+
+        // Reactivating the now-inactive seeded profile must succeed and leave
+        // exactly one active profile for the activity (itself).
+        using var reactivate = Authorized(HttpMethod.Put, $"/api/marine/safety-profiles/{seededId}", token, new
+        {
+            maxWindSpeed = 26m,
+            maxWaveHeight = 1.6m,
+            maxSwellHeight = 1.3m,
+            isActive = true
+        });
+        using var reactivateResponse = await client.SendAsync(reactivate);
+        var reactivateBody = await reactivateResponse.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, reactivateResponse.StatusCode);
+        using var reactivateDocument = JsonDocument.Parse(reactivateBody);
+        Assert.True(reactivateDocument.RootElement.GetProperty("isActive").GetBoolean());
+        Assert.Equal(2, reactivateDocument.RootElement.GetProperty("version").GetInt32());
+
+        using var byActivity = Authorized(
+            HttpMethod.Get,
+            $"/api/marine/safety-profiles/by-activity/{MarineSafetyTestSeed.ActivityId}",
+            token);
+        using var byActivityResponse = await client.SendAsync(byActivity);
+        Assert.Equal(HttpStatusCode.OK, byActivityResponse.StatusCode);
+        var byActivityBody = await byActivityResponse.Content.ReadAsStringAsync();
+        using var byActivityDocument = JsonDocument.Parse(byActivityBody);
+        Assert.Equal(seededId, byActivityDocument.RootElement.GetProperty("id").GetGuid());
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-PROF-012")]
+    public async Task M2_PROF_012_update_cannot_activate_while_another_active_profile_exists_without_superseding()
+    {
+        // The invariant is one active profile per activity. PUT isActive=true
+        // must supersede the other active profile (M2-PROF-011), so this test
+        // pins the observable postcondition from the read side: after the
+        // reactivation request there is exactly one active profile and it is
+        // the updated row.
+        using var client = await CreateClientAsync();
+        var token = _factory.CreateToken(MarineSafetyTestSeed.ManagerUserId);
+
+        // Create a second profile (supersedes the seeded one) and capture both IDs.
+        using var create = Authorized(HttpMethod.Post, "/api/marine/safety-profiles", token, new
+        {
+            activityId = MarineSafetyTestSeed.ActivityId,
+            maxWindSpeed = 18m,
+            maxWaveHeight = 0.9m,
+            maxSwellHeight = 0.7m
+        });
+        using var createResponse = await client.SendAsync(create);
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+        var createBody = await createResponse.Content.ReadAsStringAsync();
+        using var createDocument = JsonDocument.Parse(createBody);
+        var supersedingId = createDocument.RootElement.GetProperty("id").GetGuid();
+
+        // Deactivate the superseding profile via PUT isActive=false (soft path).
+        using var deactivate = Authorized(HttpMethod.Put, $"/api/marine/safety-profiles/{supersedingId}", token, new
+        {
+            maxWindSpeed = 18m,
+            maxWaveHeight = 0.9m,
+            maxSwellHeight = 0.7m,
+            isActive = false
+        });
+        using var deactivateResponse = await client.SendAsync(deactivate);
+        Assert.Equal(HttpStatusCode.OK, deactivateResponse.StatusCode);
+
+        // Re-activate it again: the (already active) seeded profile must be
+        // superseded so the invariant "exactly one active profile" holds.
+        using var reactivate = Authorized(HttpMethod.Put, $"/api/marine/safety-profiles/{supersedingId}", token, new
+        {
+            maxWindSpeed = 19m,
+            maxWaveHeight = 1.0m,
+            maxSwellHeight = 0.8m,
+            isActive = true
+        });
+        using var reactivateResponse = await client.SendAsync(reactivate);
+        Assert.Equal(HttpStatusCode.OK, reactivateResponse.StatusCode);
+
+        using var list = Authorized(HttpMethod.Get, "/api/marine/safety-profiles", token);
+        using var listResponse = await client.SendAsync(list);
+        Assert.Equal(HttpStatusCode.OK, listResponse.StatusCode);
+        var listBody = await listResponse.Content.ReadAsStringAsync();
+        using var listDocument = JsonDocument.Parse(listBody);
+        var forActivity = listDocument.RootElement.EnumerateArray()
+            .Where(p => p.GetProperty("activityId").GetGuid() == MarineSafetyTestSeed.ActivityId)
+            .Select(p => (id: p.GetProperty("id").GetGuid(), isActive: p.GetProperty("isActive").GetBoolean()))
+            .ToList();
+
+        Assert.Equal(2, forActivity.Count);
+        Assert.Equal(1, forActivity.Count(p => p.isActive));
+        Assert.Equal(supersedingId, forActivity.Single(p => p.isActive).id);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-PROF-013")]
+    public async Task M2_PROF_013_create_for_inactive_activity_is_rejected()
+    {
+        using var client = await CreateClientAsync();
+        var token = _factory.CreateToken(MarineSafetyTestSeed.ManagerUserId);
+
+        var inactiveId = Guid.NewGuid();
+        await _factory.SeedAsync(db =>
+        {
+            db.MarineActivities.Add(new MarineActivity
+            {
+                Id = inactiveId,
+                Name = "Jet Ski " + Guid.NewGuid().ToString("N"),
+                ActivityType = "BoatTour",
+                IsActive = false,
+                CreatedAt = DateTime.UtcNow
+            });
+            return db.SaveChangesAsync();
+        });
+
+        using var request = Authorized(HttpMethod.Post, "/api/marine/safety-profiles", token, new
+        {
+            activityId = inactiveId,
+            maxWindSpeed = 25m,
+            maxWaveHeight = 1.5m,
+            maxSwellHeight = 1.2m
+        });
+        using var response = await client.SendAsync(request);
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Contains("not active", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-PROF-014")]
+    public async Task M2_PROF_014_by_activity_for_unknown_activity_is_not_found()
+    {
+        using var client = await CreateClientAsync();
+        var token = _factory.CreateToken(MarineSafetyTestSeed.ReaderUserId);
+
+        using var request = Authorized(
+            HttpMethod.Get,
+            $"/api/marine/safety-profiles/by-activity/{Guid.NewGuid()}",
+            token);
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-PROF-015")]
+    public async Task M2_PROF_015_by_activity_with_no_active_profile_is_not_found()
+    {
+        // The seeded activity's profile is deactivated by M2-PROF-008 within
+        // its own database; here a fresh store gets its profile deactivated.
+        using var client = await CreateClientAsync();
+        var token = _factory.CreateToken(MarineSafetyTestSeed.ManagerUserId);
+
+        using var current = Authorized(
+            HttpMethod.Get,
+            $"/api/marine/safety-profiles/by-activity/{MarineSafetyTestSeed.ActivityId}",
+            token);
+        using var currentResponse = await client.SendAsync(current);
+        Assert.Equal(HttpStatusCode.OK, currentResponse.StatusCode);
+        var currentBody = await currentResponse.Content.ReadAsStringAsync();
+        using var currentDocument = JsonDocument.Parse(currentBody);
+        var profileId = currentDocument.RootElement.GetProperty("id").GetGuid();
+
+        using var delete = Authorized(HttpMethod.Delete, $"/api/marine/safety-profiles/{profileId}", token);
+        using var deleteResponse = await client.SendAsync(delete);
+        Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+
+        using var request = Authorized(
+            HttpMethod.Get,
+            $"/api/marine/safety-profiles/by-activity/{MarineSafetyTestSeed.ActivityId}",
+            token);
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-PROF-016")]
+    public async Task M2_PROF_016_update_of_unknown_profile_is_not_found()
+    {
+        using var client = await CreateClientAsync();
+        var token = _factory.CreateToken(MarineSafetyTestSeed.ManagerUserId);
+
+        using var request = Authorized(HttpMethod.Put, $"/api/marine/safety-profiles/{Guid.NewGuid()}", token, new
+        {
+            maxWindSpeed = 20m,
+            maxWaveHeight = 1m,
+            maxSwellHeight = 0.8m
+        });
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-PROF-017")]
+    public async Task M2_PROF_017_deactivate_of_unknown_profile_is_not_found()
+    {
+        using var client = await CreateClientAsync();
+        var token = _factory.CreateToken(MarineSafetyTestSeed.ManagerUserId);
+
+        using var request = Authorized(HttpMethod.Delete, $"/api/marine/safety-profiles/{Guid.NewGuid()}", token);
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-PROF-018")]
+    public async Task M2_PROF_018_deactivate_is_idempotent_on_an_inactive_profile()
+    {
+        // Deleting an already-inactive profile reports success without
+        // touching the row again: the domain rule is "no active profile with
+        // this id remains", which holds before and after.
+        using var client = await CreateClientAsync();
+        var token = _factory.CreateToken(MarineSafetyTestSeed.ManagerUserId);
+
+        using var current = Authorized(
+            HttpMethod.Get,
+            $"/api/marine/safety-profiles/by-activity/{MarineSafetyTestSeed.ActivityId}",
+            token);
+        using var currentResponse = await client.SendAsync(current);
+        Assert.Equal(HttpStatusCode.OK, currentResponse.StatusCode);
+        var currentBody = await currentResponse.Content.ReadAsStringAsync();
+        using var currentDocument = JsonDocument.Parse(currentBody);
+        var profileId = currentDocument.RootElement.GetProperty("id").GetGuid();
+
+        using var first = Authorized(HttpMethod.Delete, $"/api/marine/safety-profiles/{profileId}", token);
+        using var firstResponse = await client.SendAsync(first);
+        Assert.Equal(HttpStatusCode.NoContent, firstResponse.StatusCode);
+
+        using var second = Authorized(HttpMethod.Delete, $"/api/marine/safety-profiles/{profileId}", token);
+        using var secondResponse = await client.SendAsync(second);
+        Assert.Equal(HttpStatusCode.NoContent, secondResponse.StatusCode);
+
+        using var verify = Authorized(HttpMethod.Get, $"/api/marine/safety-profiles/{profileId}", token);
+        using var verifyResponse = await client.SendAsync(verify);
+        Assert.Equal(HttpStatusCode.OK, verifyResponse.StatusCode);
+        var verifyBody = await verifyResponse.Content.ReadAsStringAsync();
+        using var verifyDocument = JsonDocument.Parse(verifyBody);
+        Assert.False(verifyDocument.RootElement.GetProperty("isActive").GetBoolean());
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-PROF-019")]
+    public async Task M2_PROF_019_update_with_caution_band_at_or_above_maximum_is_rejected()
+    {
+        using var client = await CreateClientAsync();
+        var token = _factory.CreateToken(MarineSafetyTestSeed.ManagerUserId);
+
+        using var current = Authorized(
+            HttpMethod.Get,
+            $"/api/marine/safety-profiles/by-activity/{MarineSafetyTestSeed.ActivityId}",
+            token);
+        using var currentResponse = await client.SendAsync(current);
+        Assert.Equal(HttpStatusCode.OK, currentResponse.StatusCode);
+        var currentBody = await currentResponse.Content.ReadAsStringAsync();
+        using var currentDocument = JsonDocument.Parse(currentBody);
+        var profileId = currentDocument.RootElement.GetProperty("id").GetGuid();
+
+        using var request = Authorized(HttpMethod.Put, $"/api/marine/safety-profiles/{profileId}", token, new
+        {
+            maxWindSpeed = 25m,
+            maxWaveHeight = 1.5m,
+            maxSwellHeight = 1.2m,
+            cautionSwellHeight = 1.2m
+        });
+        using var response = await client.SendAsync(request);
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("Caution swell height", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-PROF-020")]
+    public async Task M2_PROF_020_update_rejects_non_positive_limits()
+    {
+        using var client = await CreateClientAsync();
+        var token = _factory.CreateToken(MarineSafetyTestSeed.ManagerUserId);
+
+        using var current = Authorized(
+            HttpMethod.Get,
+            $"/api/marine/safety-profiles/by-activity/{MarineSafetyTestSeed.ActivityId}",
+            token);
+        using var currentResponse = await client.SendAsync(current);
+        Assert.Equal(HttpStatusCode.OK, currentResponse.StatusCode);
+        var currentBody = await currentResponse.Content.ReadAsStringAsync();
+        using var currentDocument = JsonDocument.Parse(currentBody);
+        var profileId = currentDocument.RootElement.GetProperty("id").GetGuid();
+
+        foreach (var invalidLimits in new[]
+                 {
+                     new { maxWindSpeed = 0m, maxWaveHeight = 1.5m, maxSwellHeight = 1.2m },
+                     new { maxWindSpeed = 25m, maxWaveHeight = -1m, maxSwellHeight = 1.2m }
+                 })
+        {
+            using var request = Authorized(HttpMethod.Put, $"/api/marine/safety-profiles/{profileId}", token, invalidLimits);
+            using var response = await client.SendAsync(request);
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+    }
 }

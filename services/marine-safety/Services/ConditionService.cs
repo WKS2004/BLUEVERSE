@@ -42,7 +42,7 @@ public sealed class ConditionService : IConditionService
         DateTime? timeUtc,
         CancellationToken cancellationToken)
     {
-        var requestedTime = (timeUtc ?? DateTime.UtcNow).ToUniversalTime();
+        var requestedTime = MarineTime.ToUtc(timeUtc ?? DateTime.UtcNow);
         var snapshot = await FindReusableSnapshotAsync(latitude, longitude, requestedTime, cancellationToken);
         if (snapshot is not null)
         {
@@ -139,12 +139,12 @@ public sealed class ConditionService : IConditionService
 
         if (fromUtc.HasValue)
         {
-            query = query.Where(s => s.ForecastTime >= fromUtc.Value.ToUniversalTime());
+            query = query.Where(s => s.ForecastTime >= MarineTime.ToUtc(fromUtc.Value));
         }
 
         if (toUtc.HasValue)
         {
-            query = query.Where(s => s.ForecastTime <= toUtc.Value.ToUniversalTime());
+            query = query.Where(s => s.ForecastTime <= MarineTime.ToUtc(toUtc.Value));
         }
 
         var results = await query
