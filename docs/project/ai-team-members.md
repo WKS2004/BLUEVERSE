@@ -11,7 +11,7 @@ names in operational documentation.
 |---|---|---|---|---|---|---|
 | Member 1 | Coastal Experience & Biodiversity Discovery | `Ushan-Srinuka` | Ushan Srinuka | `features/experience-biodiversity` | `agentic-ai/experience-biodiversity` | `Ushan-Srinuka-ai-usage.md` |
 | Member 2 | Marine Conditions & Safety Intelligence | `sanudaabey` | Sanuda Abeysinghe | `features/marine-safety` | `agentic-ai/marine-conditions` | `sanudaabey-ai-usage.md` |
-| Member 3 | Smart Coastal Planner & Itinerary Management | `AdithyaGunawardana` | Adithya Gunawardana | `features/coastal-planner` | `agentic-ai/planning-coordination` | `AdithyaGunawardana-ai-usage.md` |
+| Member 3 | Smart Coastal Planner & Itinerary Management | `AdithyaGunawardana` | Adithya Gunawardana | `features/coastal-planner` | `agentic-ai/planning-coordination` | [`AdithyaGunawardana-ai-usage.md`](../ai-contribution/AdithyaGunawardana-ai-usage.md) |
 | Member 4 | Coastal Operations, Advisories & Alerts | `WKS2004` | Wanshaja Sooriyabandara | `features/coastal-operations` | `agentic-ai/safety-operations` | [`WKS2004-ai-usage.md`](../ai-contribution/WKS2004-ai-usage.md) |
 
 ## Usage rules
