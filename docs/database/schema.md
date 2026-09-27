@@ -60,8 +60,26 @@ Shared structured Agentic AI workflow state must retain only the objective,
 plan, steps, outputs or auditable summaries, validation, errors, bounded
 retries, approvals, result and timestamps required to operate and audit the
 workflow. Do not store hidden reasoning, passwords, bearer tokens or
-unnecessary sensitive data. Exact tables, keys and migrations remain design
-work; none of these v1 domain tables are claimed as implemented.
+unnecessary sensitive data.
+
+## Marine conditions and safety tables (implemented)
+
+The marine-safety component service
+(`services/marine-safety`, migration `InitialMarineSafetySchema`) owns the
+first v1 domain tables in the shared `blueverse` database:
+
+| Table | Keys, constraints and purpose |
+|---|---|
+| `MarineActivities` | `Id` PK, unique `Name`, `ActivityType`, `IsActive`, audit timestamps. Minimal locally-owned activity reference (Surfing, Snorkeling, Scuba Diving, whale/dolphin watching, coastal boat tour) to be replaced by Member 1's canonical taxonomy when that component merges. |
+| `SafetyProfiles` | `Id` PK, `ActivityId` FK → `MarineActivities` (cascade), positive-limit CHECK constraints (`MaxWindSpeed`/`MaxWaveHeight`/`MaxSwellHeight` > 0), caution-band CHECKs (each optional `Caution*` < its hard limit), partial unique index enforcing one active profile per activity, monotonic `Version`, audit timestamps. |
+| `ConditionSnapshots` | `Id` PK, `Latitude numeric(8,5)`/`Longitude numeric(9,5)`, `ForecastTime`/`RetrievedAt` timestamptz, nullable environmental values (`WindSpeed`, `WaveHeight`, `SwellHeight`, `Rain`, `WeatherCode` — null means unavailable, never zero), `Source`, `FreshnessStatus`, `MissingFields text[]`; location/forecast and retrieval indexes. Provider-derived and immutable through the public API. |
+| `SuitabilityAssessments` | `Id` PK, `ActivityId` FK (restrict), `ProfileVersion`, request coordinates/time, `Result` (`SUITABLE`/`CAUTION`/`UNSUITABLE`/`UNKNOWN`), `Violations`/`CautionFactors`/`MissingFields` arrays, `Source`, `FreshnessStatus`, evidence references; activity/request-time and evaluation-time indexes. History intentionally has no FK to snapshots or profiles so it survives retention pruning and profile deletion. |
+
+The marine service resolves caller permissions with a read-only query over the
+Auth-owned identity tables; it does not map or write identity entities. Its two
+marine permission grants (`marine.profile.read`, `marine.profile.manage`) are
+seeded for the Admin role by the Auth seeder, so the marine service itself
+never writes identity data.
 
 See the [v1 component and agent index](../v1/README.md). Business-domain
 schema should be introduced with the implementation rather than prematurely

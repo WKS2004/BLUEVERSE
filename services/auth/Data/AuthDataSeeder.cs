@@ -56,7 +56,13 @@ public static class AuthDataSeeder
             [PermissionCodes.UserDelete] = (Guid.Parse("11111111-1111-1111-1111-111111111109"), "Delete user accounts"),
             [PermissionCodes.RoleCreate] = (Guid.Parse("11111111-1111-1111-1111-111111111110"), "Create roles"),
             [PermissionCodes.RoleUpdate] = (Guid.Parse("11111111-1111-1111-1111-111111111111"), "Update roles and assigned permissions"),
-            [PermissionCodes.RoleDelete] = (Guid.Parse("11111111-1111-1111-1111-111111111112"), "Delete roles")
+            [PermissionCodes.RoleDelete] = (Guid.Parse("11111111-1111-1111-1111-111111111112"), "Delete roles"),
+
+            // v1 marine-safety domain grants owned by the marine-safety
+            // component service; Admin receives them so role administration
+            // can delegate profile management without new Auth releases.
+            [PermissionCodes.MarineProfileRead] = (Guid.Parse("11111111-1111-1111-1111-111111111113"), "Read marine safety profiles"),
+            [PermissionCodes.MarineProfileManage] = (Guid.Parse("11111111-1111-1111-1111-111111111114"), "Manage marine safety profiles")
         };
 
         var permissions = await db.Permissions

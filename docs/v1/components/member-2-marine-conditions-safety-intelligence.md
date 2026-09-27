@@ -2,7 +2,7 @@
 contract_id: v1.component.marine-safety
 contract_type: business_component
 release: v1
-implementation_status: target_not_implemented
+implementation_status: backend_implemented_on_feature_branch
 owner_label: member_2
 owner_full_name: "Sanuda Abeysinghe"
 owner_github_username: "sanudaabey"
@@ -16,11 +16,12 @@ agent_contract: "../agents/member-2-marine-conditions-intelligence-agent.md"
 
 # Sanuda Abeysinghe (Member 2) — Marine Conditions & Safety Intelligence
 
-**Contract status:** v1 target specification; the complete v1 component is
-not implemented in the current foundation. **Assigned owner:** Sanuda
-Abeysinghe (`@sanudaabey`) — frozen-requirements trace label Member 2.
-Feature branch: `features/marine-safety`; paired Agentic AI branch:
-`agentic-ai/marine-conditions`.
+**Contract status:** backend implemented on `features/marine-safety` (internal
+service, public API integration, tests and live Open-Meteo/PostgreSQL
+evidence); React, Flutter and the paired agent remain future work.
+**Assigned owner:** Sanuda Abeysinghe (`@sanudaabey`) — frozen-requirements
+trace label Member 2. Feature branch: `features/marine-safety`; paired
+Agentic AI branch: `agentic-ai/marine-conditions`.
 
 ## 1. Purpose and user outcome
 

@@ -86,6 +86,11 @@ Once these items are agreed and recorded, update G00 to accepted, create the
 four feature branches from the same agreed `dev` baseline, and let all four
 members implement concurrently as described in the [branch workflow](member-branch-workflow.md).
 
+**Recorded decisions:** Member 2's component-scoped G00 record is
+[g00/member-2-marine-safety-decisions.md](g00/member-2-marine-safety-decisions.md)
+(accepted 2026-09-27). The remaining members' records are still required
+before their coding can be treated as G00-covered.
+
 ### Gates after G00
 
 - **Before each owner accepts its component PR:** complete that component's

@@ -42,8 +42,9 @@ the smaller shared-client workflow contract.
 | `ANY` | `/` | `frontend` | Serves static files and falls back to index.html for browser navigation. |
 | `GET` | `/health` | `frontend` | Used by Docker-stack health checks to confirm the frontend server is reachable. |
 | `ANY` | `/api/` | `api` | Forwards client API requests to the API gateway; clients must not target Auth, Agentic AI, database, or other internal hosts directly. |
+| `ANY` | `/api/marine/{**catch-all}` | `marine-safety` | Keeps the marine-safety component service private while exposing its approved operations through the public API boundary. |
 | `ANY` | `/api/auth/{**catch-all}` | `auth` | Keeps Auth internal while exposing its approved endpoints through the public API boundary. |
-| `GET` | `/api/swagger` | `api` | Provides interactive API documentation for local development and contract inspection. |
+| `GET` | `/api/swagger` | `api` | Provides interactive API documentation for local development and contract inspection. The marine-safety document is served through the /api/marine YARP route and listed in this UI. |
 | `ANY` | `/404.html` | `edge-nginx` | Converts /404.html to /404 so the error asset filename is not exposed as the browser route. |
 | `ANY` | `/500.html` | `edge-nginx` | Converts /500.html to /500 so the error asset filename is not exposed as the browser route. |
 | `ANY` | `/404.html` | `frontend-nginx` | Converts /404.html to /404 so the error asset filename is not exposed as the browser route. |
@@ -97,6 +98,24 @@ the smaller shared-client workflow contract.
 | `PUT` | `/api/auth/users/{id:guid}` | `permission:all(auth.user.read,auth.user.update)` | Updates account details, active state or password with user read and user update grants together. Supports authorized user administration. |
 | `DELETE` | `/api/auth/users/{id:guid}` | `permission:all(auth.user.read,auth.user.delete)` | Deletes an account with user read and user delete grants together, subject to protected system-role rules. Supports authorized user administration; a protected account's assigned system role names are included in the deletion rejection. |
 | `POST` | `/api/auth/users/{id:guid}/roles` | `permission:all(auth.user.read,auth.user.update,auth.role.read)` | Replaces an account’s roles with user read, user update and role read grants together; system-role changes require the dedicated grant. Authorized user editors can add or remove user roles; the service checks current caller grants, system-role constraints and invalidates the affected account sessions. |
+
+### marine-safety
+
+| Method | Path | Authorization | Purpose and use |
+|---|---|---|---|
+| `GET` | `/api/marine/swagger/{documentName}/swagger.json` | `anonymous` | Returns the marine-safety service OpenAPI document at its Swagger UI-compatible path. Serves the internal marine-safety service contract for local contract inspection; reachable through the public API gateway only. |
+| `GET` | `/api/marine/swagger` | `anonymous` | Serves the marine-safety service interactive Swagger UI. Used by developers and contract tooling to inspect the marine-safety domain contract during backend development. |
+| `GET` | `/api/marine/health` | `anonymous` | Reports marine-safety service and database readiness. Used by Docker-stack health diagnostics and operational checks; mirrors the Auth health contract. |
+| `GET` | `/api/marine/current` | `permission:marine.profile.read` | Returns current or forecast marine/weather conditions for a location and optional time. Acquires conditions through the backend Open-Meteo adapter, reusing a fresh stored snapshot when available, and reports source, retrieval time, freshness and missing fields. Used by React and Flutter condition workflows and future suitability consumers. |
+| `GET` | `/api/marine/snapshots/{id:guid}` | `permission:marine.profile.read` | Returns one stored condition snapshot with provenance and missing-field detail. Lets authorized callers inspect a persisted snapshot's source, timestamps, freshness and unavailable fields; snapshots are provider-derived and read-only. |
+| `GET` | `/api/marine/history` | `permission:marine.profile.read` | Lists stored condition snapshots filtered by location and/or time window. Supports condition-history inspection with optional latitude, longitude, from and to query filters; each row carries its own source and freshness classification. |
+| `POST` | `/api/marine/evaluate` | `permission:marine.profile.read` | Runs the deterministic activity/location/time suitability assessment. The Member 2 non-CRUD operation: validates the activity and its safety profile, gathers fresh condition evidence, applies the profile's deterministic limits, and returns SUITABLE, UNSUITABLE or UNKNOWN with violations, evidence, source and freshness. Missing profiles or activities are rejected; missing or stale evidence yields UNKNOWN rather than a fabricated result. |
+| `GET` | `/api/marine/safety-profiles` | `permission:marine.profile.read` | Lists activity safety profiles with their configured limits and version history. Lets authorized callers inspect the deterministic safety configuration per activity, including caution bands and active/version state. |
+| `GET` | `/api/marine/safety-profiles/{id:guid}` | `permission:marine.profile.read` | Returns one safety profile by identifier. Supports profile detail inspection for authorized callers. |
+| `GET` | `/api/marine/safety-profiles/by-activity/{activityId:guid}` | `permission:marine.profile.read` | Returns the active safety profile configured for one activity. Supports activity-centric profile lookup for condition and suitability workflows. |
+| `POST` | `/api/marine/safety-profiles` | `permission:all(marine.profile.read,marine.profile.manage)` | Creates a safety profile for an activity, superseding the previous active profile. Permission-gated management: validates the activity exists and is active, requires positive limits, and rejects caution bands above their hard limits. Prior active profiles are deactivated while history is retained. |
+| `PUT` | `/api/marine/safety-profiles/{id:guid}` | `permission:all(marine.profile.read,marine.profile.manage)` | Updates a safety profile's limits and increments its version. Permission-gated management with the same validation as creation; version increments keep past assessments interpretable against the configuration that produced them. |
+| `DELETE` | `/api/marine/safety-profiles/{id:guid}` | `permission:all(marine.profile.read,marine.profile.manage)` | Deactivates a safety profile without deleting it. Profiles are deactivated rather than deleted so assessment history keeps its profile reference; deactivation is idempotent. |
 
 ## Test host only
 

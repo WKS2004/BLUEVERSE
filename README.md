@@ -88,10 +88,12 @@ BLUEVERSE/
 │       ├── api/
 │       ├── edge-nginx/
 │       ├── frontend/
-│       └── auth/
+│       ├── auth/
+│       └── marine-safety/
 ├── services/                # ASP.NET Core services
 │   ├── api/                  # checked-in public API foundation
-│   └── auth/                 # internal Auth service
+│   ├── auth/                 # internal Auth service
+│   └── marine-safety/        # internal marine conditions & safety service (v1)
 ├── AGENTS.md
 ├── compose.yaml
 ├── global.json
@@ -246,7 +248,16 @@ available. If port 80 is already in use, set `BLUEVERSE_HTTP_PORT=8080` in
 `.env` and use `http://localhost:8080` below. Both the development mapping and
 the loopback-only mapping planned for `main` use host port `5432`; changing the
 bind address does not resolve a host-port collision with a PostgreSQL process
-already listening on `5432`.
+already listening on `5432`.The v1 marine conditions & safety service (`marine-safety`) joins the same
+stack: the public API forwards `/api/marine/...` to it, and it owns
+its marine-safety tables in the shared PostgreSQL database and applies its
+migrations at startup. Its two permission grants
+(`marine.profile.read`, `marine.profile.manage`) are seeded for the Admin role
+by the Auth seeder. Optional environment
+variables configure its Open-Meteo integration and freshness policy
+(`OPEN_METEO_WEATHER_URL`,
+`OPEN_METEO_MARINE_URL`, `OPEN_METEO_FRESHNESS_MINUTES`, defaults documented in
+`services/marine-safety/appsettings.json`); no provider key is required.
 
 ### Build and start the stack
 
@@ -288,6 +299,14 @@ curl.exe -f http://localhost/health
 curl.exe -f http://localhost/api/health
 curl.exe -f http://localhost/api/auth/health
 ```
+
+The marine-safety document is also listed directly in the unified Swagger UI
+at `http://localhost/api/swagger` (select it from the top-right definition
+picker), and a standalone marine Swagger UI is available at
+`http://localhost/api/marine/swagger` for backend contract
+inspection; its operations require an authenticated account with the marine
+permission grants (`marine.profile.read`, `marine.profile.manage`), which the
+bootstrap administrator receives automatically.
 
 The React and Flutter clients show branded 404 and 500 recovery screens for
 unknown pages and unexpected rendering failures. Both Nginx layers also serve
