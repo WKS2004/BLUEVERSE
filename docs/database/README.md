@@ -2,10 +2,18 @@
 
 PostgreSQL infrastructure is present in Compose. The Auth EF Core model,
 migrations and application persistence code are checked in under
-`services/auth`. Coastal Operations now has an EF Core `DbContext` and uses the
-same Compose PostgreSQL connection pattern, but it has no domain entities,
-migrations or created schema yet. Its configured default schema is a G00
-proposal and remains subject to shared acceptance.
+`services/auth`. Coastal Operations has an EF Core `DbContext`, domain
+entities and migrations under `services/coastal-operations`. At startup it
+applies its migrations to the provisional `coastal_operations` schema using
+the Compose PostgreSQL connection. Shared acceptance of schema provisioning,
+dedicated role/credentials and migration ownership remains pending G00; the
+current local Compose connection uses the configured application database
+credentials rather than a dedicated Coastal Operations role. On
+2026-09-27, the branch image applied its checked-in evidence/alert-visibility
+migration to the existing local Compose PostgreSQL database, and
+`/api/operations/health/ready` returned HTTP 200. This verifies the current
+local schema upgrade and connection only; it does not establish production
+role provisioning, concurrency behavior or cross-component acceptance.
 
 PostgreSQL is the authoritative relational database.
 The [v0 persistence component](../v0/components/postgresql-ef-core.md)
@@ -75,6 +83,9 @@ or an approved disposable PostgreSQL fixture.
 - seed only deliberate development/reference data
 - Auth applies `services/auth/Data/Migrations` at startup before bootstrap
   administrator seeding
+- Coastal Operations applies `services/coastal-operations/Data/Migrations`
+  at startup before reporting database readiness; its schema and provisioning
+  remain provisional pending shared G00 acceptance
 - Use the repository-pinned `dotnet-ef` tool manifest when creating or
   inspecting migrations
 - Review generated migration SQL and the existing-data upgrade path before

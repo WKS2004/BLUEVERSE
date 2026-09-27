@@ -24,6 +24,7 @@ ADRs capture significant architectural decisions and their rationale.
 18. `ADR-0018-assessment-evidence-storage-boundary.md`
 19. `ADR-0019-biodiversity-inference-integration-ownership.md`
 20. `ADR-0020-member-component-service-boundaries.md`
+21. `ADR-0021-coastal-operations-actor-context.md`
 
 Some decisions remain **Proposed / Pending implementation choice** because the foundation does not invent decisions that have not yet been made.
 
@@ -34,9 +35,9 @@ ADR-0017 assigns the v1 map-provider adapter to Ushan Srinuka (Member 1) and pre
 ASP.NET Core boundary. Its provider and exact feature scope remain open.
 
 ADR-0018 assigns optional operational-assessment image evidence to Wanshaja Sooriyabandara (Member 4)
-and keeps its upload/retrieval path private and API-mediated. The storage
-provider, limits and retention/sanitization details remain pre-implementation
-decisions.
+and records the branch-local PNG subset, private filesystem volume, versioned
+attachment lifecycle, permissions and 365-day retention. Shared G00 acceptance
+of cross-component contracts remains pending.
 
 ADR-0019 assigns the BLUEVERSE IT3091 biodiversity inference adapter and
 validated public result contract to Adithya Gunawardana (Member 3), while Ushan Srinuka (Member 1) owns
@@ -49,3 +50,7 @@ ADR-0020 assigns one internal .NET microservice under `services/` to each v1
 member component. The existing API is integration-only for these services,
 Auth behavior is preserved, and the exact internal contracts are agreed at
 G00.
+
+ADR-0021 records the Member 4 branch's signed API actor-context choice for
+Coastal Operations. The envelope and its scale-out behavior remain provisional
+until shared G00 acceptance.

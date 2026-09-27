@@ -20,7 +20,10 @@ names in operational documentation.
    trackers, AI role allocations and contribution records. Keep the stable
    `Member N` identifier where it is needed to trace frozen requirements.
 2. Each feature branch contains that member's complete business component.
-   All four feature branches can be developed at the same time after G00.
+   Under the current branch workflow, owners may proceed independently against
+   their recorded provisional G00 proposals; shared G00 acceptance remains
+   Pending until the component branches are merged to `dev` and the owners
+   finalize their common contracts.
 3. The corresponding `agentic-ai/**` branch is for that member's actual
    Agentic AI role and starts only after all four components pass G07.
 4. Before writing an AI usage record, match the acting account and actual name

@@ -37,7 +37,7 @@ through that shared capability, not the only supported sequence.
 | Tourist | Discover destinations and activities, inspect availability, marine and safety information, biodiversity context and alerts; request recommendations; manage personal favourites and itineraries. |
 | Coastal Operator | Manage permitted offerings or schedules; inspect conditions; initiate and follow operational assessments; inspect outcomes and alerts. |
 | Operations Reviewer | Inspect assessment evidence, agent summaries and deterministic validation; approve, reject or request revision where permitted; manage authorized advisories and alerts. |
-| Platform Administrator | Manage authorized users, roles, permissions and configuration; inspect authorized audit information. Business permissions are still required. |
+| Platform Administrator | Manage authorized users, roles, permissions and configuration; inspect authorized audit information. Auth startup explicitly assigns every currently registered permission to the Admin system role; business endpoints still enforce their named permission checks. |
 
 Roles are configurable permission bundles, not business-code conditionals.
 New roles start with zero business permissions. The exact v1 permission codes

@@ -22,6 +22,18 @@ Auth is an internal backend service. It is not attached to the edge network and 
 Coastal Operations is also private, has no host-published port, and is reachable
 through the API's `/api/operations/...` reverse-proxy route. The shared Swagger
 UI at `/api/swagger` loads its OpenAPI document through that gateway route.
+The API validates Auth JWTs, strips bearer tokens and cookies from forwarded
+Coastal Operations requests, and signs the actor ID plus `operations.*`
+permission claims with `COASTAL_OPERATIONS_CONTEXT_KEY`. The private service
+accepts only that short-lived, single-use signed context on authorized routes.
+
+The edge gateway permits request bodies up to 6 MiB on Coastal Operations
+assessment-item subroutes so evidence uploads can carry a 5 MiB PNG plus
+multipart framing; the service enforces the file-size and image-dimension
+limits.
+Coastal Operations stores accepted image bytes in the named
+`blueverse_coastal_operations_evidence` volume. It persists across
+`docker compose down` and is removed by `docker compose down --volumes`.
 
 Every ASP.NET backend service should keep its Dockerfile in a matching directory under `infrastructure/docker/<service-name>/Dockerfile`. The Docker backend workflow discovers first-level ASP.NET services under `services`, builds the public `api` service first, and then builds the remaining services one by one.
 

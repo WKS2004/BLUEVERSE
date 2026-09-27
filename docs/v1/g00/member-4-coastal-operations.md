@@ -7,13 +7,25 @@
 | Feature branch | `features/coastal-operations` |
 | Component contract | [Coastal Operations, Advisories & Alerts](../components/member-4-coastal-operations-advisories-alerts.md) |
 
-This record defines the Member 4 contribution to G00. Candidate values below are concrete review decisions for team acceptance; they do not claim that the full business service, candidate business endpoints or domain schema have been implemented.
+This record defines the Member 4 proposal for G00. The team has not accepted
+the shared G00 contract; global G00 remains **Pending** until all four owners
+agree after the component branches are brought together. Branch-local work may
+proceed against this provisional proposal, as directed by the user, and does
+not imply shared acceptance.
 
-The feature branch now includes the initial private service foundation, Compose
-and API-gateway wiring, PostgreSQL connectivity/readiness, and a JWT-enabled
-OpenAPI document available in the shared Swagger UI. This slice does not
-implement the proposed assessment, decision, alert or evidence operations and
-does not change the global G00 status.
+The `features/coastal-operations` branch now contains a partial private
+backend: assessment creation and reads, guarded decision handling, target
+status/history reads, alert draft/lifecycle operations, persistence and
+migrations, API gateway integration, health checks, and a Swagger document
+available at `/api/swagger`. It also makes bounded read-only requests to the
+provisional Member 1–3 endpoints during assessment creation, records their
+outcomes, and reports latest dependency statuses without gating startup or
+readiness. The implemented routes and schema are evidence for branch
+progress, not a freeze of the shared request/response, identity,
+target-handoff or database-provisioning contracts. Branch-local image
+evidence is implemented against [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md);
+shared G00 acceptance is still required. Production proposal generation
+remains gated by G07.
 
 ## Decisions proposed by Member 4
 
@@ -39,14 +51,50 @@ observation/retrieval times, validity boundary when supplied, and explicit
 missing/unknown/stale meaning. Member 4 must preserve `UNSUITABLE` and
 `UNKNOWN`; neither an operational proposal nor a later agent may weaken them.
 
-Member 4's consumer response is `OperationalStatusResponse` with
+The proposed Member 4 consumer response is `OperationalStatusResponse` with
 `targetType`, `targetId`, `operationalState`, applicable restrictions,
 `stateVersion`, and effective/update timestamps. It is read-only to Members 1
 and 3. The shared G00 review must align these reference and freshness fields
-with the producer-owned schemas and agree the authenticated private handoff
-for service consumers before any service code is written. The public status
-route below serves authorized clients; it does not by itself define how a
-private member service authenticates a cross-service read.
+with producer-owned schemas and agree the authenticated private handoff for
+service consumers before cross-component integration. The branch's public
+status route currently reads only Member 4's own managed operational state; it
+does not yet consume Member 1's authoritative target or expose the private
+member-to-member handoff.
+
+The branch currently uses these provisional, read-only peer endpoints when an
+assessment is created. They are assumptions for independent component work,
+not accepted shared routes; align paths, authentication, DTOs, identifiers and
+freshness rules with each owner before integration:
+
+| Source | Provisional request | Expected bounded JSON fields |
+|---|---|---|
+| Member 1 Experience & Biodiversity | `GET /api/experiences/{targetType}/{targetId}/availability?periodStartsAt={RFC3339}&periodEndsAt={RFC3339}` | `targetType`, `targetId`, `availabilityStatus` (`AVAILABLE`, `UNAVAILABLE`, `UNKNOWN`), optional `targetVersion`, `evaluatedAt`, optional `validUntil` |
+| Member 2 Marine Conditions & Safety | `POST /api/marine-safety/suitability-assessments` with `targetType`, `targetId`, `periodStartsAt`, `periodEndsAt` | `targetType`, `targetId`, `classification` (`SUITABLE`, `CAUTION`, `UNSUITABLE`, `UNKNOWN`), `profileVersion`, `assessedAt`, optional `validUntil`, `reasonCodes` |
+| Member 3 Coastal Planning | `GET /api/coastal-planner/workflows/{workflowId}`, only when the assessment has a `sourceWorkflowId` | `workflowId`, `status`, `updatedAt` |
+
+The default internal base addresses are `experience-biodiversity:8080`,
+`marine-safety:8080` and `coastal-planner:8080`, configurable per peer. Each
+request has a 2-second timeout, two retries (three attempts maximum) for
+timeouts, network failures, HTTP 408/429 and 5xx, short bounded exponential
+backoff, and a 32 KiB response limit. A missing or invalid route/schema,
+rejected request, exhausted retries or unconfigured address is returned as an
+explicit dependency result and recorded with the assessment; responses retain
+only validated contract fields. Results use `RESPONDED`, `STALE`,
+`UNAVAILABLE`, `ENDPOINT_NOT_FOUND`, `REJECTED`, `INVALID_RESPONSE`,
+`MISCONFIGURED` or `NOT_REQUESTED`; health reports `NOT_CHECKED` until a
+source has an outcome.
+The three peer requests run concurrently.
+Member 3 is `NOT_REQUESTED` when no source workflow is supplied. No peer is
+probed during startup, and peer outcomes do not affect liveness or readiness;
+readiness depends only on Coastal Operations' own PostgreSQL connection and
+schema. The latest bounded outcomes are also included in the anonymous health
+response, while assessment-level evidence is returned to authorized callers.
+
+These provisional peer calls currently use the Docker internal network. A
+shared service-to-service authentication contract has not been accepted; the
+peer owners must agree it before integration. Until then, authorization
+rejections remain explicit dependency outcomes and cannot be treated as
+evidence.
 
 Unavailable, missing, stale or contradictory producer evidence must remain an
 explicit dependency/evidence result and cannot authorize a proposal or
@@ -57,9 +105,12 @@ positive safety finding.
 
 ### Public operation and permission proposal
 
-These are candidate public contracts for the G00 review, not implemented
-endpoints. When implemented, `services/api` remains the only client-facing
-boundary and forwards to the private service.
+These remain candidate public contracts for shared G00 review. A subset is
+implemented on this branch and recorded in the endpoint catalog; their current
+DTOs and behavior remain provisional pending cross-component agreement.
+`services/api` remains the only client-facing boundary and forwards to the
+private service. Evidence routes are implemented branch-locally, with the
+storage and media limits recorded in ADR-0018.
 
 Use the shared UI workflow ID `coastal-operations-assessment` for both
 clients, with proposed React and Flutter route `/operations/assessments`.
@@ -88,8 +139,8 @@ resource scope, current version, UTC timestamps and applicable status/error
 fields. Target and alert responses expose their own IDs, scope and current
 version; an alert links to its assessment when one exists. Queue and history
 responses use a bounded cursor. The shared G00 review must ratify exact DTO
-fields, validation bounds and error bodies before coding; the type names above
-alone are not frozen wire schemas.
+fields, validation bounds and error bodies before integration; the current
+branch DTOs are not frozen shared wire schemas.
 
 Assign these permission codes through Auth's existing role-to-permission model;
 do not branch on role names in service or client code. Coastal Operators may
@@ -98,10 +149,14 @@ Reviewers may read the permitted queue and assessment detail, decide proposals,
 read target status/history and authorized evidence/alerts, and manage alert
 drafts and lifecycle decisions. Tourist access to an alert requires its
 explicit visibility scope and permission.
-Platform Administrator has no implicit business permission. An assessment
-initiator cannot decide their own high-impact proposal; a different authorized
-reviewer is required. React and Flutter expose the same authorized actions and
-outcomes.
+Platform Administrator has no implicit business permission. For local
+provisioning, Auth explicitly assigns every permission currently registered
+in its database, including the current `operations.*` set, to the `Admin`
+system role through role-permission records. Coastal Operations still enforces
+the named permission policies, and all other roles require explicit grants.
+An assessment initiator cannot decide their own high-impact proposal; a
+different authorized reviewer is required. React and Flutter expose the same
+authorized actions and outcomes.
 
 ### State, decision and failure proposal
 
@@ -171,27 +226,27 @@ effective reviewer decision per proposal version. Store the operational state
 and concurrency version by canonical `(targetType, targetId)`. Scope each
 idempotency key to actor and operation, persist its request digest and original
 outcome, and reject a different-payload replay. Keep the accepted decision,
-protected state transition and audit entry atomic. Exact foreign keys,
-retention and the shared PostgreSQL provisioning/migration arrangement require
-G00 agreement before EF Core models are written.
+protected state transition and audit entry atomic. The branch now has EF Core
+entities and migrations for assessments, proposals, reviewer decisions,
+target operational states, operational history, alerts, alert decisions,
+idempotency records and audit entries. These use the provisional
+`coastal_operations` schema. Dedicated role provisioning, retention, migration
+ownership and shared PostgreSQL credential delivery still require G00
+agreement before integration.
 
 ### Private service and optional AI boundary
 
-Propose typed internal HTTP from `services/api` to `coastal-operations:8080`,
-with Member 4 routes under `/internal/operations/...` on the private service
-network. The API sends a request-scoped authenticated actor context containing
-`actorId`, effective permission codes and `correlationId`; the service accepts
-that context only from the authenticated API-to-service channel, never from
-client fields, and does not call Auth. The shared G00 review must ratify the
-service-authentication mechanism and common actor-context envelope before
-implementation.
-
-The current infrastructure slice configures API YARP to forward
-`/api/operations/{**catch-all}` to the private service without a path rewrite;
-the service currently serves only health and Swagger routes in that prefix.
-Its port is not published to the host. The proposed `/internal/operations`
-business route mapping and actor-context envelope remain unimplemented and
-must be reconciled at shared G00 before business operations are added.
+The branch implements API YARP forwarding of `/api/operations/{**catch-all}`
+to `coastal-operations:8080` without a path rewrite. The service implements
+business routes under that same path. For authenticated calls, API removes
+incoming bearer, cookie and caller-supplied context headers, then signs the
+actor UUID, effective `operations.*` permissions, correlation ID, method,
+path/query, issue time and one-use nonce with the separate
+`COASTAL_OPERATIONS_CONTEXT_KEY`. The private service verifies this envelope
+and applies permission policies; it does not receive the user's JWT or call
+Auth. The service port is not published to the host. This branch-local
+mechanism is documented in [ADR-0021](../../adr/ADR-0021-coastal-operations-actor-context.md)
+and remains provisional until shared G00 accepts the cross-service contract.
 
 The future Agentic AI adapter proposes private `GET /internal/agentic/health`
 and `POST /internal/agentic/safety-operations/dispatch` operations. These are
@@ -199,11 +254,12 @@ server-to-server contracts only; they are not public client routes and are not
 implemented before G07. Register a private route in the endpoint catalog only
 when its implementation source exists.
 
-Expose internal `GET /health/live` for process liveness and
-`GET /health/ready` for required database/schema readiness. Neither endpoint
-depends on the optional Agentic service; its availability is reported only in
-the authorized business workflow. An absent AI runtime must not block service
-startup or healthy non-AI operations.
+The branch exposes public gateway paths `GET /api/operations/health/live`
+for process liveness and `GET /api/operations/health/ready` for required
+database/schema readiness, as well as `/api/operations/health`. These routes
+are anonymous and do not depend on the optional Agentic service; its
+availability is reported only in the authorized business workflow. An absent
+AI runtime does not block service startup or healthy non-AI operations.
 
 The future typed `SafetyOperationsDispatchRequest` uses `contractVersion: 1`
 and contains the business workflow/assessment IDs, canonical target reference,
@@ -227,21 +283,22 @@ mutation. Record availability in the authorized assessment status; do not add
 a public AI health route. Keep service liveness, database readiness and
 optional AI availability separate.
 
-For image evidence, the G00 minimum envelope is `evidenceId`, `assessmentId`,
-assessment version, detected media type, byte length, content digest and
-inspection state (`PENDING`, `AVAILABLE`, `REJECTED`). Only server-validated,
-inspected bytes become reviewer visible; storage stays private, evidence is
-versioned/audited, and raw images are never sent to the future agent. An
-inspection/storage outage fails the optional upload without exposing the file
-or claiming an attachment was accepted. Exact format/count/size limits,
-inspection implementation, storage provider/configuration and
-retention/deletion remain the Member 4 live-integration gate under
-[ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md).
+For image evidence, the branch response envelope is `evidenceId`,
+`assessmentId`, assessment version, detected media type, byte length, content
+digest and inspection state (`AVAILABLE`, `EXPIRED`). Invalid uploads produce
+no attachment record. Only sanitized bytes become reviewer visible; storage
+stays private, evidence is versioned/audited, and raw images are never sent to
+the future agent. A storage failure returns an unavailable response without
+claiming an attachment was accepted. The PNG subset, five-file/5 MiB limits,
+private Compose volume and 365-day retention are branch-local choices in
+[ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md); shared
+G00 must ratify them before cross-component adoption.
 
 ## G00 acceptance still required
 
-This Member 4 proposal is not a complete shared freeze. Before any component
-coding, the four owners must ratify:
+This Member 4 proposal is not a complete shared freeze. Before integrating the
+branches into `dev` and marking shared G00 accepted, the four owners must
+ratify:
 
 - canonical Member 1 target ID/type and Member 3 workflow ID formats, source
   evidence versions/freshness meaning, and the private producer/consumer

@@ -99,11 +99,11 @@ merge.
 - durable objective/time context and references to affected managed target,
   Ushan Srinuka (Member 1) experience evidence, Sanuda Abeysinghe (Member 2) condition/suitability evidence and
   Adithya Gunawardana (Member 3) workflow identity;
-- optional operator image evidence on an assessment version: Flutter camera/
-  image selection and React image-file upload, public-API streaming, server
-  validation/inspection, private storage, reviewer-only authorized retrieval,
-  version immutability and audit; finalize format/count/size, storage,
-  sanitization and retention choices against [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md);
+- optional operator image evidence on an assessment version: the branch-local
+  backend upload/retrieval, strict PNG sanitization, private storage, versioned
+  metadata and retention are implemented per [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md).
+  React/Flutter capture and selection, parity tests, live PostgreSQL workflow
+  verification and producer acceptance remain to be completed;
 - proposal versions separated from actual operational state and from
   execution history;
 - reviewer-visible source, time/freshness, missing-evidence, validation,

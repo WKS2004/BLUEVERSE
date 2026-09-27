@@ -4,11 +4,49 @@ The final business schema is still deferred, but the current Auth foundation
 defines a PostgreSQL/EF Core schema with checked-in migrations under
 `services/auth/Data/Migrations`.
 
-The Coastal Operations service now has a PostgreSQL-backed EF Core context with
-the proposed `coastal_operations` default schema. The context currently defines
-no domain tables, and no Coastal Operations migrations or dedicated database
-role are present; shared schema provisioning remains part of the pending G00
-agreement.
+The Coastal Operations service has a PostgreSQL-backed EF Core context with
+the provisional `coastal_operations` default schema and checked-in migrations.
+Shared G00 still needs to ratify schema provisioning, a dedicated database role
+and credential delivery. The service currently uses the configured Compose
+database credentials. No live PostgreSQL migration execution has been
+verified on this branch.
+
+## Coastal Operations tables (branch-local, provisional)
+
+The current context defines these tables in `coastal_operations`:
+
+| Table | Purpose and integrity controls |
+|---|---|
+| `Assessments` | Business assessment/workflow, target reference, period, AI dependency outcome, bounded JSONB snapshots of optional Member 1–3 dependency results, initiator and optimistic version; unique workflow ID and status/period/version constraints. |
+| `AssessmentProposals` | Versioned proposal references and validity; unique assessment/version and a maximum 30-minute validity constraint. |
+| `AssessmentEvidence` | Private image metadata, immutable assessment version, uploader, SHA-256, inspection state and 365-day expiry; content bytes live in the private evidence volume. |
+| `ReviewerDecisions` | Human decision for a proposal version; unique proposal/version. |
+| `TargetOperationalStates` | Member 4-owned state and optimistic version by target type/ID; unique target reference and state constraints. |
+| `OperationalHistory` | Target state transitions with assessment/proposal/decision references and correlation ID. |
+| `OperationalAlerts` | Draft and published alert content, target, severity, `PUBLIC`/`OPERATIONS` visibility, lifecycle, effective period and optimistic version. |
+| `AlertDecisions` | Audited publish/resolve/expire decisions. |
+| `IdempotencyRecords` | Actor/operation/key-scoped request digest and original response; unique scope. |
+| `OperationsAudit` | Resource/action/actor/correlation and timestamp audit records. |
+
+The dependency snapshots retain source, endpoint outcome, attempt/retry
+counts, checked time and validated evidence fields. They do not make peer
+services readiness dependencies. These tables and constraints are branch
+implementation, not a shared contract freeze. Member 1 target-state handoff,
+dedicated database-role setup and cross-component PostgreSQL acceptance remain
+open pending shared G00.
+
+```mermaid
+erDiagram
+    Assessments ||--o{ AssessmentProposals : has
+    Assessments ||--o{ AssessmentEvidence : includes
+    Assessments ||--o{ ReviewerDecisions : records
+    AssessmentProposals ||--o{ ReviewerDecisions : reviewed_by
+    Assessments ||--o{ OperationalHistory : affects
+    AssessmentProposals ||--o{ OperationalHistory : authorizes
+    ReviewerDecisions ||--o{ OperationalHistory : records
+    Assessments o|--o{ OperationalAlerts : may_link
+    OperationalAlerts ||--o{ AlertDecisions : receives
+```
 
 The Auth schema contains users, roles, permissions, device installations,
 active sessions, session lifecycle logs, rotating refresh-token records and the
@@ -51,7 +89,7 @@ The eventual schema documentation must include:
 - seed data
 - Agentic AI workflow-state tables, if required
 
-The v1 target schema must support four member-owned domains:
+The eventual v1 target schema must support four member-owned domains:
 
 - Coastal experiences: destinations, activities, offerings, schedules,
   statuses, favourites and relevant biodiversity context.
@@ -66,8 +104,9 @@ Shared structured Agentic AI workflow state must retain only the objective,
 plan, steps, outputs or auditable summaries, validation, errors, bounded
 retries, approvals, result and timestamps required to operate and audit the
 workflow. Do not store hidden reasoning, passwords, bearer tokens or
-unnecessary sensitive data. Exact tables, keys and migrations remain design
-work; none of these v1 domain tables are claimed as implemented.
+unnecessary sensitive data. Exact shared tables, keys and migrations remain
+design work. The Coastal Operations branch has the provisional tables above;
+the other v1 domain tables are not claimed as implemented here.
 
 See the [v1 component and agent index](../v1/README.md). Business-domain
 schema should be introduced with the implementation rather than prematurely

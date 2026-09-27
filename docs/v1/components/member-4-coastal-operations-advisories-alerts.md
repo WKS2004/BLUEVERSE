@@ -2,7 +2,7 @@
 contract_id: v1.component.coastal-operations
 contract_type: business_component
 release: v1
-implementation_status: target_not_implemented
+implementation_status: partial
 owner_label: member_4
 owner_full_name: "Wanshaja Sooriyabandara"
 owner_github_username: "WKS2004"
@@ -16,9 +16,11 @@ agent_contract: "../agents/member-4-safety-operations-agent.md"
 
 # Wanshaja Sooriyabandara (Member 4) — Coastal Operations, Advisories & Alerts
 
-**Contract status:** v1 target specification; the complete business workflow
-is not present in the current foundation. **Assigned owner:** Wanshaja
-Sooriyabandara (`@WKS2004`) — frozen-requirements trace label Member 4.
+**Contract status:** v1 target specification with the branch-local, pre-G07
+backend implemented against the Member 4 G00 proposal; the complete component
+is still partial pending shared G00 acceptance, producer integration and both
+client workflows. **Assigned owner:** Wanshaja Sooriyabandara (`@WKS2004`) —
+frozen-requirements trace label Member 4.
 Feature branch: `features/coastal-operations`; paired Agentic AI branch:
 `agentic-ai/safety-operations`.
 
@@ -26,13 +28,59 @@ Feature branch: `features/coastal-operations`; paired Agentic AI branch:
 
 The Member 4 G00 proposals are in [G00 Decisions — Coastal Operations](../g00/member-4-coastal-operations.md). They cover component IDs and handoffs, candidate routes and permissions, state/error semantics, service identity, health behavior, and AI/image-evidence seams.
 
-These decisions are ready for shared review but are not yet team-accepted. The global G00 tracker remains **Pending** until all four owners agree. Proposed business routes, service names and schemas are not implemented by this record.
+These decisions are ready for shared review but are not yet team-accepted. The global G00 tracker remains **Pending** until all four owners agree. Source and catalog evidence is listed in the branch implementation status below; shared schemas and handoffs remain provisional.
 
-The branch now contains the Coastal Operations service foundation, private
-Compose wiring, PostgreSQL connectivity/readiness, an API-gateway route and a
-JWT-enabled OpenAPI document selectable from `/api/swagger`. No business
-assessment, decision, alert or evidence workflow is implemented yet, and the
-shared G00 contracts remain pending.
+The branch contains the private Coastal Operations service, assessment and
+alert workflows, a safe pre-G07 AI access seam, PostgreSQL migrations, signed
+actor context from the API gateway, image evidence, health routes and a
+JWT-enabled OpenAPI document selectable from `/api/swagger`. The backend is
+implemented against provisional branch-local contracts. The component remains
+partial: proposal production is gated by G07, the producer-owned target-status
+handoff and real peer contracts are not integrated, React and Flutter
+workflows are absent, and shared G00 remains pending.
+
+## Branch implementation status (partial)
+
+Implemented source on `features/coastal-operations` currently provides:
+
+- Assessment creation, caller-scoped assessment lists and details, generated
+  workflow IDs, UTC period storage, bounded cursor pagination and durable
+  `SUBMITTED`/AI-availability state.
+- Reviewer decision handling with proposal/version checks, optimistic
+  concurrency, idempotency, independent-reviewer checks, transactional target
+  updates and audit/history writes. No proposal can be created before G07, so
+  the decision route safely returns a conflict until a validated proposal is
+  available.
+- Operational target status/history reads, alert draft creation and updates,
+  publish/resolve decisions, high-severity separation of duties, expiry and
+  audit records. A target baseline is inserted once only after current,
+  validated Member 1 availability evidence; this branch-local assumption is
+  not the accepted producer-owned status handoff.
+- Private assessment image evidence with strict PNG sanitization, five-image
+  and 5 MiB limits, immutable assessment-version metadata, owner/reviewer
+  authorization, integrity verification and 365-day retention. Its decisions
+  are recorded in [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md).
+- Alert `PUBLIC`/`OPERATIONS` visibility. Non-managers see only currently
+  active public alerts; alert managers can review every lifecycle and audience.
+- PostgreSQL schema and migrations, plus the typed disconnected
+  `IAssessmentProposalPort`. No model call, executable agent, proposal
+  generator, tool, orchestration or Agentic execution state is present.
+- API gateway signing of actor ID, `operations.*` permissions and correlation
+  ID. Coastal Operations verifies the signed private context and does not
+  receive the client's JWT/cookies. See [ADR-0021](../../adr/ADR-0021-coastal-operations-actor-context.md).
+
+The implemented public routes are indexed in the
+[endpoint catalog](../../api/endpoint-catalog.md); React and Flutter workflows
+have not been added. The service suite currently has 248 passing default cases
+for dependency resilience, assessment and alert workflows, authorization,
+idempotency, target history, PNG sanitization, evidence storage/retention and
+health. Two opt-in PostgreSQL tests cover migrations, idempotency uniqueness
+and stale-write concurrency; they require a dedicated `blueverse_co_test*`
+database and were not run in the current environment. Most application tests
+use EF Core InMemory and do not establish PostgreSQL workflow or Compose
+acceptance. Provisional peer paths and the Member 4 status handoff still
+require producer agreement. Shared G00 remains **Pending** until all owners
+accept the component contracts.
 
 ## 1. Purpose and user outcome
 
@@ -59,7 +107,7 @@ make pending, rejected, revised, executed and failed outcomes distinguishable.
 | **React Web** | Provide every authorized operator and reviewer action also available in Flutter: initiate/monitor, inspect evidence, decide approve/reject/request-revision, and view execution/alert/history state. Use React 19/TypeScript/Vite/React Router, reusable pages/components, Tailwind utilities and existing request/state separation. The browser never authorizes or executes a decision locally. See the [React component contract](../../v0/components/react-web-client.md), [UI integration guide](../../development/ui-integration.md), and [React state ADR](../../adr/ADR-0005-react-state-management.md). |
 | **Flutter Mobile** | Provide the same authorized initiation, monitoring, review/decision and outcome behavior using native Dart/Material UI, the existing UI/logic/data layers, repository/API service and view-model pattern. Layout may suit mobile, but reviewer permissions, evidence requirements, validation and result must match React. See the [Flutter component contract](../../v0/components/flutter-client.md), [UI integration guide](../../development/ui-integration.md), and [Flutter state ADR](../../adr/ADR-0006-flutter-state-management.md). |
 | **Wanshaja Sooriyabandara (Member 4) .NET service and data** | A separate internal ASP.NET Core service in Wanshaja Sooriyabandara's own `services/<component-service>/` subfolder owns assessment/proposal/decision state, deterministic policy, target revalidation, authorized human-review outcomes, eligible protected mutations and audit/history. Its EF Core/PostgreSQL records are owned by this service. The existing `services/api` receives only authentication/permission and route/forwarding integration needed to expose public `/api/...` operations; it contains none of Wanshaja Sooriyabandara's operational business logic or persistence. The service is private; neither clients nor agents connect to its database or internal routes. Agree identifiers, route/DTO mapping, actor/permission propagation and data ownership at G00. |
-| **Third-party integration** | No external alert publisher or government/emergency integration is assumed by this v1 component. It consumes Ushan Srinuka (Member 1) managed experience/location/availability, Sanuda Abeysinghe (Member 2) sourced marine/suitability evidence and Adithya Gunawardana (Member 3) business workflow identity. The map provider, Open-Meteo and biodiversity inference stay behind their owning backend components: Ushan Srinuka (Member 1) owns map integration, Sanuda Abeysinghe (Member 2) owns Open-Meteo, and Adithya Gunawardana (Member 3) owns the IT3091 inference adapter. Wanshaja Sooriyabandara (Member 4) may consume biodiversity only as optional contextual information under an accepted contract; it is never safety evidence or operational authority. Wanshaja Sooriyabandara (Member 4) consumes canonical Ushan Srinuka (Member 1) location data and never uses map results as operational authority. Optional assessment images use a private backend storage adapter, not a client-side provider integration; the provider/configuration is open under [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md). Any future external notification/delivery provider needs an explicit requirement, privacy/security contract and ADR before becoming part of scope. |
+| **Third-party integration** | No external alert publisher or government/emergency integration is assumed by this v1 component. It consumes Ushan Srinuka (Member 1) managed experience/location/availability, Sanuda Abeysinghe (Member 2) sourced marine/suitability evidence and Adithya Gunawardana (Member 3) business workflow identity. The map provider, Open-Meteo and biodiversity inference stay behind their owning backend components: Ushan Srinuka (Member 1) owns map integration, Sanuda Abeysinghe (Member 2) owns Open-Meteo, and Adithya Gunawardana (Member 3) owns the IT3091 inference adapter. Wanshaja Sooriyabandara (Member 4) may consume biodiversity only as optional contextual information under an accepted contract; it is never safety evidence or operational authority. Wanshaja Sooriyabandara (Member 4) consumes canonical Ushan Srinuka (Member 1) location data and never uses map results as operational authority. Optional assessment images use a private backend storage adapter, not a client-side provider integration; this branch uses the named Compose evidence volume under [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md), while a production storage replacement remains a deployment decision. Any future external notification/delivery provider needs an explicit requirement, privacy/security contract and ADR before becoming part of scope. |
 | **Paired Agentic AI role** | The future Safety & Operations Agent receives validated context through read-only allowlisted tools and proposes a structured recommendation/action. Before G07, the Wanshaja Sooriyabandara (Member 4) service implements the business contract, typed private dispatch seam and safe not-connected/unavailable state. After G07, the agent still has no approve, publish, suspend, cancel or execute tool; the authorized reviewer decides and the Wanshaja Sooriyabandara (Member 4) service enforces and executes the permitted action after the public API authenticates/authorizes the caller. |
 | **Component relationships** | Wanshaja Sooriyabandara (Member 4) consumes Ushan Srinuka (Member 1) identity/schedule/availability, Sanuda Abeysinghe (Member 2) source-timed conditions and deterministic suitability, and Adithya Gunawardana (Member 3) workflow identity/objective/status. Wanshaja Sooriyabandara (Member 4) is authoritative for BLUEVERSE operational restrictions and returns current status to Ushan Srinuka and Adithya Gunawardana. Every source fact stays owned by its producer. See the [producer/consumer relationship map](../component-relationships.md#producer-consumer-and-authority-map). |
 
@@ -68,6 +116,27 @@ IDs and [UI integration registry](../../contracts/ui-integration.json).
 The sections below are the detailed source for state transitions, decisions,
 failures, audit and acceptance; this summary does not introduce routes or
 freeze unresolved policy values.
+
+The current branch makes read-only, bounded requests to provisional Member
+1 availability, Member 2 marine suitability and (when `sourceWorkflowId` is
+provided) Member 3 workflow endpoints during assessment creation. Each result
+is validated against the branch-local typed contract, retained as a bounded
+assessment snapshot and exposed with its source status, attempt/retry count,
+checked time and validated evidence fields. Expired `validUntil` boundaries
+are reported as stale while retaining the validated evidence. Network/timeouts
+and retryable HTTP failures use a two-second per-attempt timeout and at most
+two retries.
+Missing, rejected, invalid or stale evidence stays explicit and is never a
+positive finding. These source requests run only for a business assessment;
+they are not startup probes and do not affect process liveness or database
+readiness. Default peer routes and their provisional status are recorded in
+the [Member 4 G00 proposal](../g00/member-4-coastal-operations.md); shared
+route, DTO and service-authentication decisions remain pending.
+
+The service-local `COASTAL-DEPENDENCY-*` tests use synthetic handlers for
+bounded retries, timeouts, missing routes, malformed/oversized data, freshness,
+cancellation and liveness isolation. They do not establish live peer-owner
+contract compatibility or real-PostgreSQL migration behavior.
 
 Implement this component within the [v1 shared-foundation and file-ownership
 rules](../member-branch-workflow.md#shared-foundation-and-file-ownership):
@@ -311,11 +380,13 @@ or choose an image file in React. Reviewers in either client see the same
 authorized attachment metadata and content through the public API, which
 routes to Wanshaja Sooriyabandara's private service. A submitted
 assessment version's evidence is immutable; additions/corrections are
-separately authorized and audited. The format/count/size limits, private
-storage provider, inspection/sanitization method and retention policy must be
-settled before implementation. Use [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md)
-and the [device-capability contract](../device-capabilities.md). The paired
-Agentic AI agent receives no raw image or storage URL.
+separately authorized and audited. This branch implements a strict PNG
+allowlist, five-file/5 MiB limits, private Compose-volume storage, server-side
+sanitization and 365-day retention. The branch-local decisions are recorded in
+[ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md); ratify
+them at shared G00 before cross-component adoption. See the
+[device-capability contract](../device-capabilities.md). The paired Agentic AI
+agent receives no raw image or storage URL.
 
 ## 10. Cross-component and AI relationships
 
@@ -401,7 +472,10 @@ after eligible approval, and the corresponding database/audit transition.
 The [Member 4 G00 decision record](../g00/member-4-coastal-operations.md)
 proposes the state and decision lifecycles, expiry, high-impact approval,
 permission separation, idempotency/concurrency behavior and error vocabulary.
-All four owners must accept shared values before component coding begins.
+Member 4's separated branch may implement this component against its recorded
+provisional G00 proposal while the global G00 status remains Pending. Shared
+values must be ratified before cross-component integration and before global
+G00 is accepted; provisional branch choices are not a team-wide contract.
 Before implementing uploads, finalize the image formats and limits,
 inspection and private-storage provider/configuration, retention and deletion
 under [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md);

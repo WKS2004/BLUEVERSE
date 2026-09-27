@@ -65,6 +65,9 @@ jobs:
                 .github/workflows/docker-backend-build.yml)
                   needs_backend=true
                   ;;
+                .github/workflows/docker-stack-health.yml)
+                  needs_backend=true
+                  ;;
               esac
             done <<< "$changed_files"
           fi
@@ -145,6 +148,21 @@ jobs:
         uses: actions/checkout@v5
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Generate temporary Compose signing keys
+        if: steps.scope.outputs.required == 'true'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          jwt_signing_key="$(openssl rand -hex 32)"
+          coastal_context_key="$(openssl rand -base64 32 | tr -d '\n')"
+          echo "::add-mask::$jwt_signing_key"
+          echo "::add-mask::$coastal_context_key"
+          {
+            printf 'JWT_SIGNING_KEY=%s\n' "$jwt_signing_key"
+            printf 'COASTAL_OPERATIONS_CONTEXT_KEY=%s\n' "$coastal_context_key"
+          } >> "$GITHUB_ENV"
 
       - name: Log in to Docker Hardened Images registry
         if: steps.scope.outputs.required == 'true'

@@ -693,6 +693,18 @@ public class AuthService : IAuthService
             throw new UnauthorizedAccessException("The caller is not allowed to assign or remove system roles.");
         }
 
+        var currentAdminRole = user.UserRoles
+            .Select(userRole => userRole.Role)
+            .FirstOrDefault(role =>
+                role.IsSystemRole &&
+                role.Name.Equals("Admin", StringComparison.OrdinalIgnoreCase));
+        if (actorUserId == user.Id &&
+            currentAdminRole is not null &&
+            roles.All(role => role.Id != currentAdminRole.Id))
+        {
+            throw new InvalidOperationException("Administrators cannot remove their own Admin system role.");
+        }
+
         _dbContext.UserRoles.RemoveRange(user.UserRoles);
 
         foreach (var role in roles)

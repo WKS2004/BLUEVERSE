@@ -789,4 +789,40 @@ public sealed class AuthAdministrationContractTests : IClassFixture<AuthWebAppli
             admin.Token);
         Assert.Equal(HttpStatusCode.OK, (await _client.SendAsync(meRequest)).StatusCode);
     }
+
+    [Fact(DisplayName = "AUTH-USER-ROLE-SELF-001 Admin cannot remove its own Admin system role")]
+    [Trait("TestId", "AUTH-USER-ROLE-SELF-001")]
+    public async Task AdminCannotRemoveItsOwnAdminSystemRole()
+    {
+        var admin = await AuthTestSupport.LoginAsync(
+            _client,
+            AuthWebApplicationFactory.AdminEmail,
+            AuthWebApplicationFactory.AdminPassword);
+
+        using var removeRoleRequest = AuthTestSupport.AuthorizedRequest(
+            HttpMethod.Post,
+            $"/api/auth/users/{admin.UserId}/roles",
+            admin.Token,
+            new { roleNames = Array.Empty<string>() });
+        using var removeRoleResponse = await _client.SendAsync(removeRoleRequest);
+        var problem = await AuthTestSupport.ReadJsonAsync(removeRoleResponse);
+
+        Assert.Equal(HttpStatusCode.BadRequest, removeRoleResponse.StatusCode);
+        Assert.Equal("Role Assignment Failed", problem.GetProperty("title").GetString());
+        Assert.Contains("cannot remove their own Admin system role", problem.GetProperty("detail").GetString());
+
+        using var meRequest = AuthTestSupport.AuthorizedRequest(HttpMethod.Get, "/api/auth/me", admin.Token);
+        using var meResponse = await _client.SendAsync(meRequest);
+        var currentUser = await AuthTestSupport.ReadJsonAsync(meResponse);
+        Assert.Equal(HttpStatusCode.OK, meResponse.StatusCode);
+        Assert.Contains("Admin", currentUser.GetProperty("roles").EnumerateArray().Select(role => role.GetString()));
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
+        var adminRoleAssignments = await db.UserRoles
+            .Where(userRole => userRole.UserId == admin.UserId && userRole.Role.IsSystemRole)
+            .Select(userRole => userRole.Role.Name)
+            .ToListAsync();
+        Assert.Contains("Admin", adminRoleAssignments);
+    }
 }

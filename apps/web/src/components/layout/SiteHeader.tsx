@@ -5,7 +5,7 @@ import { MAX_DEVICE_ACCOUNTS, useAuthSession } from '../../features/auth/authSes
 import { preserveAuthLoadingContextForReload } from '../../features/loading/backendLoading'
 
 type SiteHeaderProps = {
-  active?: 'home' | 'login' | 'register' | 'profile' | 'dashboard'
+  active?: 'home' | 'login' | 'register' | 'profile' | 'dashboard' | 'operations'
   compactMobile?: boolean
 }
 

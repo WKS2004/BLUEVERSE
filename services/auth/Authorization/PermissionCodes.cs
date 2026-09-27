@@ -14,6 +14,17 @@ public static class PermissionCodes
     public const string RoleDelete = "auth.role.delete";
     public const string PermissionRead = "auth.permission.read";
     public const string SystemRoleManage = "auth.role.system.manage";
+    public const string OperationsAssessmentCreate = "operations.assessment.create";
+    public const string OperationsAssessmentRead = "operations.assessment.read";
+    public const string OperationsAssessmentQueueRead = "operations.assessment.queue.read";
+    public const string OperationsAssessmentDecide = "operations.assessment.decide";
+    public const string OperationsTargetStatusRead = "operations.target.status.read";
+    public const string OperationsTargetHistoryRead = "operations.target.history.read";
+    public const string OperationsEvidenceUpload = "operations.evidence.upload";
+    public const string OperationsEvidenceRead = "operations.evidence.read";
+    public const string OperationsAlertRead = "operations.alert.read";
+    public const string OperationsAlertManage = "operations.alert.manage";
+    public const string OperationsAlertDecide = "operations.alert.decide";
 
     public static IReadOnlyList<string> LegacyGrantAliases(string permissionCode) => permissionCode switch
     {

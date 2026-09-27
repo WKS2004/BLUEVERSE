@@ -12,6 +12,7 @@ on:
       - "compose.yaml"
       - "docker-compose.yml"
       - ".github/workflows/docker-backend-build.yml"
+      - ".github/workflows/docker-stack-health.yml"
   pull_request:
     branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
     paths:
@@ -23,6 +24,7 @@ on:
       - "compose.yaml"
       - "docker-compose.yml"
       - ".github/workflows/docker-backend-build.yml"
+      - ".github/workflows/docker-stack-health.yml"
 
 permissions:
   contents: read

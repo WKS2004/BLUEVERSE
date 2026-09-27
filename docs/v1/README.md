@@ -58,23 +58,27 @@ human-readable structure and make the scope discoverable for agents. Logical
 input/output tables describe semantics, not frozen DTO schemas; implementation
 must define actual contracts before shipping.
 
-`target_not_implemented` means the requirement is specified but no executable
-v1 business implementation is present in the current foundation. Update that
-status only when source and tests provide evidence. The member numbers are
+`target_not_implemented` means no executable v1 business source is present.
+`partial` means some component-owned source exists but one or more required
+capabilities, integrations, tests or acceptance evidence are still missing.
+`implemented` requires source and test evidence for the complete component
+contract. Keep these statuses based on the current checkout. The member numbers are
 stable trace labels; the assigned people and accounts are listed in the
 [canonical owner map](../project/ai-team-members.md).
 
 ## Implementation start gate
 
-The final repository audit gives a **GO for G00** and a **conditional GO for
-member coding after G00**. The contracts and existing v0 foundation are ready
-to support the shared contract freeze; parallel feature coding must wait until
-the owners record the shared IDs, API/service and permission contracts, data
-ownership, delivery identities, client registrations and failure semantics.
-After G00, all four complete member components can proceed concurrently on
-their single feature branches. Executable Agentic AI remains gated on G07 by
-design. The repository is not yet v1 complete or ready for final assessment.
-See the detailed [final start-readiness decision and exit
+The final repository audit gives a **GO for G00**. For the current separated
+member branches, owners may implement their component contributions against
+recorded provisional G00 proposals while the team-wide G00 status remains
+**Pending**. Component branches must identify unresolved cross-component
+contracts and reconcile them before integration into `dev`; branch-local
+implementation is not shared G00 acceptance. After all branches are merged,
+the owners finalize and record shared IDs, API/service and permission
+contracts, data ownership, delivery identities, client registrations and
+failure semantics. Executable Agentic AI remains gated on G07 by design. The
+repository is not yet v1 complete or ready for final assessment. See the
+detailed [final start-readiness decision and exit
 criteria](requirements-coverage-and-readiness.md#final-start-readiness-decision--2026-09-26).
 
 ## Product rule

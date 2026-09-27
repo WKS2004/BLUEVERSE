@@ -33,6 +33,8 @@ the smaller shared-client workflow contract.
 | react | `/500` | `server-error-recovery` | Explains the temporary interruption between the shared header and footer, provides retry and home actions, and keeps implementation details hidden. |
 | flutter | `/404` | `not-found-recovery` | Explains the missing page in coastal language and routes users back to the home page. |
 | flutter | `/500` | `server-error-recovery` | Explains the temporary interruption, provides retry and home actions, and keeps implementation details hidden. |
+| react | `/operations/assessments` | `coastal-operations-assessment` | Uses the signed-in browser session and public API gateway; decisions remain unavailable until a validated proposal exists. |
+| flutter | `/operations/assessments` | `coastal-operations-assessment` | Uses the active secure mobile account and public API gateway; the gallery supplies PNG evidence and assessments remain proposal-free before G07. |
 
 ## Gateway and server routes
 
@@ -42,6 +44,7 @@ the smaller shared-client workflow contract.
 | `ANY` | `/` | `frontend` | Serves static files and falls back to index.html for browser navigation. |
 | `GET` | `/health` | `frontend` | Used by Docker-stack health checks to confirm the frontend server is reachable. |
 | `ANY` | `/api/` | `api` | Forwards client API requests to the API gateway; clients must not target Auth, Agentic AI, database, or other internal hosts directly. |
+| `ANY` | `/api/operations/assessments/` | `api` | Forwards assessment item requests to the public API gateway and permits up to 6 MiB at the edge for the service's validated 5 MiB PNG evidence uploads plus multipart framing. |
 | `ANY` | `/api/auth/{**catch-all}` | `auth` | Keeps Auth internal while exposing its approved endpoints through the public API boundary. |
 | `ANY` | `/api/operations/{**catch-all}` | `coastal-operations` | Keeps the Coastal Operations service private while exposing its approved routes through the public API boundary. |
 | `GET` | `/api/swagger` | `api` | Provides interactive API documentation for local development and contract inspection. |
@@ -97,14 +100,28 @@ the smaller shared-client workflow contract.
 | `POST` | `/api/auth/users` | `permission:all(auth.user.read,auth.user.create)` | Creates an account with user read and user create grants together; assigning initial roles also requires role read and any applicable system-role grant. Supports authorized user administration. |
 | `PUT` | `/api/auth/users/{id:guid}` | `permission:all(auth.user.read,auth.user.update)` | Updates account details, active state or password with user read and user update grants together. Supports authorized user administration. |
 | `DELETE` | `/api/auth/users/{id:guid}` | `permission:all(auth.user.read,auth.user.delete)` | Deletes an account with user read and user delete grants together, subject to protected system-role rules. Supports authorized user administration; a protected account's assigned system role names are included in the deletion rejection. |
-| `POST` | `/api/auth/users/{id:guid}/roles` | `permission:all(auth.user.read,auth.user.update,auth.role.read)` | Replaces an account’s roles with user read, user update and role read grants together; system-role changes require the dedicated grant. Authorized user editors can add or remove user roles; the service checks current caller grants, system-role constraints and invalidates the affected account sessions. |
+| `POST` | `/api/auth/users/{id:guid}/roles` | `permission:all(auth.user.read,auth.user.update,auth.role.read)` | Replaces an account’s roles with user read, user update and role read grants together; system-role changes require the dedicated grant, and an Admin cannot remove its own Admin system role. Authorized user editors can add or remove user roles; the service checks current caller grants, rejects Admin self-demotion before changing assignments or sessions, applies system-role constraints and invalidates sessions after accepted changes. |
 
 ### coastal-operations
 
 | Method | Path | Authorization | Purpose and use |
 |---|---|---|---|
-| `GET` | `/api/operations/health` | `anonymous` | Reports Coastal Operations service and PostgreSQL connectivity readiness. Used by the API gateway and Docker-stack health diagnostics. |
+| `GET` | `/api/operations/health` | `anonymous` | Reports Coastal Operations PostgreSQL connectivity and migration readiness plus the latest status of optional Member 1–3 peer requests. Used by the API gateway and Docker-stack readiness diagnostics; peer status is informational and does not gate readiness. |
+| `GET` | `/api/operations/health/live` | `anonymous` | Reports Coastal Operations process liveness without probing optional dependencies. Used by container and orchestrator liveness checks. |
+| `GET` | `/api/operations/health/ready` | `anonymous` | Reports Coastal Operations database connectivity and migration readiness plus the latest optional Member 1–3 dependency outcomes. Used to determine whether the required PostgreSQL schema is ready; absent or unhealthy peer components do not make Coastal Operations unready. |
 | `GET` | `/api/operations/swagger/{documentName}/swagger.json` | `anonymous` | Returns the Coastal Operations OpenAPI document through the public API gateway. Loaded by the Coastal Operations entry in the shared Swagger UI at `/api/swagger`. |
+| `POST` | `/api/operations/assessments` | `permission:operations.assessment.create` | Creates a durable Coastal Operations assessment workflow and records bounded, validated outcomes from provisional Member 1–3 read-only peer requests. Requires an Idempotency-Key. Peer calls run concurrently with a 2-second timeout and up to two retries for timeouts, network failures and retryable HTTP responses; outcomes are returned and persisted without gating service startup/readiness. Before G07, records SUBMITTED with a safe NOT_CONNECTED AI outcome and no proposal. |
+| `GET` | `/api/operations/assessments` | `permission:operations.assessment.read` | Lists the caller's assessments or the authorized review queue with bounded cursor pagination. operations.assessment.read is scoped to the caller's own assessments; operations.assessment.queue.read grants the review queue. |
+| `GET` | `/api/operations/assessments/{assessmentId:guid}` | `permission:operations.assessment.read` | Returns an in-scope assessment and its recorded reviewer decisions. Assessment readers see their own records; queue readers may inspect records in the authorized queue. Evidence metadata is included only with operations.evidence.read. |
+| `POST` | `/api/operations/assessments/{assessmentId:guid}/decisions` | `permission:operations.assessment.decide` | Records an authorized approve, reject or request-revision decision against a validated proposal version. Requires Idempotency-Key and expected target-state version. Returns a conflict without mutation when no pre-G07 proposal exists. |
+| `GET` | `/api/operations/targets/{targetType}/{targetId:guid}/status` | `permission:operations.target.status.read` | Reads a known Coastal Operations managed target's operational state and concurrency version. A missing baseline is initialized once from a current, validated provisional Member 1 availability response; this branch-local producer contract remains pending shared G00 acceptance. |
+| `GET` | `/api/operations/targets/{targetType}/{targetId:guid}/history` | `permission:operations.target.history.read` | Returns bounded, cursor-paginated operational state transitions for an authorized target. History is produced atomically with an approved target-state transition. |
+| `GET` | `/api/operations/alerts` | `permission:operations.alert.read` | Lists authorized Coastal Operations alert records with lifecycle and target filters. Non-managers see only currently active PUBLIC alerts within their validity period. Alert managers can inspect all visibility scopes and lifecycles. |
+| `POST` | `/api/operations/alerts` | `permission:operations.alert.manage` | Creates an unpublished, versioned operational alert draft. Validates its time period, target identity and optional matching assessment; no external alert delivery is performed. |
+| `PATCH` | `/api/operations/alerts/{alertId:guid}` | `permission:operations.alert.manage` | Updates a proposed alert draft using optimistic version checks. Only PROPOSED drafts can be edited; active alert content must be replaced by a new proposal. |
+| `POST` | `/api/operations/alerts/{alertId:guid}/decisions` | `permission:operations.alert.decide` | Publishes or resolves an alert through an authorized, idempotent lifecycle decision. Requires Idempotency-Key and expected version. HIGH/CRITICAL publication requires a reviewer different from the drafter and linked assessment initiator. |
+| `POST` | `/api/operations/assessments/{assessmentId:guid}/evidence` | `permission:operations.evidence.upload` | Validates and privately stores one assessment image, then returns versioned evidence metadata. Accepts only static PNG image content up to 5 MiB; at most five immutable attachments are allowed per assessment, and each accepted upload increments the assessment version. |
+| `GET` | `/api/operations/assessments/{assessmentId:guid}/evidence/{evidenceId:guid}` | `permission:operations.evidence.read` | Returns privately stored PNG evidence after owner/reviewer scope and content integrity checks. Returns no-store image content through the public API; callers receive no storage URL. Reviewers also need assessment queue access. |
 
 ## Test host only
 

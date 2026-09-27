@@ -45,7 +45,7 @@ These are the public gateway paths backed by the internal Auth service:
 | `POST` | `/api/auth/users` | Create a user with both `auth.user.read` and `auth.user.create`; initial role assignment also requires role read |
 | `PUT` | `/api/auth/users/{id}` | Update a user with both `auth.user.read` and `auth.user.update` |
 | `DELETE` | `/api/auth/users/{id}` | Delete a user with both `auth.user.read` and `auth.user.delete`; system-role accounts remain protected |
-| `POST` | `/api/auth/users/{id}/roles` | Replace a user’s roles with user read, user update and role read together |
+| `POST` | `/api/auth/users/{id}/roles` | Replace a user’s roles with user read, user update and role read together; an Admin cannot remove its own Admin system role |
 | `GET` | `/api/auth/roles` | List roles with `auth.role.read` |
 | `GET` | `/api/auth/roles/{id}` | Read one role with `auth.role.read` |
 | `POST` | `/api/auth/roles` | Create a role with both `auth.role.read` and `auth.role.create` |

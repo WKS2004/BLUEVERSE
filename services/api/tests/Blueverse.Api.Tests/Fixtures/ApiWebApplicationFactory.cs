@@ -19,7 +19,11 @@ public sealed class ApiWebApplicationFactory : WebApplicationFactory<Program>
     {
         var defaults = new Dictionary<string, string?>
         {
-            ["JWT_SIGNING_KEY"] = "api-test-only-signing-key-with-at-least-32-bytes"
+            ["JWT_SIGNING_KEY"] = "api-test-only-signing-key-with-at-least-32-bytes",
+            // Public API tests use a synthetic key for the private actor
+            // context transform. Never read production secrets into tests.
+            ["COASTAL_OPERATIONS_CONTEXT_KEY"] = Convert.ToBase64String(
+                Enumerable.Range(0, 32).Select(value => (byte)value).ToArray())
         };
 
         if (configurationOverrides is not null)
@@ -37,6 +41,7 @@ public sealed class ApiWebApplicationFactory : WebApplicationFactory<Program>
     {
         builder.UseEnvironment("Testing");
         builder.UseSetting("JWT_SIGNING_KEY", _configurationOverrides["JWT_SIGNING_KEY"]!);
+        builder.UseSetting("COASTAL_OPERATIONS_CONTEXT_KEY", _configurationOverrides["COASTAL_OPERATIONS_CONTEXT_KEY"]!);
         builder.ConfigureAppConfiguration((_, configuration) =>
         {
             configuration.AddInMemoryCollection(_configurationOverrides);

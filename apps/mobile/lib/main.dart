@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 
 import 'data/repositories/auth_repository.dart';
 import 'data/services/auth_api_service.dart';
+import 'data/services/coastal_operations_api_service.dart';
 import 'ui/account_screens.dart';
 import 'ui/auth_admin_screen.dart';
 import 'ui/auth_registration_screen.dart';
 import 'ui/auth_screens.dart';
 import 'ui/auth_view_model.dart';
 import 'ui/blueverse_theme.dart';
+import 'ui/coastal_operations_screen.dart';
 import 'ui/feedback/blueverse_error_screen.dart';
 import 'ui/feedback/blueverse_loading_screen.dart';
 import 'ui/feedback/loading_screen_controller.dart';
@@ -28,14 +30,20 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   late final AuthViewModel _authViewModel;
+  late final AuthApiService _authApiService;
+  late final CoastalOperationsApiService _coastalOperationsApiService;
   bool _initialSessionHandled = false;
   String? _lastAuthenticatedUserId;
 
   @override
   void initState() {
     super.initState();
+    _authApiService = AuthApiService();
+    _coastalOperationsApiService = CoastalOperationsApiService(
+      authApiService: _authApiService,
+    );
     _authViewModel = AuthViewModel(
-      repository: AuthRepository(apiService: AuthApiService()),
+      repository: AuthRepository(apiService: _authApiService),
     )..addListener(_handleSessionChange);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _authViewModel.restore();
@@ -47,6 +55,7 @@ class _MyAppState extends State<MyApp> {
     _authViewModel
       ..removeListener(_handleSessionChange)
       ..dispose();
+    _coastalOperationsApiService.close();
     super.dispose();
   }
 
@@ -105,6 +114,10 @@ class _MyAppState extends State<MyApp> {
         '/signup': (_) => AuthRegistrationScreen(viewModel: _authViewModel),
         '/profile': (_) => AuthProfileScreen(viewModel: _authViewModel),
         '/dashboard': (_) => AuthDashboardScreen(viewModel: _authViewModel),
+        '/operations/assessments': (_) => CoastalOperationsScreen(
+          viewModel: _authViewModel,
+          apiService: _coastalOperationsApiService,
+        ),
         '/admin': (_) => AuthAdminLandingScreen(viewModel: _authViewModel),
         '/admin/permissions': (_) => AuthAdminScreen(
           viewModel: _authViewModel,

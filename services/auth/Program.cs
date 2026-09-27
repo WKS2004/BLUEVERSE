@@ -196,6 +196,7 @@ using (var scope = app.Services.CreateScope())
         }
 
         logger.LogInformation("Authentication database schema is ready.");
+        await AuthDataSeeder.SeedCoastalOperationsPermissionsAsync(db, initializationTimeout.Token);
         var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasherService>();
         await AuthDataSeeder.SeedAdminAsync(db, builder.Configuration, passwordHasher, logger, initializationTimeout.Token);
     }

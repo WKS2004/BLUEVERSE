@@ -2,9 +2,14 @@
 
 The local Compose topology includes the public API, internal Auth and private
 Coastal Operations service sources at `services/api`, `services/auth` and
-`services/coastal-operations`. Coastal Operations currently provides its service
-foundation, database connectivity, readiness endpoint and gateway-hosted API
-documentation; its business workflows remain a v1 target.
+`services/coastal-operations`. Coastal Operations provides private assessment,
+alert, decision, target-history, private image-evidence and PostgreSQL-backed
+workflow routes. Producer-owned target-state handoff and cross-component
+contract acceptance remain pending shared G00. Assessment creation makes bounded, read-only requests
+to the provisional Member 1 experience-availability, Member 2 suitability and
+optional Member 3 workflow endpoints. Missing peers never block Coastal
+Operations startup or readiness; their latest outcomes appear in assessment
+responses and the health response.
 
 ## Prerequisites
 
@@ -21,9 +26,20 @@ cp .env.example .env
 ```
 
 Set a unique `JWT_SIGNING_KEY` with at least 32 UTF-8 bytes, local PostgreSQL
-and administrator passwords, and confirm the Docker-internal destinations
+and administrator passwords, and set `COASTAL_OPERATIONS_CONTEXT_KEY` to
+Base64 for 32 random bytes. Share that key only with the API and Coastal
+Operations containers. Confirm the Docker-internal destinations
 `AUTH_SERVICE_URL=http://auth:8080` and
 `COASTAL_OPERATIONS_SERVICE_URL=http://coastal-operations:8080` in `.env`.
+The optional peer base addresses default to
+`EXPERIENCE_SERVICE_URL=http://experience-biodiversity:8080`,
+`MARINE_SAFETY_SERVICE_URL=http://marine-safety:8080` and
+`COASTAL_PLANNER_SERVICE_URL=http://coastal-planner:8080`. Override these
+variables in `.env` when a peer uses another internal address. Current peer
+paths and payloads are provisional G00 assumptions. Each request has a
+2-second timeout and up to two retries for timeouts, network failures and
+retryable HTTP responses; failures are reported as dependency outcomes and do
+not change the service's database-only readiness.
 
 On the development branch, PostgreSQL is available to host tools such as
 pgAdmin4 through `5432:5432`, which binds all host interfaces. Use that
@@ -34,7 +50,8 @@ loopback-only access. Both mappings use host port `5432`; if another local
 PostgreSQL process already owns that port, stop or reconfigure that process
 so the development Compose mapping can keep the required host port. Auth
 applies its EF Core migrations and conditionally seeds the configured
-administrator account at startup.
+administrator account at startup. Coastal Operations applies its migrations
+at startup and remains unready while PostgreSQL or its schema is unavailable.
 
 ## Build
 
@@ -76,6 +93,8 @@ Health:
 http://localhost/health
 http://localhost/api/health
 http://localhost/api/auth/health
+http://localhost/api/operations/health/live
+http://localhost/api/operations/health/ready
 ```
 
 Additional ASP.NET services are checked through the API gateway at:
@@ -93,6 +112,15 @@ http://localhost/api/swagger
 Select **BLUEVERSE Coastal Operations API** in the Swagger document selector to
 inspect its current service contract. Swagger's Authorize control accepts the
 same bearer JWT format as the other BLUEVERSE API documents.
+
+When `ADMIN_EMAIL` and `ADMIN_PASSWORD` are configured, Auth startup assigns
+every permission registered in its database to the `Admin` system role,
+including the current `operations.*` permissions. These are explicit
+role-permission grants; Coastal Operations continues to enforce its named
+permission policies. After deploying a service that adds permissions or
+restarting Auth to run its seeders, sign in again (or refresh the session) so
+the JWT contains the updated permission claims. Other roles still need only
+the grants required for their work.
 
 The local gateway uses host port `80`. The CI health workflow overrides the
 Compose host mapping to `http://127.0.0.1:8080` on the runner. For Android,

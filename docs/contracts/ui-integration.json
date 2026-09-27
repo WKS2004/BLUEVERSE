@@ -217,6 +217,32 @@
         "source": "apps/mobile/lib/main.dart"
       },
       "apiRefs": []
+    },
+    {
+      "id": "coastal-operations-assessment",
+      "status": "implemented",
+      "description": "Shared Coastal Operations workflow for permission-scoped assessment creation and review, contextual status and history, private PNG evidence, and advisory drafting, editing, publishing and resolution. Uses the current branch-local G00 producer IDs and remains subject to shared G00 acceptance; before G07 assessments are saved without an automated proposal.",
+      "web": {
+        "route": "/operations/assessments",
+        "source": "apps/web/src/app/routes.tsx"
+      },
+      "mobile": {
+        "route": "/operations/assessments",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": [
+        "coastal-assessment-create",
+        "coastal-assessment-list",
+        "coastal-assessment-detail",
+        "coastal-target-status",
+        "coastal-target-history",
+        "coastal-alert-list",
+        "coastal-alert-create",
+        "coastal-alert-update",
+        "coastal-alert-decide",
+        "coastal-assessment-evidence-upload",
+        "coastal-assessment-evidence-content"
+      ]
     }
   ],
   "endpoints": [
@@ -403,6 +429,94 @@
       "publicBoundary": "api",
       "ownerService": "auth",
       "operationId": "AssignRoles"
+    },
+    {
+      "id": "coastal-assessment-create",
+      "method": "POST",
+      "path": "/api/operations/assessments",
+      "publicBoundary": "api",
+      "ownerService": "coastal-operations",
+      "operationId": "Create"
+    },
+    {
+      "id": "coastal-assessment-list",
+      "method": "GET",
+      "path": "/api/operations/assessments",
+      "publicBoundary": "api",
+      "ownerService": "coastal-operations",
+      "operationId": "List"
+    },
+    {
+      "id": "coastal-assessment-detail",
+      "method": "GET",
+      "path": "/api/operations/assessments/{assessmentId:guid}",
+      "publicBoundary": "api",
+      "ownerService": "coastal-operations",
+      "operationId": "Get"
+    },
+    {
+      "id": "coastal-target-status",
+      "method": "GET",
+      "path": "/api/operations/targets/{targetType}/{targetId:guid}/status",
+      "publicBoundary": "api",
+      "ownerService": "coastal-operations",
+      "operationId": "GetStatus"
+    },
+    {
+      "id": "coastal-target-history",
+      "method": "GET",
+      "path": "/api/operations/targets/{targetType}/{targetId:guid}/history",
+      "publicBoundary": "api",
+      "ownerService": "coastal-operations",
+      "operationId": "GetHistory"
+    },
+    {
+      "id": "coastal-alert-list",
+      "method": "GET",
+      "path": "/api/operations/alerts",
+      "publicBoundary": "api",
+      "ownerService": "coastal-operations",
+      "operationId": "List"
+    },
+    {
+      "id": "coastal-alert-create",
+      "method": "POST",
+      "path": "/api/operations/alerts",
+      "publicBoundary": "api",
+      "ownerService": "coastal-operations",
+      "operationId": "Create"
+    },
+    {
+      "id": "coastal-alert-update",
+      "method": "PATCH",
+      "path": "/api/operations/alerts/{alertId:guid}",
+      "publicBoundary": "api",
+      "ownerService": "coastal-operations",
+      "operationId": "Update"
+    },
+    {
+      "id": "coastal-alert-decide",
+      "method": "POST",
+      "path": "/api/operations/alerts/{alertId:guid}/decisions",
+      "publicBoundary": "api",
+      "ownerService": "coastal-operations",
+      "operationId": "Decide"
+    },
+    {
+      "id": "coastal-assessment-evidence-upload",
+      "method": "POST",
+      "path": "/api/operations/assessments/{assessmentId:guid}/evidence",
+      "publicBoundary": "api",
+      "ownerService": "coastal-operations",
+      "operationId": "UploadEvidence"
+    },
+    {
+      "id": "coastal-assessment-evidence-content",
+      "method": "GET",
+      "path": "/api/operations/assessments/{assessmentId:guid}/evidence/{evidenceId:guid}",
+      "publicBoundary": "api",
+      "ownerService": "coastal-operations",
+      "operationId": "GetEvidence"
     }
   ]
 }

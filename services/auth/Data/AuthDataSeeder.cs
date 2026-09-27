@@ -7,6 +7,31 @@ namespace Blueverse.Auth.Data;
 
 public static class AuthDataSeeder
 {
+    public static async Task SeedCoastalOperationsPermissionsAsync(
+        AuthDbContext db,
+        CancellationToken cancellationToken = default)
+    {
+        var definitions = CoastalOperationsPermissionDefinitions();
+
+        var existing = await db.Permissions
+            .Where(permission => definitions.Keys.Contains(permission.Code))
+            .ToListAsync(cancellationToken);
+        var existingCodes = existing.Select(permission => permission.Code).ToHashSet(StringComparer.Ordinal);
+        foreach (var (code, definition) in definitions)
+        {
+            if (existingCodes.Contains(code)) continue;
+            db.Permissions.Add(new Permission
+            {
+                Id = definition.Id,
+                Code = code,
+                Description = definition.Description,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
     public static async Task SeedAdminAsync(
         AuthDbContext db,
         IConfiguration configuration,
@@ -81,6 +106,11 @@ public static class AuthDataSeeder
 
         await db.SaveChangesAsync(cancellationToken);
 
+        await SeedCoastalOperationsPermissionsAsync(db, cancellationToken);
+        // System roles are provisioned from every permission registered by the
+        // services present at startup, not from a Coastal Operations-only list.
+        permissions = await db.Permissions.ToListAsync(cancellationToken);
+
         foreach (var permission in permissions)
         {
             var assigned = await db.RolePermissions.AnyAsync(
@@ -129,4 +159,19 @@ public static class AuthDataSeeder
         await db.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Bootstrap administrator is available as {AdminEmail}.", email);
     }
+
+    private static Dictionary<string, (Guid Id, string Description)> CoastalOperationsPermissionDefinitions() => new()
+    {
+        [PermissionCodes.OperationsAssessmentCreate] = (Guid.Parse("11111111-1111-1111-1111-111111111201"), "Create coastal operational assessments"),
+        [PermissionCodes.OperationsAssessmentRead] = (Guid.Parse("11111111-1111-1111-1111-111111111202"), "Read own coastal operational assessments"),
+        [PermissionCodes.OperationsAssessmentQueueRead] = (Guid.Parse("11111111-1111-1111-1111-111111111203"), "Read the coastal operational assessment queue"),
+        [PermissionCodes.OperationsAssessmentDecide] = (Guid.Parse("11111111-1111-1111-1111-111111111204"), "Decide coastal operational proposals"),
+        [PermissionCodes.OperationsTargetStatusRead] = (Guid.Parse("11111111-1111-1111-1111-111111111205"), "Read managed operation status"),
+        [PermissionCodes.OperationsTargetHistoryRead] = (Guid.Parse("11111111-1111-1111-1111-111111111206"), "Read managed operation history"),
+        [PermissionCodes.OperationsEvidenceUpload] = (Guid.Parse("11111111-1111-1111-1111-111111111207"), "Upload operational assessment image evidence"),
+        [PermissionCodes.OperationsEvidenceRead] = (Guid.Parse("11111111-1111-1111-1111-111111111208"), "Read authorized operational assessment image evidence"),
+        [PermissionCodes.OperationsAlertRead] = (Guid.Parse("11111111-1111-1111-1111-111111111209"), "Read coastal operational alerts"),
+        [PermissionCodes.OperationsAlertManage] = (Guid.Parse("11111111-1111-1111-1111-111111111210"), "Create and update coastal operational alert drafts"),
+        [PermissionCodes.OperationsAlertDecide] = (Guid.Parse("11111111-1111-1111-1111-111111111211"), "Publish and resolve coastal operational alerts")
+    };
 }

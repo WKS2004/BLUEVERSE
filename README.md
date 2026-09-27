@@ -91,7 +91,8 @@ BLUEVERSE/
 │       └── auth/
 ├── services/                # ASP.NET Core services
 │   ├── api/                  # checked-in public API foundation
-│   └── auth/                 # internal Auth service
+│   ├── auth/                 # internal Auth service
+│   └── coastal-operations/   # private Member 4 operations service
 ├── AGENTS.md
 ├── compose.yaml
 ├── global.json
@@ -135,19 +136,30 @@ apps/mobile/       # Flutter
 
 `services/api/`, `services/auth/` and `services/coastal-operations/` are the
 service locations referenced by Compose, Dockerfiles and CI. Coastal Operations
-now has its private ASP.NET service foundation, PostgreSQL connection, health
-route and gateway-hosted Swagger document; its v1 business workflows remain a
-target. Auth and Coastal Operations stay internal and are reachable by clients
-only through the public API gateway. Do not move Dockerfiles into generated
+now has its private ASP.NET service, PostgreSQL migrations, assessment and alert
+workflows, permission checks, private PNG assessment evidence, health routes
+and gateway-hosted Swagger document. Producer-owned target-state handoff and
+post-G07 proposal generation remain gated by their owning agreements.
+Assessment creation makes bounded, read-only requests to provisional Member
+1–3 peer endpoints and records their responses or unavailable outcomes; those
+optional peers do not gate Coastal Operations startup or readiness. Configure
+their Docker-internal base addresses with `EXPERIENCE_SERVICE_URL`,
+`MARINE_SAFETY_SERVICE_URL` and `COASTAL_PLANNER_SERVICE_URL` in `.env`.
+The edge gateway permits request bodies up to 6 MiB on Coastal Operations
+assessment-item subroutes to carry a 5 MiB PNG plus multipart framing; the
+service enforces the 5 MiB per-image limit.
+Auth and Coastal Operations stay internal and are reachable by clients only
+through the public API gateway. Do not move Dockerfiles into generated
 projects; keep them under `infrastructure/docker/`.
 
 ## Local setup and deployment
 
 The supported local deployment runs the checked-in React client, public API,
-internal Auth service and PostgreSQL with Docker Compose. Run Compose commands
-from the repository root (the directory containing `compose.yaml`). The public
-entry point is `edge-nginx`; clients use the gateway's `/api/...` routes and do
-not connect directly to internal services.
+internal Auth and Coastal Operations services, and PostgreSQL with Docker
+Compose. Run Compose commands from the repository root (the directory
+containing `compose.yaml`). The public entry point is `edge-nginx`; clients use
+the gateway's `/api/...` routes and do not connect directly to internal
+services.
 
 See [Local Deployment](docs/deployment/local.md) for deployment topology and
 additional platform notes.
@@ -239,6 +251,18 @@ never commit `.env`. Keep `AUTH_SERVICE_URL=http://auth:8080` because it is the
 Docker-internal API-to-Auth address. `ADMIN_EMAIL` and `ADMIN_PASSWORD` are
 used for the local administrator account.
 
+Also set `COASTAL_OPERATIONS_CONTEXT_KEY` to Base64 for 32 random bytes. For
+PowerShell, generate a value with:
+
+```powershell
+[Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+```
+
+Store the value only in `.env`; Compose supplies it to the API gateway and
+Coastal Operations so the gateway can sign each authenticated actor/permission
+context for the private service. The API validates Auth-issued JWTs and strips
+the bearer token and browser cookies before forwarding the signed context.
+
 The gateway is published on host port `80` by default. On the development
 branch, PostgreSQL is published as `5432:5432`, which binds the host port on
 all network interfaces for the team's current development configuration.
@@ -277,6 +301,10 @@ The first build pulls the DHI base images and may take several minutes. To
 build and run in the foreground while watching logs, use
 `docker compose up --build`. Auth waits for PostgreSQL to become healthy, applies its
 migrations and seeds the configured administrator account.
+Coastal Operations applies its own EF Core schema migrations before reporting
+readiness. The API signs the authenticated actor and `operations.*` permission
+claims with `COASTAL_OPERATIONS_CONTEXT_KEY`; its bearer token and cookies are
+removed before the private-service request is sent.
 
 ### Verify the local deployment
 
@@ -289,6 +317,7 @@ routes; each should return HTTP 200:
 curl.exe -f http://localhost/health
 curl.exe -f http://localhost/api/health
 curl.exe -f http://localhost/api/auth/health
+curl.exe -f http://localhost/api/operations/health/ready
 ```
 
 The React and Flutter clients show branded 404 and 500 recovery screens for
@@ -308,7 +337,8 @@ curl --fail --silent --show-error http://localhost/api/auth/health
 ```
 
 In `docker compose ps`, PostgreSQL should report `healthy`
-and the frontend, API, Auth and gateway containers should be running. The
+and the frontend, API, Auth, Coastal Operations and gateway containers should
+be running. The
 development Compose stack exposes PostgreSQL on host port `5432` across all
 interfaces; Auth connects over the Docker network. When promoting the Compose
 configuration from `dev` to `main`, change the host mapping to
@@ -318,7 +348,7 @@ remain privately managed and are not configured through this local binding.
 If a service does not start or a health URL fails, inspect its recent logs:
 
 ```text
-docker compose logs --tail=100 edge-nginx frontend api auth postgres
+docker compose logs --tail=100 edge-nginx frontend api auth coastal-operations postgres
 ```
 
 Common first-run causes are Docker Desktop not running, missing DHI registry
@@ -333,9 +363,10 @@ Stop containers and networks with:
 docker compose down
 ```
 
-The named PostgreSQL volume remains so local data survives a restart. Only use
-`docker compose down --volumes` when you intentionally want to permanently
-delete the local database and start from a clean state.
+The named PostgreSQL and Coastal Operations evidence volumes remain so local
+data survives a restart. Only use `docker compose down --volumes` when you
+intentionally want to permanently delete the local database and assessment
+images and start from a clean state.
 
 For Flutter on an Android emulator, explicitly pass the laptop gateway as
 `http://10.0.2.2:80` with
@@ -388,7 +419,7 @@ tree for authoritative cases.
 
 - `docker-web-build.yml` synchronizes the React lockfile with the DHI Node 24 image, then builds the React web image.
 - `docker-backend-build.yml` builds the public API and discovered ASP.NET services one by one.
-- `docker-stack-health.yml` waits for both build workflows, starts the root Compose file and checks frontend/API/service health endpoints plus the public API/Auth Swagger routes.
+- `docker-stack-health.yml` waits for the required build workflows, creates temporary Compose signing keys, starts the root stack and checks frontend/API/service health endpoints plus the API/Auth/Coastal Operations Swagger routes.
 
 The web and backend build workflows run on supported branch families when their relevant application, service, Docker infrastructure, lockfile synchronization, Compose, workflow or build-context paths change. The stack-health workflow waits for the required image builds for the same commit and runs only for pull requests targeting `main`; it synchronizes the web lockfile again on its separate runner before running the Compose health checks. Backend build failures are collected across all services so later services are still checked before the workflow fails.
 

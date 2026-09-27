@@ -9,6 +9,13 @@ that the v1 services exist. Start with the
 this page to resolve cross-component decisions and collect implementation
 evidence.
 
+**Sequencing update (2026-09-27):** after this 26 September audit, the user
+directed the component owners to implement on their separated branches against
+recorded provisional G00 proposals. Full shared G00 acceptance remains Pending
+until the component branches are merged into `dev` and the owners finalize the
+common contracts. This updates the implementation sequence below; the G07
+gate for executable Agentic AI is unchanged.
+
 ## Final start-readiness decision — 2026-09-26
 
 **Decision: GO for G00; conditional GO for member implementation; NO-GO for
@@ -224,7 +231,7 @@ contracts in the same work.
 | Sanuda Abeysinghe (Member 2) environmental policy | Select only needed Open-Meteo variables; define unit/time normalization, source/freshness limits, activity profile criteria and defensible threshold provenance, profile changes, missing-data/`UNKNOWN` behavior and provider retry/rate handling. The LLM does not choose these values. |
 | Adithya Gunawardana (Member 3) planner and ML integration | Define recommendation eligibility/ranking and missing-evidence behavior, itinerary ownership/ordering/duplicates, re-evaluation triggers and comparison/confirmation semantics, plus workflow-status and result-version contracts. Resolve the private IT3091 request/result schema, authentication, timeouts, finite retries, location minimization, provenance/freshness, caching/retention and explicit unavailable/invalid outcomes. A deterministic `UNSUITABLE` result must remain excluded after AI assembly; a biodiversity prediction is contextual and never an automatic safety/operations decision. |
 | Wanshaja Sooriyabandara (Member 4) operations and approval | Define operational and proposal/decision state machines, permitted transitions, high-impact policy, alert severity/lifecycle, reviewer permission and separation of duties, proposal version/expiry, revision, stale/duplicate/concurrent decision behavior, revalidation, transaction and audit. No agent may execute a protected change. |
-| Wanshaja Sooriyabandara (Member 4) image evidence | Before implementation, select accepted image formats and limits, private storage provider/configuration, content inspection/sanitization, attachment/version lifecycle, reviewer access, deletion/retention and failure behavior. Keep storage private behind the public API and Wanshaja Sooriyabandara (Member 4) service; raw media is not a Safety & Operations Agent input. Follow [ADR-0018](../adr/ADR-0018-assessment-evidence-storage-boundary.md). |
+| Wanshaja Sooriyabandara (Member 4) image evidence | Branch implementation selects strict static PNG limits, private filesystem-volume storage, sanitization, assessment-version lifecycle, owner/reviewer access and 365-day deletion; see [ADR-0018](../adr/ADR-0018-assessment-evidence-storage-boundary.md). Producer acceptance, database-backed service tests and client capture/upload/retrieval remain outstanding. Raw media is not a Safety & Operations Agent input. |
 | Agent runtime and tools | Resolve proposed [ADR-0007](../adr/ADR-0007-agentic-ai-framework.md) and [ADR-0008](../adr/ADR-0008-agent-workflow-state.md). Version typed input/output schemas, agent/step/tool allowlists, state storage and retention, correlation and timing summaries, timeouts, finite retries, resume/idempotency and safe failure. Define measurable golden-case and negative-case release gates in the [evaluation contract](../agentic-ai/evaluation.md). |
 | Model, provider and retrieval | The [Agentic AI implementation blueprint](../agentic-ai/implementation-blueprint.md) records the model capability contract, institution/no-cost and privacy review, version/fallback policy, structured-tool retrieval baseline, and the conditions and controls required before adding RAG, embeddings or vector storage. Select and document these before the AI runtime is accepted; do not imply a provider or RAG stack is already chosen. |
 | Backend Agentic dependency health | Finalize at G00 the configured private health/dispatch contract, `not connected`/unavailable outcomes, bounded timeouts/retryability, status persistence and public workflow representation. Preserve `GET /api/health` as liveness and keep database readiness separate. Exact routes and schemas remain implementation decisions; see the [integration boundary](agentic-ai-integration-boundary.md). |

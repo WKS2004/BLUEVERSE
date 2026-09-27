@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../data/models/auth_models.dart';
 import 'auth_view_model.dart';
+import '../features/coastal_operations/coastal_operations_permissions.dart';
 
 const _coastInk = Color(0xFF18394C);
 const _coastDeep = Color(0xFF205C79);
@@ -191,6 +192,28 @@ class AuthAdminNavigationMenu extends StatelessWidget {
   }
 }
 
+class AuthCoastalOperationsNavigationMenu extends StatelessWidget {
+  const AuthCoastalOperationsNavigationMenu({
+    required this.viewModel,
+    super.key,
+  });
+
+  final AuthViewModel viewModel;
+
+  @override
+  Widget build(BuildContext context) {
+    final permissions = viewModel.user?.permissions ?? const <String>[];
+    if (!CoastalOperationsPermissions.hasAccess(permissions)) {
+      return const SizedBox.shrink();
+    }
+    return IconButton(
+      tooltip: 'Coastal operations',
+      onPressed: () => Navigator.pushNamed(context, '/operations/assessments'),
+      icon: const Icon(Icons.waves_outlined),
+    );
+  }
+}
+
 class AuthProfileScreen extends StatefulWidget {
   const AuthProfileScreen({required this.viewModel, super.key});
 
@@ -269,6 +292,7 @@ class _AuthProfileScreenState extends State<AuthProfileScreen> {
             actions: [
               AuthAccountSwitcher(viewModel: widget.viewModel),
               AuthAdminNavigationMenu(viewModel: widget.viewModel),
+              AuthCoastalOperationsNavigationMenu(viewModel: widget.viewModel),
               IconButton(
                 tooltip: 'Open dashboard',
                 onPressed: () => Navigator.pushNamed(context, '/dashboard'),
@@ -758,11 +782,7 @@ class _ProfileDeleteAccountCard extends StatelessWidget {
     if (confirmed != true || !context.mounted) return;
     final deleted = await viewModel.deleteAccount();
     if (deleted && context.mounted && viewModel.user != null) {
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/dashboard',
-        (_) => false,
-      );
+      Navigator.pushNamedAndRemoveUntil(context, '/dashboard', (_) => false);
     }
   }
 
@@ -965,6 +985,7 @@ class _AuthDashboardScreenState extends State<AuthDashboardScreen> {
             actions: [
               AuthAccountSwitcher(viewModel: widget.viewModel),
               AuthAdminNavigationMenu(viewModel: widget.viewModel),
+              AuthCoastalOperationsNavigationMenu(viewModel: widget.viewModel),
               if (user != null)
                 IconButton(
                   tooltip: 'Edit your profile',
