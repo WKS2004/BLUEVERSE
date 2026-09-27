@@ -1,10 +1,23 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 using Blueverse.ExperienceBiodiversity.Data;
+using Blueverse.ExperienceBiodiversity.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddHttpClient();
+
+// Service Registrations
+builder.Services.AddScoped<IResilientHttpExecutor, ResilientHttpExecutor>();
+builder.Services.AddScoped<IUserContext, UserContext>();
+builder.Services.AddScoped<IOperationalStatusConsumerService, OperationalStatusConsumerService>();
+builder.Services.AddScoped<IBiodiversityConsumerService, BiodiversityConsumerService>();
+builder.Services.AddScoped<IMarineSafetyConsumerService, MarineSafetyConsumerService>();
+builder.Services.AddScoped<IDependenciesDiagnosticsService, DependenciesDiagnosticsService>();
+builder.Services.AddScoped<IMapProviderService, MapProviderService>();
+builder.Services.AddScoped<IEvaluationService, EvaluationService>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrWhiteSpace(connectionString))
@@ -67,7 +80,10 @@ await using (var scope = app.Services.CreateAsyncScope())
                 await db.Database.EnsureCreatedAsync(initializationTimeout.Token);
             }
 
-            logger.LogInformation("Experience & Biodiversity database schema is ready.");
+            // Seed canonical initial catalog data
+            await DataSeeder.SeedAsync(db, initializationTimeout.Token);
+
+            logger.LogInformation("Experience & Biodiversity database schema and seed data are ready.");
         }
         else
         {
@@ -90,19 +106,26 @@ app.UseExceptionHandler(exceptionApp =>
     exceptionApp.Run(async context =>
     {
         var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+        var exFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+        var ex = exFeature?.Error;
+
         logger.LogError(
-            "Unhandled Experience & Biodiversity request failure for {Method} {Path}",
+            ex,
+            "Unhandled Experience & Biodiversity request failure for {Method} {Path}: {Message}",
             context.Request.Method,
-            context.Request.Path);
+            context.Request.Path,
+            ex?.Message);
 
         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        var isDevOrTest = app.Environment.IsDevelopment() || string.Equals(app.Environment.EnvironmentName, "Testing", StringComparison.OrdinalIgnoreCase);
+
         await context.Response.WriteAsJsonAsync(
             new
             {
                 type = "https://tools.ietf.org/html/rfc7807",
                 title = "An internal error occurred",
                 status = StatusCodes.Status500InternalServerError,
-                detail = "An unexpected error occurred processing your request."
+                detail = isDevOrTest && ex != null ? ex.ToString() : "An unexpected error occurred processing your request."
             },
             options: null,
             contentType: "application/problem+json",

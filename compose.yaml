@@ -115,6 +115,9 @@ services:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_HTTP_PORTS: 8080
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-blueverse};Username=${POSTGRES_USER:-blueverse};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      Services__MarineSafetyUrl: ${MARINE_SAFETY_SERVICE_URL:-http://marine-safety:8080}
+      Services__PlannerServiceUrl: ${PLANNER_SERVICE_URL:-http://coastal-planner:8080}
+      Services__OperationsServiceUrl: ${OPERATIONS_SERVICE_URL:-http://coastal-operations:8080}
     depends_on:
       postgres:
         condition: service_healthy

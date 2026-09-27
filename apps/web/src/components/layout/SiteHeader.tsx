@@ -5,7 +5,7 @@ import { MAX_DEVICE_ACCOUNTS, useAuthSession } from '../../features/auth/authSes
 import { preserveAuthLoadingContextForReload } from '../../features/loading/backendLoading'
 
 type SiteHeaderProps = {
-  active?: 'home' | 'login' | 'register' | 'profile' | 'dashboard'
+  active?: 'home' | 'login' | 'register' | 'profile' | 'dashboard' | 'experiences'
   compactMobile?: boolean
 }
 
@@ -142,6 +142,7 @@ function SiteHeader({ active = 'home', compactMobile = false }: SiteHeaderProps)
             <nav aria-label="Account menu" className="grid gap-1">
               <Link className={accountMenuLinkClass} to="/profile" onClick={() => { setAccountMenuOpen(false); setMenuOpen(false) }}>Profile <span aria-hidden="true">↗</span></Link>
               <Link className={accountMenuLinkClass} to="/dashboard" onClick={() => { setAccountMenuOpen(false); setMenuOpen(false) }}>Dashboard <span aria-hidden="true">↗</span></Link>
+              <Link className={accountMenuLinkClass} to="/experiences/favourites" onClick={() => { setAccountMenuOpen(false); setMenuOpen(false) }}>Saved Wishlist <span aria-hidden="true">★</span></Link>
               {accountLimitReached ? (
                 <p className="mx-4 my-2 text-[11px] leading-5 text-coast-muted">Remove an account from this browser before adding another. The limit is five.</p>
               ) : (
@@ -183,11 +184,12 @@ function SiteHeader({ active = 'home', compactMobile = false }: SiteHeaderProps)
           <span className="text-[15px] font-extrabold tracking-[0.13em] sm:text-[17px] sm:tracking-[0.16em]">BLUEVERSE<span className="text-coast-teal">.</span></span>
         </Link>
 
-        {active === 'home' && (
+        {(active === 'home' || active === 'experiences') && (
           <nav aria-label="Main navigation" className="hidden items-center gap-2 md:flex lg:gap-4">
-            <Link className={navClass(false)} to="#our-story">Our story</Link>
-            <Link className={navClass(false)} to="#what-matters">What matters</Link>
-            <Link className={navClass(false)} to="#our-coast">Our coast</Link>
+            <Link className={navClass(active === 'experiences')} to="/experiences">Experiences</Link>
+            <Link className={navClass(false)} to="/#our-story">Our story</Link>
+            <Link className={navClass(false)} to="/#what-matters">What matters</Link>
+            <Link className={navClass(false)} to="/#our-coast">Our coast</Link>
           </nav>
         )}
 
@@ -201,6 +203,7 @@ function SiteHeader({ active = 'home', compactMobile = false }: SiteHeaderProps)
       </div>
 
       <nav aria-label="Mobile navigation" className={`absolute left-0 right-0 top-full border-b border-coast-line bg-coast-paper px-5 pb-5 pt-2 shadow-lg transition duration-200 sm:hidden ${menuOpen ? 'visible translate-y-0 opacity-100' : 'invisible -translate-y-2 opacity-0 pointer-events-none'}`} id="mobile-site-menu">
+        <Link className="block border-b border-coast-line py-3 text-sm font-semibold text-coast-ink transition-colors hover:text-coast-blue" to="/experiences" onClick={() => setMenuOpen(false)}>Coastal Experiences</Link>
         {active === 'home' ? <>
           <Link className="block border-b border-coast-line py-3 text-sm font-semibold text-coast-ink transition-colors hover:text-coast-blue" to="#our-story" onClick={() => setMenuOpen(false)}>Our story</Link>
           <Link className="block border-b border-coast-line py-3 text-sm font-semibold text-coast-ink transition-colors hover:text-coast-blue" to="#what-matters" onClick={() => setMenuOpen(false)}>What matters</Link>

@@ -6,6 +6,11 @@ import ProfilePage from '../pages/ProfilePage'
 import RegistrationPage from '../pages/RegistrationPage'
 import { NotFoundPage, ServerErrorPage } from '../pages/GlobalErrorPage'
 import { AdminAccessDenied, AdminIndexPage, AdminPermissionsPage, AdminRolesPage, AdminUsersPage } from '../pages/admin/AdminPages'
+import ExperiencesPage from '../pages/experiences/ExperiencesPage'
+import DestinationDetailPage from '../pages/experiences/DestinationDetailPage'
+import OfferingDetailPage from '../pages/experiences/OfferingDetailPage'
+import FavouritesPage from '../pages/experiences/FavouritesPage'
+import CatalogueManagementPage from '../pages/experiences/CatalogueManagementPage'
 import { useAuthSession } from '../features/auth/authSession'
 import { authEntryHrefFor } from '../features/auth/authNavigation'
 import { hasAnyPermission } from '../features/authorization/permissions'
@@ -47,6 +52,10 @@ export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/experiences" element={<ExperiencesPage />} />
+      <Route path="/experiences/destinations/:id" element={<DestinationDetailPage />} />
+      <Route path="/experiences/offerings/:id" element={<OfferingDetailPage />} />
+      <Route path="/experiences/favourites" element={<FavouritesPage />} />
       <Route path="/signin" element={<LoginPage />} />
       <Route path="/signup" element={<RegistrationPage />} />
       <Route path="/404" element={<NotFoundPage />} />
@@ -54,6 +63,7 @@ export default function AppRoutes() {
       <Route element={<RequireAuth />}>
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/experiences/manage" element={<CatalogueManagementPage />} />
         <Route path="/admin" element={<RequireAnyAdminPermission permissions={['auth.permission.read', 'auth.role.read', 'auth.user.read']}><AdminIndexPage /></RequireAnyAdminPermission>} />
         <Route path="/admin/permissions" element={<RequireAnyAdminPermission permissions={['auth.permission.read']}><AdminPermissionsPage /></RequireAnyAdminPermission>} />
         <Route path="/admin/roles" element={<RequireAnyAdminPermission permissions={['auth.role.read']}><AdminRolesPage /></RequireAnyAdminPermission>} />

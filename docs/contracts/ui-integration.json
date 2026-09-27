@@ -217,6 +217,130 @@
         "source": "apps/mobile/lib/main.dart"
       },
       "apiRefs": []
+    },
+    {
+      "id": "experience-discovery",
+      "status": "implemented",
+      "description": "Public coastal experience discovery hub. Provides catalogue browsing across destinations, activities, and offerings with filters and search, radius-based nearby coastal search with Haversine distance, and interactive vector-tile map exploration with geocoded place search.",
+      "web": {
+        "route": "/experiences",
+        "source": "apps/web/src/app/routes.tsx"
+      },
+      "mobile": {
+        "route": "/experiences",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": [
+        "experience-destinations-list",
+        "experience-activities-list",
+        "experience-offerings-list",
+        "experience-nearby-search",
+        "experience-map-config",
+        "experience-map-search",
+        "experience-favourites-list",
+        "experience-favourite-add",
+        "experience-favourite-remove"
+      ]
+    },
+    {
+      "id": "experience-destination-detail",
+      "status": "implemented",
+      "description": "Destination profile showcasing geographic details, Marine Safety telemetry (sea conditions, wave height, wind speed), Coastal Operations active advisories, Member 3 Biodiversity ML species prediction provenance and uncertainty notices, and linked activities.",
+      "web": {
+        "route": "/experiences/destinations/:id",
+        "source": "apps/web/src/app/routes.tsx"
+      },
+      "mobile": {
+        "route": "/experiences/destinations/:id",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": [
+        "experience-destination-by-id",
+        "experience-destination-biodiversity",
+        "experience-destination-marine-conditions",
+        "experience-destination-operational-advisories",
+        "experience-activities-list",
+        "experience-offerings-list",
+        "experience-favourites-list",
+        "experience-favourite-add",
+        "experience-favourite-remove"
+      ]
+    },
+    {
+      "id": "experience-offering-detail",
+      "status": "implemented",
+      "description": "Bookable experience offering package details, departure schedules calendar, cancellation policies, and real-time operational availability evaluation checks against slot capacity and restrictions.",
+      "web": {
+        "route": "/experiences/offerings/:id",
+        "source": "apps/web/src/app/routes.tsx"
+      },
+      "mobile": {
+        "route": "/experiences/offerings/:id",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": [
+        "experience-offering-by-id",
+        "experience-offering-schedules-list",
+        "experience-availability-evaluate",
+        "experience-favourites-list",
+        "experience-favourite-add",
+        "experience-favourite-remove"
+      ]
+    },
+    {
+      "id": "experience-favourites-management",
+      "status": "implemented",
+      "description": "Personal coastal wishlist management for bookmarked destinations, activities, and offerings with custom notes and one-click removal.",
+      "web": {
+        "route": "/experiences/favourites",
+        "source": "apps/web/src/app/routes.tsx"
+      },
+      "mobile": {
+        "route": "/experiences/favourites",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": [
+        "experience-favourites-list",
+        "experience-favourite-add",
+        "experience-favourite-remove"
+      ]
+    },
+    {
+      "id": "experience-catalogue-management",
+      "status": "implemented",
+      "description": "Coastal catalogue curation and operational management workspace. Supports destination, activity, offering, and schedule slot authoring, pre-flight publication evaluation audits, publication status transitions, and peer service resilience diagnostics.",
+      "web": {
+        "route": "/experiences/manage",
+        "source": "apps/web/src/app/routes.tsx"
+      },
+      "mobile": {
+        "route": "/experiences/manage",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": [
+        "experience-destinations-list",
+        "experience-destination-create",
+        "experience-destination-update",
+        "experience-destination-update-publication",
+        "experience-destination-evaluate-publication",
+        "experience-activities-list",
+        "experience-activity-by-id",
+        "experience-activity-create",
+        "experience-activity-update",
+        "experience-activity-update-publication",
+        "experience-activity-evaluate-publication",
+        "experience-offerings-list",
+        "experience-offering-create",
+        "experience-offering-update",
+        "experience-offering-update-publication",
+        "experience-offering-evaluate-publication",
+        "experience-offering-schedules-list",
+        "experience-offering-schedule-add",
+        "experience-offering-schedule-update",
+        "experience-offering-schedule-delete",
+        "experience-dependencies-status",
+        "experience-agent-context"
+      ]
     }
   ],
   "endpoints": [
@@ -403,6 +527,278 @@
       "publicBoundary": "api",
       "ownerService": "auth",
       "operationId": "AssignRoles"
+    },
+    {
+      "id": "experience-activities-list",
+      "method": "GET",
+      "path": "/api/experiences/activities",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "GetAll"
+    },
+    {
+      "id": "experience-activity-by-id",
+      "method": "GET",
+      "path": "/api/experiences/activities/{id:guid}",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "GetById"
+    },
+    {
+      "id": "experience-activity-create",
+      "method": "POST",
+      "path": "/api/experiences/activities",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "Create"
+    },
+    {
+      "id": "experience-activity-update",
+      "method": "PUT",
+      "path": "/api/experiences/activities/{id:guid}",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "Update"
+    },
+    {
+      "id": "experience-activity-update-publication",
+      "method": "PATCH",
+      "path": "/api/experiences/activities/{id:guid}/publication",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "UpdatePublication"
+    },
+    {
+      "id": "experience-activity-evaluate-publication",
+      "method": "POST",
+      "path": "/api/experiences/activities/{id:guid}/publication-evaluations",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "EvaluatePublication"
+    },
+    {
+      "id": "experience-agent-context",
+      "method": "GET",
+      "path": "/api/experiences/agent/context",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "GetAgentContext"
+    },
+    {
+      "id": "experience-availability-evaluate",
+      "method": "POST",
+      "path": "/api/experiences/availability/evaluations",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "EvaluateAvailability"
+    },
+    {
+      "id": "experience-destination-biodiversity",
+      "method": "GET",
+      "path": "/api/experiences/destinations/{id:guid}/biodiversity",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "GetDestinationBiodiversity"
+    },
+    {
+      "id": "experience-destinations-list",
+      "method": "GET",
+      "path": "/api/experiences/destinations",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "GetAll"
+    },
+    {
+      "id": "experience-destination-by-id",
+      "method": "GET",
+      "path": "/api/experiences/destinations/{id:guid}",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "GetById"
+    },
+    {
+      "id": "experience-destination-create",
+      "method": "POST",
+      "path": "/api/experiences/destinations",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "Create"
+    },
+    {
+      "id": "experience-destination-update",
+      "method": "PUT",
+      "path": "/api/experiences/destinations/{id:guid}",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "Update"
+    },
+    {
+      "id": "experience-destination-update-publication",
+      "method": "PATCH",
+      "path": "/api/experiences/destinations/{id:guid}/publication",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "UpdatePublication"
+    },
+    {
+      "id": "experience-destination-evaluate-publication",
+      "method": "POST",
+      "path": "/api/experiences/destinations/{id:guid}/publication-evaluations",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "EvaluatePublication"
+    },
+    {
+      "id": "experience-destination-marine-conditions",
+      "method": "GET",
+      "path": "/api/experiences/destinations/{id:guid}/marine-conditions",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "GetDestinationMarineConditions"
+    },
+    {
+      "id": "experience-destination-operational-advisories",
+      "method": "GET",
+      "path": "/api/experiences/destinations/{id:guid}/operational-advisories",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "GetDestinationOperationalAdvisories"
+    },
+    {
+      "id": "experience-favourites-list",
+      "method": "GET",
+      "path": "/api/experiences/favourites",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "GetUserFavourites"
+    },
+    {
+      "id": "experience-favourite-add",
+      "method": "PUT",
+      "path": "/api/experiences/favourites/{targetType}/{targetId:guid}",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "AddFavourite"
+    },
+    {
+      "id": "experience-favourite-remove",
+      "method": "DELETE",
+      "path": "/api/experiences/favourites/{targetType}/{targetId:guid}",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "RemoveFavourite"
+    },
+    {
+      "id": "experience-map-config",
+      "method": "GET",
+      "path": "/api/experiences/map/config",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "GetConfiguration"
+    },
+    {
+      "id": "experience-map-search",
+      "method": "GET",
+      "path": "/api/experiences/map/search",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "SearchPlaces"
+    },
+    {
+      "id": "experience-nearby-search",
+      "method": "GET",
+      "path": "/api/experiences/nearby",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "GetNearby"
+    },
+    {
+      "id": "experience-offerings-list",
+      "method": "GET",
+      "path": "/api/experiences/offerings",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "GetAll"
+    },
+    {
+      "id": "experience-offering-by-id",
+      "method": "GET",
+      "path": "/api/experiences/offerings/{id:guid}",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "GetById"
+    },
+    {
+      "id": "experience-offering-create",
+      "method": "POST",
+      "path": "/api/experiences/offerings",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "Create"
+    },
+    {
+      "id": "experience-offering-update",
+      "method": "PUT",
+      "path": "/api/experiences/offerings/{id:guid}",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "Update"
+    },
+    {
+      "id": "experience-offering-update-publication",
+      "method": "PATCH",
+      "path": "/api/experiences/offerings/{id:guid}/publication",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "UpdatePublication"
+    },
+    {
+      "id": "experience-offering-evaluate-publication",
+      "method": "POST",
+      "path": "/api/experiences/offerings/{id:guid}/publication-evaluations",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "EvaluatePublication"
+    },
+    {
+      "id": "experience-offering-schedules-list",
+      "method": "GET",
+      "path": "/api/experiences/offerings/{id:guid}/schedules",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "GetSchedules"
+    },
+    {
+      "id": "experience-offering-schedule-add",
+      "method": "POST",
+      "path": "/api/experiences/offerings/{id:guid}/schedules",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "AddSchedule"
+    },
+    {
+      "id": "experience-offering-schedule-update",
+      "method": "PUT",
+      "path": "/api/experiences/offerings/{id:guid}/schedules/{scheduleId:guid}",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "UpdateSchedule"
+    },
+    {
+      "id": "experience-offering-schedule-delete",
+      "method": "DELETE",
+      "path": "/api/experiences/offerings/{id:guid}/schedules/{scheduleId:guid}",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "DeleteSchedule"
+    },
+    {
+      "id": "experience-dependencies-status",
+      "method": "GET",
+      "path": "/api/experiences/dependencies/status",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "GetDependenciesStatus"
     }
   ]
 }

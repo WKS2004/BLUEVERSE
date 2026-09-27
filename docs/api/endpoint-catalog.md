@@ -33,6 +33,16 @@ the smaller shared-client workflow contract.
 | react | `/500` | `server-error-recovery` | Explains the temporary interruption between the shared header and footer, provides retry and home actions, and keeps implementation details hidden. |
 | flutter | `/404` | `not-found-recovery` | Explains the missing page in coastal language and routes users back to the home page. |
 | flutter | `/500` | `server-error-recovery` | Explains the temporary interruption, provides retry and home actions, and keeps implementation details hidden. |
+| react | `/experiences` | `experience-discovery` | Browses coastal destinations, activities, and offerings with filters, Haversine distance, and OpenFreeMap vector maps. |
+| react | `/experiences/destinations/:id` | `experience-destination-detail` | Displays comprehensive destination intelligence including real-time sea telemetry, harbor advisories, and species predictions with provenance. |
+| react | `/experiences/offerings/:id` | `experience-offering-detail` | Evaluates departure slot availability in real time against operational limits and capacity constraints. |
+| react | `/experiences/favourites` | `experience-favourites-management` | Manages user-saved coastal items with personal notes and one-click removal. |
+| react | `/experiences/manage` | `experience-catalogue-management` | Provides pre-flight publication evaluation audits, lifecycle transitions, timetable management, and peer microservice connectivity monitoring. |
+| flutter | `/experiences` | `experience-discovery` | Cross-platform mobile discovery route for destinations, activities, and offerings. |
+| flutter | `/experiences/destinations/:id` | `experience-destination-detail` | Mobile destination view with marine conditions, operational advisories, and biodiversity insights. |
+| flutter | `/experiences/offerings/:id` | `experience-offering-detail` | Mobile offering view with departure timetables and availability checks. |
+| flutter | `/experiences/favourites` | `experience-favourites-management` | Mobile wishlist manager for coastal experiences. |
+| flutter | `/experiences/manage` | `experience-catalogue-management` | Mobile operational workspace for catalogue authoring and publication audits. |
 
 ## Gateway and server routes
 
@@ -107,6 +117,40 @@ the smaller shared-client workflow contract.
 |---|---|---|---|
 | `GET` | `/api/experiences/health` | `anonymous` | Reports Experience & Biodiversity service and PostgreSQL connectivity; returns 503 when the database is unavailable. Used by the API gateway and Docker-stack health diagnostics. The response includes service, overall status and database connection status without exposing the private service host. |
 | `GET` | `/api/experiences/swagger/{documentName}/swagger.json` | `anonymous` | Returns the Experience & Biodiversity Swashbuckle document through the API gateway. Supports the unified Swagger UI and service contract inspection without exposing the private service host or requiring a JWT. |
+| `GET` | `/api/experiences/activities` | `anonymous` | Lists published coastal activities or filters by destination, status, and search query. Browses available activities (snorkeling, whale watching, surfing) across coastal regions. |
+| `GET` | `/api/experiences/activities/{id:guid}` | `anonymous` | Retrieves detailed information for a specific coastal activity. Loads detailed activity views including destination and offering summaries. |
+| `POST` | `/api/experiences/activities` | `anonymous` | Creates a new coastal activity under an existing destination in DRAFT status. Used by authorized staff or operators to define new coastal activities. |
+| `PUT` | `/api/experiences/activities/{id:guid}` | `anonymous` | Updates activity metadata, seasonal constraints, requirements, and tags. Edits existing coastal activity specifications. |
+| `PATCH` | `/api/experiences/activities/{id:guid}/publication` | `anonymous` | Transitions an activity publication status with evaluation rules and audit reasons. Publishes, unpublishes, or archives an activity following lifecycle validation. |
+| `POST` | `/api/experiences/activities/{id:guid}/publication-evaluations` | `anonymous` | Evaluates whether an activity meets publication readiness without applying changes. Pre-flight validation checks before publishing an activity. |
+| `GET` | `/api/experiences/agent/context` | `anonymous` | Read-only private Agentic AI typed seam reporting component context and not-connected status. Pre-G07 integration seam providing typed schema and safe degradation for future AI orchestration. |
+| `POST` | `/api/experiences/availability/evaluations` | `anonymous` | Evaluates real-time offering availability against schedule coverage, capacity, and operational status. Core non-CRUD business operation called by clients and booking workflows to verify experience availability. |
+| `GET` | `/api/experiences/destinations/{id:guid}/biodiversity` | `anonymous` | Consumes biodiversity data for a destination with safe degradation when Member 3 ML is unavailable. Retrieves ecological insights and species discovery information for coastal destinations. |
+| `GET` | `/api/experiences/destinations` | `anonymous` | Lists published coastal destinations or filters by region and status. Browses coastal destinations (Mirissa, Nilaveli, etc.) on web and mobile directories. |
+| `GET` | `/api/experiences/destinations/{id:guid}` | `anonymous` | Retrieves detailed information for a specific coastal destination. Loads destination profile views including coordinates, climate info, and active activities. |
+| `POST` | `/api/experiences/destinations` | `anonymous` | Creates a new coastal destination in DRAFT status. Used by destination curators and administrators to register new coastal areas. |
+| `PUT` | `/api/experiences/destinations/{id:guid}` | `anonymous` | Updates destination details, coordinates, boundaries, and tags. Maintains destination records and geographical data. |
+| `PATCH` | `/api/experiences/destinations/{id:guid}/publication` | `anonymous` | Transitions a destination publication status with validation and audit logging. Publishes or archives coastal destination profiles. |
+| `POST` | `/api/experiences/destinations/{id:guid}/publication-evaluations` | `anonymous` | Evaluates destination readiness for publication without altering current state. Pre-publication audit check verifying required coordinates and content completeness. |
+| `GET` | `/api/experiences/favourites` | `anonymous` | Retrieves saved destinations, activities, and offerings for the calling user. Populates personal wishlist and bookmarked coastal experiences. |
+| `PUT` | `/api/experiences/favourites/{targetType}/{targetId:guid}` | `anonymous` | Adds or updates a bookmark/favourite for a destination, activity, or offering with optional notes. Allows tourists to save coastal items to their personal wishlist. |
+| `DELETE` | `/api/experiences/favourites/{targetType}/{targetId:guid}` | `anonymous` | Removes a bookmarked destination, activity, or offering from the user favourites. Removes items from tourist wishlists. |
+| `GET` | `/api/experiences/map/config` | `anonymous` | Provides MapLibre-compatible vector tile configuration and style URLs for OpenFreeMap. Used by React and Flutter map components to render interactive coastal maps without third-party tokens. |
+| `GET` | `/api/experiences/map/search` | `anonymous` | Searches coastal places using Photon geocoding with graceful fallback to destination database. Powers place name autocomplete and location lookups on interactive map screens. |
+| `GET` | `/api/experiences/nearby` | `anonymous` | Finds destinations, activities, and offerings within a specified radius using Haversine calculation. Powers proximity discovery on map views and Experiences Near Me mobile workflows. |
+| `GET` | `/api/experiences/offerings` | `anonymous` | Lists published offerings or filters by activity, provider, price range, and status. Displays bookable tour packages and activity offerings. |
+| `GET` | `/api/experiences/offerings/{id:guid}` | `anonymous` | Retrieves detailed information for a specific experience offering. Loads offering details including pricing, cancellation policy, and schedule overview. |
+| `POST` | `/api/experiences/offerings` | `anonymous` | Creates a new experience offering under an activity in DRAFT status. Allows tour operators and service providers to register new offering packages. |
+| `PUT` | `/api/experiences/offerings/{id:guid}` | `anonymous` | Updates offering pricing, capacity, inclusions, and policies. Edits existing tour package specifications. |
+| `PATCH` | `/api/experiences/offerings/{id:guid}/publication` | `anonymous` | Transitions an offering publication status with verification rules. Publishes, pauses, or archives tour offerings. |
+| `POST` | `/api/experiences/offerings/{id:guid}/publication-evaluations` | `anonymous` | Evaluates offering readiness for publication without altering current state. Checks pricing validity, capacity constraints, and parent activity publication status. |
+| `GET` | `/api/experiences/offerings/{id:guid}/schedules` | `anonymous` | Lists time slots and schedules for a specific offering within an optional date range. Displays available time slots on booking calendars. |
+| `POST` | `/api/experiences/offerings/{id:guid}/schedules` | `anonymous` | Adds a new operational schedule slot with time window and capacity to an offering. Schedules departure times for coastal experiences. |
+| `PUT` | `/api/experiences/offerings/{id:guid}/schedules/{scheduleId:guid}` | `anonymous` | Updates schedule capacity, booked seats, active flag, or time range. Manages schedule availability and operational capacity adjustments. |
+| `DELETE` | `/api/experiences/offerings/{id:guid}/schedules/{scheduleId:guid}` | `anonymous` | Cancels or removes an operational schedule slot from an offering. Removes obsolete or cancelled departure times. |
+| `GET` | `/api/experiences/dependencies/status` | `anonymous` | Inspects connectivity, response status, and latency of peer microservice dependencies with resilience reporting. Diagnostic and status seam verifying microservices architecture fault tolerance. |
+| `GET` | `/api/experiences/destinations/{id:guid}/marine-conditions` | `anonymous` | Fetches real-time marine conditions from Member 2 Marine Safety service with fault-tolerant fallback and status mention. Displays sea conditions, surf safety, and wave telemetry for coastal destinations. |
+| `GET` | `/api/experiences/destinations/{id:guid}/operational-advisories` | `anonymous` | Fetches active coastal advisories from Member 4 Coastal Operations service with safe fallback and status mention. Displays harbor and coastal authority notices for destinations. |
 
 ## Test host only
 

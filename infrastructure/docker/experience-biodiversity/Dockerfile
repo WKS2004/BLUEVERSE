@@ -11,7 +11,6 @@ RUN dotnet restore "${PROJECT_NAME}.csproj"
 RUN dotnet publish "${PROJECT_NAME}.csproj" \
     --configuration Release \
     --output /app/publish \
-    --no-restore \
     /p:UseAppHost=false
 
 FROM dhi.io/aspnetcore:10-alpine AS runtime
