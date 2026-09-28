@@ -2,7 +2,7 @@
 contract_id: v1.component.marine-safety
 contract_type: business_component
 release: v1
-implementation_status: backend_implemented_on_feature_branch
+implementation_status: react_web_implemented_on_feature_branch
 owner_label: member_2
 owner_full_name: "Sanuda Abeysinghe"
 owner_github_username: "sanudaabey"
@@ -16,9 +16,10 @@ agent_contract: "../agents/member-2-marine-conditions-intelligence-agent.md"
 
 # Sanuda Abeysinghe (Member 2) — Marine Conditions & Safety Intelligence
 
-**Contract status:** backend implemented on `features/marine-safety` (internal
-service, public API integration, tests and live Open-Meteo/PostgreSQL
-evidence); React, Flutter and the paired agent remain future work.
+**Contract status:** backend and React Web implemented on `features/marine-safety`
+(internal service, public API integration, tests, live Open-Meteo/PostgreSQL
+evidence; React condition, history and safety-profile workflows with registry,
+catalog and test coverage). Flutter and the paired agent remain future work.
 **Assigned owner:** Sanuda Abeysinghe (`@sanudaabey`) — frozen-requirements
 trace label Member 2. Feature branch: `features/marine-safety`; paired
 Agentic AI branch: `agentic-ai/marine-conditions`.
@@ -42,7 +43,7 @@ authority or autonomous safety decision-maker.
 | Layer | Component responsibility and implementation contract |
 |---|---|
 | **Universal product idea** | Acquire weather and marine source data for an activity, location and requested period; validate and normalize it with provenance/freshness; then apply configured application rules to determine `SUITABLE`, `CAUTION`, `UNSUITABLE` or insufficient evidence. Source data, deterministic classification and optional AI explanation remain distinct. The period is an ordinary condition-query input; a planner-originated request preserves the planner's validated itinerary period. |
-| **React Web** | Provide the same authorized condition, suitability, profile-management and history outcomes as Flutter through the public API. Use React 19/TypeScript/Vite/React Router, reusable pages/components, Tailwind utilities and existing request/state separation. Accept the location and period needed for a condition query using ordinary workflow inputs, then render server classifications, source, units, time and gaps; do not recompute them in the browser. See the [React component contract](../../v0/components/react-web-client.md), [UI integration guide](../../development/ui-integration.md), and [React state ADR](../../adr/ADR-0005-react-state-management.md). |
+| **React Web** | Implemented on this branch. `apps/web` provides the same authorized condition, suitability, profile-management and history outcomes as Flutter through the public API: `/marine/conditions`, `/marine/history` and `/marine/safety-profiles` (React 19/TypeScript/Vite/React Router, reusable pages/components, Tailwind utilities, existing request/state separation). The condition query accepts location, optional requested UTC period and activity as ordinary workflow inputs, then renders server classifications, source, units, time and gaps; the browser never recomputes them. Registered under the `marine-conditions`, `marine-condition-history` and `marine-safety-profile-management` shared workflow IDs; see the [React component contract](../../v0/components/react-web-client.md), [UI integration guide](../../development/ui-integration.md), and [React state ADR](../../adr/ADR-0005-react-state-management.md). |
 | **Flutter Mobile** | Provide those same outcomes with native Dart/Material UI, using the repository's UI/logic/data layers, repository/API service and view-model pattern. The condition workflow accepts its location and period as ordinary business inputs; no distinct sensor or device feature is assigned to Sanuda Abeysinghe (Member 2). The server's condition evidence, classification, permission outcome and warnings remain equivalent to React. Do not reclassify locally or change a planner-originated period. See the [Flutter component contract](../../v0/components/flutter-client.md), [UI integration guide](../../development/ui-integration.md), and [Flutter state ADR](../../adr/ADR-0006-flutter-state-management.md). |
 | **Sanuda Abeysinghe (Member 2) .NET service and data** | A separate internal ASP.NET Core service in Sanuda Abeysinghe's own `services/<component-service>/` subfolder owns Open-Meteo acquisition, provider-response validation/normalization, deterministic suitability, condition/profile history, domain persistence and audit data. Its EF Core/PostgreSQL records are owned by this service. The existing `services/api` receives only the authentication/permission and route/forwarding integration needed to expose the service through `/api/...`; it contains none of Sanuda Abeysinghe's condition logic or provider calls. Clients never call the member service or Open-Meteo directly. Agree service identifiers, public/internal route mapping, DTOs, actor/permission propagation, data ownership and health semantics at G00. |
 | **Third-party integration** | Open-Meteo Weather and Marine APIs are Sanuda Abeysinghe's required v1 source and are called by the backend only. The integration must handle timeout, rate limits, schema/value errors, missing variables and stale data, minimize location data, and keep provider details/secrets out of both clients. Requests, fields, units, caching and freshness rules remain explicit implementation decisions; a provider response never changes the configured safety profile. |

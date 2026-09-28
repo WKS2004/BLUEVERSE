@@ -140,6 +140,81 @@ public sealed class SuitabilityService : ISuitabilityService
             conditions.Id);
     }
 
+    /// <summary>
+    /// Read-only history over the persisted assessments. Newest first with a
+    /// bounded page (the same shape as condition history), so an unfiltered
+    /// caller cannot walk an unbounded result. The from/to window filters on
+    /// the requested (forecast) time — the domain-meaningful axis — not the
+    /// wall-clock moment the evaluation ran. Every row keeps the evidence and
+    /// profile-version references that explain the stored result.
+    /// </summary>
+    public async Task<IReadOnlyList<AssessmentHistoryDto>> GetAssessmentsAsync(
+        Guid? activityId,
+        string? result,
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        CancellationToken cancellationToken)
+    {
+        var query = _db.SuitabilityAssessments.AsNoTracking().AsQueryable();
+
+        if (activityId.HasValue)
+        {
+            query = query.Where(r => r.ActivityId == activityId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(result))
+        {
+            var normalized = result.Trim().ToUpperInvariant();
+            query = query.Where(r => r.Result == normalized);
+        }
+
+        if (fromUtc.HasValue)
+        {
+            query = query.Where(r => r.RequestedTime >= MarineTime.ToUtc(fromUtc.Value));
+        }
+
+        if (toUtc.HasValue)
+        {
+            query = query.Where(r => r.RequestedTime <= MarineTime.ToUtc(toUtc.Value));
+        }
+
+        var records = await query
+            .OrderByDescending(r => r.EvaluatedAt)
+            .ThenByDescending(r => r.Id)
+            .Take(200)
+            .Include(r => r.Activity)
+            .ToListAsync(cancellationToken);
+
+        return records.Select(ToHistoryDto).ToList();
+    }
+
+    public Task<AssessmentHistoryDto?> GetAssessmentAsync(Guid id, CancellationToken cancellationToken) =>
+        _db.SuitabilityAssessments
+            .AsNoTracking()
+            .Where(r => r.Id == id)
+            .Include(r => r.Activity)
+            .Select(r => ToHistoryDto(r))
+            .SingleOrDefaultAsync(cancellationToken);
+
+    private static AssessmentHistoryDto ToHistoryDto(SuitabilityAssessmentRecord record) => new(
+        record.Id,
+        record.ActivityId,
+        record.Activity?.Name ?? string.Empty,
+        record.ConditionSnapshotId,
+        record.SafetyProfileId,
+        record.ProfileVersion,
+        record.Latitude,
+        record.Longitude,
+        record.RequestedTime,
+        record.EvaluatedAt,
+        record.Result,
+        record.Violations,
+        record.CautionFactors,
+        record.MissingFields,
+        record.Source,
+        record.FreshnessStatus,
+        record.CreatedAt);
+
     private static string EvaluateFactors(
         SafetyProfile profile,
         ConditionSnapshot conditions,

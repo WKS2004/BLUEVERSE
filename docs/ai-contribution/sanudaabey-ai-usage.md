@@ -327,3 +327,100 @@ Member 2, Marine Conditions & Safety Intelligence, branch `features/marine-safet
   frontend routes); UI-integration validator OK; YARP/Swagger/compose/catalog
   marine wiring all confirmed by direct source inspection; backend declared
   ready as the contract baseline for the React Web App phase.
+
+## 2026-09-28 — React Web App implementation for marine-safety
+
+- Date/time or time range: 2026-09-28 (Asia/Colombo)
+- GitHub Username: `sanudaabey`
+- Team Member Name (actual): Sanuda Abeysinghe
+- Agent Name: Buffy
+- Tool/App: Codebuff (Freebuff desktop)
+- AI Model: GLM
+- Summary of the user's request: Implement the React Web App part of the
+  marine-safety service on the existing backend, following DESIGN.md and the
+  original web theme; do not modify the architecture of already-implemented
+  UIs, only make necessary additive integrations.
+- Summary of what the AI Agent did: Analyzed the marine-safety service
+  contract and the web app conventions; added `apps/web/src/features/marine/`
+  (typed `marineApi.ts` adapter over the frozen public marine operations plus
+  `marineActivities.ts` with the frozen G00 activity reference identities) and
+  `apps/web/src/pages/marine/MarinePages.tsx` with three pages in the
+  established coastal design system (conditions + deterministic suitability,
+  condition history, safety-profile management); registered
+  `/marine/conditions`, `/marine/history` and `/marine/safety-profiles` with
+  `marine.profile.read` permission gating in `routes.tsx`; additively extended
+  `AccountAreaNavigation` with a permission-gated Marine & safety group and
+  the dashboard quick-access card with a marine link; registered the three
+  shared workflow IDs, six React/Flutter route rows and seven marine
+  endpoints in `docs/contracts/ui-integration.json` and
+  `docs/api/endpoint-catalog.json`, regenerating the catalog Markdown; wrote
+  30 requirement-linked tests (19 request-contract, 13 component covering
+  normal, invalid, empty, malformed, denied, provider-outage and
+  transport-failure paths); updated the component contract status, the G00
+  record (revision 6), `apps/web/README.md` and the root README.
+- AI output accepted/changed/rejected: Accepted the member-specific module
+  layout and permission-gated route design. Changed during verification: the
+  create/edit safety-profile forms initially shared duplicate field IDs and
+  the create form was nested inside another form causing a double submit —
+  both fixed with unique `idPrefix` IDs and a single form element; history
+  date filters initially treated an optional window as required. Test-side,
+  corrected my own fixture bugs (empty user-event type, ambiguous FRESH text
+  match) and replaced an invented client-side caution-band rule with the
+  server's 400 rejection, keeping threshold validation server-owned. Rejected:
+  recomputing suitability in the browser, hard-coding role checks, adding
+  client-side thresholds, and any refactor of existing v0 UI architecture.
+- Verification/evidence: web suite 187/187 pass (157 pre-existing + 30 new,
+  none deleted or weakened); `npm run lint` and `npm run build` clean;
+  `validate_ui_integrations.py` OK; `validate_endpoint_catalog.py` OK
+  (46 public endpoints, 28 frontend routes); 35/35 registry validator unit
+  tests pass. Backend sources, tests and routes untouched.
+
+## 2026-09-28 — G00 full-CRUD amendment and marine-safety backend patch
+
+- Date/time or time range: 2026-09-28 10:00-12:30 (Asia/Colombo)
+- GitHub Username: `sanudaabey`
+- Team Member Name (actual): Sanuda Abeysinghe
+- Agent Name: Buffy
+- Tool/App: Codebuff (Freebuff desktop)
+- AI Model: GLM
+- Summary of the user's request: Update the G00 record to include a full CRUD
+  for the marine-safety component, then fully patch the backend service to
+  match the changed documentation.
+- Summary of what the AI Agent did: Expanded the frozen marine contract with
+  the two real gaps: (a) the locally-owned MarineActivities reference table
+  had no API surface and (b) persisted suitability assessments were not
+  queryable. Updated the G00 record with revision (7) (section 3 operation
+  set gains GET|POST /api/marine/activities, GET|PUT|DELETE
+  /api/marine/activities/{id}, GET /api/marine/assessments, GET
+  /api/marine/assessments/{id}; section 2 activity-identity row amended to
+  the manager-maintained reference table; permission and error/status rows
+  extended) and patched the backend to match: reintroduced live Activity DTOs
+  and AssessmentHistoryDto, added IActivityService/ActivityService (unique
+  name 409 conflicts, deactivate-only delete) and assessment query methods on
+  ISuitabilityService (newest-first, Take(200), from/to on RequestedTime),
+  added ActivitiesController (read/manage permission pair like profiles) and
+  read-only AssessmentsController, registered 7 new endpoint-catalog entries
+  and regenerated the Markdown, updated M2-SWAG-001's DocumentedOperations,
+  and wrote 16 new requirement-linked tests (M2-ACT-001..010,
+  M2-ASMT-001..006).
+- AI output accepted/changed/rejected: Accepted deactivate-only delete
+  semantics (assessment FK restrict + profile cascade references survive) and
+  reusing the existing marine.profile.read/manage codes without Auth changes.
+  Changed during verification: my first assessment-history window filtered on
+  EvaluatedAt, which is the wall-clock evaluation moment rather than the
+  domain-meaningful requested forecast time - corrected to RequestedTime and
+  documented in the service comment; three of my new tests carried wrong
+  expectations copied from a misread contract (evaluate on an inactive
+  activity is 404 per G00 revision (4), not 409; HasData seeds are wiped by
+  the per-test database reset so rename-conflict tests must create their own
+  rows; two SUITABLE rows exist in the filter test) - the requirement-derived
+  expectations were corrected, no existing test was weakened; fixed two
+  expression-tree compile errors in EF queries. Rejected: hard-deleting
+  activities, reactivating activities through PUT, new permission codes, and
+  any change to pre-existing endpoint shapes.
+- Verification/evidence: marine suite 103/103 pass (87 pre-existing + 16
+  new, none deleted or weakened), auth 77/77, api 21/21; marine/api/auth
+  builds 0 warnings/0 errors; validate_endpoint_catalog.py OK (53 public
+  endpoints, 28 frontend routes) after --write-markdown regeneration;
+  validate_ui_integrations.py OK; M2-DOC-001 CaseId uniqueness meta-test
+  green. Nothing committed (repo rule: commit only on explicit request).

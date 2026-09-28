@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import { authEntryHrefFor } from '../features/auth/authNavigation'
 import { useAuthSession } from '../features/auth/authSession'
+import { hasAnyPermission } from '../features/authorization/permissions'
 import AccountAreaNavigation from '../components/account/AccountAreaNavigation'
 import SiteFooter from '../components/layout/SiteFooter'
 import SiteHeader from '../components/layout/SiteHeader'
@@ -55,9 +56,12 @@ function DashboardPage() {
                   <p className="text-xs font-extrabold tracking-[0.15em] text-coast-blue">QUICK ACCESS</p>
                   <div className="mt-5">
                     <p className="font-display text-2xl tracking-[-0.035em]">A little closer to the coast.</p>
-                    <p className="mt-2 text-sm leading-6 text-coast-muted">Explore BLUEVERSE’s shared coastal perspective and the ideas behind it.</p>
+                    <p className="mt-2 text-sm leading-6 text-coast-muted">Check the sea before you go, and keep an eye on how the coast has been behaving.</p>
                   </div>
-                  <Link className="mt-5 inline-flex min-h-10 w-fit items-center gap-2 rounded-full px-3 text-sm font-bold text-coast-deep transition-colors hover:bg-white/75 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coast-blue" to="/#our-coast">Explore the coast <span aria-hidden="true">→</span></Link>
+                  <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
+                    {hasAnyPermission(user, ['marine.profile.read']) && <Link className="inline-flex min-h-10 w-fit items-center gap-2 rounded-full px-3 text-sm font-bold text-coast-deep transition-colors hover:bg-white/75 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coast-blue" to="/marine/conditions">Check marine conditions <span aria-hidden="true">→</span></Link>}
+                    <Link className="inline-flex min-h-10 w-fit items-center gap-2 rounded-full px-3 text-sm font-bold text-coast-deep transition-colors hover:bg-white/75 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coast-blue" to="/#our-coast">Explore the coast <span aria-hidden="true">→</span></Link>
+                  </div>
                 </article>
               </section>
 

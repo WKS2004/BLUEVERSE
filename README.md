@@ -59,6 +59,14 @@ Both clients follow the shared visual system in [`DESIGN.md`](DESIGN.md): React
 maps it to Tailwind styles in `apps/web`, and Flutter maps it to native theme
 and widgets in `apps/mobile`.
 
+The marine conditions & safety component (Member 2, branch
+`features/marine-safety`) currently implements its React Web surface:
+`/marine/conditions`, `/marine/history` and `/marine/safety-profiles` query the
+public marine API for condition evidence, the deterministic suitability
+assessment and permission-gated safety profiles. The paired Flutter routes are
+registered under the same shared workflow IDs; the mobile surface remains
+future work.
+
 The [v0 foundation guide](docs/v0/README.md) maps the implemented technical
 components and their integration path. The
 [v1 documentation index](docs/v1/README.md) links the separate member

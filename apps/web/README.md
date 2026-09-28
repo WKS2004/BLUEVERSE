@@ -97,9 +97,26 @@ uses Node 24's built-in test runner; request contracts mock `fetch`, while DOM
 tests use JSDOM, React Testing Library and `user-event` with Vite SSR module
 loading. The tests cover the implemented Auth, profile, administration,
 navigation, recovery and shared-shell behaviors without a live API or browser.
-The current suite passes 157 cases (2026-09-25). These tests are not a
+The current suite passes 187 cases (2026-09-28). These tests are not a
 substitute for deployed-gateway or real-browser end-to-end checks. The
 registry contains the shared home, Auth registration and session-management,
-profile management and coastal overview workflows. New workflows must
+profile management, coastal overview and marine conditions/safety workflows.
+New workflows must
 continue to register both client surfaces and their public API references
 together.
+
+## Marine conditions & safety workflows (v1, Member 2)
+
+The marine-safety component's React surface lives in member-specific modules:
+`src/features/marine/` (typed public-API adapter and the frozen activity
+reference identities) and `src/pages/marine/MarinePages.tsx`. The routes
+`/marine/conditions`, `/marine/history` and `/marine/safety-profiles` are
+permission-gated by the server-owned `marine.profile.read` grant (plus
+`marine.profile.manage` for profile writes), registered under the shared
+`marine-conditions`, `marine-condition-history` and
+`marine-safety-profile-management` workflow IDs, and styled with the shared
+coastal design system. The pages render the server's condition evidence and
+deterministic suitability classification — including source, UTC timestamps,
+freshness and missing fields — and never recompute or soften a result. The
+paired Flutter routes are registered under the same workflow IDs; the mobile
+surface is not implemented yet.

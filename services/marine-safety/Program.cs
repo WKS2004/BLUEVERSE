@@ -126,6 +126,7 @@ builder.Services.AddSingleton<IOpenMeteoClient, OpenMeteoClient>();
 builder.Services.AddScoped<IConditionService, ConditionService>();
 builder.Services.AddScoped<ISuitabilityService, SuitabilityService>();
 builder.Services.AddScoped<ISafetyProfileService, SafetyProfileService>();
+builder.Services.AddScoped<IActivityService, ActivityService>();
 
 // Forwarded Headers for Edge-Nginx reverse proxy.
 builder.Services.Configure<ForwardedHeadersOptions>(options =>

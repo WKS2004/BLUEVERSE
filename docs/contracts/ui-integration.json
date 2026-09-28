@@ -191,6 +191,58 @@
       ]
     },
     {
+      "id": "marine-conditions",
+      "status": "starter",
+      "description": "Shared marine conditions and suitability workflow. React Web implements the condition lookup with source, forecast/retrieval timestamps, freshness and missing-field evidence, plus the server's deterministic suitability assessment for a coastal activity, location and requested period; classifications are never recalculated in the client. The Flutter route is registered under the same shared workflow ID and must deliver the same authorized outcomes; the mobile surface is not implemented yet.",
+      "web": {
+        "route": "/marine/conditions",
+        "source": "apps/web/src/app/routes.tsx"
+      },
+      "mobile": {
+        "route": "/marine/conditions",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": [
+        "marine-current",
+        "marine-evaluate"
+      ]
+    },
+    {
+      "id": "marine-condition-history",
+      "status": "starter",
+      "description": "Shared stored-condition history workflow. React Web lists past condition snapshots with optional location and UTC time-window filters, showing each snapshot's source, forecast/retrieval times, freshness and unavailable fields so history stays distinct from current evidence. The paired Flutter surface is registered but not implemented yet.",
+      "web": {
+        "route": "/marine/history",
+        "source": "apps/web/src/app/routes.tsx"
+      },
+      "mobile": {
+        "route": "/marine/history",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": [
+        "marine-history"
+      ]
+    },
+    {
+      "id": "marine-safety-profile-management",
+      "status": "starter",
+      "description": "Shared activity safety-profile workflow. React Web reads the configured deterministic limits per activity and, for accounts holding the marine manage grant in addition to read, creates superseding profile versions, updates limits and deactivates profiles; the server owns all validation and versioning. Callers without the manage grant keep read-only access. The paired Flutter surface is registered but not implemented yet.",
+      "web": {
+        "route": "/marine/safety-profiles",
+        "source": "apps/web/src/app/routes.tsx"
+      },
+      "mobile": {
+        "route": "/marine/safety-profiles",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": [
+        "marine-safety-profiles",
+        "marine-safety-profile-create",
+        "marine-safety-profile-update",
+        "marine-safety-profile-deactivate"
+      ]
+    },
+    {
       "id": "not-found-recovery",
       "status": "implemented",
       "description": "Global, branded not-found recovery. React unknown paths stay in the address bar and render inside the shared site shell; Flutter presents the recovery page within its app navigation. Both offer a clear return to the coastal home page.",
@@ -403,6 +455,62 @@
       "publicBoundary": "api",
       "ownerService": "auth",
       "operationId": "AssignRoles"
+    },
+    {
+      "id": "marine-current",
+      "method": "GET",
+      "path": "/api/marine/current",
+      "publicBoundary": "api",
+      "ownerService": "marine-safety",
+      "operationId": "GetCurrent"
+    },
+    {
+      "id": "marine-history",
+      "method": "GET",
+      "path": "/api/marine/history",
+      "publicBoundary": "api",
+      "ownerService": "marine-safety",
+      "operationId": "GetHistory"
+    },
+    {
+      "id": "marine-evaluate",
+      "method": "POST",
+      "path": "/api/marine/evaluate",
+      "publicBoundary": "api",
+      "ownerService": "marine-safety",
+      "operationId": "Evaluate"
+    },
+    {
+      "id": "marine-safety-profiles",
+      "method": "GET",
+      "path": "/api/marine/safety-profiles",
+      "publicBoundary": "api",
+      "ownerService": "marine-safety",
+      "operationId": "GetProfiles"
+    },
+    {
+      "id": "marine-safety-profile-create",
+      "method": "POST",
+      "path": "/api/marine/safety-profiles",
+      "publicBoundary": "api",
+      "ownerService": "marine-safety",
+      "operationId": "CreateProfile"
+    },
+    {
+      "id": "marine-safety-profile-update",
+      "method": "PUT",
+      "path": "/api/marine/safety-profiles/{id:guid}",
+      "publicBoundary": "api",
+      "ownerService": "marine-safety",
+      "operationId": "UpdateProfile"
+    },
+    {
+      "id": "marine-safety-profile-deactivate",
+      "method": "DELETE",
+      "path": "/api/marine/safety-profiles/{id:guid}",
+      "publicBoundary": "api",
+      "ownerService": "marine-safety",
+      "operationId": "DeactivateProfile"
     }
   ]
 }

@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router'
 import { hasAnyPermission } from '../../features/authorization/permissions'
 import { useAuthSession } from '../../features/auth/authSession'
 
-type Area = 'profile' | 'dashboard' | 'admin'
+type Area = 'profile' | 'dashboard' | 'marine' | 'admin'
 type NavigationGroup = { id: Area; label: string; href: string; children: { label: string; href: string }[] }
 
 function groupsFor(permissions: string[]): NavigationGroup[] {
@@ -22,6 +22,15 @@ function groupsFor(permissions: string[]): NavigationGroup[] {
       ],
     },
   ]
+  if (hasAnyPermission({ permissions }, ['marine.profile.read'])) {
+    groups.push({
+      id: 'marine', label: 'Marine & safety', href: '/marine/conditions', children: [
+        { label: 'Marine conditions', href: '/marine/conditions' },
+        { label: 'Condition history', href: '/marine/history' },
+        { label: 'Safety profiles', href: '/marine/safety-profiles' },
+      ],
+    })
+  }
   const links = [
     ...(hasAnyPermission({ permissions }, ['auth.permission.read']) ? [{ label: 'Permissions', href: '/admin/permissions' }] : []),
     ...(hasAnyPermission({ permissions }, ['auth.role.read']) ? [{ label: 'Roles', href: '/admin/roles' }] : []),

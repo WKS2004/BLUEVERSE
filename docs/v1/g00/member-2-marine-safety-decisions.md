@@ -30,7 +30,7 @@ criteria.
 
 | Decision | Record |
 |---|---|
-| Activity identity | Member 1 owns the canonical coastal activity taxonomy. Until that component's service exists, Member 2 keeps a minimal locally-owned `MarineActivities` reference table seeded with the agreed coastal activities (Surfing, Snorkeling, Scuba Diving, Whale & Dolphin Watching, Coastal Boat Tour) with fixed seed GUIDs (`33333333-3333-…-3301`…`3305`). When Member 1's canonical IDs are available, the reference table and its seed are replaced by a mapping to those IDs; no competing catalogue features (descriptions, publication, scheduling) are added. |
+| Activity identity | Member 1 owns the canonical coastal activity taxonomy. Until that component's service exists, Member 2 keeps a locally-owned `MarineActivities` reference table seeded with the agreed coastal activities (Surfing, Snorkeling, Scuba Diving, Whale & Dolphin Watching, Coastal Boat Tour) with fixed seed GUIDs (`33333333-3333-…-3301`…`3305`). Revision (7) expanded the reference table to a manager-maintained CRUD surface (see section 3): rows beyond the seeds can be added, renamed, retyped and deactivated, while the table stays a reference table — no competing catalogue features (descriptions, publication, scheduling) are added. When Member 1's canonical IDs are available, the reference table and its seed are replaced by a mapping to those IDs. |
 | Activity reference to suitability | Profiles and assessments reference `ActivityId` (GUID). Consumer handoffs (Member 3 planner, Member 4 operations) receive `activityId`, the activity name, and the assessment result/evidence; they never re-derive suitability. |
 | Condition/suitability data authority | Member 2 is the sole source of condition snapshots, freshness classification and deterministic suitability results. Consumers preserve `UNSUITABLE`/`UNKNOWN`/missing/stale meanings; no consumer recalculates or softens them. |
 | Workflow identity | Marine suitability assessments are point-in-time evaluations, not long-running workflows; they carry an `assessmentId` (GUID) and `snapshotId` for correlation. No shared long-running workflow ID is required for this component pre-G07. |
@@ -41,11 +41,11 @@ criteria.
 | Decision | Record |
 |---|---|
 | Service identity | Folder `services/marine-safety`, project `Blueverse.MarineSafety`, container `blueverse-marine-safety`, internal base route `/api/marine` (short prefix chosen deliberately; the component keeps the `marine-safety` name for folder, project and container identity). |
-| Public operation set | `GET /api/marine/health`, `GET /api/marine/current`, `GET /api/marine/snapshots/{id}`, `GET /api/marine/history`, `POST /api/marine/evaluate`, `GET|POST /api/marine/safety-profiles`, `GET|PUT|DELETE /api/marine/safety-profiles/{id}`, `GET /api/marine/safety-profiles/by-activity/{activityId}` — registered in `docs/api/endpoint-catalog.json`. |
+| Public operation set | `GET /api/marine/health`, `GET /api/marine/current`, `GET /api/marine/snapshots/{id}`, `GET /api/marine/history`, `POST /api/marine/evaluate`, `GET /api/marine/assessments`, `GET /api/marine/assessments/{id}`, `GET|POST /api/marine/activities`, `GET|PUT|DELETE /api/marine/activities/{id}`, `GET|POST /api/marine/safety-profiles`, `GET|PUT|DELETE /api/marine/safety-profiles/{id}`, `GET /api/marine/safety-profiles/by-activity/{activityId}` — registered in `docs/api/endpoint-catalog.json`. Revision (7) added the activity reference-table CRUD and the read-only assessment-history surface; every other operation is unchanged. |
 | Route/transport | `services/api` forwards `/api/marine/{**catch-all}` over YARP to `http://marine-safety:8080` on the private network; clients never address the component service. No `/api/v1`-style segments. |
-| Permission codes | `marine.profile.read` (condition reads, history, evaluate), `marine.profile.manage` in addition to read (profile create/update/deactivate). Codes are defined in Auth's `PermissionCodes`, seeded for the Admin role by the Auth seeder (approved additive change), and resolved from current role assignments (never JWT claims). Enforced in the component service via the `PERMISSION:<code>` policy convention. The marine-safety service mirrors the constants locally for enforcement; provisioning belongs to Auth. |
+| Permission codes | `marine.profile.read` (condition reads, history, evaluate, assessment reads, activity reads), `marine.profile.manage` in addition to read (profile and activity create/update/deactivate). Codes are defined in Auth's `PermissionCodes`, seeded for the Admin role by the Auth seeder (approved additive change), and resolved from current role assignments (never JWT claims). Enforced in the component service via the `PERMISSION:<code>` policy convention. The marine-safety service mirrors the constants locally for enforcement; provisioning belongs to Auth. |
 | Swagger | The component serves its OpenAPI document under `/api/marine/swagger` (anonymous, gateway-forwarded). The public API Swagger UI at `/api/swagger` lists it beside the public API and Auth documents; the gateway forwards document requests over the existing `/api/marine` route. The component service is not modified for aggregation. |
-| Error/status behavior | RFC 7807 ProblemDetails. 400 invalid input (coordinates, ranges, missing fields), 401 unauthenticated, 403 lacking permission grant, 404 unknown activity/snapshot/profile, 409 no active profile for an activity, 503 with `Retry-After` when Open-Meteo is unavailable. Profile/deactivate semantics: delete deactivates, never hard-deletes. |
+| Error/status behavior | RFC 7807 ProblemDetails. 400 invalid input (coordinates, ranges, missing fields), 401 unauthenticated, 403 lacking permission grant, 404 unknown activity/snapshot/profile/assessment, 409 no active profile for an activity or a duplicate activity name, 503 with `Retry-After` when Open-Meteo is unavailable. Profile and activity delete semantics: delete deactivates, never hard-deletes. |
 | DTO ownership | Request/response DTOs live in the component service (`Blueverse.MarineSafety.Dtos`); EF entities are never exposed. Response bodies always carry source, forecast/retrieval times, freshness and missing fields where applicable. |
 | Provider seam | `IOpenMeteoClient` is the only provider boundary. Result `MarineConditionsResult` carries nullable values plus `MissingFields`; failure is the typed `OpenMeteoUnavailableException`. Bounded retry (1, transient-only) and 10 s per-attempt timeout. |
 
@@ -78,8 +78,9 @@ criteria.
 
 | Decision | Record |
 |---|---|
-| Registry edits | Endpoint catalog gains only the marine-safety entries; `backendSources` gains `services/marine-safety`. No UI registry changes in this backend-only scope. |
+| Registry edits | Endpoint catalog gains only the marine-safety entries; `backendSources` gains `services/marine-safety`. React Web registration (revision 6) adds the three marine workflow IDs, six React/Flutter route rows and seven workflow-linked endpoints to the same shared registries; no Auth or public API operation changed. |
 | Client routes (future) | React and Flutter route ownership for the marine workflow will be registered under shared workflow IDs when the client work is implemented; backend contract names above are frozen so both clients bind to the same operations. |
+| Client routes (React, revision 6) | React owns `/marine/conditions`, `/marine/history` and `/marine/safety-profiles` under the shared workflow IDs `marine-conditions`, `marine-condition-history` and `marine-safety-profile-management`, permission-gated by `marine.profile.read` (+ `marine.profile.manage` for profile writes) resolved from current role assignments. Flutter routes are registered under the same workflow IDs for the paired mobile implementation; the mobile surface is not implemented yet. The browser submits `latitude`/`longitude`/`time` and evaluate `dateTime` in UTC and renders — never recomputes — the server classification, source, timestamps, freshness and missing fields. |
 | Shared files | Edits limited to: endpoint catalog JSON+MD, `services/api/appsettings.json` (YARP route), `services/api/Program.cs` (one SwaggerUI endpoint entry listing the marine document), `compose.yaml`, `.env` documentation, Auth permission codes/seeder and seeder test counts (approved additive change), README and database docs. No reformatting of unrelated shared content. |
 
 ## 7. Provider and evidence seams (exit criterion 7)
@@ -142,3 +143,41 @@ criteria.
 - `dotnet build` and the full test suites pass; migration and Open-Meteo
   behavior were verified against real PostgreSQL and the live provider.
 - Changes to shared files are limited to the entries listed in section 6.
+- Revision 2026-09-27 (6): React Web client implemented for this component on
+  the same branch. `apps/web` gained a member-specific `features/marine/`
+  module (typed API adapter over the frozen public operations plus the frozen
+  activity reference identities) and `pages/marine/MarinePages.tsx`
+  (conditions + suitability, history, safety-profile pages in the established
+  coastal design system), permission-gated routes, an account-navigation
+  group and a dashboard quick-access link gated by `marine.profile.read`.
+  Shared-file edits are limited to the registry/catalog updates above, the
+  route table, the account navigation groups and README status lines. Both
+  contract validators pass (46 public endpoints, 28 frontend routes); the web
+  suite passes 187/187 cases including 30 new marine request-contract and
+  component tests (normal, invalid, empty, malformed, denied, outage and
+  transport-failure paths). The backend contract, DTOs, permissions and
+  status semantics were not changed.
+- Revision 2026-09-28 (7): the public operation set was expanded to full CRUD
+  for the marine-safety component and the backend service was patched to
+  match, with no change to any pre-existing operation, DTO shape, permission
+  code or status semantic. Two gaps were closed. (a) The locally-owned
+  `MarineActivities` reference table had no API surface at all; it now
+  exposes manager-maintained CRUD — `GET|POST /api/marine/activities` and
+  `GET|PUT|DELETE /api/marine/activities/{id}` — where DELETE deactivates
+  (never hard-deletes: assessments hold a restrict FK reference and profiles
+  a cascade reference, and the section 2 activity-identity row above was
+  amended accordingly). Create/update require a unique name (duplicate name
+  is a 409 state conflict) and map to the same read/manage permission pair
+  as the safety-profile surface. (b) Suitability assessments were persisted
+  by every evaluate call but were not queryable; read-only
+  `GET /api/marine/assessments` (filters: `activityId`, `result`, `from`,
+  `to`; newest first, bounded to 200 rows like condition history) and
+  `GET /api/marine/assessments/{id}` now expose the stored evidence with
+  profile-version and snapshot references. The DTO names
+  `AssessmentHistoryDto` and an activity DTO family return as live contract
+  types (revision (3) removed them as dead code; they are now bound to real
+  operations). New tests M2-ACT-001..010 and M2-ASMT-001..006 pin the CRUD
+  semantics, deactivation interplay and history queries; the OpenAPI
+  contract test enumerates the expanded operation set. Final state: marine
+  suite 103/103, api/auth/marine builds clean, endpoint-catalog and UI
+  validators OK (53 public endpoints).

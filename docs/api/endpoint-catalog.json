@@ -251,6 +251,66 @@
       "status": "implemented",
       "description": "Global server and unhandled-render recovery page within Flutter app navigation.",
       "usage": "Explains the temporary interruption, provides retry and home actions, and keeps implementation details hidden."
+    },
+    {
+      "id": "react-marine-conditions",
+      "client": "react",
+      "route": "/marine/conditions",
+      "source": "apps/web/src/app/routes.tsx",
+      "workflowId": "marine-conditions",
+      "status": "implemented",
+      "description": "Marine condition lookup and deterministic suitability assessment route for the React client.",
+      "usage": "Queries current/forecast conditions and the server suitability result for a location, activity and requested UTC period through the public marine API; shows source, timestamps, freshness and missing fields without reclassifying."
+    },
+    {
+      "id": "react-marine-history",
+      "client": "react",
+      "route": "/marine/history",
+      "source": "apps/web/src/app/routes.tsx",
+      "workflowId": "marine-condition-history",
+      "status": "implemented",
+      "description": "Stored condition snapshot history route for the React client.",
+      "usage": "Lists past snapshots with optional latitude, longitude and UTC window filters, keeping source, forecast/retrieval times, freshness and missing fields visible."
+    },
+    {
+      "id": "react-marine-safety-profiles",
+      "client": "react",
+      "route": "/marine/safety-profiles",
+      "source": "apps/web/src/app/routes.tsx",
+      "workflowId": "marine-safety-profile-management",
+      "status": "implemented",
+      "description": "Activity safety-profile inspection and permission-gated management route for the React client.",
+      "usage": "Reads configured deterministic limits per activity; accounts holding the marine manage grant create superseding versions, update limits and deactivate profiles through the public marine API."
+    },
+    {
+      "id": "flutter-marine-conditions",
+      "client": "flutter",
+      "route": "/marine/conditions",
+      "source": "apps/mobile/lib/main.dart",
+      "workflowId": "marine-conditions",
+      "status": "registered",
+      "description": "Reserved Flutter route for the shared marine conditions workflow.",
+      "usage": "Registered under the shared workflow ID for the paired mobile implementation, which must provide the same authorized condition and suitability outcomes; not implemented yet."
+    },
+    {
+      "id": "flutter-marine-history",
+      "client": "flutter",
+      "route": "/marine/history",
+      "source": "apps/mobile/lib/main.dart",
+      "workflowId": "marine-condition-history",
+      "status": "registered",
+      "description": "Reserved Flutter route for the shared condition-history workflow.",
+      "usage": "Registered under the shared workflow ID for the paired mobile implementation, which must provide the same authorized history outcomes; not implemented yet."
+    },
+    {
+      "id": "flutter-marine-safety-profiles",
+      "client": "flutter",
+      "route": "/marine/safety-profiles",
+      "source": "apps/mobile/lib/main.dart",
+      "workflowId": "marine-safety-profile-management",
+      "status": "registered",
+      "description": "Reserved Flutter route for the shared safety-profile workflow.",
+      "usage": "Registered under the shared workflow ID for the paired mobile implementation, which must provide the same authorized profile-management outcomes; not implemented yet."
     }
   ],
   "gatewayRoutes": [
@@ -507,6 +567,9 @@
       "status": "implemented",
       "auth": "permission:marine.profile.read",
       "description": "Returns current or forecast marine/weather conditions for a location and optional time.",
+      "uiWorkflowIds": [
+        "marine-conditions"
+      ],
       "usage": "Acquires conditions through the backend Open-Meteo adapter, reusing a fresh stored snapshot when available, and reports source, retrieval time, freshness and missing fields. Used by React and Flutter condition workflows and future suitability consumers.",
       "source": "services/marine-safety/Controllers/MarineConditionsController.cs"
     },
@@ -533,6 +596,9 @@
       "status": "implemented",
       "auth": "permission:marine.profile.read",
       "description": "Lists stored condition snapshots filtered by location and/or time window.",
+      "uiWorkflowIds": [
+        "marine-condition-history"
+      ],
       "usage": "Supports condition-history inspection with optional latitude, longitude, from and to query filters; each row carries its own source and freshness classification.",
       "source": "services/marine-safety/Controllers/MarineConditionsController.cs"
     },
@@ -546,6 +612,9 @@
       "status": "implemented",
       "auth": "permission:marine.profile.read",
       "description": "Runs the deterministic activity/location/time suitability assessment.",
+      "uiWorkflowIds": [
+        "marine-conditions"
+      ],
       "usage": "The Member 2 non-CRUD operation: validates the activity and its safety profile, gathers fresh condition evidence, applies the profile's deterministic limits, and returns SUITABLE, UNSUITABLE or UNKNOWN with violations, evidence, source and freshness. Missing profiles or activities are rejected; missing or stale evidence yields UNKNOWN rather than a fabricated result.",
       "source": "services/marine-safety/Controllers/MarineConditionsController.cs"
     },
@@ -559,6 +628,9 @@
       "status": "implemented",
       "auth": "permission:marine.profile.read",
       "description": "Lists activity safety profiles with their configured limits and version history.",
+      "uiWorkflowIds": [
+        "marine-safety-profile-management"
+      ],
       "usage": "Lets authorized callers inspect the deterministic safety configuration per activity, including caution bands and active/version state.",
       "source": "services/marine-safety/Controllers/SafetyProfilesController.cs"
     },
@@ -598,6 +670,9 @@
       "status": "implemented",
       "auth": "permission:all(marine.profile.read,marine.profile.manage)",
       "description": "Creates a safety profile for an activity, superseding the previous active profile.",
+      "uiWorkflowIds": [
+        "marine-safety-profile-management"
+      ],
       "usage": "Permission-gated management: validates the activity exists and is active, requires positive limits, and rejects caution bands above their hard limits. Prior active profiles are deactivated while history is retained.",
       "source": "services/marine-safety/Controllers/SafetyProfilesController.cs"
     },
@@ -611,6 +686,9 @@
       "status": "implemented",
       "auth": "permission:all(marine.profile.read,marine.profile.manage)",
       "description": "Updates a safety profile's limits and increments its version.",
+      "uiWorkflowIds": [
+        "marine-safety-profile-management"
+      ],
       "usage": "Permission-gated management with the same validation as creation; version increments keep past assessments interpretable against the configuration that produced them.",
       "source": "services/marine-safety/Controllers/SafetyProfilesController.cs"
     },
@@ -624,8 +702,102 @@
       "status": "implemented",
       "auth": "permission:all(marine.profile.read,marine.profile.manage)",
       "description": "Deactivates a safety profile without deleting it.",
+      "uiWorkflowIds": [
+        "marine-safety-profile-management"
+      ],
       "usage": "Profiles are deactivated rather than deleted so assessment history keeps its profile reference; deactivation is idempotent.",
       "source": "services/marine-safety/Controllers/SafetyProfilesController.cs"
+    },
+    {
+      "id": "marine-activities",
+      "method": "GET",
+      "path": "/api/marine/activities",
+      "ownerService": "marine-safety",
+      "publicBoundary": "api",
+      "operationId": "GetActivities",
+      "status": "implemented",
+      "auth": "permission:marine.profile.read",
+      "description": "Lists the marine activity reference rows with their active state.",
+      "usage": "Lets authorized callers resolve activity identities and names for profile, condition and suitability workflows; supports an optional isActive filter.",
+      "source": "services/marine-safety/Controllers/ActivitiesController.cs"
+    },
+    {
+      "id": "marine-activity-by-id",
+      "method": "GET",
+      "path": "/api/marine/activities/{id:guid}",
+      "ownerService": "marine-safety",
+      "publicBoundary": "api",
+      "operationId": "GetActivity",
+      "status": "implemented",
+      "auth": "permission:marine.profile.read",
+      "description": "Returns one marine activity reference row by identifier.",
+      "usage": "Supports activity detail inspection for condition, suitability and profile workflows.",
+      "source": "services/marine-safety/Controllers/ActivitiesController.cs"
+    },
+    {
+      "id": "marine-activity-create",
+      "method": "POST",
+      "path": "/api/marine/activities",
+      "ownerService": "marine-safety",
+      "publicBoundary": "api",
+      "operationId": "CreateActivity",
+      "status": "implemented",
+      "auth": "permission:all(marine.profile.read,marine.profile.manage)",
+      "description": "Creates a marine activity reference row with a unique name.",
+      "usage": "Permission-gated management over the locally-owned activity reference table (placeholder for Member 1's canonical taxonomy); duplicate names are rejected as a state conflict.",
+      "source": "services/marine-safety/Controllers/ActivitiesController.cs"
+    },
+    {
+      "id": "marine-activity-update",
+      "method": "PUT",
+      "path": "/api/marine/activities/{id:guid}",
+      "ownerService": "marine-safety",
+      "publicBoundary": "api",
+      "operationId": "UpdateActivity",
+      "status": "implemented",
+      "auth": "permission:all(marine.profile.read,marine.profile.manage)",
+      "description": "Renames or retypes a marine activity reference row.",
+      "usage": "Permission-gated management; the name stays unique within the reference table and rows are never re-activated through this surface.",
+      "source": "services/marine-safety/Controllers/ActivitiesController.cs"
+    },
+    {
+      "id": "marine-activity-deactivate",
+      "method": "DELETE",
+      "path": "/api/marine/activities/{id:guid}",
+      "ownerService": "marine-safety",
+      "publicBoundary": "api",
+      "operationId": "DeactivateActivity",
+      "status": "implemented",
+      "auth": "permission:all(marine.profile.read,marine.profile.manage)",
+      "description": "Deactivates a marine activity without deleting it.",
+      "usage": "Deletion deactivates so assessment history keeps its restrict reference and profiles keep their cascade reference; an inactive activity cannot receive new profiles or evaluations. Deactivation is idempotent.",
+      "source": "services/marine-safety/Controllers/ActivitiesController.cs"
+    },
+    {
+      "id": "marine-assessments",
+      "method": "GET",
+      "path": "/api/marine/assessments",
+      "ownerService": "marine-safety",
+      "publicBoundary": "api",
+      "operationId": "GetAssessments",
+      "status": "implemented",
+      "auth": "permission:marine.profile.read",
+      "description": "Lists persisted suitability assessments, newest first, filtered by activity, result and evaluation window.",
+      "usage": "Makes the deterministic evaluate results queryable: every stored row carries the applied profile version, condition-snapshot reference, result, violations, caution factors, missing fields, source and freshness. Bounded like condition history.",
+      "source": "services/marine-safety/Controllers/AssessmentsController.cs"
+    },
+    {
+      "id": "marine-assessment-by-id",
+      "method": "GET",
+      "path": "/api/marine/assessments/{id:guid}",
+      "ownerService": "marine-safety",
+      "publicBoundary": "api",
+      "operationId": "GetAssessment",
+      "status": "implemented",
+      "auth": "permission:marine.profile.read",
+      "description": "Returns one persisted suitability assessment with its full evidence references.",
+      "usage": "Supports audit and explainability workflows: a past result stays interpretable after profiles or conditions change.",
+      "source": "services/marine-safety/Controllers/AssessmentsController.cs"
     },
     {
       "id": "auth-swagger-ui-document",

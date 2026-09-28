@@ -25,10 +25,40 @@ public interface IConditionService
         CancellationToken cancellationToken);
 }
 
+/// <summary>Marine activity reference-table management (full CRUD; delete is a deactivation).</summary>
+public interface IActivityService
+{
+    /// <summary>Returns activity reference rows ordered by name, optionally filtered by active state.</summary>
+    Task<IReadOnlyList<MarineActivityDto>> GetActivitiesAsync(bool? isActive, CancellationToken cancellationToken);
+
+    /// <summary>Returns one activity reference row by ID.</summary>
+    Task<MarineActivityDto?> GetActivityAsync(Guid id, CancellationToken cancellationToken);
+
+    /// <summary>Creates an active activity reference row with a unique name.</summary>
+    Task<MarineActivityDto> CreateActivityAsync(CreateActivityDto dto, CancellationToken cancellationToken);
+
+    /// <summary>Renames or retypes an activity; the name stays unique.</summary>
+    Task<MarineActivityDto?> UpdateActivityAsync(Guid id, UpdateActivityDto dto, CancellationToken cancellationToken);
+
+    /// <summary>Deactivates an activity without deleting it (profile and assessment references survive).</summary>
+    Task<bool> DeactivateActivityAsync(Guid id, CancellationToken cancellationToken);
+}
+
 /// <summary>Deterministic suitability evaluation.</summary>
 public interface ISuitabilityService
 {
     Task<SuitabilityResultDto> EvaluateAsync(EvaluateSuitabilityDto request, CancellationToken cancellationToken);
+
+    /// <summary>Returns persisted assessment history, newest first, filtered by activity, result and time window.</summary>
+    Task<IReadOnlyList<AssessmentHistoryDto>> GetAssessmentsAsync(
+        Guid? activityId,
+        string? result,
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        CancellationToken cancellationToken);
+
+    /// <summary>Returns one persisted assessment by ID.</summary>
+    Task<AssessmentHistoryDto?> GetAssessmentAsync(Guid id, CancellationToken cancellationToken);
 }
 
 /// <summary>Safety profile management.</summary>
