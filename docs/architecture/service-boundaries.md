@@ -89,13 +89,12 @@ default is no Auth service change.
 ## v1 member component services
 
 These four separately owned internal services are the v1 target architecture.
-The Member 1 branch now contains a private service scaffold at
-`services/experience-biodiversity/` with process liveness, OpenAPI, an EF Core
-context, startup migration hook and PostgreSQL connection check using the same
-database configuration as Auth. It has no domain entities, tables, migrations,
-provider integration, client workflow or service-local tests. The other three
-services are not present. Each member
-implements one complete service on the same `features/<component>` branch as
+The Member 1 service at `services/experience-biodiversity/` is implemented with
+domain entities, EF Core migrations, full catalogue CRUD (Destinations, Activities,
+Offerings, Schedules), publication lifecycle evaluations and transitions, favourites,
+Haversine proximity discovery with keyword geocoding fallback, OpenFreeMap/MapLibre
+vector tile configuration, and a private Agentic AI typed access seam.
+Each member implements one complete service on the same `features/<component>` branch as
 its React and Flutter work. A completed service owns its component's domain
 operations, validation, application/data-access code, EF Core migrations and
 PostgreSQL records, third-party adapter, tests, health/readiness contract and

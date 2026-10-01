@@ -40,9 +40,11 @@ through that shared capability, not the only supported sequence.
 | Platform Administrator | Manage authorized users, roles, permissions and configuration; inspect authorized audit information. Business permissions are still required. |
 
 Roles are configurable permission bundles, not business-code conditionals.
-New roles start with zero business permissions. The exact v1 permission codes
-and role assignments belong to an implementation contract; do not invent them
-in UI code or treat a hidden control as authorization.
+New roles start with zero business permissions. The system `Admin` role is seeded
+with platform administrative permissions plus component management permissions
+including `experiences.catalogue.read` and `experiences.catalogue.manage`,
+granting authoritative CRUD access across destinations, activities, offerings, and schedules.
+Do not invent permission codes in UI code or treat a hidden control as authorization.
 
 ## Required integration contract
 

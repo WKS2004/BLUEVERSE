@@ -4,6 +4,7 @@ import SiteFooter from '../../components/layout/SiteFooter'
 import SiteHeader from '../../components/layout/SiteHeader'
 import { useAuthSession } from '../../features/auth/authSession'
 import type {
+  ActivityDto,
   DestinationDto,
   FavouriteDto,
   MapConfigDto,
@@ -13,6 +14,11 @@ import type {
 } from '../../features/experiences/experienceApi'
 import {
   addFavourite,
+  createDestination,
+  createOffering,
+  deleteDestination,
+  deleteOffering,
+  getActivities,
   getDestinations,
   getMapConfig,
   getNearbyExperiences,
@@ -20,7 +26,10 @@ import {
   getUserFavourites,
   removeFavourite,
   searchMapPlaces,
+  updateDestination,
+  updateOffering,
 } from '../../features/experiences/experienceApi'
+import { hasAnyPermission } from '../../features/authorization/permissions'
 
 const FALLBACK_DESTINATIONS = [
   { id: 'dest-mirissa', name: 'Mirissa Coastal Haven', region: 'Southern Province', latitude: 5.9482, longitude: 80.4716 },
@@ -46,12 +55,56 @@ export default function ExperiencesPage() {
   const [error, setError] = useState<string | null>(null)
 
   // Nearby state
+  const [nearLocation, setNearLocation] = useState('')
   const [nearLat, setNearLat] = useState('5.9485')
   const [nearLon, setNearLon] = useState('80.4578')
   const [nearRadiusKm, setNearRadiusKm] = useState('50')
+  const [showAdvancedCoords, setShowAdvancedCoords] = useState(false)
+  const [resolvedLocationName, setResolvedLocationName] = useState<string | null>(null)
   const [nearbyResults, setNearbyResults] = useState<NearbyDestinationDto[]>([])
   const [nearbySearched, setNearbySearched] = useState(false)
   const [nearbyLoading, setNearbyLoading] = useState(false)
+
+  // Activities for offering creation
+  const [activities, setActivities] = useState<ActivityDto[]>([])
+
+  // Admin and CRUD states
+  const isAdmin =
+    hasAnyPermission(user, ['experiences.catalogue.manage', 'auth.role.manage']) ||
+    (user?.roles?.includes('Admin') ?? false)
+
+  // Destination modal state
+  const [destModalOpen, setDestModalOpen] = useState(false)
+  const [destModalMode, setDestModalMode] = useState<'create' | 'edit'>('create')
+  const [destEditingId, setDestEditingId] = useState<string | null>(null)
+  const [destFormName, setDestFormName] = useState('')
+  const [destFormSlug, setDestFormSlug] = useState('')
+  const [destFormRegion, setDestFormRegion] = useState('')
+  const [destFormDesc, setDestFormDesc] = useState('')
+  const [destFormLat, setDestFormLat] = useState('5.9485')
+  const [destFormLon, setDestFormLon] = useState('80.4578')
+  const [destSubmitting, setDestSubmitting] = useState(false)
+
+  // Offering modal state
+  const [offModalOpen, setOffModalOpen] = useState(false)
+  const [offModalMode, setOffModalMode] = useState<'create' | 'edit'>('create')
+  const [offEditingId, setOffEditingId] = useState<string | null>(null)
+  const [offFormDestId, setOffFormDestId] = useState('')
+  const [offFormActId, setOffFormActId] = useState('')
+  const [offFormTitle, setOffFormTitle] = useState('')
+  const [offFormPrice, setOffFormPrice] = useState('5000')
+  const [offFormDuration, setOffFormDuration] = useState('120')
+  const [offFormCapacity, setOffFormCapacity] = useState('8')
+  const [offFormDesc, setOffFormDesc] = useState('')
+  const [offSubmitting, setOffSubmitting] = useState(false)
+
+  // Delete confirmation modal state
+  const [deleteDialog, setDeleteDialog] = useState<{
+    type: 'destination' | 'offering'
+    id: string
+    title: string
+  } | null>(null)
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false)
 
   // Interactive Map state
   const [mapConfig, setMapConfig] = useState<MapConfigDto | null>(null)
@@ -105,6 +158,12 @@ export default function ExperiencesPage() {
           setDestinations(destsRes.items)
           setOfferings(offRes.items)
         }
+
+        getActivities()
+          .then((acts) => {
+            if (isMounted) setActivities(Array.isArray(acts) ? acts : (acts?.items ?? []))
+          })
+          .catch(() => {})
 
         getMapConfig()
           .then((cfg) => {
@@ -192,18 +251,201 @@ export default function ExperiencesPage() {
     )
   }
 
+  // --- CRUD Handlers ---
+  function openCreateDestinationModal() {
+    setDestModalMode('create')
+    setDestEditingId(null)
+    setDestFormName('')
+    setDestFormSlug('')
+    setDestFormRegion('')
+    setDestFormDesc('')
+    setDestFormLat('5.9485')
+    setDestFormLon('80.4578')
+    setDestModalOpen(true)
+  }
+
+  function openEditDestinationModal(dest: DestinationDto) {
+    setDestModalMode('edit')
+    setDestEditingId(dest.id)
+    setDestFormName(dest.name)
+    setDestFormSlug(dest.slug || '')
+    setDestFormRegion(dest.region || '')
+    setDestFormDesc(dest.description || '')
+    setDestFormLat(String(dest.latitude))
+    setDestFormLon(String(dest.longitude))
+    setDestModalOpen(true)
+  }
+
+  async function handleSaveDestination(e: React.FormEvent) {
+    e.preventDefault()
+    setDestSubmitting(true)
+    setError(null)
+    try {
+      const lat = parseFloat(destFormLat)
+      const lon = parseFloat(destFormLon)
+      if (isNaN(lat) || isNaN(lon)) {
+        throw new Error('Please enter valid latitude and longitude coordinates.')
+      }
+
+      if (destModalMode === 'create') {
+        const created = await createDestination({
+          name: destFormName.trim(),
+          slug: destFormSlug.trim() || undefined,
+          region: destFormRegion.trim() || undefined,
+          description: destFormDesc.trim() || undefined,
+          latitude: lat,
+          longitude: lon,
+        })
+        setDestinations((prev) => [created, ...prev])
+        setFavMessage(`Destination "${created.name}" created successfully!`)
+      } else if (destEditingId) {
+        const updated = await updateDestination(destEditingId, {
+          name: destFormName.trim(),
+          slug: destFormSlug.trim() || undefined,
+          region: destFormRegion.trim() || undefined,
+          description: destFormDesc.trim() || undefined,
+          latitude: lat,
+          longitude: lon,
+        })
+        setDestinations((prev) => prev.map((d) => (d.id === updated.id ? updated : d)))
+        setFavMessage(`Destination "${updated.name}" updated successfully!`)
+      }
+      setDestModalOpen(false)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to save destination.')
+    } finally {
+      setDestSubmitting(false)
+      setTimeout(() => setFavMessage(null), 3500)
+    }
+  }
+
+  function openCreateOfferingModal() {
+    setOffModalMode('create')
+    setOffEditingId(null)
+    setOffFormDestId(destinations[0]?.id || '')
+    setOffFormActId(activities[0]?.id || '')
+    setOffFormTitle('')
+    setOffFormPrice('5000')
+    setOffFormDuration('120')
+    setOffFormCapacity('8')
+    setOffFormDesc('')
+    setOffModalOpen(true)
+  }
+
+  function openEditOfferingModal(off: OfferingDto) {
+    setOffModalMode('edit')
+    setOffEditingId(off.id)
+    setOffFormDestId(off.destinationId)
+    setOffFormActId(off.activityId)
+    setOffFormTitle(off.title)
+    setOffFormPrice(off.price != null ? String(off.price) : '')
+    setOffFormDuration(off.durationMinutes != null ? String(off.durationMinutes) : '')
+    setOffFormCapacity(off.maxCapacity != null ? String(off.maxCapacity) : '')
+    setOffFormDesc(off.description || '')
+    setOffModalOpen(true)
+  }
+
+  async function handleSaveOffering(e: React.FormEvent) {
+    e.preventDefault()
+    setOffSubmitting(true)
+    setError(null)
+    try {
+      if (offModalMode === 'create') {
+        if (!offFormDestId) throw new Error('Please select a destination.')
+        if (!offFormActId) throw new Error('Please select an activity.')
+        const created = await createOffering({
+          destinationId: offFormDestId,
+          activityId: offFormActId,
+          title: offFormTitle.trim(),
+          description: offFormDesc.trim() || undefined,
+          price: offFormPrice ? parseFloat(offFormPrice) : 0,
+          currency: 'LKR',
+          durationMinutes: offFormDuration ? parseInt(offFormDuration, 10) : 60,
+          maxCapacity: offFormCapacity ? parseInt(offFormCapacity, 10) : 10,
+        })
+        setOfferings((prev) => [created, ...prev])
+        setFavMessage(`Offering "${created.title}" created successfully!`)
+      } else if (offEditingId) {
+        const updated = await updateOffering(offEditingId, {
+          title: offFormTitle.trim(),
+          description: offFormDesc.trim() || undefined,
+          price: offFormPrice ? parseFloat(offFormPrice) : undefined,
+          currency: 'LKR',
+          durationMinutes: offFormDuration ? parseInt(offFormDuration, 10) : undefined,
+          maxCapacity: offFormCapacity ? parseInt(offFormCapacity, 10) : undefined,
+        })
+        setOfferings((prev) => prev.map((o) => (o.id === updated.id ? updated : o)))
+        setFavMessage(`Offering "${updated.title}" updated successfully!`)
+      }
+      setOffModalOpen(false)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to save offering.')
+    } finally {
+      setOffSubmitting(false)
+      setTimeout(() => setFavMessage(null), 3500)
+    }
+  }
+
+  function confirmDelete(type: 'destination' | 'offering', id: string, title: string) {
+    setDeleteDialog({ type, id, title })
+  }
+
+  async function handleExecuteDelete() {
+    if (!deleteDialog) return
+    setDeleteSubmitting(true)
+    setError(null)
+    try {
+      if (deleteDialog.type === 'destination') {
+        await deleteDestination(deleteDialog.id)
+        setDestinations((prev) => prev.filter((d) => d.id !== deleteDialog.id))
+        setOfferings((prev) => prev.filter((o) => o.destinationId !== deleteDialog.id))
+        setFavMessage(`Destination "${deleteDialog.title}" deleted.`)
+      } else {
+        await deleteOffering(deleteDialog.id)
+        setOfferings((prev) => prev.filter((o) => o.id !== deleteDialog.id))
+        setFavMessage(`Offering "${deleteDialog.title}" deleted.`)
+      }
+      setDeleteDialog(null)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Deletion failed.')
+    } finally {
+      setDeleteSubmitting(false)
+      setTimeout(() => setFavMessage(null), 3500)
+    }
+  }
+
   async function handleNearbySearch(e?: React.FormEvent) {
     if (e) e.preventDefault()
-    const lat = parseFloat(nearLat)
-    const lon = parseFloat(nearLon)
     const radMeters = (parseFloat(nearRadiusKm) || 50) * 1000
-
-    if (isNaN(lat) || isNaN(lon)) return
+    const trimmedLoc = nearLocation.trim()
 
     setNearbyLoading(true)
+    setError(null)
     try {
-      const res = await getNearbyExperiences(lat, lon, radMeters, 15)
-      setNearbyResults(res.results)
+      let res
+      if (trimmedLoc) {
+        res = await getNearbyExperiences({ location: trimmedLoc, radiusMeters: radMeters, limit: 15 })
+      } else {
+        const lat = parseFloat(nearLat)
+        const lon = parseFloat(nearLon)
+        if (isNaN(lat) || isNaN(lon)) {
+          setError('Please enter a location name or valid coordinates.')
+          setNearbyLoading(false)
+          return
+        }
+        res = await getNearbyExperiences({ latitude: lat, longitude: lon, radiusMeters: radMeters, limit: 15 })
+      }
+
+      setNearbyResults(res.results || [])
+      if (res.query?.resolvedLocation) {
+        setResolvedLocationName(res.query.resolvedLocation)
+      } else if (trimmedLoc) {
+        setResolvedLocationName(trimmedLoc)
+      } else {
+        setResolvedLocationName(null)
+      }
+      if (res.query?.latitude != null) setNearLat(res.query.latitude.toFixed(4))
+      if (res.query?.longitude != null) setNearLon(res.query.longitude.toFixed(4))
       setNearbySearched(true)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Unable to query nearby experiences.')
@@ -313,7 +555,7 @@ export default function ExperiencesPage() {
                   <span>My Saved Wishlist</span>
                   <span aria-hidden="true">★</span>
                 </Link>
-                {user && (
+                {isAdmin && (
                   <Link
                     className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/30 px-5 text-sm font-bold text-white transition duration-200 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                     to="/experiences/manage"
@@ -454,14 +696,26 @@ export default function ExperiencesPage() {
               <>
                 {/* Destinations Section */}
                 <section aria-labelledby="section-destinations-title" className="mb-14">
-                  <div className="mb-6 flex items-end justify-between">
+                  <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
                     <div>
                       <p className="text-xs font-extrabold tracking-[0.16em] text-coast-blue">AUTHORITATIVE PLACES</p>
                       <h2 className="mt-1 font-display text-2xl font-bold tracking-tight text-coast-ink sm:text-3xl" id="section-destinations-title">
                         Coastal Destinations
                       </h2>
                     </div>
-                    <span className="text-xs font-bold text-coast-muted">{destinations.length} destinations found</span>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="text-xs font-bold text-coast-muted">{destinations.length} destinations found</span>
+                      {isAdmin && (
+                        <button
+                          className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-coast-deep px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-coast-blue focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coast-blue"
+                          onClick={openCreateDestinationModal}
+                          type="button"
+                        >
+                          <span aria-hidden="true" className="text-sm font-bold">+</span>
+                          <span>Add Destination</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {destinations.length === 0 ? (
@@ -482,18 +736,42 @@ export default function ExperiencesPage() {
                                 <span className="rounded-full bg-coast-sage px-3 py-1 text-[11px] font-extrabold text-coast-deep">
                                   {dest.region || 'Coastal Sri Lanka'}
                                 </span>
-                                <button
-                                  aria-label={saved ? `Remove ${dest.name} from saved` : `Save ${dest.name}`}
-                                  className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition ${
-                                    saved
-                                      ? 'border-coast-teal bg-coast-teal text-white'
-                                      : 'border-coast-line bg-white text-coast-muted hover:border-coast-blue hover:text-coast-blue'
-                                  }`}
-                                  onClick={() => handleToggleFavourite('DESTINATION', dest.id)}
-                                  type="button"
-                                >
-                                  ★
-                                </button>
+                                <div className="flex items-center gap-1.5">
+                                  {isAdmin && (
+                                    <>
+                                      <button
+                                        aria-label={`Edit ${dest.name}`}
+                                        className="inline-flex h-8 items-center gap-1 rounded-full border border-coast-line bg-white px-2.5 text-[11px] font-bold text-coast-deep transition hover:border-coast-blue hover:text-coast-blue hover:bg-coast-sand"
+                                        onClick={() => openEditDestinationModal(dest)}
+                                        title="Edit destination details"
+                                        type="button"
+                                      >
+                                        <span>✎ Edit</span>
+                                      </button>
+                                      <button
+                                        aria-label={`Delete ${dest.name}`}
+                                        className="inline-flex h-8 items-center gap-1 rounded-full border border-red-200 bg-white px-2.5 text-[11px] font-bold text-red-600 transition hover:border-red-500 hover:bg-red-50"
+                                        onClick={() => confirmDelete('destination', dest.id, dest.name)}
+                                        title="Delete destination"
+                                        type="button"
+                                      >
+                                        <span>✕ Delete</span>
+                                      </button>
+                                    </>
+                                  )}
+                                  <button
+                                    aria-label={saved ? `Remove ${dest.name} from saved` : `Save ${dest.name}`}
+                                    className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition ${
+                                      saved
+                                        ? 'border-coast-teal bg-coast-teal text-white'
+                                        : 'border-coast-line bg-white text-coast-muted hover:border-coast-blue hover:text-coast-blue'
+                                    }`}
+                                    onClick={() => handleToggleFavourite('DESTINATION', dest.id)}
+                                    type="button"
+                                  >
+                                    ★
+                                  </button>
+                                </div>
                               </div>
 
                               <h3 className="mt-4 font-display text-xl font-bold tracking-tight text-coast-ink group-hover:text-coast-deep">
@@ -532,14 +810,26 @@ export default function ExperiencesPage() {
 
                 {/* Offerings Section */}
                 <section aria-labelledby="section-offerings-title">
-                  <div className="mb-6 flex items-end justify-between">
+                  <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
                     <div>
                       <p className="text-xs font-extrabold tracking-[0.16em] text-coast-blue">PARTICIPATORY PACKAGES</p>
                       <h2 className="mt-1 font-display text-2xl font-bold tracking-tight text-coast-ink sm:text-3xl" id="section-offerings-title">
                         Experience Offerings & Tours
                       </h2>
                     </div>
-                    <span className="text-xs font-bold text-coast-muted">{filteredOfferings.length} offerings available</span>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="text-xs font-bold text-coast-muted">{filteredOfferings.length} offerings available</span>
+                      {isAdmin && (
+                        <button
+                          className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-coast-deep px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-coast-blue focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coast-blue"
+                          onClick={openCreateOfferingModal}
+                          type="button"
+                        >
+                          <span aria-hidden="true" className="text-sm font-bold">+</span>
+                          <span>Add Offering</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {filteredOfferings.length === 0 ? (
@@ -560,18 +850,42 @@ export default function ExperiencesPage() {
                                 <span className="rounded-full bg-coast-sand px-3 py-1 text-[11px] font-extrabold text-coast-deep">
                                   {off.activityName}
                                 </span>
-                                <button
-                                  aria-label={saved ? `Remove ${off.title} from saved` : `Save ${off.title}`}
-                                  className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition ${
-                                    saved
-                                      ? 'border-coast-teal bg-coast-teal text-white'
-                                      : 'border-coast-line bg-white text-coast-muted hover:border-coast-blue hover:text-coast-blue'
-                                  }`}
-                                  onClick={() => handleToggleFavourite('OFFERING', off.id)}
-                                  type="button"
-                                >
-                                  ★
-                                </button>
+                                <div className="flex items-center gap-1.5">
+                                  {isAdmin && (
+                                    <>
+                                      <button
+                                        aria-label={`Edit ${off.title}`}
+                                        className="inline-flex h-8 items-center gap-1 rounded-full border border-coast-line bg-white px-2.5 text-[11px] font-bold text-coast-deep transition hover:border-coast-blue hover:text-coast-blue hover:bg-coast-sand"
+                                        onClick={() => openEditOfferingModal(off)}
+                                        title="Edit offering details"
+                                        type="button"
+                                      >
+                                        <span>✎ Edit</span>
+                                      </button>
+                                      <button
+                                        aria-label={`Delete ${off.title}`}
+                                        className="inline-flex h-8 items-center gap-1 rounded-full border border-red-200 bg-white px-2.5 text-[11px] font-bold text-red-600 transition hover:border-red-500 hover:bg-red-50"
+                                        onClick={() => confirmDelete('offering', off.id, off.title)}
+                                        title="Delete offering"
+                                        type="button"
+                                      >
+                                        <span>✕ Delete</span>
+                                      </button>
+                                    </>
+                                  )}
+                                  <button
+                                    aria-label={saved ? `Remove ${off.title} from saved` : `Save ${off.title}`}
+                                    className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition ${
+                                      saved
+                                        ? 'border-coast-teal bg-coast-teal text-white'
+                                        : 'border-coast-line bg-white text-coast-muted hover:border-coast-blue hover:text-coast-blue'
+                                    }`}
+                                    onClick={() => handleToggleFavourite('OFFERING', off.id)}
+                                    type="button"
+                                  >
+                                    ★
+                                  </button>
+                                </div>
                               </div>
 
                               <h3 className="mt-4 font-display text-xl font-bold tracking-tight text-coast-ink group-hover:text-coast-deep">
@@ -636,13 +950,14 @@ export default function ExperiencesPage() {
               </p>
 
               <div className="mt-5">
-                <p className="text-xs font-bold text-coast-muted">Quick coastal coordinates from catalogue:</p>
+                <p className="text-xs font-bold text-coast-muted">Quick coastal destinations:</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {activeDestinations.slice(0, 6).map((spot) => (
                     <button
                       className="rounded-full border border-coast-line bg-white px-3 py-1.5 text-xs font-bold text-coast-deep transition hover:border-coast-glass hover:bg-coast-sage"
                       key={spot.id || spot.name}
                       onClick={() => {
+                        setNearLocation(spot.name)
                         setNearLat(spot.latitude.toFixed(4))
                         setNearLon(spot.longitude.toFixed(4))
                       }}
@@ -654,59 +969,94 @@ export default function ExperiencesPage() {
                 </div>
               </div>
 
-              <form className="mt-6 grid gap-4 sm:grid-cols-3 sm:items-end" onSubmit={handleNearbySearch}>
-                <div>
-                  <label className="block text-xs font-extrabold text-coast-deep" htmlFor="near-lat">
-                    LATITUDE (DEGREES)
-                  </label>
-                  <input
-                    className="mt-2 w-full rounded-2xl border border-coast-line bg-white px-4 py-2.5 text-sm text-coast-ink focus:border-coast-blue focus:outline-none focus:ring-2 focus:ring-coast-glass"
-                    id="near-lat"
-                    onChange={(e) => setNearLat(e.target.value)}
-                    placeholder="e.g. 5.9485"
-                    step="0.0001"
-                    type="number"
-                    value={nearLat}
-                  />
+              <form className="mt-6 flex flex-col gap-5" onSubmit={handleNearbySearch}>
+                {/* Primary User-Friendly Inputs */}
+                <div className="grid gap-4 sm:grid-cols-3 sm:items-end">
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-extrabold text-coast-deep" htmlFor="near-location">
+                      COASTAL LOCATION OR PLACE NAME
+                    </label>
+                    <input
+                      className="mt-2 w-full rounded-2xl border border-coast-line bg-white px-4 py-2.5 text-sm text-coast-ink placeholder:text-coast-muted focus:border-coast-blue focus:outline-none focus:ring-2 focus:ring-coast-glass"
+                      id="near-location"
+                      onChange={(e) => setNearLocation(e.target.value)}
+                      placeholder="e.g. Mirissa, Weligama, Galle, Pigeon Island..."
+                      type="text"
+                      value={nearLocation}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-extrabold text-coast-deep" htmlFor="near-rad">
+                      SEARCH RADIUS (KM)
+                    </label>
+                    <input
+                      className="mt-2 w-full rounded-2xl border border-coast-line bg-white px-4 py-2.5 text-sm text-coast-ink focus:border-coast-blue focus:outline-none focus:ring-2 focus:ring-coast-glass"
+                      id="near-rad"
+                      max="500"
+                      min="1"
+                      onChange={(e) => setNearRadiusKm(e.target.value)}
+                      type="number"
+                      value={nearRadiusKm}
+                    />
+                  </div>
+                </div>
+
+                {/* Collapsible Advanced Coordinate Search */}
+                <div className="border-t border-coast-line/70 pt-3">
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-2 text-xs font-bold text-coast-deep hover:text-coast-blue transition"
+                    onClick={() => setShowAdvancedCoords(!showAdvancedCoords)}
+                  >
+                    <span>{showAdvancedCoords ? '▼ Hide' : '▶ Show'} Advanced Geographic Coordinates</span>
+                    <span className="rounded-full bg-coast-sand px-2 py-0.5 text-[10px] text-coast-muted">
+                      {nearLat}°N, {nearLon}°E
+                    </span>
+                  </button>
+
+                  {showAdvancedCoords && (
+                    <div className="mt-3 grid gap-4 rounded-2xl border border-coast-line/70 bg-white/60 p-4 sm:grid-cols-2">
+                      <div>
+                        <label className="block text-xs font-extrabold text-coast-deep" htmlFor="near-lat">
+                          LATITUDE (DEGREES)
+                        </label>
+                        <input
+                          className="mt-2 w-full rounded-2xl border border-coast-line bg-white px-4 py-2.5 text-sm text-coast-ink focus:border-coast-blue focus:outline-none focus:ring-2 focus:ring-coast-glass"
+                          id="near-lat"
+                          onChange={(e) => setNearLat(e.target.value)}
+                          placeholder="e.g. 5.9485"
+                          step="0.0001"
+                          type="number"
+                          value={nearLat}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-extrabold text-coast-deep" htmlFor="near-lon">
+                          LONGITUDE (DEGREES)
+                        </label>
+                        <input
+                          className="mt-2 w-full rounded-2xl border border-coast-line bg-white px-4 py-2.5 text-sm text-coast-ink focus:border-coast-blue focus:outline-none focus:ring-2 focus:ring-coast-glass"
+                          id="near-lon"
+                          onChange={(e) => setNearLon(e.target.value)}
+                          placeholder="e.g. 80.4578"
+                          step="0.0001"
+                          type="number"
+                          value={nearLon}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-extrabold text-coast-deep" htmlFor="near-lon">
-                    LONGITUDE (DEGREES)
-                  </label>
-                  <input
-                    className="mt-2 w-full rounded-2xl border border-coast-line bg-white px-4 py-2.5 text-sm text-coast-ink focus:border-coast-blue focus:outline-none focus:ring-2 focus:ring-coast-glass"
-                    id="near-lon"
-                    onChange={(e) => setNearLon(e.target.value)}
-                    placeholder="e.g. 80.4578"
-                    step="0.0001"
-                    type="number"
-                    value={nearLon}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-extrabold text-coast-deep" htmlFor="near-rad">
-                    RADIUS (KILOMETERS)
-                  </label>
-                  <input
-                    className="mt-2 w-full rounded-2xl border border-coast-line bg-white px-4 py-2.5 text-sm text-coast-ink focus:border-coast-blue focus:outline-none focus:ring-2 focus:ring-coast-glass"
-                    id="near-rad"
-                    max="500"
-                    min="1"
-                    onChange={(e) => setNearRadiusKm(e.target.value)}
-                    type="number"
-                    value={nearRadiusKm}
-                  />
-                </div>
-
-                <div className="sm:col-span-3">
                   <button
                     className="inline-flex min-h-11 items-center justify-center rounded-full bg-coast-deep px-6 text-sm font-extrabold text-white transition hover:bg-coast-blue focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coast-blue"
                     disabled={nearbyLoading}
                     type="submit"
                   >
-                    {nearbyLoading ? 'Calculating Haversine Distance...' : 'Find Coastal Destinations'}
+                    {nearbyLoading ? 'Finding Coastal Destinations...' : 'Find Coastal Destinations'}
                   </button>
                 </div>
               </form>
@@ -715,13 +1065,29 @@ export default function ExperiencesPage() {
             {/* Results */}
             {nearbySearched && (
               <div className="mt-8">
-                <h3 className="font-display text-2xl font-bold tracking-tight text-coast-ink">
-                  Proximity Results ({nearbyResults.length})
-                </h3>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-display text-2xl font-bold tracking-tight text-coast-ink">
+                      Proximity Results ({nearbyResults.length})
+                    </h3>
+                    <p className="mt-1 text-xs text-coast-muted">
+                      {resolvedLocationName ? (
+                        <span>
+                          Showing coastal spots within <strong className="text-coast-deep">{nearRadiusKm} km</strong> of{' '}
+                          <strong className="text-coast-deep">{resolvedLocationName}</strong> ({nearLat}°N, {nearLon}°E)
+                        </span>
+                      ) : (
+                        <span>
+                          Showing coastal spots within <strong className="text-coast-deep">{nearRadiusKm} km</strong> of {nearLat}°N, {nearLon}°E
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </div>
 
                 {nearbyResults.length === 0 ? (
                   <p className="mt-4 rounded-3xl border border-coast-line bg-coast-pearl p-6 text-coast-muted">
-                    No published destinations found within {nearRadiusKm} km of the requested coordinates.
+                    No published destinations found within {nearRadiusKm} km of {resolvedLocationName || `${nearLat}°N, ${nearLon}°E`}.
                   </p>
                 ) : (
                   <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -1019,6 +1385,344 @@ export default function ExperiencesPage() {
           </div>
         )}
       </main>
+
+      {/* --- Destination Modal (Create / Edit) --- */}
+      {destModalOpen && (
+        <div
+          aria-labelledby="dest-modal-title"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-coast-deep/60 p-4 backdrop-blur-sm"
+          role="dialog"
+        >
+          <div className="w-full max-w-lg rounded-3xl border border-coast-line bg-white p-6 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-coast-line pb-4">
+              <h3 className="font-display text-xl font-bold text-coast-ink" id="dest-modal-title">
+                {destModalMode === 'create' ? 'Add New Coastal Destination' : 'Edit Coastal Destination'}
+              </h3>
+              <button
+                aria-label="Close modal"
+                className="rounded-full p-1 text-coast-muted hover:bg-coast-sand hover:text-coast-ink"
+                onClick={() => setDestModalOpen(false)}
+                type="button"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form className="mt-4 space-y-4" onSubmit={handleSaveDestination}>
+              <div>
+                <label className="block text-xs font-extrabold text-coast-deep" htmlFor="modal-dest-name">
+                  DESTINATION NAME *
+                </label>
+                <input
+                  className="mt-1 w-full rounded-2xl border border-coast-line bg-coast-paper px-4 py-2 text-sm text-coast-ink focus:border-coast-blue focus:outline-none focus:ring-2 focus:ring-coast-glass"
+                  id="modal-dest-name"
+                  onChange={(e) => setDestFormName(e.target.value)}
+                  placeholder="e.g. Mirissa Coastal Haven"
+                  required
+                  type="text"
+                  value={destFormName}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-extrabold text-coast-deep" htmlFor="modal-dest-slug">
+                    URL SLUG
+                  </label>
+                  <input
+                    className="mt-1 w-full rounded-2xl border border-coast-line bg-coast-paper px-4 py-2 text-sm text-coast-ink focus:border-coast-blue focus:outline-none focus:ring-2 focus:ring-coast-glass"
+                    id="modal-dest-slug"
+                    onChange={(e) => setDestFormSlug(e.target.value)}
+                    placeholder="e.g. mirissa-haven"
+                    type="text"
+                    value={destFormSlug}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-extrabold text-coast-deep" htmlFor="modal-dest-region">
+                    COASTAL REGION
+                  </label>
+                  <input
+                    className="mt-1 w-full rounded-2xl border border-coast-line bg-coast-paper px-4 py-2 text-sm text-coast-ink focus:border-coast-blue focus:outline-none focus:ring-2 focus:ring-coast-glass"
+                    id="modal-dest-region"
+                    onChange={(e) => setDestFormRegion(e.target.value)}
+                    placeholder="e.g. Southern Province"
+                    type="text"
+                    value={destFormRegion}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-extrabold text-coast-deep" htmlFor="modal-dest-lat">
+                    LATITUDE *
+                  </label>
+                  <input
+                    className="mt-1 w-full rounded-2xl border border-coast-line bg-coast-paper px-4 py-2 text-sm text-coast-ink focus:border-coast-blue focus:outline-none focus:ring-2 focus:ring-coast-glass"
+                    id="modal-dest-lat"
+                    onChange={(e) => setDestFormLat(e.target.value)}
+                    placeholder="5.9485"
+                    required
+                    step="any"
+                    type="number"
+                    value={destFormLat}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-extrabold text-coast-deep" htmlFor="modal-dest-lon">
+                    LONGITUDE *
+                  </label>
+                  <input
+                    className="mt-1 w-full rounded-2xl border border-coast-line bg-coast-paper px-4 py-2 text-sm text-coast-ink focus:border-coast-blue focus:outline-none focus:ring-2 focus:ring-coast-glass"
+                    id="modal-dest-lon"
+                    onChange={(e) => setDestFormLon(e.target.value)}
+                    placeholder="80.4578"
+                    required
+                    step="any"
+                    type="number"
+                    value={destFormLon}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-extrabold text-coast-deep" htmlFor="modal-dest-desc">
+                  DESCRIPTION & ECOLOGY
+                </label>
+                <textarea
+                  className="mt-1 w-full rounded-2xl border border-coast-line bg-coast-paper px-4 py-2 text-sm text-coast-ink focus:border-coast-blue focus:outline-none focus:ring-2 focus:ring-coast-glass"
+                  id="modal-dest-desc"
+                  onChange={(e) => setDestFormDesc(e.target.value)}
+                  placeholder="Describe marine habitat, coastal features, and biodiversity context..."
+                  rows={3}
+                  value={destFormDesc}
+                />
+              </div>
+
+              <div className="mt-6 flex justify-end gap-3 pt-3 border-t border-coast-line">
+                <button
+                  className="rounded-full border border-coast-line px-5 py-2 text-xs font-bold text-coast-muted transition hover:bg-coast-sand"
+                  onClick={() => setDestModalOpen(false)}
+                  type="button"
+                >
+                  Cancel
+                </button>
+                <button
+                  className="rounded-full bg-coast-deep px-5 py-2 text-xs font-extrabold text-white transition hover:bg-coast-blue disabled:opacity-50"
+                  disabled={destSubmitting}
+                  type="submit"
+                >
+                  {destSubmitting ? 'Saving...' : destModalMode === 'create' ? 'Create Destination' : 'Update Destination'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- Offering Modal (Create / Edit) --- */}
+      {offModalOpen && (
+        <div
+          aria-labelledby="off-modal-title"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-coast-deep/60 p-4 backdrop-blur-sm"
+          role="dialog"
+        >
+          <div className="w-full max-w-lg rounded-3xl border border-coast-line bg-white p-6 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-coast-line pb-4">
+              <h3 className="font-display text-xl font-bold text-coast-ink" id="off-modal-title">
+                {offModalMode === 'create' ? 'Add New Experience Offering' : 'Edit Experience Offering'}
+              </h3>
+              <button
+                aria-label="Close modal"
+                className="rounded-full p-1 text-coast-muted hover:bg-coast-sand hover:text-coast-ink"
+                onClick={() => setOffModalOpen(false)}
+                type="button"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form className="mt-4 space-y-4" onSubmit={handleSaveOffering}>
+              {offModalMode === 'create' && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-extrabold text-coast-deep" htmlFor="modal-off-dest">
+                      DESTINATION *
+                    </label>
+                    <select
+                      className="mt-1 w-full rounded-2xl border border-coast-line bg-coast-paper px-4 py-2 text-sm text-coast-ink focus:border-coast-blue focus:outline-none focus:ring-2 focus:ring-coast-glass"
+                      id="modal-off-dest"
+                      onChange={(e) => setOffFormDestId(e.target.value)}
+                      required
+                      value={offFormDestId}
+                    >
+                      <option value="">Select Destination</option>
+                      {destinations.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-extrabold text-coast-deep" htmlFor="modal-off-act">
+                      ACTIVITY TYPE *
+                    </label>
+                    <select
+                      className="mt-1 w-full rounded-2xl border border-coast-line bg-coast-paper px-4 py-2 text-sm text-coast-ink focus:border-coast-blue focus:outline-none focus:ring-2 focus:ring-coast-glass"
+                      id="modal-off-act"
+                      onChange={(e) => setOffFormActId(e.target.value)}
+                      required
+                      value={offFormActId}
+                    >
+                      <option value="">Select Activity</option>
+                      {activities.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.name} ({a.code})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-extrabold text-coast-deep" htmlFor="modal-off-title">
+                  OFFERING TITLE *
+                </label>
+                <input
+                  className="mt-1 w-full rounded-2xl border border-coast-line bg-coast-paper px-4 py-2 text-sm text-coast-ink focus:border-coast-blue focus:outline-none focus:ring-2 focus:ring-coast-glass"
+                  id="modal-off-title"
+                  onChange={(e) => setOffFormTitle(e.target.value)}
+                  placeholder="e.g. Guided Blue Whale Safari"
+                  required
+                  type="text"
+                  value={offFormTitle}
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-extrabold text-coast-deep" htmlFor="modal-off-price">
+                    PRICE (LKR)
+                  </label>
+                  <input
+                    className="mt-1 w-full rounded-2xl border border-coast-line bg-coast-paper px-4 py-2 text-sm text-coast-ink focus:border-coast-blue focus:outline-none focus:ring-2 focus:ring-coast-glass"
+                    id="modal-off-price"
+                    onChange={(e) => setOffFormPrice(e.target.value)}
+                    placeholder="5000"
+                    type="number"
+                    value={offFormPrice}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-extrabold text-coast-deep" htmlFor="modal-off-duration">
+                    DURATION (MINS)
+                  </label>
+                  <input
+                    className="mt-1 w-full rounded-2xl border border-coast-line bg-coast-paper px-4 py-2 text-sm text-coast-ink focus:border-coast-blue focus:outline-none focus:ring-2 focus:ring-coast-glass"
+                    id="modal-off-duration"
+                    onChange={(e) => setOffFormDuration(e.target.value)}
+                    placeholder="120"
+                    type="number"
+                    value={offFormDuration}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-extrabold text-coast-deep" htmlFor="modal-off-cap">
+                    MAX GUESTS
+                  </label>
+                  <input
+                    className="mt-1 w-full rounded-2xl border border-coast-line bg-coast-paper px-4 py-2 text-sm text-coast-ink focus:border-coast-blue focus:outline-none focus:ring-2 focus:ring-coast-glass"
+                    id="modal-off-cap"
+                    onChange={(e) => setOffFormCapacity(e.target.value)}
+                    placeholder="8"
+                    type="number"
+                    value={offFormCapacity}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-extrabold text-coast-deep" htmlFor="modal-off-desc">
+                  DESCRIPTION & INCLUSIONS
+                </label>
+                <textarea
+                  className="mt-1 w-full rounded-2xl border border-coast-line bg-coast-paper px-4 py-2 text-sm text-coast-ink focus:border-coast-blue focus:outline-none focus:ring-2 focus:ring-coast-glass"
+                  id="modal-off-desc"
+                  onChange={(e) => setOffFormDesc(e.target.value)}
+                  placeholder="Detail what is included, safety gear, certified guides, eco-rules..."
+                  rows={3}
+                  value={offFormDesc}
+                />
+              </div>
+
+              <div className="mt-6 flex justify-end gap-3 pt-3 border-t border-coast-line">
+                <button
+                  className="rounded-full border border-coast-line px-5 py-2 text-xs font-bold text-coast-muted transition hover:bg-coast-sand"
+                  onClick={() => setOffModalOpen(false)}
+                  type="button"
+                >
+                  Cancel
+                </button>
+                <button
+                  className="rounded-full bg-coast-deep px-5 py-2 text-xs font-extrabold text-white transition hover:bg-coast-blue disabled:opacity-50"
+                  disabled={offSubmitting}
+                  type="submit"
+                >
+                  {offSubmitting ? 'Saving...' : offModalMode === 'create' ? 'Create Offering' : 'Update Offering'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- Delete Confirmation Dialog --- */}
+      {deleteDialog && (
+        <div
+          aria-labelledby="delete-dialog-title"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-coast-deep/60 p-4 backdrop-blur-sm"
+          role="dialog"
+        >
+          <div className="w-full max-w-md rounded-3xl border border-red-200 bg-white p-6 shadow-2xl">
+            <h3 className="font-display text-xl font-bold text-red-900" id="delete-dialog-title">
+              Confirm Permanent Deletion
+            </h3>
+            <p className="mt-3 text-sm text-coast-muted leading-relaxed">
+              Are you sure you want to permanently delete the {deleteDialog.type}{' '}
+              <strong className="text-coast-ink font-semibold">"{deleteDialog.title}"</strong>?
+              {deleteDialog.type === 'destination' && (
+                <span className="block mt-1 text-xs text-red-600 font-medium">
+                  Note: Any offerings linked to this destination will also be removed.
+                </span>
+              )}
+            </p>
+
+            <div className="mt-6 flex justify-end gap-3 pt-3 border-t border-coast-line">
+              <button
+                className="rounded-full border border-coast-line px-5 py-2 text-xs font-bold text-coast-muted transition hover:bg-coast-sand"
+                onClick={() => setDeleteDialog(null)}
+                type="button"
+              >
+                Cancel
+              </button>
+              <button
+                className="rounded-full bg-red-600 px-5 py-2 text-xs font-extrabold text-white transition hover:bg-red-700 disabled:opacity-50"
+                disabled={deleteSubmitting}
+                onClick={handleExecuteDelete}
+                type="button"
+              >
+                {deleteSubmitting ? 'Deleting...' : 'Yes, Delete Permanently'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <SiteFooter />
     </div>

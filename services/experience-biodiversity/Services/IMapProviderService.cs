@@ -126,6 +126,47 @@ public sealed class MapProviderService : IMapProviderService
                 "Sri Lanka"))
             .ToListAsync(cancellationToken);
 
-        return new MapSearchResponseDto(trimmed, localMatches, "Local-Fallback", true, DateTimeOffset.UtcNow);
+        if (localMatches.Count > 0)
+        {
+            return new MapSearchResponseDto(trimmed, localMatches, "Local-Fallback", true, DateTimeOffset.UtcNow);
+        }
+
+        // Curated Sri Lankan coastal towns and hotspots fallback
+        var curatedPlaces = new (string Name, string Region, double Lat, double Lon)[]
+        {
+            ("Galle", "Southern Province", 6.0535, 80.2210),
+            ("Galle Fort", "Southern Province", 6.0274, 80.2170),
+            ("Colombo", "Western Province", 6.9271, 79.8612),
+            ("Trincomalee", "Eastern Province", 8.5874, 81.2152),
+            ("Bentota", "Southern Province", 6.4259, 79.9965),
+            ("Tangalle", "Southern Province", 6.0242, 80.7941),
+            ("Negombo", "Western Province", 7.2008, 79.8736),
+            ("Jaffna", "Northern Province", 9.6615, 80.0255),
+            ("Matara", "Southern Province", 5.9549, 80.5550),
+            ("Hambantota", "Southern Province", 6.1246, 81.1185),
+            ("Weligama", "Southern Province", 5.9722, 80.4289),
+            ("Unawatuna", "Southern Province", 6.0104, 80.2483),
+            ("Beruwala", "Western Province", 6.4788, 79.9828),
+            ("Kalutara", "Western Province", 6.5854, 79.9607),
+            ("Mount Lavinia", "Western Province", 6.8378, 79.8647),
+            ("Pasikuda", "Eastern Province", 7.9255, 81.5645),
+            ("Batticaloa", "Eastern Province", 7.7102, 81.6924),
+            ("Mannar", "Northern Province", 8.9810, 79.9044)
+        };
+
+        var matchedCurated = curatedPlaces
+            .Where(p => p.Name.ToLower().Contains(lowerTrimmed) || p.Region.ToLower().Contains(lowerTrimmed))
+            .Take(5)
+            .Select(p => new MapSearchResultItemDto(
+                $"{p.Name}, {p.Region}, Sri Lanka",
+                p.Lat,
+                p.Lon,
+                "coastal_city",
+                "place",
+                p.Region,
+                "Sri Lanka"))
+            .ToList();
+
+        return new MapSearchResponseDto(trimmed, matchedCurated, "Curated-Coastal-Fallback", true, DateTimeOffset.UtcNow);
     }
 }

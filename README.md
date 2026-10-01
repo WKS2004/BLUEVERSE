@@ -93,7 +93,7 @@ BLUEVERSE/
 ├── services/                # ASP.NET Core services
 │   ├── api/                  # checked-in public API foundation
 │   ├── auth/                 # internal Auth service
-│   └── experience-biodiversity/ # private health/OpenAPI scaffold only
+│   └── experience-biodiversity/ # internal Experience & Biodiversity service
 ├── AGENTS.md
 ├── compose.yaml
 ├── global.json
@@ -136,9 +136,10 @@ apps/mobile/       # Flutter
 ```
 
 `services/api/` and `services/auth/` are the backend projects currently used
-by Render. `services/experience-biodiversity/` is an internal Compose/CI
-bootstrap with process health, OpenAPI and a PostgreSQL connection foundation;
-it has no domain tables, workflows or client integrations yet. All Dockerfiles
+by Render. `services/experience-biodiversity/` is Member 1's implemented
+private ASP.NET Core service providing destinations, activities, offerings,
+schedules, publication lifecycle, Haversine nearby discovery with keyword
+geocoding fallback, and pre-G07 Agentic AI dispatch seams. All Dockerfiles
 stay under `infrastructure/docker/`. Auth and Experience & Biodiversity remain
 internal and are reachable only through the public API gateway.
 
@@ -146,11 +147,11 @@ internal and are reachable only through the public API gateway.
 
 The supported local deployment runs the checked-in React client, public API,
 internal Auth and Experience & Biodiversity services, and PostgreSQL with
-Docker Compose. The Experience & Biodiversity service currently provides only
-health/OpenAPI bootstrap endpoints. Run Compose commands from the repository
-root (the directory containing `compose.yaml`). The public entry point is
-`edge-nginx`; clients use the gateway's `/api/...` routes and do not connect
-directly to internal services.
+Docker Compose. The Experience & Biodiversity service provides catalogue discovery,
+management, map vector tiles and nearby geocoding via the public API gateway.
+Run Compose commands from the repository root (the directory containing `compose.yaml`).
+The public entry point is `edge-nginx`; clients use the gateway's `/api/...` routes
+and do not connect directly to internal services.
 
 See [Local Deployment](docs/deployment/local.md) for deployment topology and
 additional platform notes.

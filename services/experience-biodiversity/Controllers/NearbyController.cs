@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Blueverse.ExperienceBiodiversity.Data;
 using Blueverse.ExperienceBiodiversity.DTOs;
 using Blueverse.ExperienceBiodiversity.Models;
+using Blueverse.ExperienceBiodiversity.Services;
 
 namespace Blueverse.ExperienceBiodiversity.Controllers;
 
@@ -13,35 +14,91 @@ public sealed class NearbyController : ControllerBase
     private readonly ExperienceBiodiversityDbContext _dbContext;
     private readonly ILogger<NearbyController> _logger;
 
+    private readonly IMapProviderService _mapProviderService;
+
     public NearbyController(
         ExperienceBiodiversityDbContext dbContext,
+        IMapProviderService mapProviderService,
         ILogger<NearbyController> logger)
     {
         _dbContext = dbContext;
+        _mapProviderService = mapProviderService;
         _logger = logger;
     }
 
     [HttpGet]
     public async Task<IActionResult> GetNearby(
+        [FromQuery] string? q,
+        [FromQuery] string? location,
         [FromQuery] double? latitude,
         [FromQuery] double? longitude,
         [FromQuery] double radiusMeters = 50000,
         [FromQuery] int limit = 10,
         CancellationToken cancellationToken = default)
     {
-        if (!latitude.HasValue || !longitude.HasValue)
+        double lat;
+        double lon;
+        string? resolvedLocationName = null;
+
+        var locationKeyword = !string.IsNullOrWhiteSpace(q) ? q.Trim() : (!string.IsNullOrWhiteSpace(location) ? location.Trim() : null);
+
+        if (!string.IsNullOrWhiteSpace(locationKeyword))
+        {
+            // 1. Try matching database destinations first by name or region
+            var keywordLower = locationKeyword.ToLower();
+            var matchedDestination = await _dbContext.Destinations
+                .AsNoTracking()
+                .Where(d => d.Status == PublicationStatus.Published &&
+                            (d.Name.ToLower().Contains(keywordLower) ||
+                             (d.Region != null && d.Region.ToLower().Contains(keywordLower))))
+                .OrderBy(d => d.Name.ToLower() == keywordLower ? 0 :
+                              (d.Name.ToLower().StartsWith(keywordLower) ? 1 : 2))
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (matchedDestination != null)
+            {
+                lat = matchedDestination.Latitude;
+                lon = matchedDestination.Longitude;
+                resolvedLocationName = matchedDestination.Name;
+            }
+            else
+            {
+                // 2. Try resolving via map provider service (Photon geocoding)
+                var searchResult = await _mapProviderService.SearchPlacesAsync(locationKeyword, cancellationToken);
+                var firstPlace = searchResult.Results.FirstOrDefault();
+                if (firstPlace != null)
+                {
+                    lat = firstPlace.Latitude;
+                    lon = firstPlace.Longitude;
+                    resolvedLocationName = firstPlace.DisplayName;
+                }
+                else
+                {
+                    return NotFound(new
+                    {
+                        type = "https://tools.ietf.org/html/rfc7807",
+                        title = "Location Not Found",
+                        status = 404,
+                        detail = $"No coastal location or destination matching '{locationKeyword}' could be found."
+                    });
+                }
+            }
+        }
+        else if (latitude.HasValue && longitude.HasValue)
+        {
+            lat = latitude.Value;
+            lon = longitude.Value;
+        }
+        else
         {
             return BadRequest(new
             {
                 type = "https://tools.ietf.org/html/rfc7807",
-                title = "Missing Location Coordinates",
+                title = "Missing Location Coordinates or Search Term",
                 status = 400,
-                detail = "Both 'latitude' and 'longitude' query parameters are required for nearby discovery."
+                detail = "Either a location search query ('q') or both 'latitude' and 'longitude' coordinates are required."
             });
         }
-
-        var lat = latitude.Value;
-        var lon = longitude.Value;
 
         if (lat < -90 || lat > 90)
         {
@@ -107,7 +164,15 @@ public sealed class NearbyController : ControllerBase
 
         return Ok(new
         {
-            query = new { latitude = lat, longitude = lon, radiusMeters, limit },
+            query = new
+            {
+                location = locationKeyword,
+                resolvedLocation = resolvedLocationName,
+                latitude = lat,
+                longitude = lon,
+                radiusMeters,
+                limit
+            },
             count = nearby.Count,
             results = nearby
         });

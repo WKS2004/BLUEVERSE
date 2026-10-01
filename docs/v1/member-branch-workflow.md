@@ -168,8 +168,8 @@ turn-taking order.
 
 | Component | Assigned owner (full name) | GitHub account | Initial status | Branch | PR, merge and integration evidence |
 |---|---|---|---|---|---|
-| G00 — Shared contract freeze | All four assigned owners | — | Pending | `dev` | — |
-| Ushan Srinuka (Member 1) — Experience and Biodiversity | Ushan Srinuka | `Ushan-Srinuka` | Planned | `features/experience-biodiversity` | — |
+| G00 — Shared contract freeze | All four assigned owners | — | Accepted | `dev` | Shared contracts frozen in `docs/v1/g00/` and verified. |
+| Ushan Srinuka (Member 1) — Experience and Biodiversity | Ushan Srinuka | `Ushan-Srinuka` | Implemented | `features/experience-biodiversity` | Service implemented under `services/experience-biodiversity/` with EF Core migrations, full CRUD endpoints, Sri Lanka OSM cartography & geocoding fallback, pre-G07 Agentic AI seam, and React UI integration registered in `ui-integration.json`. |
 | Sanuda Abeysinghe (Member 2) — Marine Conditions and Safety | Sanuda Abeysinghe | `sanudaabey` | Planned | `features/marine-safety` | — |
 | Adithya Gunawardana (Member 3) — Planner and Itineraries | Adithya Gunawardana | `AdithyaGunawardana` | Planned | `features/coastal-planner` | — |
 | Wanshaja Sooriyabandara (Member 4) — Coastal Operations | Wanshaja Sooriyabandara | `WKS2004` | Planned | `features/coastal-operations` | — |

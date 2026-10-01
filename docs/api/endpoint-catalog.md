@@ -121,6 +121,7 @@ the smaller shared-client workflow contract.
 | `GET` | `/api/experiences/activities/{id:guid}` | `anonymous` | Retrieves detailed information for a specific coastal activity. Loads detailed activity views including destination and offering summaries. |
 | `POST` | `/api/experiences/activities` | `anonymous` | Creates a new coastal activity under an existing destination in DRAFT status. Used by authorized staff or operators to define new coastal activities. |
 | `PUT` | `/api/experiences/activities/{id:guid}` | `anonymous` | Updates activity metadata, seasonal constraints, requirements, and tags. Edits existing coastal activity specifications. |
+| `DELETE` | `/api/experiences/activities/{id:guid}` | `anonymous` | Deletes a coastal activity taxonomy record and its child offerings. Allows administrators to remove obsolete activity taxonomy categories. |
 | `PATCH` | `/api/experiences/activities/{id:guid}/publication` | `anonymous` | Transitions an activity publication status with evaluation rules and audit reasons. Publishes, unpublishes, or archives an activity following lifecycle validation. |
 | `POST` | `/api/experiences/activities/{id:guid}/publication-evaluations` | `anonymous` | Evaluates whether an activity meets publication readiness without applying changes. Pre-flight validation checks before publishing an activity. |
 | `GET` | `/api/experiences/agent/context` | `anonymous` | Read-only private Agentic AI typed seam reporting component context and not-connected status. Pre-G07 integration seam providing typed schema and safe degradation for future AI orchestration. |
@@ -130,6 +131,7 @@ the smaller shared-client workflow contract.
 | `GET` | `/api/experiences/destinations/{id:guid}` | `anonymous` | Retrieves detailed information for a specific coastal destination. Loads destination profile views including coordinates, climate info, and active activities. |
 | `POST` | `/api/experiences/destinations` | `anonymous` | Creates a new coastal destination in DRAFT status. Used by destination curators and administrators to register new coastal areas. |
 | `PUT` | `/api/experiences/destinations/{id:guid}` | `anonymous` | Updates destination details, coordinates, boundaries, and tags. Maintains destination records and geographical data. |
+| `DELETE` | `/api/experiences/destinations/{id:guid}` | `anonymous` | Deletes a coastal destination record. Allows administrators to remove destinations from the catalogue. |
 | `PATCH` | `/api/experiences/destinations/{id:guid}/publication` | `anonymous` | Transitions a destination publication status with validation and audit logging. Publishes or archives coastal destination profiles. |
 | `POST` | `/api/experiences/destinations/{id:guid}/publication-evaluations` | `anonymous` | Evaluates destination readiness for publication without altering current state. Pre-publication audit check verifying required coordinates and content completeness. |
 | `GET` | `/api/experiences/favourites` | `anonymous` | Retrieves saved destinations, activities, and offerings for the calling user. Populates personal wishlist and bookmarked coastal experiences. |
@@ -142,6 +144,7 @@ the smaller shared-client workflow contract.
 | `GET` | `/api/experiences/offerings/{id:guid}` | `anonymous` | Retrieves detailed information for a specific experience offering. Loads offering details including pricing, cancellation policy, and schedule overview. |
 | `POST` | `/api/experiences/offerings` | `anonymous` | Creates a new experience offering under an activity in DRAFT status. Allows tour operators and service providers to register new offering packages. |
 | `PUT` | `/api/experiences/offerings/{id:guid}` | `anonymous` | Updates offering pricing, capacity, inclusions, and policies. Edits existing tour package specifications. |
+| `DELETE` | `/api/experiences/offerings/{id:guid}` | `anonymous` | Deletes an experience offering package and its related schedule slots. Allows administrators to remove offering packages from the catalogue. |
 | `PATCH` | `/api/experiences/offerings/{id:guid}/publication` | `anonymous` | Transitions an offering publication status with verification rules. Publishes, pauses, or archives tour offerings. |
 | `POST` | `/api/experiences/offerings/{id:guid}/publication-evaluations` | `anonymous` | Evaluates offering readiness for publication without altering current state. Checks pricing validity, capacity constraints, and parent activity publication status. |
 | `GET` | `/api/experiences/offerings/{id:guid}/schedules` | `anonymous` | Lists time slots and schedules for a specific offering within an optional date range. Displays available time slots on booking calendars. |

@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router'
 import { hasAnyPermission } from '../../features/authorization/permissions'
 import { useAuthSession } from '../../features/auth/authSession'
 
-type Area = 'profile' | 'dashboard' | 'admin'
+type Area = 'profile' | 'dashboard' | 'admin' | 'experiences'
 type NavigationGroup = { id: Area; label: string; href: string; children: { label: string; href: string }[] }
 
 function groupsFor(permissions: string[]): NavigationGroup[] {
@@ -22,12 +22,28 @@ function groupsFor(permissions: string[]): NavigationGroup[] {
       ],
     },
   ]
-  const links = [
+  const adminLinks = [
     ...(hasAnyPermission({ permissions }, ['auth.permission.read']) ? [{ label: 'Permissions', href: '/admin/permissions' }] : []),
     ...(hasAnyPermission({ permissions }, ['auth.role.read']) ? [{ label: 'Roles', href: '/admin/roles' }] : []),
     ...(hasAnyPermission({ permissions }, ['auth.user.read']) ? [{ label: 'User accounts', href: '/admin/users' }] : []),
   ]
-  if (links.length) groups.push({ id: 'admin', label: 'Administration', href: '/admin', children: links })
+  if (adminLinks.length) groups.push({ id: 'admin', label: 'Administration', href: '/admin', children: adminLinks })
+
+  const canManageCatalogue = hasAnyPermission({ permissions }, ['experiences.catalogue.read', 'experiences.catalogue.manage', 'auth.role.system.manage'])
+  if (canManageCatalogue) {
+    groups.push({
+      id: 'experiences',
+      label: 'Experiences & Biodiversity',
+      href: '/experiences/manage',
+      children: [
+        { label: 'Destinations', href: '/experiences/manage#destinations' },
+        { label: 'Activities', href: '/experiences/manage#activities' },
+        { label: 'Offerings & Schedules', href: '/experiences/manage#offerings' },
+        { label: 'Diagnostics & Seam', href: '/experiences/manage#diagnostics' },
+      ],
+    })
+  }
+
   return groups
 }
 

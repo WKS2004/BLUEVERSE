@@ -1073,6 +1073,19 @@
       "source": "services/experience-biodiversity/Controllers/ActivitiesController.cs"
     },
     {
+      "id": "experience-activity-delete",
+      "method": "DELETE",
+      "path": "/api/experiences/activities/{id:guid}",
+      "ownerService": "experience-biodiversity",
+      "publicBoundary": "api",
+      "operationId": "Delete",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Deletes a coastal activity taxonomy record and its child offerings.",
+      "usage": "Allows administrators to remove obsolete activity taxonomy categories.",
+      "source": "services/experience-biodiversity/Controllers/ActivitiesController.cs"
+    },
+    {
       "id": "experience-activity-update-publication",
       "method": "PATCH",
       "path": "/api/experiences/activities/{id:guid}/publication",
@@ -1187,6 +1200,19 @@
       "auth": "anonymous",
       "description": "Updates destination details, coordinates, boundaries, and tags.",
       "usage": "Maintains destination records and geographical data.",
+      "source": "services/experience-biodiversity/Controllers/DestinationsController.cs"
+    },
+    {
+      "id": "experience-destination-delete",
+      "method": "DELETE",
+      "path": "/api/experiences/destinations/{id:guid}",
+      "ownerService": "experience-biodiversity",
+      "publicBoundary": "api",
+      "operationId": "Delete",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Deletes a coastal destination record.",
+      "usage": "Allows administrators to remove destinations from the catalogue.",
       "source": "services/experience-biodiversity/Controllers/DestinationsController.cs"
     },
     {
@@ -1343,6 +1369,19 @@
       "auth": "anonymous",
       "description": "Updates offering pricing, capacity, inclusions, and policies.",
       "usage": "Edits existing tour package specifications.",
+      "source": "services/experience-biodiversity/Controllers/OfferingsController.cs"
+    },
+    {
+      "id": "experience-offering-delete",
+      "method": "DELETE",
+      "path": "/api/experiences/offerings/{id:guid}",
+      "ownerService": "experience-biodiversity",
+      "publicBoundary": "api",
+      "operationId": "Delete",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Deletes an experience offering package and its related schedule slots.",
+      "usage": "Allows administrators to remove offering packages from the catalogue.",
       "source": "services/experience-biodiversity/Controllers/OfferingsController.cs"
     },
     {

@@ -22,6 +22,10 @@ class GlobalAppErrorBoundary extends Component<{ children: ReactNode }, { failed
     return { failed: true }
   }
 
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('GlobalAppErrorBoundary caught error:', error, errorInfo)
+  }
+
   render() {
     if (this.state.failed) {
       return <ServerErrorPage onRetry={() => this.setState({ failed: false })} />

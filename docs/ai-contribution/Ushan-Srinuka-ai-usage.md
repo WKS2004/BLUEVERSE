@@ -1,5 +1,139 @@
 # Ushan Srinuka — AI Usage Contributions
 
+## 2026-09-28 — Role and permission-based catalogue access control, backend authorization enforcement, and UI protection
+
+- Date/time or time range: 2026-09-28 23:35 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Antigravity
+- Tool/App: Google Antigravity
+- AI Model: Gemini 2.5 Pro
+- Summary of the user's request:
+  1. Fix the permission-based access control: anonymous or unprivileged users must not be able to perform catalogue mutations or access unauthorized administrative functions.
+  2. Enforce permission checks across backend services: only users with `experiences.catalogue.manage`, `auth.role.system.manage`, or the `Admin` system role can create, update, delete, or transition publication status.
+  3. Ensure non-published status filters (e.g. `status=DRAFT` or `status=ARCHIVED`) are protected with permission checks, while public catalog queries remain open for tourist exploration.
+  4. Secure the React Web UI: guard the `/experiences/manage` route with `RequireAnyAdminPermission`, conditionally render creation forms and action buttons based on `canManage`, and display a clean read-only banner for users who only possess `experiences.catalogue.read`.
+- Summary of what the AI Agent did:
+  - Backend `experience-biodiversity` Authorization:
+    - Updated `IUserContext` and `UserContext` (`Services/IUserContext.cs`) to implement `HasPermission(string)` and `HasAnyPermission(params string[])`, checking token permissions, roles, and forwarded gateway headers (`X-User-Roles`, `X-User-Permissions`).
+    - Enforced permission checks in `DestinationsController.cs`:
+      - Filter `status != PublicationStatus.Published` returns 403 Forbidden unless the caller holds `experiences.catalogue.read`, `experiences.catalogue.manage`, or `Admin`.
+      - `POST` (create), `PUT` (update), `DELETE` (delete), and `PATCH /publication` require authentication (401) and catalogue manage permission (403).
+      - `POST /publication-evaluations` requires catalogue inspection or manage permissions (401/403).
+    - Enforced permission checks in `ActivitiesController.cs`:
+      - Filter `status != PublicationStatus.Published` returns 403 Forbidden for unauthorized callers.
+      - `POST` (create), `PUT` (update), `DELETE` (delete), `PATCH /publication`, and `POST /publication-evaluations` require authentication (401) and catalogue manage permission (403).
+    - Enforced permission checks in `OfferingsController.cs`:
+      - Filter `status != PublicationStatus.Published` returns 403 Forbidden for unauthorized callers.
+      - `POST` (create), `PUT` (update), `DELETE` (delete), `PATCH /publication`, `POST /publication-evaluations`, and schedule endpoints (`POST`, `PUT`, `DELETE /schedules`) require authentication (401) and catalogue manage permission (403).
+    - Added unit tests `EXP-UNIT-USR-007` and `EXP-UNIT-USR-008` in `UserContextTests.cs` verifying permission evaluation logic for admin and non-admin callers.
+    - Added integration tests `EXP-API-DEST-009` and `EXP-API-DEST-010` in `DestinationsApiTests.cs` asserting 401 Unauthorized for anonymous mutations and 403 Forbidden for unprivileged draft status queries.
+  - Frontend React Web Security (`apps/web`):
+    - In `routes.tsx`: wrapped `/experiences/manage` with `<RequireAnyAdminPermission permissions={['experiences.catalogue.read', 'experiences.catalogue.manage', 'auth.role.system.manage']}>`.
+    - In `ExperiencesPage.tsx`: guarded the "Catalogue Management" button link to appear only for authenticated admin/permission holders.
+    - In `CatalogueManagementPage.tsx`:
+      - Injected `useAuthSession` and computed `canManage` based on `hasAnyPermission(user, ['experiences.catalogue.manage', 'auth.role.system.manage']) || user?.roles?.includes('Admin')`.
+      - Conditionally rendered destination, activity, offering, and schedule creation forms only when `canManage` is true.
+      - Displayed an informative read-only banner when the user has read-only permission (`experiences.catalogue.read`).
+      - Protected Edit, Delete, and Publish/Unpublish buttons to render only for authorized managers, while keeping "Audit Publish" available for audit inspection.
+    - Updated `experiences.component.test.js`:
+      - Updated `WEB-EXP-009` to verify full workspace capabilities for authorized manager users.
+      - Added `WEB-EXP-009B` to test and assert the read-only boundary for users without manage permissions.
+  - Verification & Contract Validation:
+    - `python scripts/validation/validate_ui_integrations.py` passed with 0 errors.
+    - `python .agents/scripts/validate_endpoint_catalog.py` passed with 0 errors (72 public endpoints, 32 frontend routes).
+    - `npm run build` in `apps/web` passed with exit code 0 (`tsc -b && vite build` built cleanly).
+    - `node --test src/pages/experiences/__tests__/experiences.component.test.js` passed all 12 component tests cleanly (12 pass, 0 fail).
+- AI output accepted/changed/rejected: Accepted complete end-to-end authorization controls across backend controllers, user context claims processing, and React route/workspace guards.
+- Verification/evidence:
+  - `python scripts/validation/validate_ui_integrations.py`: UI integration contract: OK;
+  - `python .agents/scripts/validate_endpoint_catalog.py`: Endpoint catalog: OK;
+  - All 12 experience component tests passed (`WEB-EXP-001` through `WEB-EXP-011` + `WEB-EXP-009B`);
+  - `npm run build` succeeded without compile or bundle errors.
+
+## 2026-09-28 — Experiences & Biodiversity Admin CRUD, permission seeding, and account navigation integration
+
+- Date/time or time range: 2026-09-28 01:25 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Antigravity
+- Tool/App: Google Antigravity
+- AI Model: Gemini 2.5 Pro
+- Summary of the user's request:
+  1. Add missing permissions for Destinations, Activities, and Offerings/Schedules CRUD and seed them to the `Admin` system role.
+  2. Implement full working CRUD (Create, Read, Update, Delete) capability for Destinations, Activities, and Offerings/Schedules.
+  3. Provide access to the CRUD capabilities through the left navigation bar (`AccountAreaNavigation`) present on Profile, Dashboard, and Administration pages for authorized role/permission holders.
+  4. Preserve the architectural structure of the API, Auth, and React Web UI without making unnecessary modifications, maintaining the original coastal theme and `DESIGN.md`.
+- Summary of what the AI Agent did:
+  - Auth Service & Permissions Seeding:
+    - Added permission constants in `PermissionCodes.cs`: `ExperienceRead = "experiences.catalogue.read"` and `ExperienceManage = "experiences.catalogue.manage"`.
+    - Seeded both permissions (`permExpReadId`, `permExpManageId`) in `AuthDbContext.cs` and associated them with the seeded `Admin` system role (`22222222-2222-2222-2222-222222222201`) in `RolePermissions`.
+    - Added both permissions to `AuthDataSeeder.cs` so existing and new database initializations automatically grant catalogue management permissions to system administrators.
+  - Backend `experience-biodiversity` Endpoints:
+    - Added `DELETE /api/experiences/destinations/{id:guid}` in `DestinationsController.cs` for destination removal.
+    - Added `DELETE /api/experiences/activities/{id:guid}` in `ActivitiesController.cs`, ensuring child offerings are cleanly removed to uphold relational integrity.
+    - Added `DELETE /api/experiences/offerings/{id:guid}` in `OfferingsController.cs` for offering removal.
+    - (Create `POST`, Read `GET`, Update `PUT` and `PATCH` publication endpoints were already implemented and verified).
+  - Frontend API Client (`apps/web/src/features/experiences/experienceApi.ts`):
+    - Added `deleteDestination(id)`, `deleteActivity(id)`, and `deleteOffering(id)` exported API client functions.
+  - Frontend Authorization & Navigation (`AccountAreaNavigation.tsx` & `permissions.ts`):
+    - Added `'experiences'` area to `AccountAreaNavigation.tsx` and mapped permission holders of `experiences.catalogue.read`, `experiences.catalogue.manage`, or `auth.role.system.manage` to a dedicated navigation group titled "Experiences & Biodiversity" (`/experiences/manage`) with subnav items: Destinations (`#destinations`), Activities (`#activities`), Offerings & Schedules (`#offerings`), and Diagnostics & Seam (`#diagnostics`).
+    - Added permission alias in `permissions.ts` ensuring `experiences.catalogue.manage` satisfies `experiences.catalogue.read`.
+  - Catalogue Management Workspace UI (`CatalogueManagementPage.tsx`):
+    - Embedded `AccountAreaNavigation active="experiences"` in the standard 2-column account grid frame (`lg:grid-cols-[15rem_minmax(0,1fr)]`), matching Profile, Dashboard, and Administration page layouts without architectural disruption.
+    - Added hash location synchronization (`#destinations`, `#activities`, `#offerings`, `#diagnostics`) allowing instant deep-linking from navigation menus.
+    - Added inline Edit and Delete action buttons with confirmation prompts across all destinations, activities, and offerings.
+    - Implemented modal dialogs for updating destination metadata/coordinates, activity naming/category/description, and offering pricing/duration/capacity/description.
+  - Contract & Endpoint Verification:
+    - Added `experience-destination-delete`, `experience-activity-delete`, and `experience-offering-delete` to `endpoint-catalog.json` and regenerated `endpoint-catalog.md`.
+    - `python scripts/validation/validate_ui_integrations.py` passed with 0 errors.
+    - `python .agents/scripts/validate_endpoint_catalog.py` passed with 0 errors (72 public endpoints, 32 frontend routes).
+    - `npm run build` in `apps/web` passed with exit code 0 (`tsc -b && vite build` built cleanly).
+    - `node --test src/pages/experiences/__tests__/experiences.component.test.js` passed all 11 component tests cleanly.
+- AI output accepted/changed/rejected: Accepted complete CRUD with backend and frontend integration, seeded Auth permissions, and responsive 2-column layout embedding the left account navigation bar.
+- Verification/evidence:
+  - `python scripts/validation/validate_ui_integrations.py`: UI integration contract: OK;
+  - `python .agents/scripts/validate_endpoint_catalog.py`: Endpoint catalog: OK (72 public endpoints, 32 frontend routes; AI endpoints: none implemented);
+  - All 11 experience component tests passed (`WEB-EXP-001` through `WEB-EXP-011`);
+  - `npm run build` succeeded without compile or bundle errors.
+
+## 2026-09-28 — Natural-language coastal proximity discovery and offline Sri Lanka geocoding fallback
+
+- Date/time or time range: 2026-09-28 00:20 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Antigravity
+- Tool/App: Google Antigravity
+- AI Model: Gemini 2.5 Pro
+- Summary of the user's request:
+  1. Fix the "Nearby Proximity Search" at `http://localhost/experiences`: eliminate the requirement for ordinary visitors to manually enter technical Latitude and Longitude coordinates.
+  2. Implement natural-language keyword and place-name discovery (`Mirissa`, `Weligama`, `Galle`, `Colombo`, `Pigeon Island`, etc.), resolving location coordinates on the backend and computing Haversine distance matches across published coastal destinations.
+  3. Keep search radius in kilometers as a primary user input, and demote raw geographic coordinates to an optional, collapsible advanced settings toggle.
+- Summary of what the AI Agent did:
+  - Updated `NearbyController.cs` in `services/experience-biodiversity`:
+    - Extended `GET /api/experiences/nearby` to accept `[FromQuery] string? q` and `[FromQuery] string? location` in addition to existing latitude/longitude coordinates.
+    - Added database-first matching against published coastal destinations (`Name` or `Region`).
+    - Added fallback geocoding through `IMapProviderService.SearchPlacesAsync` and enriched it with a curated Sri Lankan coastal coordinates dictionary (`Galle`, `Colombo`, `Trincomalee`, `Bentota`, `Tangalle`, `Negombo`, `Jaffna`, `Matara`, `Hambantota`, `Weligama`, `Unawatuna`, `Beruwala`, `Kalutara`, `Mount Lavinia`, `Pasikuda`, `Batticaloa`, `Mannar`) ensuring instant, zero-latency resolution even in offline/containerized environments.
+    - Updated query payload response to include `resolvedLocation` and resolved coordinates.
+  - Updated `NearbyApiTests.cs` with test case `EXP-API-NRB-005` verifying keyword queries return expected destinations.
+  - Updated React Web client in `apps/web`:
+    - Updated `experienceApi.ts` `getNearbyExperiences` with overload supporting `{ location, radiusMeters, limit }`.
+    - Transformed "Nearby Proximity Search" tab in `ExperiencesPage.tsx`:
+      - Primary input: "COASTAL LOCATION OR PLACE NAME" (`nearLocation`) with clear coastal suggestions.
+      - Primary input: "SEARCH RADIUS (KM)" (`nearRadiusKm`).
+      - Collapsible "Advanced Geographic Coordinates" toggle for developers/scientific users who want manual coordinates.
+      - Quick coastal destination chips now populate both the location name and coordinate presets.
+      - Added dynamic resolved-location banner indicating resolved place and coordinates.
+    - Added component test `WEB-EXP-011` in `experiences.component.test.js` verifying the keyword proximity search flow.
+  - Rebuilt and restarted both `blueverse-frontend` and `blueverse-experience-biodiversity` Docker containers; verified live endpoint returns 200 OK with resolved coordinates and destinations for natural place names (e.g. `galle`, `mirissa`, `colombo`).
+  - Validated repository contracts: `validate_ui_integrations.py` passed with 0 errors; `validate_endpoint_catalog.py` passed with 0 errors.
+- AI output accepted/changed/rejected: Accepted natural-language search with backend coordinate resolution, collapsible advanced coordinate inputs, and container-resilient coastal place fallback.
+- Verification/evidence:
+  - Live query `curl.exe -i -s "http://localhost/api/experiences/nearby?q=galle&radiusMeters=50000"` returns HTTP 200 with resolved location `Galle, Southern Province, Sri Lanka` (6.0535°N, 80.221°E) and 2 nearby destinations (`Hikkaduwa Marine Sanctuary`, `Mirissa Coastal Haven`);
+  - `node --test src/pages/experiences/__tests__/experiences.component.test.js` passed all 11 tests cleanly;
+  - `python scripts/validation/validate_ui_integrations.py` passed (0 errors);
+  - `python .agents/scripts/validate_endpoint_catalog.py` passed (0 errors).
+
 ## 2026-09-27 — Integrated authentic geographic Sri Lanka map and dynamic database destination resolution
 
 - Date/time or time range: 2026-09-27 23:30 +05:30 (Asia/Colombo)

@@ -295,6 +295,8 @@ export type NearbyDestinationDto = {
 
 export type NearbyResponse = {
   query: {
+    location?: string | null
+    resolvedLocation?: string | null
     latitude: number
     longitude: number
     radiusMeters: number
@@ -305,21 +307,31 @@ export type NearbyResponse = {
 }
 
 export type MicroserviceDependencyReportDto = {
+  serviceKey?: string
   serviceName: string
-  endpoint: string
+  targetEndpoint?: string
+  endpoint?: string
   responded: boolean
   latencyMs: number
   statusCode?: number | null
+  httpStatusCode?: number | null
+  attemptsCount?: number
   status: string
+  fallbackStrategy?: string
   message?: string | null
-  checkedAt: string
+  checkedAt?: string
 }
 
 export type DependenciesStatusResponseDto = {
-  serviceName: string
-  evaluatedAt: string
+  microservice?: string
+  serviceName?: string
+  version?: string
+  overallStatus?: string
+  evaluatedAt?: string
+  timestamp?: string
   dependencies: MicroserviceDependencyReportDto[]
-  allHealthy: boolean
+  resilienceNote?: string
+  allHealthy?: boolean
 }
 
 export type AgentContextResponseDto = {
@@ -429,6 +441,9 @@ export const createDestination = (input: CreateDestinationRequest) =>
 export const updateDestination = (id: string, input: UpdateDestinationRequest) =>
   request<DestinationDto>(() => fetch(`/api/experiences/destinations/${encodeURIComponent(id)}`, requestOptions('PUT', input)))
 
+export const deleteDestination = (id: string) =>
+  request<void>(() => fetch(`/api/experiences/destinations/${encodeURIComponent(id)}`, requestOptions('DELETE')))
+
 export const evaluateDestinationPublication = (id: string, status: string) =>
   request<PublicationEvaluationResponse>(() =>
     fetch(`/api/experiences/destinations/${encodeURIComponent(id)}/publication-evaluations`, requestOptions('POST', { status }))
@@ -455,7 +470,7 @@ export const getDestinationBiodiversity = (id: string) =>
   )
 
 // ----------------- Activities -----------------
-export const getActivities = (params?: { destinationId?: string; category?: string; query?: string; status?: string; page?: number; pageSize?: number }) => {
+export const getActivities = async (params?: { destinationId?: string; category?: string; query?: string; status?: string; page?: number; pageSize?: number }): Promise<PagedResult<ActivityDto>> => {
   const query = new URLSearchParams()
   if (params?.destinationId) query.set('destinationId', params.destinationId)
   if (params?.category) query.set('category', params.category)
@@ -465,10 +480,27 @@ export const getActivities = (params?: { destinationId?: string; category?: stri
   if (params?.pageSize) query.set('pageSize', String(params.pageSize))
 
   const qs = query.toString()
-  if (qs) {
-    return request<PagedResult<ActivityDto>>(() => fetch(`/api/experiences/activities?${qs}`, requestOptions()))
+  const raw = await (qs
+    ? request<PagedResult<ActivityDto> | ActivityDto[]>(() =>
+        fetch(`/api/experiences/activities?${qs}`, requestOptions())
+      )
+    : request<PagedResult<ActivityDto> | ActivityDto[]>(() =>
+        fetch('/api/experiences/activities', requestOptions())
+      ))
+  if (Array.isArray(raw)) {
+    return {
+      total: raw.length,
+      page: 1,
+      pageSize: raw.length,
+      items: raw,
+    }
   }
-  return request<PagedResult<ActivityDto>>(() => fetch('/api/experiences/activities', requestOptions()))
+  return {
+    total: raw?.total ?? raw?.items?.length ?? 0,
+    page: raw?.page ?? 1,
+    pageSize: raw?.pageSize ?? raw?.items?.length ?? 0,
+    items: Array.isArray(raw?.items) ? raw.items : [],
+  }
 }
 
 export const getActivityById = (id: string) =>
@@ -479,6 +511,9 @@ export const createActivity = (input: CreateActivityRequest) =>
 
 export const updateActivity = (id: string, input: UpdateActivityRequest) =>
   request<ActivityDto>(() => fetch(`/api/experiences/activities/${encodeURIComponent(id)}`, requestOptions('PUT', input)))
+
+export const deleteActivity = (id: string) =>
+  request<void>(() => fetch(`/api/experiences/activities/${encodeURIComponent(id)}`, requestOptions('DELETE')))
 
 export const evaluateActivityPublication = (id: string, status: string) =>
   request<PublicationEvaluationResponse>(() =>
@@ -514,6 +549,9 @@ export const createOffering = (input: CreateOfferingRequest) =>
 
 export const updateOffering = (id: string, input: UpdateOfferingRequest) =>
   request<OfferingDto>(() => fetch(`/api/experiences/offerings/${encodeURIComponent(id)}`, requestOptions('PUT', input)))
+
+export const deleteOffering = (id: string) =>
+  request<void>(() => fetch(`/api/experiences/offerings/${encodeURIComponent(id)}`, requestOptions('DELETE')))
 
 export const evaluateOfferingPublication = (id: string, status: string) =>
   request<PublicationEvaluationResponse>(() =>
@@ -580,13 +618,33 @@ export const getMapConfig = () =>
 export const searchMapPlaces = (query: string) =>
   request<MapSearchResponseDto>(() => fetch(`/api/experiences/map/search?q=${encodeURIComponent(query)}`, requestOptions()))
 
-export const getNearbyExperiences = (latitude: number, longitude: number, radiusMeters = 50000, limit = 10) => {
-  const query = new URLSearchParams({
-    latitude: String(latitude),
-    longitude: String(longitude),
-    radiusMeters: String(radiusMeters),
-    limit: String(limit),
-  })
+export const getNearbyExperiences = (
+  params:
+    | { location: string; radiusMeters?: number; limit?: number }
+    | { latitude: number; longitude: number; radiusMeters?: number; limit?: number }
+    | number,
+  optionalLongitude?: number,
+  optionalRadiusMeters = 50000,
+  optionalLimit = 10
+) => {
+  const query = new URLSearchParams()
+
+  if (typeof params === 'number') {
+    query.set('latitude', String(params))
+    if (optionalLongitude != null) query.set('longitude', String(optionalLongitude))
+    query.set('radiusMeters', String(optionalRadiusMeters))
+    query.set('limit', String(optionalLimit))
+  } else if ('location' in params) {
+    query.set('q', params.location)
+    query.set('radiusMeters', String(params.radiusMeters ?? 50000))
+    query.set('limit', String(params.limit ?? 10))
+  } else {
+    query.set('latitude', String(params.latitude))
+    query.set('longitude', String(params.longitude))
+    query.set('radiusMeters', String(params.radiusMeters ?? 50000))
+    query.set('limit', String(params.limit ?? 10))
+  }
+
   return request<NearbyResponse>(() => fetch(`/api/experiences/nearby?${query.toString()}`, requestOptions()))
 }
 

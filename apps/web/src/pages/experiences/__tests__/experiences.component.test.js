@@ -304,6 +304,70 @@ test('WEB-EXP-002 discovery hub supports Near Me tab and radius search (ui-integ
 })
 
 // -------------------------------------------------------------
+// WEB-EXP-011: Discovery Near Me Location Keyword Search
+// -------------------------------------------------------------
+test('WEB-EXP-011 discovery hub supports location keyword search for nearby coastal discovery (ui-integration: experience-discovery)', async () => {
+  let capturedUrl = ''
+  globalThis.fetch = async (input) => {
+    const url = String(input)
+    if (url.includes('/api/experiences/destinations')) {
+      return jsonResponse({ total: 1, page: 1, pageSize: 20, items: [mockDestination] })
+    }
+    if (url.includes('/api/experiences/activities') || url.includes('/api/experiences/offerings')) {
+      return jsonResponse({ total: 0, page: 1, pageSize: 20, items: [] })
+    }
+    if (url.includes('/api/experiences/favourites')) {
+      return jsonResponse([])
+    }
+    if (url.includes('/api/experiences/nearby')) {
+      capturedUrl = url
+      return jsonResponse({
+        query: {
+          location: 'weligama',
+          resolvedLocation: 'Weligama Bay Haven',
+          latitude: 5.9723,
+          longitude: 80.4287,
+          radiusMeters: 50000,
+          limit: 15,
+        },
+        count: 1,
+        results: [
+          {
+            destination: mockDestination,
+            distanceMeters: 2400,
+            distanceKm: 2.4,
+            activeOfferingsCount: 3,
+            topOfferings: [mockOffering],
+          },
+        ],
+      })
+    }
+    return jsonResponse({})
+  }
+
+  renderInApp(createElement(ExperiencesPage), { path: '/experiences' })
+  await screen.findByRole('heading', { name: /Explore our coast/i })
+
+  // Switch to "Nearby Proximity Search" tab
+  const nearMeTab = screen.getByRole('button', { name: /Nearby Proximity Search/i })
+  await userEvent.setup().click(nearMeTab)
+
+  // Type a natural location keyword into the location search bar
+  const locationInput = screen.getByPlaceholderText(/e\.g\. Mirissa, Weligama/i)
+  await userEvent.setup().type(locationInput, 'weligama')
+
+  // Submit search
+  await userEvent.setup().click(screen.getByRole('button', { name: /Find Coastal Destinations/i }))
+
+  // Verify API was called with ?q=weligama
+  assert.ok(capturedUrl.includes('q=weligama'))
+
+  // Verify proximity result and resolved location notice
+  assert.ok(await screen.findByText(/2\.4 km away/i))
+  assert.ok(screen.getByText(/Weligama Bay Haven/i))
+})
+
+// -------------------------------------------------------------
 // WEB-EXP-003: Discovery Network Error Handling
 // -------------------------------------------------------------
 test('WEB-EXP-003 discovery hub displays error state when API fails with retry option (ui-integration: experience-discovery)', async () => {
@@ -561,9 +625,16 @@ test('WEB-EXP-009 catalogue management renders curation workspace and microservi
     return jsonResponse({})
   }
 
+  // Test manager role view (canManage = true)
   renderInApp(createElement(CatalogueManagementPage), {
     path: '/experiences/manage',
-    auth: makeAuthSessionValue({ status: 'signed-in', user: makeAuthUser() }),
+    auth: makeAuthSessionValue({
+      status: 'signed-in',
+      user: makeAuthUser({
+        roles: ['Admin'],
+        permissions: ['experiences.catalogue.manage', 'experiences.catalogue.read'],
+      }),
+    }),
   })
 
   // Heading and action buttons
@@ -585,6 +656,37 @@ test('WEB-EXP-009 catalogue management renders curation workspace and microservi
   // Verify Agent Seam reporting
   assert.ok(screen.getByText(/Agentic AI Pre-G07 Seam/i))
   assert.ok(screen.getByText(/CoastalOperationsAgent/i))
+})
+
+// -------------------------------------------------------------
+// WEB-EXP-009B: Catalogue Management Workspace Read-Only Boundary
+// -------------------------------------------------------------
+test('WEB-EXP-009B renders read-only catalogue view without mutation forms when user lacks manage permission', async () => {
+  globalThis.fetch = async (input) => {
+    const url = String(input)
+    if (url.includes('/api/experiences/destinations')) {
+      return jsonResponse({ total: 1, page: 1, pageSize: 20, items: [mockDestination] })
+    }
+    if (url.includes('/api/experiences/activities') || url.includes('/api/experiences/offerings')) {
+      return jsonResponse({ total: 0, page: 1, pageSize: 20, items: [] })
+    }
+    return jsonResponse({})
+  }
+
+  renderInApp(createElement(CatalogueManagementPage), {
+    path: '/experiences/manage',
+    auth: makeAuthSessionValue({
+      status: 'signed-in',
+      user: makeAuthUser({
+        roles: ['Staff'],
+        permissions: ['experiences.catalogue.read'],
+      }),
+    }),
+  })
+
+  assert.ok(await screen.findByRole('heading', { name: /Catalogue Management Workspace/i }))
+  assert.ok(await screen.findByText(/Read-only view/i))
+  assert.equal(screen.queryByRole('button', { name: /Save Destination/i }), null)
 })
 
 // -------------------------------------------------------------

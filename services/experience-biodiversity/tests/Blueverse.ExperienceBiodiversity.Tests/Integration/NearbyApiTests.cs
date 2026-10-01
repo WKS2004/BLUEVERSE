@@ -98,4 +98,38 @@ public sealed class NearbyApiTests : IClassFixture<TestWebApplicationFactory>
         var firstDist = results[0].GetProperty("distanceMeters").GetDouble();
         Assert.True(firstDist >= 0);
     }
+
+    [Fact]
+    [Trait("CaseId", "EXP-API-NRB-005")]
+    public async Task GetNearby_LocationKeyword_ResolvesLocationAndReturnsNearbyDestinations()
+    {
+        using var client = _factory.CreateClient();
+
+        // Seed a published destination to be searched
+        var destReq = new CreateDestinationRequest("Weligama Bay Haven", $"weligama-{Guid.NewGuid():N}"[..18], "Surf bay", "Southern Province", 5.9723, 80.4287);
+        using var createRes = await client.PostAsJsonAsync("/api/experiences/destinations", destReq);
+        Assert.Equal(HttpStatusCode.Created, createRes.StatusCode);
+        var dest = await createRes.Content.ReadFromJsonAsync<DestinationDto>();
+        Assert.NotNull(dest);
+
+        // Publish it
+        await client.PatchAsJsonAsync($"/api/experiences/destinations/{dest.Id}/publication", new UpdatePublicationRequest(PublicationStatus.Published));
+
+        // Query by natural text search keyword (e.g. "weligama")
+        using var nearbyRes = await client.GetAsync("/api/experiences/nearby?q=weligama&radiusMeters=25000");
+        Assert.Equal(HttpStatusCode.OK, nearbyRes.StatusCode);
+
+        var content = await nearbyRes.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(content);
+        var root = doc.RootElement;
+
+        Assert.True(root.TryGetProperty("query", out var query));
+        Assert.Equal("weligama", query.GetProperty("location").GetString());
+        Assert.True(query.TryGetProperty("resolvedLocation", out var resolved));
+        Assert.False(string.IsNullOrEmpty(resolved.GetString()));
+
+        Assert.True(root.TryGetProperty("results", out var results));
+        Assert.Equal(JsonValueKind.Array, results.ValueKind);
+        Assert.True(results.GetArrayLength() > 0);
+    }
 }

@@ -9,6 +9,8 @@ public interface IUserContext
     bool IsAuthenticated { get; }
     IReadOnlyList<string> Roles { get; }
     IReadOnlyList<string> Permissions { get; }
+    bool HasPermission(string permission);
+    bool HasAnyPermission(params string[] permissions);
 }
 
 public sealed class UserContext : IUserContext
@@ -73,6 +75,15 @@ public sealed class UserContext : IUserContext
                     .ToList();
             }
 
+            // Also check X-User-Roles header forwarded by gateway or test client
+            var headerRoles = _httpContextAccessor.HttpContext?.Request.Headers["X-User-Roles"].ToString();
+            if (!string.IsNullOrWhiteSpace(headerRoles))
+            {
+                return headerRoles.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+            }
+
             using var payload = GetJwtPayloadJson();
             if (payload != null && payload.RootElement.TryGetProperty("role", out var roleProp))
             {
@@ -110,6 +121,15 @@ public sealed class UserContext : IUserContext
                     .ToList();
             }
 
+            // Also check X-User-Permissions header forwarded by gateway or test client
+            var headerPerms = _httpContextAccessor.HttpContext?.Request.Headers["X-User-Permissions"].ToString();
+            if (!string.IsNullOrWhiteSpace(headerPerms))
+            {
+                return headerPerms.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+            }
+
             using var payload = GetJwtPayloadJson();
             if (payload != null && payload.RootElement.TryGetProperty("permission", out var permProp))
             {
@@ -132,6 +152,27 @@ public sealed class UserContext : IUserContext
 
             return Array.Empty<string>();
         }
+    }
+
+    public bool HasPermission(string permission)
+    {
+        if (string.IsNullOrWhiteSpace(permission)) return false;
+        var perms = Permissions;
+        if (perms.Any(p => string.Equals(p, permission, StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(p, "experiences.catalogue.manage", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(p, "auth.role.system.manage", StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
+
+        // Also check if user has Admin role
+        return Roles.Any(r => string.Equals(r, "Admin", StringComparison.OrdinalIgnoreCase));
+    }
+
+    public bool HasAnyPermission(params string[] permissions)
+    {
+        if (permissions == null || permissions.Length == 0) return false;
+        return permissions.Any(HasPermission);
     }
 
     private JsonDocument? GetJwtPayloadJson()

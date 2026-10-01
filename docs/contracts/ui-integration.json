@@ -321,17 +321,20 @@
         "experience-destinations-list",
         "experience-destination-create",
         "experience-destination-update",
+        "experience-destination-delete",
         "experience-destination-update-publication",
         "experience-destination-evaluate-publication",
         "experience-activities-list",
         "experience-activity-by-id",
         "experience-activity-create",
         "experience-activity-update",
+        "experience-activity-delete",
         "experience-activity-update-publication",
         "experience-activity-evaluate-publication",
         "experience-offerings-list",
         "experience-offering-create",
         "experience-offering-update",
+        "experience-offering-delete",
         "experience-offering-update-publication",
         "experience-offering-evaluate-publication",
         "experience-offering-schedules-list",
@@ -561,6 +564,14 @@
       "operationId": "Update"
     },
     {
+      "id": "experience-activity-delete",
+      "method": "DELETE",
+      "path": "/api/experiences/activities/{id:guid}",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "Delete"
+    },
+    {
       "id": "experience-activity-update-publication",
       "method": "PATCH",
       "path": "/api/experiences/activities/{id:guid}/publication",
@@ -631,6 +642,14 @@
       "publicBoundary": "api",
       "ownerService": "experience-biodiversity",
       "operationId": "Update"
+    },
+    {
+      "id": "experience-destination-delete",
+      "method": "DELETE",
+      "path": "/api/experiences/destinations/{id:guid}",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "Delete"
     },
     {
       "id": "experience-destination-update-publication",
@@ -743,6 +762,14 @@
       "publicBoundary": "api",
       "ownerService": "experience-biodiversity",
       "operationId": "Update"
+    },
+    {
+      "id": "experience-offering-delete",
+      "method": "DELETE",
+      "path": "/api/experiences/offerings/{id:guid}",
+      "publicBoundary": "api",
+      "ownerService": "experience-biodiversity",
+      "operationId": "Delete"
     },
     {
       "id": "experience-offering-update-publication",

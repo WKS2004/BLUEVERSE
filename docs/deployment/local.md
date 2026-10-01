@@ -1,9 +1,10 @@
 # Local Deployment
 
 The local Compose topology runs the public API, internal Auth and the
-Experience & Biodiversity host scaffold. The latter provides process health,
-OpenAPI and PostgreSQL connectivity, but no v1 business workflow or domain
-tables yet.
+Experience & Biodiversity service. The latter provides destination, activity,
+offering and schedule catalogue management, Haversine nearby discovery with
+Sri Lanka coastal geocoding fallback, OpenFreeMap vector tile support, and
+pre-G07 Agentic AI dispatch seams.
 
 ## Prerequisites
 

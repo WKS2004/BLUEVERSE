@@ -83,24 +83,28 @@ only client-facing API, authenticates and authorizes with the existing
 role-to-permission model, and forwards only the approved actor/operation
 context. The component service never calls Auth.
 
-| Method and candidate public path | Capability | Proposed permission |
+| Method and candidate public path | Capability | Implemented / Proposed permission |
 |---|---|---|
-| `GET /api/experiences/destinations` | Browse/search published destinations with filters and pagination | `experience.catalog.read` |
-| `GET /api/experiences/destinations/{destinationId:guid}` | Destination detail and its published experience context | `experience.catalog.read` |
-| `GET /api/experiences/activities` | Read the canonical activity taxonomy | `experience.catalog.read` |
-| `GET /api/experiences/offerings` | Browse/search published offerings with filters and pagination | `experience.catalog.read` |
-| `GET /api/experiences/offerings/{offeringId:guid}` | Offering detail and current effective availability | `experience.catalog.read` |
-| `GET /api/experiences/nearby` | Find nearby published destinations/offerings from validated `latitude`, `longitude` and `radiusMeters` query values supplied from a one-time location input | `experience.catalog.read` |
-| `POST /api/experiences/destinations` and `PUT /api/experiences/destinations/{destinationId:guid}` | Create/update a destination | `experience.catalog.manage` |
-| `POST /api/experiences/activities` and `PUT /api/experiences/activities/{activityId:guid}` | Create/update an activity and taxonomy fields | `experience.catalog.manage` |
-| `POST /api/experiences/offerings` and `PUT /api/experiences/offerings/{offeringId:guid}` | Create/update an offering and its schedule | `experience.catalog.manage` |
-| `POST /api/experiences/destinations/{destinationId:guid}/publication-evaluations`; `POST /api/experiences/activities/{activityId:guid}/publication-evaluations`; `POST /api/experiences/offerings/{offeringId:guid}/publication-evaluations` | Evaluate a requested publication transition and return accepted/blocked reasons without mutation | `experience.catalog.manage` |
-| `PATCH /api/experiences/destinations/{destinationId:guid}/publication`; `PATCH /api/experiences/activities/{activityId:guid}/publication`; `PATCH /api/experiences/offerings/{offeringId:guid}/publication` | Apply an allowed publication transition after revalidation | `experience.catalog.manage` |
-| `POST /api/experiences/availability/evaluations` | Evaluate current usability for a requested interval | `experience.catalog.read` |
-| `POST /api/experiences/offerings/{offeringId:guid}/schedules` and `PUT /api/experiences/offerings/{offeringId:guid}/schedules/{scheduleId:guid}` | Add/update a schedule | `experience.catalog.manage` |
-| `GET /api/experiences/favourites` | List only the caller's saved targets | `experience.favourites.manage` |
-| `PUT /api/experiences/favourites/{targetType}/{targetId:guid}` | Idempotently save one of the caller's targets | `experience.favourites.manage` |
-| `DELETE /api/experiences/favourites/{targetType}/{targetId:guid}` | Remove one of the caller's targets | `experience.favourites.manage` |
+| `GET /api/experiences/destinations` | Browse/search published destinations with filters and pagination | `experiences.catalogue.read` |
+| `GET /api/experiences/destinations/{destinationId:guid}` | Destination detail and its published experience context | `experiences.catalogue.read` |
+| `GET /api/experiences/activities` | Read the canonical activity taxonomy | `experiences.catalogue.read` |
+| `GET /api/experiences/offerings` | Browse/search published offerings with filters and pagination | `experiences.catalogue.read` |
+| `GET /api/experiences/offerings/{offeringId:guid}` | Offering detail and current effective availability | `experiences.catalogue.read` |
+| `GET /api/experiences/nearby` | Find nearby published destinations/offerings from validated place name/keyword or coordinates | `experiences.catalogue.read` |
+| `POST /api/experiences/destinations` and `PUT /api/experiences/destinations/{destinationId:guid}` | Create/update a destination | `experiences.catalogue.manage` |
+| `DELETE /api/experiences/destinations/{destinationId:guid}` | Delete a destination | `experiences.catalogue.manage` |
+| `POST /api/experiences/activities` and `PUT /api/experiences/activities/{activityId:guid}` | Create/update an activity and taxonomy fields | `experiences.catalogue.manage` |
+| `DELETE /api/experiences/activities/{activityId:guid}` | Delete an activity and cascade child offerings | `experiences.catalogue.manage` |
+| `POST /api/experiences/offerings` and `PUT /api/experiences/offerings/{offeringId:guid}` | Create/update an offering and its schedule | `experiences.catalogue.manage` |
+| `DELETE /api/experiences/offerings/{offeringId:guid}` | Delete an offering and related schedule slots | `experiences.catalogue.manage` |
+| `POST /api/experiences/destinations/{destinationId:guid}/publication-evaluations`; `POST /api/experiences/activities/{activityId:guid}/publication-evaluations`; `POST /api/experiences/offerings/{offeringId:guid}/publication-evaluations` | Evaluate a requested publication transition and return accepted/blocked reasons without mutation | `experiences.catalogue.manage` |
+| `PATCH /api/experiences/destinations/{destinationId:guid}/publication`; `PATCH /api/experiences/activities/{activityId:guid}/publication`; `PATCH /api/experiences/offerings/{offeringId:guid}/publication` | Apply an allowed publication transition after revalidation | `experiences.catalogue.manage` |
+| `POST /api/experiences/availability/evaluations` | Evaluate current usability for a requested interval | `experiences.catalogue.read` |
+| `POST /api/experiences/offerings/{offeringId:guid}/schedules` and `PUT /api/experiences/offerings/{offeringId:guid}/schedules/{scheduleId:guid}` | Add/update a schedule | `experiences.catalogue.manage` |
+| `DELETE /api/experiences/offerings/{offeringId:guid}/schedules/{scheduleId:guid}` | Delete a schedule slot | `experiences.catalogue.manage` |
+| `GET /api/experiences/favourites` | List only the caller's saved targets | `experiences.catalogue.read` |
+| `PUT /api/experiences/favourites/{targetType}/{targetId:guid}` | Idempotently save one of the caller's targets | `experiences.catalogue.read` |
+| `DELETE /api/experiences/favourites/{targetType}/{targetId:guid}` | Remove one of the caller's targets | `experiences.catalogue.read` |
 
 The availability request contains `offeringId`, `startsAt` and `endsAt` as
 offset-qualified ISO-8601 instants. The response separates publication,

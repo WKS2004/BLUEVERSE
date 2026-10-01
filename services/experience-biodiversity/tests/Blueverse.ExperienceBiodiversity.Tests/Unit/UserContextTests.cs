@@ -130,6 +130,38 @@ public sealed class UserContextTests
         Assert.Empty(userContext.Permissions);
     }
 
+    [Fact]
+    [Trait("CaseId", "EXP-UNIT-USR-007")]
+    public void HasPermission_WithAdminRole_ReturnsTrue()
+    {
+        var httpContext = new DefaultHttpContext();
+        httpContext.Request.Headers["X-User-Id"] = Guid.NewGuid().ToString();
+        httpContext.Request.Headers["X-User-Roles"] = "Admin";
+
+        var accessor = new HttpContextAccessor { HttpContext = httpContext };
+        var userContext = new UserContext(accessor);
+
+        Assert.True(userContext.HasPermission("experiences.catalogue.manage"));
+        Assert.True(userContext.HasAnyPermission("experiences.catalogue.manage", "something.else"));
+    }
+
+    [Fact]
+    [Trait("CaseId", "EXP-UNIT-USR-008")]
+    public void HasPermission_WithoutRequiredPermission_ReturnsFalse()
+    {
+        var httpContext = new DefaultHttpContext();
+        httpContext.Request.Headers["X-User-Id"] = Guid.NewGuid().ToString();
+        httpContext.Request.Headers["X-User-Roles"] = "tourist";
+        httpContext.Request.Headers["X-User-Permissions"] = "experiences.catalogue.read";
+
+        var accessor = new HttpContextAccessor { HttpContext = httpContext };
+        var userContext = new UserContext(accessor);
+
+        Assert.True(userContext.HasPermission("experiences.catalogue.read"));
+        Assert.False(userContext.HasPermission("experiences.catalogue.manage"));
+        Assert.False(userContext.HasAnyPermission("auth.role.system.manage", "admin.privilege"));
+    }
+
     private static string CreateFakeJwt(string payloadJson)
     {
         var headerBytes = Encoding.UTF8.GetBytes("{\"alg\":\"none\",\"typ\":\"JWT\"}");

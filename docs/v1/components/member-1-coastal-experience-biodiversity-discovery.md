@@ -115,20 +115,20 @@ operational users to inspect context when relevant to an assessment.
 Capabilities are granted by the server's role-to-permission model, not by
 client-side assumptions about role names. Therefore:
 
-- a person with browse permission can discover and inspect public/published
-  content;
-- a person with catalogue-management permission can perform the allowed
-  create, update, publication, archive, activity, offering, schedule or
-  availability actions;
+- a person with browse permission (`experiences.catalogue.read` or anonymous for published items) can discover and inspect public/published content;
+- a person with catalogue-management permission (`experiences.catalogue.manage`) can perform the allowed full CRUD operations:
+  - Destinations: create, read, update metadata/coordinates, transition publication status, and delete;
+  - Activities: create, read, update, transition publication status, and delete (cascading child offerings);
+  - Offerings: create, read, update pricing/capacity/duration, transition publication status, and delete;
+  - Schedules: maintain timetable slots with start/end windows and capacity;
+- permission holders (`experiences.catalogue.read`, `experiences.catalogue.manage`, or `auth.role.system.manage`) access catalogue management directly from the left navigation bar (`AccountAreaNavigation`) across Profile, Dashboard, Administration, and Management workspaces;
 - a person can create, view or remove only their own favourites, subject to
   the server contract; and
 - an operational restriction is read from the owning operations service and
   is not editable through this component.
 
-Exact permission codes, visibility rules for unpublished records, and whether
-some management operations have separate permissions are implementation
-decisions. React and Flutter must show the same actions to any caller with the
-same effective permissions.
+The implemented permission codes are `experiences.catalogue.read` and `experiences.catalogue.manage`.
+Both permissions are seeded to the system `Admin` role in `AuthDbContext` and `AuthDataSeeder`. React and Flutter show the same actions to any caller with the same effective permissions.
 
 ## 4. Domain concepts and information meaning
 

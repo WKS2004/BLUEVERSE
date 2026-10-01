@@ -205,4 +205,28 @@ public sealed class DestinationsApiTests : IClassFixture<TestWebApplicationFacto
         Assert.True(doc.RootElement.TryGetProperty("destinationId", out var destIdProp));
         Assert.Equal(created.Id, destIdProp.GetGuid());
     }
+
+    [Fact]
+    [Trait("CaseId", "EXP-API-DEST-009")]
+    public async Task CreateDestination_AnonymousUser_Returns_Unauthorized()
+    {
+        using var anonClient = _factory.CreateAnonymousClient();
+
+        var createReq = new CreateDestinationRequest("Hikkaduwa Marine Park", null, "Coral reef sanctuary", "Southern", 6.13, 80.1);
+        using var response = await anonClient.PostAsJsonAsync("/api/experiences/destinations", createReq);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    [Trait("CaseId", "EXP-API-DEST-010")]
+    public async Task GetDestinations_DraftStatusFilter_WithoutPermission_Returns_Forbidden()
+    {
+        using var anonClient = _factory.CreateAnonymousClient();
+
+        // Non-published status query should be forbidden to unauthenticated/unprivileged callers
+        using var response = await anonClient.GetAsync("/api/experiences/destinations?status=DRAFT");
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
 }

@@ -13,15 +13,18 @@ public sealed class OfferingsController : ControllerBase
 {
     private readonly ExperienceBiodiversityDbContext _dbContext;
     private readonly IEvaluationService _evaluationService;
+    private readonly IUserContext _userContext;
     private readonly ILogger<OfferingsController> _logger;
 
     public OfferingsController(
         ExperienceBiodiversityDbContext dbContext,
         IEvaluationService evaluationService,
+        IUserContext userContext,
         ILogger<OfferingsController> logger)
     {
         _dbContext = dbContext;
         _evaluationService = evaluationService;
+        _userContext = userContext;
         _logger = logger;
     }
 
@@ -45,6 +48,11 @@ public sealed class OfferingsController : ControllerBase
         if (!string.IsNullOrWhiteSpace(status))
         {
             var normStatus = status.Trim().ToUpperInvariant();
+            if (normStatus != PublicationStatus.Published &&
+                !_userContext.HasAnyPermission("experiences.catalogue.read", "experiences.catalogue.manage", "auth.role.system.manage"))
+            {
+                return Forbid();
+            }
             q = q.Where(o => o.Status == normStatus);
         }
         else
@@ -127,6 +135,16 @@ public sealed class OfferingsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateOfferingRequest request, CancellationToken cancellationToken = default)
     {
+        if (!_userContext.IsAuthenticated)
+        {
+            return Unauthorized(new { type = "https://tools.ietf.org/html/rfc7807", title = "Unauthorized", status = 401, detail = "Authentication is required to create offerings." });
+        }
+
+        if (!_userContext.HasAnyPermission("experiences.catalogue.manage", "auth.role.system.manage"))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { type = "https://tools.ietf.org/html/rfc7807", title = "Forbidden", status = 403, detail = "You do not have permission to manage offerings." });
+        }
+
         var dest = await _dbContext.Destinations.FindAsync(new object[] { request.DestinationId }, cancellationToken);
         if (dest == null)
         {
@@ -181,6 +199,16 @@ public sealed class OfferingsController : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateOfferingRequest request, CancellationToken cancellationToken = default)
     {
+        if (!_userContext.IsAuthenticated)
+        {
+            return Unauthorized(new { type = "https://tools.ietf.org/html/rfc7807", title = "Unauthorized", status = 401, detail = "Authentication is required to update offerings." });
+        }
+
+        if (!_userContext.HasAnyPermission("experiences.catalogue.manage", "auth.role.system.manage"))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { type = "https://tools.ietf.org/html/rfc7807", title = "Forbidden", status = 403, detail = "You do not have permission to manage offerings." });
+        }
+
         var offering = await _dbContext.Offerings
             .Include(o => o.Destination)
             .Include(o => o.Activity)
@@ -222,6 +250,16 @@ public sealed class OfferingsController : ControllerBase
     [HttpPost("{id:guid}/publication-evaluations")]
     public async Task<IActionResult> EvaluatePublication(Guid id, [FromBody] UpdatePublicationRequest request, CancellationToken cancellationToken = default)
     {
+        if (!_userContext.IsAuthenticated)
+        {
+            return Unauthorized(new { type = "https://tools.ietf.org/html/rfc7807", title = "Unauthorized", status = 401, detail = "Authentication is required to evaluate publications." });
+        }
+
+        if (!_userContext.HasAnyPermission("experiences.catalogue.read", "experiences.catalogue.manage", "auth.role.system.manage"))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { type = "https://tools.ietf.org/html/rfc7807", title = "Forbidden", status = 403, detail = "You do not have permission to evaluate publications." });
+        }
+
         var eval = await _evaluationService.EvaluateOfferingPublicationAsync(id, request.Status, cancellationToken);
         return Ok(eval);
     }
@@ -229,6 +267,16 @@ public sealed class OfferingsController : ControllerBase
     [HttpPatch("{id:guid}/publication")]
     public async Task<IActionResult> UpdatePublication(Guid id, [FromBody] UpdatePublicationRequest request, CancellationToken cancellationToken = default)
     {
+        if (!_userContext.IsAuthenticated)
+        {
+            return Unauthorized(new { type = "https://tools.ietf.org/html/rfc7807", title = "Unauthorized", status = 401, detail = "Authentication is required to update publications." });
+        }
+
+        if (!_userContext.HasAnyPermission("experiences.catalogue.manage", "auth.role.system.manage"))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { type = "https://tools.ietf.org/html/rfc7807", title = "Forbidden", status = 403, detail = "You do not have permission to update publications." });
+        }
+
         var eval = await _evaluationService.EvaluateOfferingPublicationAsync(id, request.Status, cancellationToken);
         if (!eval.CanTransition)
         {
@@ -274,6 +322,31 @@ public sealed class OfferingsController : ControllerBase
             offering.UpdatedAt));
     }
 
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken = default)
+    {
+        if (!_userContext.IsAuthenticated)
+        {
+            return Unauthorized(new { type = "https://tools.ietf.org/html/rfc7807", title = "Unauthorized", status = 401, detail = "Authentication is required to delete offerings." });
+        }
+
+        if (!_userContext.HasAnyPermission("experiences.catalogue.manage", "auth.role.system.manage"))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { type = "https://tools.ietf.org/html/rfc7807", title = "Forbidden", status = 403, detail = "You do not have permission to manage offerings." });
+        }
+
+        var offering = await _dbContext.Offerings.FindAsync(new object[] { id }, cancellationToken);
+        if (offering == null)
+        {
+            return NotFound(new { type = "https://tools.ietf.org/html/rfc7807", title = "Offering Not Found", status = 404, detail = $"Offering with ID {id} does not exist." });
+        }
+
+        _dbContext.Offerings.Remove(offering);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return NoContent();
+    }
+
     // --- Schedules ---
 
     [HttpGet("{id:guid}/schedules")]
@@ -300,6 +373,16 @@ public sealed class OfferingsController : ControllerBase
     [HttpPost("{id:guid}/schedules")]
     public async Task<IActionResult> AddSchedule(Guid id, [FromBody] CreateScheduleRequest request, CancellationToken cancellationToken = default)
     {
+        if (!_userContext.IsAuthenticated)
+        {
+            return Unauthorized(new { type = "https://tools.ietf.org/html/rfc7807", title = "Unauthorized", status = 401, detail = "Authentication is required to add schedules." });
+        }
+
+        if (!_userContext.HasAnyPermission("experiences.catalogue.manage", "auth.role.system.manage"))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { type = "https://tools.ietf.org/html/rfc7807", title = "Forbidden", status = 403, detail = "You do not have permission to manage schedules." });
+        }
+
         if (request.EndsAt <= request.StartsAt)
         {
             return BadRequest(new { type = "https://tools.ietf.org/html/rfc7807", title = "Invalid Schedule Interval", status = 400, detail = "EndsAt must be strictly greater than StartsAt." });
@@ -342,6 +425,16 @@ public sealed class OfferingsController : ControllerBase
     [HttpPut("{id:guid}/schedules/{scheduleId:guid}")]
     public async Task<IActionResult> UpdateSchedule(Guid id, Guid scheduleId, [FromBody] UpdateScheduleRequest request, CancellationToken cancellationToken = default)
     {
+        if (!_userContext.IsAuthenticated)
+        {
+            return Unauthorized(new { type = "https://tools.ietf.org/html/rfc7807", title = "Unauthorized", status = 401, detail = "Authentication is required to update schedules." });
+        }
+
+        if (!_userContext.HasAnyPermission("experiences.catalogue.manage", "auth.role.system.manage"))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { type = "https://tools.ietf.org/html/rfc7807", title = "Forbidden", status = 403, detail = "You do not have permission to manage schedules." });
+        }
+
         if (request.EndsAt <= request.StartsAt)
         {
             return BadRequest(new { type = "https://tools.ietf.org/html/rfc7807", title = "Invalid Schedule Interval", status = 400, detail = "EndsAt must be strictly greater than StartsAt." });
@@ -375,6 +468,16 @@ public sealed class OfferingsController : ControllerBase
     [HttpDelete("{id:guid}/schedules/{scheduleId:guid}")]
     public async Task<IActionResult> DeleteSchedule(Guid id, Guid scheduleId, CancellationToken cancellationToken = default)
     {
+        if (!_userContext.IsAuthenticated)
+        {
+            return Unauthorized(new { type = "https://tools.ietf.org/html/rfc7807", title = "Unauthorized", status = 401, detail = "Authentication is required to delete schedules." });
+        }
+
+        if (!_userContext.HasAnyPermission("experiences.catalogue.manage", "auth.role.system.manage"))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { type = "https://tools.ietf.org/html/rfc7807", title = "Forbidden", status = 403, detail = "You do not have permission to manage schedules." });
+        }
+
         var schedule = await _dbContext.Schedules.FirstOrDefaultAsync(s => s.Id == scheduleId && s.OfferingId == id, cancellationToken);
         if (schedule == null)
         {

@@ -63,7 +63,7 @@ export default function AppRoutes() {
       <Route element={<RequireAuth />}>
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/experiences/manage" element={<CatalogueManagementPage />} />
+        <Route path="/experiences/manage" element={<RequireAnyAdminPermission permissions={['experiences.catalogue.read', 'experiences.catalogue.manage', 'auth.role.system.manage']}><CatalogueManagementPage /></RequireAnyAdminPermission>} />
         <Route path="/admin" element={<RequireAnyAdminPermission permissions={['auth.permission.read', 'auth.role.read', 'auth.user.read']}><AdminIndexPage /></RequireAnyAdminPermission>} />
         <Route path="/admin/permissions" element={<RequireAnyAdminPermission permissions={['auth.permission.read']}><AdminPermissionsPage /></RequireAnyAdminPermission>} />
         <Route path="/admin/roles" element={<RequireAnyAdminPermission permissions={['auth.role.read']}><AdminRolesPage /></RequireAnyAdminPermission>} />
