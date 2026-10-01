@@ -17,6 +17,9 @@ public static class PermissionCodes
     public const string OperationsAssessmentCreate = "operations.assessment.create";
     public const string OperationsAssessmentRead = "operations.assessment.read";
     public const string OperationsAssessmentQueueRead = "operations.assessment.queue.read";
+    public const string OperationsAssessmentUpdate = "operations.assessment.update";
+    public const string OperationsAssessmentDelete = "operations.assessment.delete";
+    public const string OperationsAssessmentSubmit = "operations.assessment.submit";
     public const string OperationsAssessmentDecide = "operations.assessment.decide";
     public const string OperationsTargetStatusRead = "operations.target.status.read";
     public const string OperationsTargetHistoryRead = "operations.target.history.read";

@@ -13,6 +13,9 @@ public sealed class CoastalAuthorizationPolicyTests
         var permissions = new[]
         {
             PermissionCodes.OperationsAssessmentCreate,
+            PermissionCodes.OperationsAssessmentUpdate,
+            PermissionCodes.OperationsAssessmentDelete,
+            PermissionCodes.OperationsAssessmentSubmit,
             PermissionCodes.OperationsAssessmentRead,
             PermissionCodes.OperationsAssessmentQueueRead,
             PermissionCodes.OperationsAssessmentDecide,

@@ -93,14 +93,14 @@ test('WEB-OPS-UI-002 current assessment response is shown without inventing a pr
 
   await screen.findByText(item.objective)
   await userEvent.click(screen.getByText('Open review details'))
-  await screen.findByText('Automated operations support is not connected yet. This assessment is saved without an automated proposal, so no operational change has been suggested or applied.')
+  await screen.findByText('Coastal context was recorded, but automated proposals are not available yet. No operational change has been suggested or applied.')
   assert.ok(screen.getByText('Coastal experience'))
   assert.ok(screen.getByText('Open'))
   assert.equal(screen.queryByRole('button', { name: /approve|apply decision/i }), null)
   assert.equal(calls.some((call) => call.method === 'POST' && call.path.includes('/decisions')), false)
 })
 
-test('WEB-OPS-UI-003 assessment creation validates the canonical ID and submits explicit offsets (ui-integration: coastal-operations-assessment)', async () => {
+test('WEB-OPS-UI-003 assessment creation validates the coastal record ID and submits explicit offsets (ui-integration: coastal-operations-assessment)', async () => {
   let createdRequest
   const created = assessment({ assessmentId: '00000000-0000-4000-8000-000000000004' })
   const calls = installFetch({
@@ -112,15 +112,15 @@ test('WEB-OPS-UI-003 assessment creation validates the canonical ID and submits 
   renderOperations(['operations.assessment.create'])
   await userEvent.click(screen.getByRole('button', { name: 'New assessment' }))
 
-  fireEvent.change(screen.getByLabelText('Canonical record ID'), { target: { value: targetId } })
+  fireEvent.change(screen.getByLabelText('Coastal record ID'), { target: { value: targetId } })
   fireEvent.change(screen.getByLabelText('Starts at'), { target: { value: '2026-10-01T09:00' } })
   fireEvent.change(screen.getByLabelText('Time-zone offset at start'), { target: { value: '+05:30' } })
   fireEvent.change(screen.getByLabelText('Ends at'), { target: { value: '2026-10-01T12:00' } })
   fireEvent.change(screen.getByLabelText('Time-zone offset at end'), { target: { value: '+05:30' } })
   fireEvent.change(screen.getByLabelText(/What should the team assess/), { target: { value: 'Review the access route after heavy rain.' } })
-  await userEvent.click(screen.getByRole('button', { name: 'Record assessment' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Save draft' }))
 
-  await screen.findByText('The assessment was recorded. Its linked coastal context is shown below.')
+  await screen.findByText('Assessment draft saved. Submit it when you are ready to check coastal context.')
   assert.equal(calls.length, 1)
   assert.equal(createdRequest.input, '/api/operations/assessments')
   assert.equal(createdRequest.init.credentials, 'include')

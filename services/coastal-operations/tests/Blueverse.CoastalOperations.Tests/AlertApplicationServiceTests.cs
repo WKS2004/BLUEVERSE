@@ -137,10 +137,11 @@ public sealed class AlertApplicationServiceTests
     public async Task DraftUpdateRetainsVisibilityWhenOmitted()
     {
         await using var db = CreateDb();
+        var owner = Guid.NewGuid();
         var service = CreateService(db);
-        var created = await service.CreateAsync(CreateRequest(visibility: "PUBLIC"), Guid.NewGuid(), "create", CancellationToken.None);
+        var created = await service.CreateAsync(CreateRequest(visibility: "PUBLIC"), owner, "create", CancellationToken.None);
 
-        var updated = await service.UpdateDraftAsync(created.AlertId, UpdateRequest(visibility: null), Guid.NewGuid(), "update", CancellationToken.None);
+        var updated = await service.UpdateDraftAsync(created.AlertId, UpdateRequest(visibility: null), owner, "update", CancellationToken.None);
 
         Assert.Equal("PUBLIC", updated.Visibility);
         Assert.Equal(2, updated.Version);

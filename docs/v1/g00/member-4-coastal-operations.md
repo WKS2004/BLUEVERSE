@@ -14,18 +14,29 @@ proceed against this provisional proposal, as directed by the user, and does
 not imply shared acceptance.
 
 The `features/coastal-operations` branch now contains a partial private
-backend: assessment creation and reads, guarded decision handling, target
-status/history reads, alert draft/lifecycle operations, persistence and
-migrations, API gateway integration, health checks, and a Swagger document
-available at `/api/swagger`. It also makes bounded read-only requests to the
-provisional Member 1–3 endpoints during assessment creation, records their
-outcomes, and reports latest dependency statuses without gating startup or
-readiness. The implemented routes and schema are evidence for branch
-progress, not a freeze of the shared request/response, identity,
+backend: assessment draft creation, update, cancellation and submission;
+assessment reads and guarded decision handling; target status/history reads;
+alert draft/lifecycle operations; persistence and migrations; API gateway
+integration; health checks; and a Swagger document available at
+`/api/swagger`. Draft creation stays local and makes no peer or AI calls.
+Submission makes bounded read-only requests to the provisional Member 1–3
+endpoints, records their outcomes, and reports dependency status without
+gating startup or readiness. The implemented routes and schema are evidence
+for branch progress, not a freeze of the shared request/response, identity,
 target-handoff or database-provisioning contracts. Branch-local image
 evidence is implemented against [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md);
 shared G00 acceptance is still required. Production proposal generation
 remains gated by G07.
+
+This branch implements full CRUD for caller-owned assessment drafts and
+proposed alert drafts. Assessment creation is local; explicit submission
+collects the bounded peer outcomes. Draft deletion is logical and audited so
+the system retains the actor, time and prior version. Submitted assessments,
+reviewer decisions, operational state transitions, evidence and active or
+terminal alerts are not ordinary CRUD records and cannot be edited or
+physically deleted through these draft operations. These behaviors are
+implemented against Member 4's provisional G00 proposal; they do not imply
+shared G00 acceptance.
 
 ## Decisions proposed by Member 4
 
@@ -62,9 +73,9 @@ does not yet consume Member 1's authoritative target or expose the private
 member-to-member handoff.
 
 The branch currently uses these provisional, read-only peer endpoints when an
-assessment is created. They are assumptions for independent component work,
-not accepted shared routes; align paths, authentication, DTOs, identifiers and
-freshness rules with each owner before integration:
+assessment draft is explicitly submitted. They are assumptions for independent
+component work, not accepted shared routes; align paths, authentication, DTOs,
+identifiers and freshness rules with each owner before integration:
 
 | Source | Provisional request | Expected bounded JSON fields |
 |---|---|---|
@@ -121,18 +132,31 @@ registries when the component UI/API is built.
 
 | Method and proposed `/api/...` path | Operation and success contract | Permission |
 |---|---|---|
-| `POST /api/operations/assessments` | `CreateAssessmentRequest` → `AssessmentWorkflowResponse` (`201`); request includes canonical target, explicit period, objective and optional `sourceWorkflowId`, with `Idempotency-Key`. If AI is not connected, persist the assessment with `aiDependencyStatus: NOT_CONNECTED` and no proposal. | `operations.assessment.create` |
-| `GET /api/operations/assessments` | `AssessmentQueueResponse` (`200`); resource-scoped operator list or authorized reviewer queue with cursor pagination. | `operations.assessment.read` or `operations.assessment.queue.read` |
-| `GET /api/operations/assessments/{assessmentId}` | `AssessmentDetailResponse` (`200`); workflow/dependency status, authorized proposal, decision, validation, progress, audit/history and result summary. Future agent plan/step summaries appear only after G07 and successful dispatch. | `operations.assessment.read` |
+| `POST /api/operations/assessments` | `CreateAssessmentDraftRequest` → `AssessmentWorkflowResponse` (`201`); creates a caller-owned `DRAFT` with canonical target, explicit period, objective and optional `sourceWorkflowId`. Requires `Idempotency-Key`. Does not call peer components or dispatch AI until submission. | `operations.assessment.create` |
+| `GET /api/operations/assessments` | `AssessmentQueueResponse` (`200`); resource-scoped operator list includes the caller's drafts; the reviewer queue includes only submitted work. Cursor pagination applies. Cancelled drafts are excluded by default and available only through an authorized audit filter. | `operations.assessment.read` or `operations.assessment.queue.read` |
+| `GET /api/operations/assessments/{assessmentId}` | `AssessmentDetailResponse` (`200`); workflow/dependency status, authorized proposal, decision, validation, progress, audit/history and result summary. The owner may inspect their cancelled draft. Future agent plan/step summaries appear only after G07 and successful dispatch. | `operations.assessment.read` |
+| `PATCH /api/operations/assessments/{assessmentId}` | `UpdateAssessmentDraftRequest` → `AssessmentWorkflowResponse` (`200`); updates only the caller's `DRAFT`, requires the expected assessment version, and cannot change server-owned IDs, audit fields or workflow status. | `operations.assessment.update` |
+| `DELETE /api/operations/assessments/{assessmentId}` | Logically cancels only the caller's `DRAFT`, returns its `CANCELLED` status (`200`), and writes an audit tombstone. Requires expected assessment version and `Idempotency-Key`; it never physically erases the assessment. Submitted or otherwise closed assessments return `409`. | `operations.assessment.delete` |
+| `POST /api/operations/assessments/{assessmentId}/submit` | Validates and submits the current draft (`200`); requires expected assessment version and `Idempotency-Key`. On success, records the bounded Member 1–3 peer outcomes. Before G07 it remains `SUBMITTED` with `aiDependencyStatus: NOT_CONNECTED` and no proposal. | `operations.assessment.submit` |
 | `POST /api/operations/assessments/{assessmentId}/decisions` | `ReviewerDecisionRequest` → `ReviewerDecisionResponse` (`200`); requires decision, exact `proposalId`/`proposalVersion`, expected target-state version and `Idempotency-Key`. | `operations.assessment.decide` |
 | `GET /api/operations/targets/{targetType}/{targetId}/status` | `OperationalStatusResponse` (`200`); current authoritative state/version for authorized clients. Private Member 1 and Member 3 consumers use the separately agreed service handoff. | `operations.target.status.read` |
 | `GET /api/operations/targets/{targetType}/{targetId}/history` | `OperationalHistoryResponse` (`200`); authorized, cursor-paginated state changes and decision/audit summaries without private audit payloads. | `operations.target.history.read` |
-| `POST /api/operations/assessments/{assessmentId}/evidence` | Multipart image upload → `EvidenceUploadResponse` (`201` only after private persistence and inspection). | `operations.evidence.upload` |
+| `POST /api/operations/assessments/{assessmentId}/evidence` | Multipart image upload → `EvidenceUploadResponse` (`201` only after private persistence and inspection). Evidence is an immutable attachment; draft edits or deletion do not overwrite or physically delete it. | `operations.evidence.upload` |
 | `GET /api/operations/assessments/{assessmentId}/evidence/{evidenceId}` | Authorized image content (`200`); never return a storage URL. | `operations.evidence.read` |
 | `GET /api/operations/alerts` | `AlertQueueResponse` (`200`); alerts visible to the caller, filtered by target, status and validity. | `operations.alert.read` |
 | `POST /api/operations/alerts` | `CreateAlertDraftRequest` → `AlertResponse` (`201`); authorized creation of an unpublished advisory/alert for a managed target and effective period. | `operations.alert.manage` |
 | `PATCH /api/operations/alerts/{alertId}` | `UpdateAlertDraftRequest` → `AlertResponse` (`200`); change only a `PROPOSED` draft using its expected version; active content requires a new audited proposal. | `operations.alert.manage` |
+| `DELETE /api/operations/alerts/{alertId}` | Logically withdraws only a `PROPOSED` draft, returns its `WITHDRAWN` lifecycle (`200`), and records an audit tombstone. Requires expected alert version and `Idempotency-Key`. Active or terminal alerts cannot be deleted; they must follow their lifecycle. | `operations.alert.manage` |
 | `POST /api/operations/alerts/{alertId}/decisions` | `AlertDecisionRequest` → `AlertDecisionResponse` (`200`); authorized activation or resolution with expected alert version and `Idempotency-Key`. | `operations.alert.decide` |
+
+Assessment drafts provide the component's full CRUD lifecycle: create, read,
+update and logically delete before submission. Submission closes that editing
+window and starts the business workflow. Alert drafts likewise support create,
+read, update and logical delete while `PROPOSED`; publishing, resolving,
+expiring or superseding an alert uses its separately authorized lifecycle
+decision. `DELETE` never means erasing an audit-bearing row. Proposals,
+reviewer decisions, evidence, operational history and executed target state
+remain immutable or append-only; corrections use a new version or workflow.
 
 Assessment responses must expose the business `workflowId`, `assessmentId`,
 resource scope, current version, UTC timestamps and applicable status/error
@@ -144,7 +168,8 @@ branch DTOs are not frozen shared wire schemas.
 
 Assign these permission codes through Auth's existing role-to-permission model;
 do not branch on role names in service or client code. Coastal Operators may
-create and read their in-scope assessments and upload evidence. Operations
+create, read, update and logically delete their own assessment drafts, submit
+them, and upload evidence within their permitted scope. Operations
 Reviewers may read the permitted queue and assessment detail, decide proposals,
 read target status/history and authorized evidence/alerts, and manage alert
 drafts and lifecycle decisions. Tourist access to an alert requires its
@@ -154,19 +179,27 @@ provisioning, Auth explicitly assigns every permission currently registered
 in its database, including the current `operations.*` set, to the `Admin`
 system role through role-permission records. Coastal Operations still enforces
 the named permission policies, and all other roles require explicit grants.
+`operations.assessment.update`, `operations.assessment.delete` and
+`operations.assessment.submit` are distinct grants; create/read permission
+alone does not imply them. Alert draft deletion uses the existing
+`operations.alert.manage` permission.
 An assessment initiator cannot decide their own high-impact proposal; a
 different authorized reviewer is required. React and Flutter expose the same
 authorized actions and outcomes.
 
 ### State, decision and failure proposal
 
-- Business `workflowStatus` values: `SUBMITTED`, `PROPOSAL_READY`,
+- Business `workflowStatus` values: `DRAFT`, `SUBMITTED`, `PROPOSAL_READY`,
   `PENDING_APPROVAL`, `REVISION_REQUESTED`, `REJECTED`, `APPROVED`,
-  `EXECUTED`, `BLOCKED`, `SAFE_FAILURE`. An assessment created before an AI
-  runtime is connected remains `SUBMITTED` with no proposal. A timeout or
+  `EXECUTED`, `BLOCKED`, `SAFE_FAILURE`, `CANCELLED`. A new assessment starts
+  as `DRAFT`; successful submission changes it to `SUBMITTED`. A draft delete
+  changes it to terminal `CANCELLED` and preserves its audit tombstone. An
+  assessment submitted before an AI runtime is connected remains `SUBMITTED`
+  with no proposal. A timeout or
   invalid dispatch records its explicit AI outcome and `SAFE_FAILURE` for that
   AI-dependent stage; it cannot advance to fabricated approval or execution.
-- Proposed workflow transitions: `SUBMITTED` to `PROPOSAL_READY`,
+- Proposed workflow transitions: `DRAFT` to `SUBMITTED` or `CANCELLED`;
+  `SUBMITTED` to `PROPOSAL_READY`,
   `PENDING_APPROVAL`, `BLOCKED` or `SAFE_FAILURE`; `PENDING_APPROVAL` to
   `APPROVED`, `REJECTED`, `REVISION_REQUESTED`, `BLOCKED` or `SAFE_FAILURE`;
   `REVISION_REQUESTED` to a new proposal version and then one of
@@ -174,7 +207,7 @@ authorized actions and outcomes.
   `APPROVED` to `EXECUTED`, `BLOCKED` or `SAFE_FAILURE`. A validated
   `PROPOSAL_READY` recommendation remains a read-only result when no action is
   proposed; any proposed mutation first moves to `PENDING_APPROVAL`.
-  `REJECTED`, `EXECUTED`, `BLOCKED`, `SAFE_FAILURE` and a read-only
+  `CANCELLED`, `REJECTED`, `EXECUTED`, `BLOCKED`, `SAFE_FAILURE` and a read-only
   `PROPOSAL_READY` close that assessment. A revision retains the earlier
   decision and creates a new proposal version.
 - `operationalState` values: `OPEN`, `CAUTION`, `TEMPORARILY_SUSPENDED`,
@@ -196,12 +229,17 @@ authorized actions and outcomes.
   rechecks actor permission, target version, evidence freshness and legal
   transition immediately before a transaction applies the target change and
   audit record together. Use optimistic concurrency. Require an
-  `Idempotency-Key` for assessment creation and decisions: a matching replay
+  `Idempotency-Key` for assessment draft creation, draft cancellation,
+  submission, reviewer decisions and alert draft withdrawal: a matching replay
   returns its original outcome even if state has since advanced; key reuse
   with a different payload or a first-time request with a stale version
-  returns `409` without side effects.
+  returns `409` without side effects. Draft updates require the expected
+  assessment version.
 - Alert severity values are `LOW`, `MODERATE`, `HIGH`, `CRITICAL`; lifecycle
-  values are `PROPOSED`, `ACTIVE`, `RESOLVED`, `EXPIRED`, `SUPERSEDED`.
+  values are `PROPOSED`, `ACTIVE`, `RESOLVED`, `EXPIRED`, `SUPERSEDED`,
+  `WITHDRAWN`. Permit `PROPOSED` → `WITHDRAWN` only through the authorized
+  draft-delete operation, retaining an audit tombstone. A `WITHDRAWN` alert is
+  terminal and cannot be published; create a new draft to replace it.
   Permit `PROPOSED` → `ACTIVE` only through an authorized decision and
   deterministic validation. `HIGH`/`CRITICAL` publication requires an
   authorized human reviewer distinct from anyone who initiated its draft or
@@ -212,7 +250,8 @@ authorized actions and outcomes.
   v1.
 - Return API errors as the existing RFC 7807-style problem response: `400`
   malformed input, `401` unauthenticated, `403` missing permission, `404`
-  absent/out-of-scope resource, `409` stale or conflicting decision, `413`
+  absent/out-of-scope resource, `409` stale version, draft update/delete after
+  submission, deletion of a non-`PROPOSED` alert, or conflicting decision, `413`
   oversized image, `415` unsupported image type, and `422` domain/evidence
   validation failure. An unavailable private image-inspection/storage
   dependency returns `503` and creates no reviewer-visible attachment. Keep
@@ -233,6 +272,11 @@ idempotency records and audit entries. These use the provisional
 `coastal_operations` schema. Dedicated role provisioning, retention, migration
 ownership and shared PostgreSQL credential delivery still require G00
 agreement before integration.
+Assessment draft edits use optimistic version checks. Draft cancellation and
+alert withdrawal set lifecycle/status and deletion actor/time fields and append
+an audit entry in one transaction; they do not cascade-delete evidence or
+history. The retained tombstone is excluded from ordinary lists but can be
+read through the authorized audit view.
 
 ### Private service and optional AI boundary
 
@@ -305,7 +349,9 @@ ratify:
   handoffs with Members 1–3;
 - exact public and internal request/response schemas, validation bounds,
   resource scope and permission grants, status/error mappings, and the common
-  authenticated actor/correlation envelope for API-to-service calls;
+  authenticated actor/correlation envelope for API-to-service calls,
+  including assessment draft CRUD permissions, alert draft deletion, submit
+  transition, expected-version behavior and audit retention;
 - shared PostgreSQL provisioning, schema credentials, migration ownership and
   time conventions, plus this service's identity, private network, environment
   configuration, startup/readiness and CI discovery;

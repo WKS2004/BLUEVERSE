@@ -25,12 +25,13 @@ public sealed class CoastalOperationsDbContext(DbContextOptions<CoastalOperation
         {
             entity.ToTable(table =>
             {
-                table.HasCheckConstraint("CK_Assessments_WorkflowStatus", "\"WorkflowStatus\" IN ('SUBMITTED','PROPOSAL_READY','PENDING_APPROVAL','REVISION_REQUESTED','REJECTED','APPROVED','EXECUTED','BLOCKED','SAFE_FAILURE')");
+                table.HasCheckConstraint("CK_Assessments_WorkflowStatus", "\"WorkflowStatus\" IN ('DRAFT','SUBMITTED','PROPOSAL_READY','PENDING_APPROVAL','REVISION_REQUESTED','REJECTED','APPROVED','EXECUTED','BLOCKED','SAFE_FAILURE','CANCELLED')");
                 table.HasCheckConstraint("CK_Assessments_AiDependencyStatus", "\"AiDependencyStatus\" IN ('NOT_CONNECTED','UNAVAILABLE','AVAILABLE')");
                 table.HasCheckConstraint("CK_Assessments_AiDispatchOutcome", "\"AiDispatchOutcome\" IN ('NOT_REQUESTED','NOT_STARTED','SUCCEEDED','UNAVAILABLE','INVALID_RESULT')");
                 table.HasCheckConstraint("CK_Assessments_ComponentDependencies", "jsonb_typeof(\"ComponentDependenciesJson\") = 'array'");
                 table.HasCheckConstraint("CK_Assessments_Period", "\"PeriodEndsAt\" > \"PeriodStartsAt\"");
                 table.HasCheckConstraint("CK_Assessments_Version", "\"Version\" > 0");
+                table.HasCheckConstraint("CK_Assessments_Cancellation", "(\"WorkflowStatus\" = 'CANCELLED' AND \"CancelledBy\" IS NOT NULL AND \"CancelledAt\" IS NOT NULL) OR (\"WorkflowStatus\" <> 'CANCELLED' AND \"CancelledBy\" IS NULL AND \"CancelledAt\" IS NULL)");
             });
             entity.HasKey(x => x.Id);
             entity.HasIndex(x => x.WorkflowId).IsUnique();
@@ -129,9 +130,10 @@ public sealed class CoastalOperationsDbContext(DbContextOptions<CoastalOperation
             {
                 table.HasCheckConstraint("CK_OperationalAlerts_Severity", "\"Severity\" IN ('LOW','MODERATE','HIGH','CRITICAL')");
                 table.HasCheckConstraint("CK_OperationalAlerts_Visibility", "\"Visibility\" IN ('OPERATIONS','PUBLIC')");
-                table.HasCheckConstraint("CK_OperationalAlerts_Lifecycle", "\"Lifecycle\" IN ('PROPOSED','ACTIVE','RESOLVED','EXPIRED','SUPERSEDED')");
+                table.HasCheckConstraint("CK_OperationalAlerts_Lifecycle", "\"Lifecycle\" IN ('PROPOSED','ACTIVE','RESOLVED','EXPIRED','SUPERSEDED','WITHDRAWN')");
                 table.HasCheckConstraint("CK_OperationalAlerts_Period", "\"ValidUntil\" > \"ValidFrom\"");
                 table.HasCheckConstraint("CK_OperationalAlerts_Version", "\"Version\" > 0");
+                table.HasCheckConstraint("CK_OperationalAlerts_Withdrawal", "(\"Lifecycle\" = 'WITHDRAWN' AND \"WithdrawnBy\" IS NOT NULL AND \"WithdrawnAt\" IS NOT NULL) OR (\"Lifecycle\" <> 'WITHDRAWN' AND \"WithdrawnBy\" IS NULL AND \"WithdrawnAt\" IS NULL)");
             });
             entity.HasKey(x => x.Id);
             entity.HasIndex(x => new { x.Lifecycle, x.Id });
@@ -164,7 +166,7 @@ public sealed class CoastalOperationsDbContext(DbContextOptions<CoastalOperation
         {
             entity.HasKey(x => x.Id);
             entity.HasIndex(x => new { x.ActorId, x.Operation, x.Key }).IsUnique();
-            entity.Property(x => x.Operation).HasMaxLength(48).IsRequired();
+            entity.Property(x => x.Operation).HasMaxLength(64).IsRequired();
             entity.Property(x => x.Key).HasMaxLength(128).IsRequired();
             entity.Property(x => x.RequestDigest).HasMaxLength(64).IsRequired();
             entity.Property(x => x.ResponseBody).HasMaxLength(65536).IsRequired();

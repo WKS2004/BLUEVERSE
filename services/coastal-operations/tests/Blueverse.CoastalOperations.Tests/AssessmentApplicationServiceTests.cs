@@ -12,7 +12,7 @@ public sealed class AssessmentApplicationServiceTests
     private static readonly DateTimeOffset PeriodStartsAt = new(2026, 10, 1, 8, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset PeriodEndsAt = PeriodStartsAt.AddHours(2);
 
-    [Fact(DisplayName = "COASTAL-ASSESSMENT-001 create persists a pending workflow and exact idempotent replay")]
+    [Fact(DisplayName = "COASTAL-ASSESSMENT-001 create persists an isolated draft and exact idempotent replay")]
     public async Task COASTAL_ASSESSMENT_001_CreatePersistsAndReplaysOnce()
     {
         await using var db = CreateDb();
@@ -28,10 +28,10 @@ public sealed class AssessmentApplicationServiceTests
         Assert.True(replay.Replayed);
         Assert.Equal(first.Body.AssessmentId, replay.Body.AssessmentId);
         Assert.NotEqual(Guid.Empty, first.Body.WorkflowId);
-        Assert.Equal("SUBMITTED", first.Body.WorkflowStatus);
+        Assert.Equal("DRAFT", first.Body.WorkflowStatus);
         Assert.Equal("NOT_CONNECTED", first.Body.AiDependencyStatus);
         Assert.Equal("NOT_REQUESTED", first.Body.AiDispatchOutcome);
-        Assert.Equal("UNAVAILABLE", Assert.Single(first.Body.ComponentDependencies, x => x.Service == "member-1-experience").Status);
+        Assert.Empty(first.Body.ComponentDependencies);
         Assert.Equal(1, await db.Assessments.CountAsync());
         Assert.Equal(1, await db.OperationsAudit.CountAsync());
         Assert.Equal(1, await db.IdempotencyRecords.CountAsync());
@@ -65,6 +65,13 @@ public sealed class AssessmentApplicationServiceTests
 
         var ownerQueue = await service.GetQueueAsync(new AssessmentListQuery(), ownerId, canReadQueue: false, CancellationToken.None);
         var otherQueue = await service.GetQueueAsync(new AssessmentListQuery(), otherActorId, canReadQueue: false, CancellationToken.None);
+        var submitted = await service.SubmitDraftAsync(
+            created.Body.AssessmentId,
+            new SubmitAssessmentDraftRequest { ExpectedVersion = 1 },
+            ownerId,
+            "correlation-submit",
+            "owner-submit",
+            CancellationToken.None);
         var authorizedQueue = await service.GetQueueAsync(new AssessmentListQuery(), otherActorId, canReadQueue: true, CancellationToken.None);
         var detail = await service.GetDetailAsync(created.Body.AssessmentId, ownerId, canReadQueue: false, canReadEvidence: false, CancellationToken.None);
         var denied = await Assert.ThrowsAsync<CoastalOperationsException>(() =>
@@ -73,6 +80,7 @@ public sealed class AssessmentApplicationServiceTests
         Assert.Single(ownerQueue.Items);
         Assert.Empty(otherQueue.Items);
         Assert.Single(authorizedQueue.Items);
+        Assert.Equal("SUBMITTED", submitted.Body.WorkflowStatus);
         Assert.Equal(created.Body.AssessmentId, detail.Assessment.AssessmentId);
         Assert.Empty(detail.Evidence);
         Assert.Equal(StatusCodes.Status404NotFound, denied.StatusCode);
@@ -124,7 +132,6 @@ public sealed class AssessmentApplicationServiceTests
     private static AssessmentApplicationService CreateService(CoastalOperationsDbContext db) => new(
         db,
         new IdempotencyStore(db),
-        new DisconnectedAssessmentProposalPort(),
         new UnavailableComponentDependencyCollector());
 
     private static CreateAssessmentRequest ValidRequest(string objective = "Assess the requested coastal activity.") => new()

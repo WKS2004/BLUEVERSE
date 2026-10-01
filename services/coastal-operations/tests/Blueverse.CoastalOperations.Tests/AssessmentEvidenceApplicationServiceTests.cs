@@ -15,6 +15,30 @@ public sealed class AssessmentEvidenceApplicationServiceTests
 {
     private static readonly Guid TargetId = Guid.Parse("11111111-2222-4333-8444-555555555555");
 
+    [Fact(DisplayName = "COASTAL-EVIDENCE-025 evidence can be attached immutably to an owned assessment draft")]
+    [Trait("TestId", "COASTAL-EVIDENCE-025")]
+    public async Task DraftEvidenceIsStoredAgainstTheNextAssessmentVersion()
+    {
+        await using var db = CreateDb();
+        var owner = Guid.NewGuid();
+        var assessment = AddAssessment(db, owner, status: "DRAFT");
+        await db.SaveChangesAsync();
+        var storage = new MemoryEvidenceStorage();
+
+        var upload = await CreateService(db, storage).UploadAsync(
+            assessment.Id, owner, "draft-evidence", "image/png", new MemoryStream(ValidPng()), CancellationToken.None);
+        var savedAssessment = await db.Assessments.AsNoTracking().SingleAsync();
+        var savedEvidence = await db.AssessmentEvidence.AsNoTracking().SingleAsync();
+
+        Assert.Equal("DRAFT", savedAssessment.WorkflowStatus);
+        Assert.Equal(2, savedAssessment.Version);
+        Assert.Equal(2, upload.AssessmentVersion);
+        Assert.Equal(upload.EvidenceId, savedEvidence.Id);
+        Assert.Equal("AVAILABLE", savedEvidence.InspectionStatus);
+        Assert.Equal(1, storage.StoreCalls);
+        Assert.Equal("UPLOADED", (await db.OperationsAudit.SingleAsync()).Action);
+    }
+
     [Fact(DisplayName = "COASTAL-EVIDENCE-006 valid owner upload stores sanitized bytes and versioned audit metadata")]
     [Trait("TestId", "COASTAL-EVIDENCE-006")]
     public async Task UploadPersistsDigestAndAdvancesAssessmentVersion()

@@ -70,6 +70,25 @@ class CoastalAssessment {
   final String createdAt;
   final String updatedAt;
 
+  CoastalAssessment copyWith({int? version}) => CoastalAssessment(
+    assessmentId: assessmentId,
+    workflowId: workflowId,
+    targetType: targetType,
+    targetId: targetId,
+    sourceWorkflowId: sourceWorkflowId,
+    periodStartsAt: periodStartsAt,
+    periodEndsAt: periodEndsAt,
+    objective: objective,
+    workflowStatus: workflowStatus,
+    aiDependencyStatus: aiDependencyStatus,
+    aiDispatchOutcome: aiDispatchOutcome,
+    aiDispatchRetryable: aiDispatchRetryable,
+    componentDependencies: componentDependencies,
+    version: version ?? this.version,
+    createdAt: createdAt,
+    updatedAt: updatedAt,
+  );
+
   factory CoastalAssessment.fromJson(JsonMap json) => CoastalAssessment(
     assessmentId: _string(json, 'assessmentId'),
     workflowId: _string(json, 'workflowId'),

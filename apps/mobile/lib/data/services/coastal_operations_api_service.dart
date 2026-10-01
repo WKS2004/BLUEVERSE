@@ -70,6 +70,60 @@ class CoastalOperationsApiService {
     return _parse(() => CoastalAssessment.fromJson(json));
   }
 
+  Future<CoastalAssessment> updateAssessmentDraft({
+    required String assessmentId,
+    required int expectedVersion,
+    required String targetType,
+    required String targetId,
+    String? sourceWorkflowId,
+    required String periodStartsAt,
+    required String periodEndsAt,
+    required String objective,
+  }) async {
+    final json = await _jsonRequest(
+      '/api/operations/assessments/' + Uri.encodeComponent(assessmentId),
+      method: 'PATCH',
+      body: {
+        'expectedVersion': expectedVersion,
+        'targetType': targetType,
+        'targetId': targetId,
+        'sourceWorkflowId': sourceWorkflowId,
+        'periodStartsAt': periodStartsAt,
+        'periodEndsAt': periodEndsAt,
+        'objective': objective,
+      },
+    );
+    return _parse(() => CoastalAssessment.fromJson(json));
+  }
+
+  Future<CoastalAssessment> cancelAssessmentDraft({
+    required String assessmentId,
+    required int expectedVersion,
+  }) async {
+    final json = await _jsonRequest(
+      '/api/operations/assessments/' + Uri.encodeComponent(assessmentId),
+      method: 'DELETE',
+      body: {'expectedVersion': expectedVersion},
+      idempotencyKey: _newIdempotencyKey(),
+    );
+    return _parse(() => CoastalAssessment.fromJson(json));
+  }
+
+  Future<CoastalAssessment> submitAssessmentDraft({
+    required String assessmentId,
+    required int expectedVersion,
+  }) async {
+    final json = await _jsonRequest(
+      '/api/operations/assessments/' +
+          Uri.encodeComponent(assessmentId) +
+          '/submit',
+      method: 'POST',
+      body: {'expectedVersion': expectedVersion},
+      idempotencyKey: _newIdempotencyKey(),
+    );
+    return _parse(() => CoastalAssessment.fromJson(json));
+  }
+
   Future<CoastalAssessmentDetail> getAssessmentDetail(
     String assessmentId,
   ) async {
@@ -202,6 +256,19 @@ class CoastalOperationsApiService {
     );
   }
 
+  Future<CoastalAlert> withdrawAlertDraft({
+    required String alertId,
+    required int expectedVersion,
+  }) async {
+    final json = await _jsonRequest(
+      '/api/operations/alerts/' + Uri.encodeComponent(alertId),
+      method: 'DELETE',
+      body: {'expectedVersion': expectedVersion},
+      idempotencyKey: _newIdempotencyKey(),
+    );
+    return _parse(() => CoastalAlert.fromJson(json));
+  }
+
   Future<CoastalOperationalStatus> getTargetStatus({
     required String targetType,
     required String targetId,
@@ -258,6 +325,7 @@ class CoastalOperationsApiService {
         'GET' => _transport.get(uri, headers: headers),
         'POST' => _transport.post(uri, headers: headers, body: encoded),
         'PATCH' => _transport.patch(uri, headers: headers, body: encoded),
+        'DELETE' => _transport.delete(uri, headers: headers, body: encoded),
         _ => throw ArgumentError.value(
           method,
           'method',

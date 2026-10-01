@@ -5,6 +5,9 @@ public static class CoastalPermissions
     public const string AssessmentCreate = "operations.assessment.create";
     public const string AssessmentRead = "operations.assessment.read";
     public const string AssessmentQueueRead = "operations.assessment.queue.read";
+    public const string AssessmentUpdate = "operations.assessment.update";
+    public const string AssessmentDelete = "operations.assessment.delete";
+    public const string AssessmentSubmit = "operations.assessment.submit";
     public const string AssessmentDecide = "operations.assessment.decide";
     public const string TargetStatusRead = "operations.target.status.read";
     public const string TargetHistoryRead = "operations.target.history.read";
@@ -23,6 +26,9 @@ public static class PermissionCodes
     public const string OperationsAssessmentCreate = "operations.assessment.create";
     public const string OperationsAssessmentRead = "operations.assessment.read";
     public const string OperationsAssessmentQueueRead = "operations.assessment.queue.read";
+    public const string OperationsAssessmentUpdate = "operations.assessment.update";
+    public const string OperationsAssessmentDelete = "operations.assessment.delete";
+    public const string OperationsAssessmentSubmit = "operations.assessment.submit";
     public const string OperationsAssessmentDecide = "operations.assessment.decide";
     public const string OperationsTargetStatusRead = "operations.target.status.read";
     public const string OperationsTargetHistoryRead = "operations.target.history.read";

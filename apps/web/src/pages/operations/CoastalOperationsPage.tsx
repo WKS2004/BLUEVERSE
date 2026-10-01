@@ -6,6 +6,7 @@ import type { AuthUser } from '../../features/auth/auth'
 import { useAuthSession } from '../../features/auth/authSession'
 import {
   CoastalOperationsApiError,
+  cancelAssessmentDraft,
   createAlertDraft,
   createAssessment,
   decideAlert,
@@ -15,8 +16,11 @@ import {
   getTargetStatus,
   listAlerts,
   listAssessments,
+  submitAssessmentDraft,
+  updateAssessmentDraft,
   updateAlertDraft,
   uploadAssessmentEvidence,
+  withdrawAlertDraft,
 } from '../../features/coastalOperations/operationsApi'
 import type {
   Assessment,
@@ -76,10 +80,6 @@ const emptyAlertForm: AlertForm = {
 function label(value: string | null | undefined) {
   if (!value) return 'Not recorded'
   return value.toLowerCase().split('_').map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ')
-}
-
-function shortId(value: string) {
-  return `${value.slice(0, 8)}…${value.slice(-4)}`
 }
 
 function formatDate(value: string) {
@@ -152,8 +152,22 @@ function InstantFields({
   </fieldset>
 }
 
-function AssessmentCreateForm({ onCancel, onCreated }: { onCancel: () => void; onCreated: (assessment: Assessment) => void }) {
-  const [form, setForm] = useState<AssessmentForm>(emptyAssessmentForm)
+function AssessmentDraftForm({ existing, onCancel, onSaved }: { existing: Assessment | null; onCancel: () => void; onSaved: (assessment: Assessment) => void }) {
+  const [form, setForm] = useState<AssessmentForm>(() => {
+    if (!existing) return emptyAssessmentForm
+    const start = instantFields(existing.periodStartsAt)
+    const end = instantFields(existing.periodEndsAt)
+    return {
+      targetType: existing.targetType,
+      targetId: existing.targetId,
+      sourceWorkflowId: existing.sourceWorkflowId ?? '',
+      periodStartsAt: start.local,
+      startOffset: start.offset,
+      periodEndsAt: end.local,
+      endOffset: end.offset,
+      objective: existing.objective,
+    }
+  })
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -170,45 +184,48 @@ function AssessmentCreateForm({ onCancel, onCreated }: { onCancel: () => void; o
     event.preventDefault()
     const start = explicitInstant(form.periodStartsAt, form.startOffset)
     const end = explicitInstant(form.periodEndsAt, form.endOffset)
-    if (!uuidPattern.test(form.targetId.trim())) return setError('Enter the canonical coastal record ID as a UUID.')
-    if (form.sourceWorkflowId.trim() && !uuidPattern.test(form.sourceWorkflowId.trim())) return setError('The planning workflow ID must be a UUID.')
+    if (!uuidPattern.test(form.targetId.trim())) return setError('Check the coastal record ID and try again.')
+    if (form.sourceWorkflowId.trim() && !uuidPattern.test(form.sourceWorkflowId.trim())) return setError('Check the related coastal plan ID and try again.')
     if (!start || !end || Date.parse(end) <= Date.parse(start)) return setError('Add valid RFC 3339 times with explicit offsets, and make the end later than the start.')
 
     setError(null)
     setSaving(true)
     try {
-      const assessment = await createAssessment({
+      const input = {
         targetType: form.targetType,
         targetId: form.targetId.trim(),
         sourceWorkflowId: form.sourceWorkflowId.trim() || undefined,
         periodStartsAt: start,
         periodEndsAt: end,
         objective: form.objective.trim(),
-      })
-      onCreated(assessment)
+      }
+      const assessment = existing
+        ? await updateAssessmentDraft(existing.assessmentId, { ...input, expectedVersion: existing.version })
+        : await createAssessment(input)
+      onSaved(assessment)
     } catch (requestError) {
-      setError(requestError instanceof CoastalOperationsApiError ? requestError.message : 'We could not record this assessment. Please try again.')
+      setError(requestError instanceof CoastalOperationsApiError ? requestError.message : 'We could not save this assessment draft. Please try again.')
     } finally {
       setSaving(false)
     }
   }
 
-  return <form className="grid gap-5 rounded-3xl border border-coast-line bg-coast-pearl p-5 shadow-sm sm:p-7" onSubmit={(event) => void submit(event)}>
+  return <form className="grid gap-6 rounded-3xl border border-coast-line bg-coast-pearl p-5 shadow-sm sm:p-7 lg:p-8" onSubmit={(event) => void submit(event)}>
     <div>
-      <p className="text-xs font-extrabold tracking-[0.15em] text-coast-blue">NEW ASSESSMENT</p>
-      <h3 className="mt-2 font-display text-2xl tracking-[-0.035em]">Record a coastal operations review</h3>
-      <p className="mt-2 text-sm leading-6 text-coast-muted">Use the canonical experience ID so this review stays connected to the right destination or activity.</p>
+      <p className="text-xs font-extrabold tracking-[0.15em] text-coast-blue">{existing ? 'EDIT ASSESSMENT' : 'NEW ASSESSMENT'}</p>
+      <h3 className="mt-2 font-display text-2xl tracking-[-0.035em]">{existing ? 'Update your assessment draft' : 'Start a coastal operations assessment'}</h3>
+      <p className="mt-2 max-w-2xl text-sm leading-6 text-coast-muted">{existing ? 'Update the details while this assessment is still a draft.' : 'Save a draft now. When it is ready, submit it to check the latest coastal context.'}</p>
     </div>
     {error && <Notice tone="error">{error}</Notice>}
     <div className="grid gap-4 sm:grid-cols-2">
       <label className="text-sm font-bold">Coastal record type
         <select className={fieldClass()} onChange={(event) => update('targetType', event.target.value as CoastalTargetType)} value={form.targetType}>{targetTypes.map((type) => <option key={type} value={type}>{label(type)}</option>)}</select>
       </label>
-      <label className="text-sm font-bold">Canonical record ID
-        <input autoComplete="off" className={fieldClass()} maxLength={36} onChange={(event) => update('targetId', event.target.value)} placeholder="UUID from Coastal Experience" required value={form.targetId} />
+      <label className="text-sm font-bold">Coastal record ID
+        <input autoComplete="off" className={fieldClass()} maxLength={36} onChange={(event) => update('targetId', event.target.value)} placeholder="ID from the destination, activity, offering, or session details" required value={form.targetId} />
       </label>
-      <label className="text-sm font-bold sm:col-span-2">Planning workflow ID <span className="font-normal text-coast-muted">(optional)</span>
-        <input autoComplete="off" className={fieldClass()} maxLength={36} onChange={(event) => update('sourceWorkflowId', event.target.value)} placeholder="UUID from the coastal planner" value={form.sourceWorkflowId} />
+      <label className="text-sm font-bold sm:col-span-2">Related coastal plan ID <span className="font-normal text-coast-muted">(optional)</span>
+        <input autoComplete="off" className={fieldClass()} maxLength={36} onChange={(event) => update('sourceWorkflowId', event.target.value)} placeholder="ID from the related itinerary or plan" value={form.sourceWorkflowId} />
       </label>
     </div>
     <InstantFields title="Assessment period" startLabel="Starts at" endLabel="Ends at" start={form.periodStartsAt} startOffset={form.startOffset} end={form.periodEndsAt} endOffset={form.endOffset} onChange={updatePeriod} />
@@ -217,7 +234,7 @@ function AssessmentCreateForm({ onCancel, onCreated }: { onCancel: () => void; o
       <span className="mt-1 block text-xs font-normal text-coast-muted">Keep the objective focused on a BLUEVERSE-managed activity or coastal experience.</span>
     </label>
     <div className="flex flex-wrap gap-3">
-      <button className="inline-flex min-h-11 items-center justify-center rounded-full bg-coast-deep px-5 text-sm font-extrabold text-white transition hover:bg-coast-blue focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-coast-blue disabled:cursor-wait disabled:opacity-60" disabled={saving} type="submit">{saving ? 'Recording…' : 'Record assessment'}</button>
+      <button className="inline-flex min-h-11 items-center justify-center rounded-full bg-coast-deep px-5 text-sm font-extrabold text-white transition hover:bg-coast-blue focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-coast-blue disabled:cursor-wait disabled:opacity-60" disabled={saving} type="submit">{saving ? 'Saving…' : existing ? 'Update draft' : 'Save draft'}</button>
       <button className="inline-flex min-h-11 items-center justify-center rounded-full border border-coast-line px-5 text-sm font-bold text-coast-deep hover:bg-coast-sage focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-coast-blue" onClick={onCancel} type="button">Cancel</button>
     </div>
   </form>
@@ -261,8 +278,8 @@ function AlertDraftForm({
     event.preventDefault()
     const from = explicitInstant(form.validFrom, form.fromOffset)
     const until = explicitInstant(form.validUntil, form.untilOffset)
-    if (!uuidPattern.test(form.targetId.trim())) return setError('Enter the canonical coastal record ID as a UUID.')
-    if (form.assessmentId.trim() && !uuidPattern.test(form.assessmentId.trim())) return setError('The linked assessment ID must be a UUID.')
+    if (!uuidPattern.test(form.targetId.trim())) return setError('Check the coastal record ID and try again.')
+    if (form.assessmentId.trim() && !uuidPattern.test(form.assessmentId.trim())) return setError('Check the related assessment ID and try again.')
     if (!from || !until || Date.parse(until) <= Date.parse(from)) return setError('Add valid RFC 3339 times with explicit offsets, and make the end later than the start.')
 
     setError(null)
@@ -300,8 +317,8 @@ function AlertDraftForm({
       <label className="text-sm font-bold">Coastal record type
         <select className={fieldClass()} onChange={(event) => update('targetType', event.target.value as CoastalTargetType)} value={form.targetType}>{targetTypes.map((type) => <option key={type} value={type}>{label(type)}</option>)}</select>
       </label>
-      <label className="text-sm font-bold">Canonical record ID
-        <input autoComplete="off" className={fieldClass()} maxLength={36} onChange={(event) => update('targetId', event.target.value)} required value={form.targetId} />
+      <label className="text-sm font-bold">Coastal record ID
+        <input autoComplete="off" className={fieldClass()} maxLength={36} onChange={(event) => update('targetId', event.target.value)} placeholder="ID from the destination, activity, offering, or session details" required value={form.targetId} />
       </label>
       <label className="text-sm font-bold">Severity
         <select className={fieldClass()} onChange={(event) => update('severity', event.target.value)} value={form.severity}>{['LOW', 'MODERATE', 'HIGH', 'CRITICAL'].map((severity) => <option key={severity} value={severity}>{label(severity)}</option>)}</select>
@@ -332,12 +349,12 @@ function AssessmentCard({ assessment, selected, onSelect }: { assessment: Assess
   return <button aria-expanded={selected} className={`w-full rounded-3xl border p-5 text-left transition hover:border-coast-glass hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coast-blue ${selected ? 'border-coast-blue bg-coast-sage/60' : 'border-coast-line bg-coast-pearl'}`} onClick={onSelect} type="button">
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div>
-        <p className="text-xs font-extrabold tracking-[0.12em] text-coast-muted">{label(assessment.targetType)} · {shortId(assessment.targetId)}</p>
-        <h3 className="mt-2 font-display text-xl tracking-[-0.03em]">{assessment.objective}</h3>
+        <p className="text-xs font-extrabold tracking-[0.12em] text-coast-muted">{label(assessment.targetType)}</p>
+        <h3 className="mt-2 max-w-4xl font-display text-xl tracking-[-0.03em] sm:text-2xl">{assessment.objective}</h3>
       </div>
       <StatusPill value={assessment.workflowStatus} />
     </div>
-    <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-coast-muted">
+    <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-sm text-coast-muted">
       <span>Period: {formatDate(assessment.periodStartsAt)} – {formatDate(assessment.periodEndsAt)}</span>
       <span>Updated {formatDate(assessment.updatedAt)}</span>
     </div>
@@ -365,20 +382,26 @@ function CoastalOperationsWorkspace({ user }: { user: AuthUser | null }) {
   const [busy, setBusy] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [showAssessmentForm, setShowAssessmentForm] = useState(false)
+  const [editingAssessment, setEditingAssessment] = useState<Assessment | null>(null)
   const [showAlertForm, setShowAlertForm] = useState(false)
   const [editingAlert, setEditingAlert] = useState<CoastalAlert | null>(null)
+  const [assessmentConfirmation, setAssessmentConfirmation] = useState<{ assessment: Assessment; action: 'submit' | 'cancel' } | null>(null)
   const [decisionConfirmation, setDecisionConfirmation] = useState<{ alert: CoastalAlert; decision: 'PUBLISH' | 'RESOLVE' } | null>(null)
+  const [withdrawalConfirmation, setWithdrawalConfirmation] = useState<CoastalAlert | null>(null)
   const [evidencePreview, setEvidencePreview] = useState<{ evidenceId: string; url: string } | null>(null)
 
-  const canReadAssessments = hasAllPermissions(user, [coastalOperationsPermissions.assessmentRead])
-  const canReadQueue = hasAllPermissions(user, [coastalOperationsPermissions.assessmentRead, coastalOperationsPermissions.assessmentQueueRead])
+  const canReadAssessments = hasAllPermissions(user, [coastalOperationsPermissions.assessmentRead]) || hasAllPermissions(user, [coastalOperationsPermissions.assessmentQueueRead])
+  const canReadQueue = hasAllPermissions(user, [coastalOperationsPermissions.assessmentQueueRead])
   const canCreateAssessment = hasAllPermissions(user, [coastalOperationsPermissions.assessmentCreate])
+  const canUpdateAssessment = hasAllPermissions(user, [coastalOperationsPermissions.assessmentUpdate])
+  const canDeleteAssessment = hasAllPermissions(user, [coastalOperationsPermissions.assessmentDelete])
+  const canSubmitAssessment = hasAllPermissions(user, [coastalOperationsPermissions.assessmentSubmit])
   const canDecideAssessment = hasAllPermissions(user, [coastalOperationsPermissions.assessmentDecide])
   const canUploadEvidence = hasAllPermissions(user, [coastalOperationsPermissions.evidenceUpload])
   const canReadEvidence = hasAllPermissions(user, [coastalOperationsPermissions.evidenceRead])
   const canReadStatus = hasAllPermissions(user, [coastalOperationsPermissions.targetStatusRead])
   const canReadHistory = hasAllPermissions(user, [coastalOperationsPermissions.targetHistoryRead])
-  const canReadAlerts = hasAllPermissions(user, [coastalOperationsPermissions.alertRead])
+  const canReadAlerts = hasAllPermissions(user, [coastalOperationsPermissions.alertRead]) || hasAllPermissions(user, [coastalOperationsPermissions.alertManage])
   const canManageAlerts = hasAllPermissions(user, [coastalOperationsPermissions.alertManage])
   const canDecideAlerts = hasAllPermissions(user, [coastalOperationsPermissions.alertDecide])
   const hasAccess = hasCoastalOperationsAccess(user)
@@ -459,7 +482,8 @@ function CoastalOperationsWorkspace({ user }: { user: AuthUser | null }) {
     }
     setBusy(true)
     try {
-      await uploadAssessmentEvidence(assessment.assessmentId, file)
+      const evidence = await uploadAssessmentEvidence(assessment.assessmentId, file)
+      setAssessmentItems((items) => items.map((item) => item.assessmentId === assessment.assessmentId ? { ...item, version: evidence.assessmentVersion } : item))
       setNotice({ text: 'Evidence was added to the assessment.', tone: 'success' })
       await refreshDetail()
     } catch (error) {
@@ -478,11 +502,36 @@ function CoastalOperationsWorkspace({ user }: { user: AuthUser | null }) {
     } finally { setBusy(false) }
   }
 
-  async function handleAssessmentCreated(assessment: Assessment) {
+  async function handleAssessmentSaved(assessment: Assessment) {
     setShowAssessmentForm(false)
+    setEditingAssessment(null)
     setSelectedAssessmentId(assessment.assessmentId)
-    setNotice({ text: 'The assessment was recorded. Its linked coastal context is shown below.', tone: 'success' })
+    setNotice({ text: 'Assessment draft saved. Submit it when you are ready to check coastal context.', tone: 'success' })
     setRefreshKey((key) => key + 1)
+  }
+
+  async function confirmAssessmentAction() {
+    if (!assessmentConfirmation) return
+    const { assessment, action } = assessmentConfirmation
+    setBusy(true)
+    try {
+      if (action === 'submit') {
+        await submitAssessmentDraft(assessment.assessmentId, assessment.version)
+        setNotice({ text: 'The assessment was submitted. No automated proposal was created.', tone: 'success' })
+      } else {
+        await cancelAssessmentDraft(assessment.assessmentId, assessment.version)
+        setNotice({ text: 'The assessment draft was cancelled and retained in the audit history for authorized reviewers.', tone: 'success' })
+        setSelectedAssessmentId(null)
+        setDetail(null)
+      }
+      setAssessmentConfirmation(null)
+      setEditingAssessment(null)
+      setShowAssessmentForm(false)
+      setRefreshKey((key) => key + 1)
+    } catch (error) {
+      setNotice({ text: error instanceof CoastalOperationsApiError ? error.message : 'We could not update this assessment. Refresh and retry.', tone: 'error' })
+      setAssessmentConfirmation(null)
+    } finally { setBusy(false) }
   }
 
   async function handleAlertSaved(alert: CoastalAlert) {
@@ -505,10 +554,24 @@ function CoastalOperationsWorkspace({ user }: { user: AuthUser | null }) {
     } finally { setBusy(false) }
   }
 
+  async function confirmAlertWithdrawal() {
+    if (!withdrawalConfirmation) return
+    setBusy(true)
+    try {
+      await withdrawAlertDraft(withdrawalConfirmation.alertId, withdrawalConfirmation.version)
+      setNotice({ text: '“' + withdrawalConfirmation.title + '” was withdrawn. Its history remains available to advisory managers.', tone: 'success' })
+      setWithdrawalConfirmation(null)
+      setRefreshKey((key) => key + 1)
+    } catch (error) {
+      setNotice({ text: error instanceof CoastalOperationsApiError ? error.message : 'We could not withdraw this draft. Refresh and retry.', tone: 'error' })
+      setWithdrawalConfirmation(null)
+    } finally { setBusy(false) }
+  }
+
   async function lookupTarget(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!uuidPattern.test(lookupTargetId.trim())) {
-      setLookupError('Enter the canonical coastal record ID as a UUID.')
+      setLookupError('Check the coastal record ID and try again.')
       return
     }
     setLookupError(null)
@@ -534,7 +597,7 @@ function CoastalOperationsWorkspace({ user }: { user: AuthUser | null }) {
           <div className="max-w-3xl px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
             <p className="text-[11px] font-extrabold tracking-[0.18em] text-coast-glass">COASTAL CARE</p>
             <h1 className="mt-3 font-display text-4xl leading-tight tracking-[-0.05em] sm:text-5xl" id="operations-title">Look after the places we share.</h1>
-            <p className="mt-4 max-w-2xl text-sm leading-6 text-white/85 sm:text-base sm:leading-7">Record an operations assessment, follow its coastal context, and prepare clear advisories for the right people.</p>
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-white/85 sm:text-base sm:leading-7">Save an assessment draft, follow its coastal context, and prepare clear advisories for the right people.</p>
           </div>
         </section>
 
@@ -544,53 +607,56 @@ function CoastalOperationsWorkspace({ user }: { user: AuthUser | null }) {
           <p className="mt-3 max-w-xl text-sm leading-6 text-coast-muted">Coastal Operations access is granted through your account permissions. If you need access, contact your BLUEVERSE administrator.</p>
         </section> : <>
           {notice && <div className="mt-5"><Notice tone={notice.tone}>{notice.text}</Notice></div>}
-          <section className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+          <section className="mt-10 grid gap-5 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
             <div>
               <p className="text-xs font-extrabold tracking-[0.15em] text-coast-blue">OPERATIONS WORKSPACE</p>
-              <h2 className="mt-2 font-display text-3xl tracking-[-0.045em] sm:text-4xl">Today’s coastal reviews</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-coast-muted">Your permissions determine which assessments, evidence and advisories appear here.</p>
+              <h2 className="mt-2 font-display text-3xl tracking-[-0.045em] sm:text-4xl">Assessments and advisories</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-coast-muted">Review coastal assessments, follow important context, and share updates with the right people.</p>
             </div>
             <div className="flex flex-wrap gap-3">
-              {canCreateAssessment && <button className="inline-flex min-h-11 items-center justify-center rounded-full bg-coast-deep px-5 text-sm font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-coast-blue focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-coast-blue" onClick={() => setShowAssessmentForm((shown) => !shown)} type="button">{showAssessmentForm ? 'Close assessment form' : 'New assessment'}</button>}
-              {canManageAlerts && <button className="inline-flex min-h-11 items-center justify-center rounded-full border border-coast-line bg-coast-pearl px-5 text-sm font-bold text-coast-deep hover:bg-coast-sage focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-coast-blue" onClick={() => { setEditingAlert(null); setShowAlertForm((shown) => !shown) }} type="button">{showAlertForm ? 'Close alert form' : 'Prepare an advisory'}</button>}
+              {canCreateAssessment && <button className="inline-flex min-h-11 items-center justify-center rounded-full bg-coast-deep px-5 text-sm font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-coast-blue focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-coast-blue" onClick={() => { setShowAssessmentForm((shown) => !shown); setEditingAssessment(null); setShowAlertForm(false); setEditingAlert(null) }} type="button">{showAssessmentForm && !editingAssessment ? 'Close assessment form' : 'New assessment'}</button>}
+              {canManageAlerts && <button className="inline-flex min-h-11 items-center justify-center rounded-full border border-coast-line bg-coast-pearl px-5 text-sm font-bold text-coast-deep hover:bg-coast-sage focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-coast-blue" onClick={() => { setEditingAlert(null); setShowAlertForm((shown) => !shown); setShowAssessmentForm(false); setEditingAssessment(null) }} type="button">{showAlertForm ? 'Close alert form' : 'Prepare an advisory'}</button>}
               <button aria-label="Refresh coastal operations" className="inline-flex min-h-11 items-center justify-center rounded-full border border-coast-line bg-white px-4 text-sm font-bold text-coast-deep hover:bg-coast-sage focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-coast-blue disabled:cursor-wait" disabled={busy} onClick={() => setRefreshKey((key) => key + 1)} type="button">Refresh</button>
             </div>
           </section>
 
-          {showAssessmentForm && canCreateAssessment && <section aria-label="Create assessment" className="mt-5"><AssessmentCreateForm onCancel={() => setShowAssessmentForm(false)} onCreated={(assessment) => void handleAssessmentCreated(assessment)} /></section>}
+          {(showAssessmentForm || editingAssessment) && (editingAssessment ? canUpdateAssessment : canCreateAssessment) && <section aria-label={editingAssessment ? 'Edit assessment draft' : 'Create assessment'} className="mt-8"><AssessmentDraftForm key={editingAssessment?.assessmentId ?? 'new'} existing={editingAssessment} onCancel={() => { setShowAssessmentForm(false); setEditingAssessment(null) }} onSaved={(assessment) => void handleAssessmentSaved(assessment)} /></section>}
           {showAlertForm && canManageAlerts && <section aria-label="Create advisory" className="mt-5"><AlertDraftForm existing={null} onCancel={() => setShowAlertForm(false)} onSaved={(alert) => void handleAlertSaved(alert)} /></section>}
           {editingAlert && canManageAlerts && <section aria-label="Edit advisory draft" className="mt-5"><AlertDraftForm existing={editingAlert} onCancel={() => setEditingAlert(null)} onSaved={(alert) => void handleAlertSaved(alert)} /></section>}
 
-          <div className="mt-6 grid items-start gap-6 2xl:grid-cols-[minmax(0,1.1fr)_minmax(20rem,0.9fr)]">
-            <section aria-labelledby="assessments-title" className="min-w-0">
-              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <div className="mt-10 grid items-start gap-10">
+            <section aria-labelledby="assessments-title" className="min-w-0 rounded-[2rem] border border-coast-line bg-white/55 p-5 sm:p-7 lg:p-8">
+              <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
                 <div>
                   <p className="text-xs font-extrabold tracking-[0.15em] text-coast-blue">ASSESSMENTS</p>
-                  <h2 className="mt-2 font-display text-2xl tracking-[-0.04em]" id="assessments-title">A clear record of each review</h2>
-                  <p className="mt-2 text-xs leading-5 text-coast-muted">Showing up to 100 assessments in your permission scope.</p>
+                  <h2 className="mt-2 font-display text-3xl tracking-[-0.04em]" id="assessments-title">A clear record of each review</h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-coast-muted">Your drafts and reviews are gathered here so you can pick up where you left off.</p>
                 </div>
                 {canReadQueue && <span className="rounded-full bg-coast-sage px-3 py-1.5 text-xs font-bold text-coast-deep">Review queue</span>}
               </div>
               {assessmentError && <Notice tone="error">{assessmentError}</Notice>}
               {!canReadAssessments ? <div className="rounded-3xl border border-coast-line bg-coast-pearl p-6 text-sm leading-6 text-coast-muted">Your current permissions allow other Coastal Operations actions, but do not include assessment reading.</div>
-                : !assessmentError && assessmentItems.length === 0 ? <div className="rounded-3xl border border-coast-line bg-coast-pearl p-6 sm:p-8"><h3 className="font-display text-xl">No assessments to show yet</h3><p className="mt-2 text-sm leading-6 text-coast-muted">When an assessment is recorded for your account or review queue, it will appear here.</p></div>
-                  : <div className="grid gap-3">{assessmentItems.map((assessment) => <div key={assessment.assessmentId}>
+                : !assessmentError && assessmentItems.length === 0 ? <div className="rounded-3xl border border-coast-line bg-coast-pearl p-6 sm:p-8"><h3 className="font-display text-xl">No assessments to show yet</h3><p className="mt-2 text-sm leading-6 text-coast-muted">Saved drafts and submitted reviews will appear here.</p></div>
+                  : <div className="grid gap-5">{assessmentItems.map((assessment) => <div key={assessment.assessmentId}>
                     <AssessmentCard assessment={assessment} selected={selectedAssessmentId === assessment.assessmentId} onSelect={() => setSelectedAssessmentId((id) => id === assessment.assessmentId ? null : assessment.assessmentId)} />
-                    {selectedAssessmentId === assessment.assessmentId && <div className="mt-3 rounded-3xl border border-coast-line bg-white p-5 sm:p-7">
+                    {selectedAssessmentId === assessment.assessmentId && <div className="mt-4 rounded-3xl border border-coast-line bg-white p-6 sm:p-8">
                       {detailError?.assessmentId === selectedAssessmentId && <Notice tone="error">{detailError.message}</Notice>}
                       {detail?.assessment.assessmentId !== selectedAssessmentId && detailError?.assessmentId !== selectedAssessmentId && <p aria-live="polite" className="text-sm text-coast-muted">Opening the assessment…</p>}
-                      {detail?.assessment.assessmentId === selectedAssessmentId && <div className="grid gap-6">
+                      {detail?.assessment.assessmentId === selectedAssessmentId && <div className="grid gap-7">
                         <div className="flex flex-wrap items-start justify-between gap-4">
-                          <div><p className="text-xs font-extrabold tracking-[0.13em] text-coast-blue">REVIEW DETAILS</p><h3 className="mt-2 font-display text-2xl">{detail.assessment.objective}</h3><p className="mt-2 text-xs text-coast-muted">Workflow {shortId(detail.assessment.workflowId)} · Record {shortId(detail.assessment.assessmentId)}</p></div>
+                          <div><p className="text-xs font-extrabold tracking-[0.13em] text-coast-blue">ASSESSMENT DETAILS</p></div>
                           <StatusPill value={detail.assessment.workflowStatus} />
                         </div>
-                        <div className="grid gap-3 rounded-2xl bg-coast-sand p-4 sm:grid-cols-3">
-                          <div><p className="text-xs font-bold text-coast-muted">Operations support</p><p className="mt-1 text-sm font-bold">{label(detail.assessment.aiDependencyStatus)}</p></div>
-                          <div><p className="text-xs font-bold text-coast-muted">Support outcome</p><p className="mt-1 text-sm font-bold">{label(detail.assessment.aiDispatchOutcome)}</p></div>
+                        {detail.assessment.workflowStatus === 'DRAFT' && <div className="grid gap-3 rounded-2xl bg-coast-sand p-4 sm:p-5">
                           <div><p className="text-xs font-bold text-coast-muted">Assessment period</p><p className="mt-1 text-sm font-bold">{formatDate(detail.assessment.periodStartsAt)} – {formatDate(detail.assessment.periodEndsAt)}</p></div>
-                        </div>
-                        {detail.assessment.aiDependencyStatus === 'NOT_CONNECTED' && <Notice>Automated operations support is not connected yet. This assessment is saved without an automated proposal, so no operational change has been suggested or applied.</Notice>}
-                        {detail.assessment.aiDependencyStatus === 'UNAVAILABLE' && <Notice>Automated operations support is temporarily unavailable. The assessment remains recorded; retry when the service is available.</Notice>}
+                          <p className="text-sm leading-6 text-coast-muted">Coastal context is checked after you submit this draft.</p>
+                        </div>}
+                        {detail.assessment.workflowStatus !== 'DRAFT' && <div className="grid gap-4 rounded-2xl bg-coast-sand p-4 sm:grid-cols-2 sm:p-5">
+                          <div><p className="text-xs font-bold text-coast-muted">Coastal context</p><p className="mt-1 text-sm font-bold">{label(detail.assessment.aiDependencyStatus)}</p></div>
+                          <div><p className="text-xs font-bold text-coast-muted">Assessment period</p><p className="mt-1 text-sm font-bold">{formatDate(detail.assessment.periodStartsAt)} – {formatDate(detail.assessment.periodEndsAt)}</p></div>
+                        </div>}
+                        {detail.assessment.workflowStatus !== 'DRAFT' && detail.assessment.aiDependencyStatus === 'NOT_CONNECTED' && <Notice>Coastal context was recorded, but automated proposals are not available yet. No operational change has been suggested or applied.</Notice>}
+                        {detail.assessment.workflowStatus !== 'DRAFT' && detail.assessment.aiDependencyStatus === 'UNAVAILABLE' && <Notice>Coastal context could not be fully checked right now. The assessment remains submitted; refresh later to see the latest information.</Notice>}
                         {detail.assessment.componentDependencies.length > 0 && <div>
                           <h4 className="font-bold">Coastal context checks</h4>
                           <ul className="mt-3 grid gap-2 sm:grid-cols-3">{detail.assessment.componentDependencies.map((dependency, index) => <li className="rounded-2xl border border-coast-line bg-coast-paper p-3" key={`${dependency.service}-${index}`}>
@@ -599,38 +665,44 @@ function CoastalOperationsWorkspace({ user }: { user: AuthUser | null }) {
                             {dependency.checkedAt && <p className="mt-2 text-xs text-coast-muted">Checked {formatDate(dependency.checkedAt)}</p>}
                           </li>)}</ul>
                         </div>}
-                        {canDecideAssessment && <Notice>Reviewer decisions will be available when this assessment contains a validated proposal. The current response does not include one, so there is nothing to approve or apply.</Notice>}
+                        {canDecideAssessment && detail.assessment.workflowStatus !== 'DRAFT' && <Notice>There is no validated proposal to approve or apply for this assessment yet.</Notice>}
+                        {detail.assessment.workflowStatus === 'DRAFT' && <div className="flex flex-wrap gap-3 border-t border-coast-line pt-5">
+                          {canUpdateAssessment && <button className="min-h-11 rounded-full border border-coast-line px-5 text-sm font-bold text-coast-deep hover:bg-coast-sage focus-visible:outline-2 focus-visible:outline-coast-blue" onClick={() => { setEditingAssessment(detail.assessment); setShowAssessmentForm(false); setShowAlertForm(false); setEditingAlert(null) }} type="button">Edit draft</button>}
+                          {canSubmitAssessment && <button className="min-h-11 rounded-full bg-coast-deep px-5 text-sm font-extrabold text-white hover:bg-coast-blue focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coast-blue" onClick={() => setAssessmentConfirmation({ assessment: detail.assessment, action: 'submit' })} type="button">Submit for review</button>}
+                          {canDeleteAssessment && <button className="min-h-11 rounded-full border border-coast-line px-5 text-sm font-bold text-coast-muted hover:bg-coast-sand focus-visible:outline-2 focus-visible:outline-coast-blue" onClick={() => setAssessmentConfirmation({ assessment: detail.assessment, action: 'cancel' })} type="button">Cancel draft</button>}
+                        </div>}
                         {detail.decisions.length > 0 && <div><h4 className="font-bold">Recorded decisions</h4><ul className="mt-2 grid gap-2">{detail.decisions.map((decision) => <li className="rounded-2xl bg-coast-sand p-3 text-sm" key={decision.decisionId}><span className="font-bold">{label(decision.decision)}</span><span className="ml-2 text-coast-muted">{formatDate(decision.decidedAt)}</span>{decision.explanation && <p className="mt-1 text-coast-muted">{decision.explanation}</p>}</li>)}</ul></div>}
                         <div className="grid gap-4 lg:grid-cols-2">
-                          <div><div className="flex flex-wrap items-center justify-between gap-2"><h4 className="font-bold">Evidence</h4>{canUploadEvidence && detail.evidence.length < 5 && <label className="inline-flex min-h-10 cursor-pointer items-center rounded-full border border-coast-line px-4 text-xs font-bold text-coast-deep hover:bg-coast-sage">Add PNG evidence<input accept="image/png,.png" className="sr-only" disabled={busy} onChange={(event) => { const file = event.target.files?.[0]; if (file) void handleEvidence(file, detail.assessment); event.currentTarget.value = '' }} type="file" /></label>}</div>
+                          <div><div className="flex flex-wrap items-center justify-between gap-2"><h4 className="font-bold">Evidence</h4>{canUploadEvidence && ['DRAFT', 'SUBMITTED', 'REVISION_REQUESTED'].includes(detail.assessment.workflowStatus) && detail.evidence.length < 5 && <label className="inline-flex min-h-10 cursor-pointer items-center rounded-full border border-coast-line px-4 text-xs font-bold text-coast-deep hover:bg-coast-sage">Add PNG evidence<input accept="image/png,.png" className="sr-only" disabled={busy} onChange={(event) => { const file = event.target.files?.[0]; if (file) void handleEvidence(file, detail.assessment); event.currentTarget.value = '' }} type="file" /></label>}</div>
                             {!canReadEvidence && <p className="mt-2 text-sm leading-6 text-coast-muted">Evidence details are restricted by your current permissions.</p>}
                             {canReadEvidence && detail.evidence.length === 0 && <p className="mt-2 text-sm text-coast-muted">No evidence images have been added.</p>}
                             {canReadEvidence && <ul className="mt-3 grid gap-2">{detail.evidence.map((evidence) => <li className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-coast-line p-3" key={evidence.evidenceId}><span className="text-xs leading-5 text-coast-muted">PNG · {(evidence.byteLength / 1024).toFixed(0)} KiB · {label(evidence.inspectionStatus)}</span><button className="min-h-9 rounded-full px-3 text-xs font-bold text-coast-deep hover:bg-coast-sage focus-visible:outline-2 focus-visible:outline-coast-blue" disabled={busy} onClick={() => void viewEvidence(detail.assessment.assessmentId, evidence)} type="button">View image</button></li>)}</ul>}
                             {evidencePreview && <figure className="mt-3 rounded-2xl bg-coast-sand p-3"><img alt="Uploaded assessment evidence" className="max-h-80 w-full rounded-xl object-contain" src={evidencePreview.url} /><figcaption className="mt-2 text-xs text-coast-muted">Evidence is served through your authorized BLUEVERSE session.</figcaption></figure>}
                           </div>
-                          {(canReadStatus || canReadHistory) && <div><h4 className="font-bold">Operational status and history</h4>{targetError && <p className="mt-2 text-xs leading-5 text-coast-muted">{targetError}</p>}{canReadStatus && targetStatus && <div className="mt-3 flex flex-wrap items-center gap-3 rounded-2xl bg-coast-sage p-4"><StatusPill value={targetStatus.operationalState} /><span className="text-xs text-coast-muted">Updated {formatDate(targetStatus.updatedAt)} · version {targetStatus.stateVersion}</span></div>}{canReadHistory && <ul className="mt-3 grid gap-2">{targetHistory.length === 0 ? <li className="text-sm text-coast-muted">No operational state changes have been recorded.</li> : targetHistory.map((item) => <li className="rounded-2xl border border-coast-line p-3 text-sm" key={item.historyId}><span className="font-bold">{label(item.previousState)} → {label(item.newState)}</span><span className="ml-2 text-xs text-coast-muted">{formatDate(item.createdAt)}</span></li>)}</ul>}</div>}
+                          {(canReadStatus || canReadHistory) && <div><h4 className="font-bold">Operational status and history</h4>{targetError && <p className="mt-2 text-xs leading-5 text-coast-muted">{targetError}</p>}{canReadStatus && targetStatus && <div className="mt-3 flex flex-wrap items-center gap-3 rounded-2xl bg-coast-sage p-4"><StatusPill value={targetStatus.operationalState} /><span className="text-xs text-coast-muted">Updated {formatDate(targetStatus.updatedAt)}</span></div>}{canReadHistory && <ul className="mt-3 grid gap-2">{targetHistory.length === 0 ? <li className="text-sm text-coast-muted">No operational state changes have been recorded.</li> : targetHistory.map((item) => <li className="rounded-2xl border border-coast-line p-3 text-sm" key={item.historyId}><span className="font-bold">{label(item.previousState)} → {label(item.newState)}</span><span className="ml-2 text-xs text-coast-muted">{formatDate(item.createdAt)}</span></li>)}</ul>}</div>}
                         </div>
                       </div>}
                     </div>}
                   </div>)}</div>}
             </section>
 
-            <section aria-labelledby="alerts-title" className="min-w-0">
-              <div className="mb-4">
+            <section aria-labelledby="alerts-title" className="min-w-0 rounded-[2rem] border border-coast-line bg-white/55 p-5 sm:p-7 lg:p-8">
+              <div className="mb-6">
                 <p className="text-xs font-extrabold tracking-[0.15em] text-coast-teal">ADVISORIES</p>
-                <h2 className="mt-2 font-display text-2xl tracking-[-0.04em]" id="alerts-title">Useful updates for the coast</h2>
-                <p className="mt-2 text-xs leading-5 text-coast-muted">Showing up to 100 advisories available to your account.</p>
+                <h2 className="mt-2 font-display text-3xl tracking-[-0.04em]" id="alerts-title">Useful updates for the coast</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-coast-muted">Drafts and active updates are shown with the people who can see them and when they apply.</p>
               </div>
               {alertError && <Notice tone="error">{alertError}</Notice>}
               {!canReadAlerts ? <div className="rounded-3xl border border-coast-line bg-coast-pearl p-6 text-sm leading-6 text-coast-muted">Your current permissions do not include advisory reading. You may still prepare a draft if you have advisory management access.</div>
-                : !alertError && alertItems.length === 0 ? <div className="rounded-3xl border border-coast-line bg-coast-pearl p-6"><h3 className="font-display text-xl">No advisories to show</h3><p className="mt-2 text-sm leading-6 text-coast-muted">Active public updates and authorized operations drafts will appear here.</p></div>
-                  : <div className="grid gap-3">{alertItems.map((alert) => <article className="rounded-3xl border border-coast-line bg-coast-pearl p-5 shadow-[0_12px_36px_rgba(24,57,76,0.04)]" key={alert.alertId}>
-                    <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-extrabold tracking-[0.12em] text-coast-muted">{label(alert.targetType)} · {shortId(alert.targetId)}</p><h3 className="mt-2 font-display text-xl tracking-[-0.03em]">{alert.title}</h3></div><StatusPill value={alert.lifecycle} /></div>
+                : !alertError && alertItems.length === 0 ? <div className="rounded-3xl border border-coast-line bg-coast-pearl p-6 sm:p-8"><h3 className="font-display text-xl">No advisories to show</h3><p className="mt-2 text-sm leading-6 text-coast-muted">Active public updates and your proposed drafts will appear here.</p></div>
+                  : <div className="grid gap-5">{alertItems.map((alert) => <article className="rounded-3xl border border-coast-line bg-coast-pearl p-6 shadow-[0_12px_36px_rgba(24,57,76,0.04)] sm:p-7" key={alert.alertId}>
+                    <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-extrabold tracking-[0.12em] text-coast-muted">{label(alert.targetType)}</p><h3 className="mt-2 font-display text-xl tracking-[-0.03em] sm:text-2xl">{alert.title}</h3></div><StatusPill value={alert.lifecycle} /></div>
                     <p className="mt-3 text-sm leading-6 text-coast-muted">{alert.description}</p>
                     <div className="mt-4 flex flex-wrap items-center gap-2"><StatusPill value={alert.severity} /><span className="rounded-full bg-coast-sand px-3 py-1.5 text-xs font-bold text-coast-muted">{alert.visibility === 'PUBLIC' ? 'For coastal visitors' : 'Operations team'}</span></div>
                     <p className="mt-3 text-xs text-coast-muted">Valid {formatDate(alert.validFrom)} – {formatDate(alert.validUntil)}</p>
                     {(canManageAlerts && alert.lifecycle === 'PROPOSED' || canDecideAlerts && ['PROPOSED', 'ACTIVE'].includes(alert.lifecycle)) && <div className="mt-4 flex flex-wrap gap-2">
-                      {canManageAlerts && alert.lifecycle === 'PROPOSED' && <button className="min-h-10 rounded-full border border-coast-line px-4 text-xs font-bold text-coast-deep hover:bg-coast-sage focus-visible:outline-2 focus-visible:outline-coast-blue" onClick={() => { setShowAlertForm(false); setEditingAlert(alert) }} type="button">Edit draft</button>}
+                      {canManageAlerts && alert.lifecycle === 'PROPOSED' && <button className="min-h-10 rounded-full border border-coast-line px-4 text-xs font-bold text-coast-deep hover:bg-coast-sage focus-visible:outline-2 focus-visible:outline-coast-blue" onClick={() => { setShowAlertForm(false); setEditingAlert(alert); setShowAssessmentForm(false); setEditingAssessment(null) }} type="button">Edit draft</button>}
+                      {canManageAlerts && alert.lifecycle === 'PROPOSED' && <button className="min-h-10 rounded-full border border-coast-line px-4 text-xs font-bold text-coast-muted hover:bg-coast-sand focus-visible:outline-2 focus-visible:outline-coast-blue" onClick={() => setWithdrawalConfirmation(alert)} type="button">Withdraw draft</button>}
                       {canDecideAlerts && alert.lifecycle === 'PROPOSED' && <button className="min-h-10 rounded-full bg-coast-deep px-4 text-xs font-bold text-white hover:bg-coast-blue focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coast-blue" onClick={() => setDecisionConfirmation({ alert, decision: 'PUBLISH' })} type="button">Publish advisory</button>}
                       {canDecideAlerts && alert.lifecycle === 'ACTIVE' && <button className="min-h-10 rounded-full border border-coast-line px-4 text-xs font-bold text-coast-deep hover:bg-coast-sage focus-visible:outline-2 focus-visible:outline-coast-blue" onClick={() => setDecisionConfirmation({ alert, decision: 'RESOLVE' })} type="button">Resolve advisory</button>}
                     </div>}
@@ -638,15 +710,15 @@ function CoastalOperationsWorkspace({ user }: { user: AuthUser | null }) {
             </section>
           </div>
 
-          {(canReadStatus || canReadHistory) && <section aria-labelledby="target-lookup-title" className="mt-8 rounded-3xl border border-coast-line bg-coast-pearl p-5 sm:p-7">
-            <div className="max-w-2xl"><p className="text-xs font-extrabold tracking-[0.15em] text-coast-blue">A CLOSER LOOK</p><h2 className="mt-2 font-display text-2xl tracking-[-0.04em]" id="target-lookup-title">Check a coastal record</h2><p className="mt-2 text-sm leading-6 text-coast-muted">Enter a canonical experience ID to see its current operational state and any recorded history.</p></div>
+          {(canReadStatus || canReadHistory) && <section aria-labelledby="target-lookup-title" className="mt-10 rounded-3xl border border-coast-line bg-coast-pearl p-6 sm:p-8">
+            <div className="max-w-2xl"><p className="text-xs font-extrabold tracking-[0.15em] text-coast-blue">A CLOSER LOOK</p><h2 className="mt-2 font-display text-2xl tracking-[-0.04em]" id="target-lookup-title">Check a coastal record</h2><p className="mt-2 text-sm leading-6 text-coast-muted">Use the ID shown in the destination, activity, offering, or session details to see its current status and history.</p></div>
             <form className="mt-5 grid gap-4 sm:grid-cols-[minmax(10rem,0.55fr)_minmax(16rem,1fr)_auto] sm:items-end" onSubmit={(event) => void lookupTarget(event)}>
               <label className="text-sm font-bold">Record type<select className={fieldClass()} onChange={(event) => setLookupTargetType(event.target.value as CoastalTargetType)} value={lookupTargetType}>{targetTypes.map((type) => <option key={type} value={type}>{label(type)}</option>)}</select></label>
-              <label className="text-sm font-bold">Canonical record ID<input autoComplete="off" className={fieldClass()} maxLength={36} onChange={(event) => setLookupTargetId(event.target.value)} required value={lookupTargetId} /></label>
+              <label className="text-sm font-bold">Coastal record ID<input autoComplete="off" className={fieldClass()} maxLength={36} onChange={(event) => setLookupTargetId(event.target.value)} placeholder="Paste the ID from the coastal record details" required value={lookupTargetId} /></label>
               <button className="min-h-12 rounded-full bg-coast-deep px-5 text-sm font-extrabold text-white hover:bg-coast-blue focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-coast-blue" type="submit">Check record</button>
             </form>
             {lookupError && <div className="mt-4"><Notice tone="error">{lookupError}</Notice></div>}
-            {lookupStatus && <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl bg-coast-sage p-4"><span className="text-sm font-bold">Current state</span><StatusPill value={lookupStatus.operationalState} /><span className="text-xs text-coast-muted">Updated {formatDate(lookupStatus.updatedAt)} · version {lookupStatus.stateVersion}</span></div>}
+            {lookupStatus && <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl bg-coast-sage p-4"><span className="text-sm font-bold">Current state</span><StatusPill value={lookupStatus.operationalState} /><span className="text-xs text-coast-muted">Updated {formatDate(lookupStatus.updatedAt)}</span></div>}
             {canReadHistory && lookupStatus && <div className="mt-4"><h3 className="text-sm font-bold">Operational history</h3>{lookupHistory.length === 0 ? <p className="mt-2 text-sm text-coast-muted">No state changes have been recorded for this record.</p> : <ul className="mt-2 grid gap-2 sm:grid-cols-2">{lookupHistory.map((item) => <li className="rounded-2xl border border-coast-line p-3 text-sm" key={item.historyId}><span className="font-bold">{label(item.previousState)} → {label(item.newState)}</span><span className="ml-2 text-xs text-coast-muted">{formatDate(item.createdAt)}</span></li>)}</ul>}</div>}
           </section>}
 
@@ -656,6 +728,18 @@ function CoastalOperationsWorkspace({ user }: { user: AuthUser | null }) {
             <p className="mt-3 text-sm leading-6 text-coast-muted">{decisionConfirmation.decision === 'PUBLISH' ? `“${decisionConfirmation.alert.title}” will become active for its selected audience and validity period.` : `“${decisionConfirmation.alert.title}” will be marked resolved.`}</p>
             {decisionConfirmation.decision === 'PUBLISH' && ['HIGH', 'CRITICAL'].includes(decisionConfirmation.alert.severity) && <p className="mt-4 rounded-2xl bg-coast-sand p-4 text-sm leading-6 text-coast-ink">A different authorized reviewer from the draft creator and linked assessment initiator must publish this {label(decisionConfirmation.alert.severity).toLowerCase()} advisory.</p>}
             <div className="mt-6 flex flex-wrap justify-end gap-3"><button className="min-h-11 rounded-full border border-coast-line px-5 text-sm font-bold text-coast-deep hover:bg-coast-sage focus-visible:outline-2 focus-visible:outline-coast-blue" disabled={busy} onClick={() => setDecisionConfirmation(null)} type="button">Cancel</button><button className="min-h-11 rounded-full bg-coast-deep px-5 text-sm font-extrabold text-white hover:bg-coast-blue focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-coast-blue disabled:cursor-wait" disabled={busy} onClick={() => void confirmAlertDecision()} type="button">{busy ? 'Updating…' : decisionConfirmation.decision === 'PUBLISH' ? 'Confirm publish' : 'Confirm resolution'}</button></div>
+          </section></div>}
+          {assessmentConfirmation && <div className="fixed inset-0 z-[90] flex items-center justify-center bg-coast-ink/45 p-4" role="presentation"><section aria-labelledby="assessment-action-title" aria-modal="true" className="w-full max-w-lg rounded-3xl border border-coast-line bg-coast-pearl p-6 shadow-2xl" role="dialog">
+            <p className="text-xs font-extrabold tracking-[0.15em] text-coast-blue">ASSESSMENT DRAFT</p>
+            <h2 className="mt-2 font-display text-2xl" id="assessment-action-title">{assessmentConfirmation.action === 'submit' ? 'Submit this assessment?' : 'Cancel this draft?'}</h2>
+            <p className="mt-3 text-sm leading-6 text-coast-muted">{assessmentConfirmation.action === 'submit' ? 'Submitting closes draft editing and checks the latest coastal context. No automated recommendation or operational change will be created.' : 'This draft will be cancelled and retained in the audit history for authorized reviewers.'}</p>
+            <div className="mt-6 flex flex-wrap justify-end gap-3"><button className="min-h-11 rounded-full border border-coast-line px-5 text-sm font-bold text-coast-deep hover:bg-coast-sage focus-visible:outline-2 focus-visible:outline-coast-blue" disabled={busy} onClick={() => setAssessmentConfirmation(null)} type="button">Keep draft</button><button className="min-h-11 rounded-full bg-coast-deep px-5 text-sm font-extrabold text-white hover:bg-coast-blue focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-coast-blue disabled:cursor-wait" disabled={busy} onClick={() => void confirmAssessmentAction()} type="button">{busy ? 'Updating…' : assessmentConfirmation.action === 'submit' ? 'Submit assessment' : 'Confirm cancellation'}</button></div>
+          </section></div>}
+          {withdrawalConfirmation && <div className="fixed inset-0 z-[90] flex items-center justify-center bg-coast-ink/45 p-4" role="presentation"><section aria-labelledby="alert-withdrawal-title" aria-modal="true" className="w-full max-w-lg rounded-3xl border border-coast-line bg-coast-pearl p-6 shadow-2xl" role="dialog">
+            <p className="text-xs font-extrabold tracking-[0.15em] text-coast-blue">ADVISORY DRAFT</p>
+            <h2 className="mt-2 font-display text-2xl" id="alert-withdrawal-title">Withdraw this draft?</h2>
+            <p className="mt-3 text-sm leading-6 text-coast-muted">“{withdrawalConfirmation.title}” will be marked withdrawn and kept in the advisory history for managers.</p>
+            <div className="mt-6 flex flex-wrap justify-end gap-3"><button className="min-h-11 rounded-full border border-coast-line px-5 text-sm font-bold text-coast-deep hover:bg-coast-sage focus-visible:outline-2 focus-visible:outline-coast-blue" disabled={busy} onClick={() => setWithdrawalConfirmation(null)} type="button">Keep draft</button><button className="min-h-11 rounded-full bg-coast-deep px-5 text-sm font-extrabold text-white hover:bg-coast-blue focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-coast-blue disabled:cursor-wait" disabled={busy} onClick={() => void confirmAlertWithdrawal()} type="button">{busy ? 'Updating…' : 'Withdraw draft'}</button></div>
           </section></div>}
         </>}
       </div>

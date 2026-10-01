@@ -10,11 +10,10 @@ namespace Blueverse.CoastalOperations.Application;
 public sealed class AssessmentApplicationService(
     CoastalOperationsDbContext db,
     IdempotencyStore idempotencyStore,
-    IAssessmentProposalPort proposalPort,
     IComponentDependencyCollector componentDependencyCollector)
 {
     private static readonly HashSet<string> WorkflowStatuses =
-    ["SUBMITTED", "PROPOSAL_READY", "PENDING_APPROVAL", "REVISION_REQUESTED", "REJECTED", "APPROVED", "EXECUTED", "BLOCKED", "SAFE_FAILURE"];
+    ["DRAFT", "SUBMITTED", "PROPOSAL_READY", "PENDING_APPROVAL", "REVISION_REQUESTED", "REJECTED", "APPROVED", "EXECUTED", "BLOCKED", "SAFE_FAILURE", "CANCELLED"];
 
     public async Task<StoredOutcome<AssessmentResponse>> CreateAsync(
         CreateAssessmentRequest request,
@@ -43,20 +42,7 @@ public sealed class AssessmentApplicationService(
         }
 
         var period = OperationsValidation.ParsePeriod(request.PeriodStartsAt, request.PeriodEndsAt);
-        var dependenciesTask = componentDependencyCollector.CollectAsync(
-            targetType,
-            request.TargetId,
-            period.StartsAt,
-            period.EndsAt,
-            request.SourceWorkflowId,
-            cancellationToken);
-        var aiAvailabilityTask = ReadAiAvailabilityAsync(cancellationToken);
-        await Task.WhenAll(dependenciesTask, aiAvailabilityTask);
-        var componentDependencies = await dependenciesTask;
-        var aiAvailability = await aiAvailabilityTask;
         var now = DateTimeOffset.UtcNow;
-        await InitializeTargetOperationalStateIfConfirmedAsync(
-            targetType, request.TargetId, componentDependencies, actorId, correlationId, now, cancellationToken);
         var assessment = new Assessment
         {
             Id = Guid.CreateVersion7(),
@@ -67,16 +53,11 @@ public sealed class AssessmentApplicationService(
             PeriodStartsAt = period.StartsAt,
             PeriodEndsAt = period.EndsAt,
             Objective = objective,
-            WorkflowStatus = "SUBMITTED",
-            AiDependencyStatus = aiAvailability switch
-            {
-                AssessmentAiAvailability.Available => "AVAILABLE",
-                AssessmentAiAvailability.Unavailable => "UNAVAILABLE",
-                _ => "NOT_CONNECTED"
-            },
-            AiDispatchOutcome = aiAvailability == AssessmentAiAvailability.Unavailable ? "NOT_STARTED" : "NOT_REQUESTED",
-            AiDispatchRetryable = aiAvailability == AssessmentAiAvailability.Unavailable,
-            ComponentDependenciesJson = JsonSerializer.Serialize(componentDependencies, OperationsValidation.JsonOptions),
+            WorkflowStatus = "DRAFT",
+            AiDependencyStatus = "NOT_CONNECTED",
+            AiDispatchOutcome = "NOT_REQUESTED",
+            AiDispatchRetryable = false,
+            ComponentDependenciesJson = "[]",
             InitiatedBy = actorId,
             Version = 1,
             CreatedAt = now,
@@ -95,6 +76,128 @@ public sealed class AssessmentApplicationService(
             cancellationToken);
     }
 
+    public async Task<AssessmentResponse> UpdateDraftAsync(
+        Guid assessmentId,
+        UpdateAssessmentDraftRequest request,
+        Guid actorId,
+        string correlationId,
+        CancellationToken cancellationToken)
+    {
+        EnsureActor(actorId);
+        if (request.ExpectedVersion <= 0)
+            throw Invalid("assessment_version_invalid", "Assessment version is invalid", "Provide a positive expected assessment version.");
+
+        var assessment = await db.Assessments.SingleOrDefaultAsync(x => x.Id == assessmentId, cancellationToken);
+        if (assessment is null || assessment.InitiatedBy != actorId)
+            throw NotFound("assessment_not_found", "Assessment not found", "The assessment does not exist or is outside the caller's scope.");
+        if (assessment.WorkflowStatus != "DRAFT")
+            throw Conflict("assessment_draft_closed", "The assessment draft is closed", "Only an owned DRAFT assessment can be edited.");
+        if (assessment.Version != request.ExpectedVersion)
+            throw Conflict("assessment_version_stale", "The assessment draft changed", "Reload the draft and submit the latest version.");
+
+        var targetType = OperationsValidation.NormalizeTargetType(request.TargetType);
+        if (request.TargetId == Guid.Empty || request.SourceWorkflowId == Guid.Empty)
+            throw Invalid("target_identity_invalid", "Target identity is invalid", "Provide a non-empty target ID and omit an empty source workflow ID.");
+        var objective = request.Objective.Trim();
+        if (objective.Length == 0)
+            throw Invalid("objective_required", "An assessment objective is required", "Describe the operational question to assess.");
+        var period = OperationsValidation.ParsePeriod(request.PeriodStartsAt, request.PeriodEndsAt);
+
+        var now = DateTimeOffset.UtcNow;
+        assessment.TargetType = targetType;
+        assessment.TargetId = request.TargetId;
+        assessment.SourceWorkflowId = request.SourceWorkflowId;
+        assessment.PeriodStartsAt = period.StartsAt;
+        assessment.PeriodEndsAt = period.EndsAt;
+        assessment.Objective = objective;
+        assessment.Version++;
+        assessment.UpdatedAt = now;
+        db.OperationsAudit.Add(Audit("assessment", assessment.Id, "DRAFT_UPDATED", actorId, correlationId, now));
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw Conflict("assessment_version_stale", "The assessment draft changed", "Reload the draft and submit the latest version.");
+        }
+
+        return ToResponse(assessment);
+    }
+
+    public async Task<StoredOutcome<AssessmentResponse>> CancelDraftAsync(
+        Guid assessmentId,
+        CancelAssessmentDraftRequest request,
+        Guid actorId,
+        string correlationId,
+        string? idempotencyKey,
+        CancellationToken cancellationToken)
+    {
+        EnsureActor(actorId);
+        if (request.ExpectedVersion <= 0)
+            throw Invalid("assessment_version_invalid", "Assessment version is invalid", "Provide a positive expected assessment version.");
+        var key = OperationsValidation.ValidateIdempotencyKey(idempotencyKey);
+        var operation = $"assessment.cancel:{assessmentId:N}";
+        var digest = OperationsValidation.RequestDigest(request);
+        var replay = await idempotencyStore.TryReplayAsync<AssessmentResponse>(actorId, operation, key, digest, cancellationToken);
+        if (replay is not null) return replay;
+
+        var assessment = await db.Assessments.SingleOrDefaultAsync(x => x.Id == assessmentId, cancellationToken);
+        if (assessment is null || assessment.InitiatedBy != actorId)
+            throw NotFound("assessment_not_found", "Assessment not found", "The assessment does not exist or is outside the caller's scope.");
+        if (assessment.WorkflowStatus != "DRAFT")
+            throw Conflict("assessment_draft_closed", "The assessment draft is closed", "Only an owned DRAFT assessment can be cancelled.");
+        if (assessment.Version != request.ExpectedVersion)
+            throw Conflict("assessment_version_stale", "The assessment draft changed", "Reload the draft and submit the latest version.");
+
+        var now = DateTimeOffset.UtcNow;
+        assessment.WorkflowStatus = "CANCELLED";
+        assessment.CancelledBy = actorId;
+        assessment.CancelledAt = now;
+        assessment.Version++;
+        assessment.UpdatedAt = now;
+        db.OperationsAudit.Add(Audit("assessment", assessment.Id, "CANCELLED", actorId, correlationId, now));
+        return await SaveIdempotentAsync(
+            actorId, operation, key, digest, StatusCodes.Status200OK, ToResponse(assessment), cancellationToken);
+    }
+
+    public async Task<StoredOutcome<AssessmentResponse>> SubmitDraftAsync(
+        Guid assessmentId,
+        SubmitAssessmentDraftRequest request,
+        Guid actorId,
+        string correlationId,
+        string? idempotencyKey,
+        CancellationToken cancellationToken)
+    {
+        EnsureActor(actorId);
+        if (request.ExpectedVersion <= 0)
+            throw Invalid("assessment_version_invalid", "Assessment version is invalid", "Provide a positive expected assessment version.");
+        var key = OperationsValidation.ValidateIdempotencyKey(idempotencyKey);
+        var operation = $"assessment.submit:{assessmentId:N}";
+        var digest = OperationsValidation.RequestDigest(request);
+        var replay = await idempotencyStore.TryReplayAsync<AssessmentResponse>(actorId, operation, key, digest, cancellationToken);
+        if (replay is not null) return replay;
+
+        var assessment = await db.Assessments.SingleOrDefaultAsync(x => x.Id == assessmentId, cancellationToken);
+        if (assessment is null || assessment.InitiatedBy != actorId)
+            throw NotFound("assessment_not_found", "Assessment not found", "The assessment does not exist or is outside the caller's scope.");
+        if (assessment.WorkflowStatus != "DRAFT")
+            throw Conflict("assessment_draft_closed", "The assessment draft is closed", "Only an owned DRAFT assessment can be submitted.");
+        if (assessment.Version != request.ExpectedVersion)
+            throw Conflict("assessment_version_stale", "The assessment draft changed", "Reload the draft and submit the latest version.");
+
+        var componentDependencies = await componentDependencyCollector.CollectAsync(
+            assessment.TargetType,
+            assessment.TargetId,
+            assessment.PeriodStartsAt,
+            assessment.PeriodEndsAt,
+            assessment.SourceWorkflowId,
+            cancellationToken);
+        return await SaveSubmissionIdempotentlyAsync(
+            assessmentId, request.ExpectedVersion, componentDependencies, actorId, operation, key, digest,
+            correlationId, cancellationToken);
+    }
+
     public async Task<AssessmentQueueResponse> GetQueueAsync(
         AssessmentListQuery query,
         Guid actorId,
@@ -102,13 +205,22 @@ public sealed class AssessmentApplicationService(
         CancellationToken cancellationToken)
     {
         EnsureActor(actorId);
+        if (query.IncludeCancelled && !canReadQueue)
+            throw new CoastalOperationsException(StatusCodes.Status403Forbidden, "assessment_audit_forbidden", "Assessment audit access is required", "Only an authorized assessment queue reader can include cancelled draft tombstones.");
         if (!OperationsValidation.TryReadCursor(query.Cursor, out var cursorId))
         {
             throw Invalid("cursor_invalid", "The assessment cursor is invalid", "Use the cursor returned by the previous page.");
         }
 
         var items = db.Assessments.AsNoTracking().AsQueryable();
-        if (!canReadQueue) items = items.Where(x => x.InitiatedBy == actorId);
+        if (canReadQueue)
+        {
+            items = items.Where(x => x.WorkflowStatus != "DRAFT" && (query.IncludeCancelled || x.WorkflowStatus != "CANCELLED"));
+        }
+        else
+        {
+            items = items.Where(x => x.InitiatedBy == actorId && x.WorkflowStatus != "CANCELLED");
+        }
         if (!string.IsNullOrWhiteSpace(query.WorkflowStatus))
         {
             var status = query.WorkflowStatus.Trim().ToUpperInvariant();
@@ -116,6 +228,8 @@ public sealed class AssessmentApplicationService(
             {
                 throw Invalid("workflow_status_invalid", "The workflow status is invalid", "Use a documented Coastal Operations workflow status.");
             }
+            if (status == "CANCELLED" && !query.IncludeCancelled)
+                throw new CoastalOperationsException(StatusCodes.Status403Forbidden, "assessment_audit_forbidden", "Assessment audit access is required", "Use the authorized includeCancelled audit filter to read cancelled draft tombstones.");
 
             items = items.Where(x => x.WorkflowStatus == status);
         }
@@ -318,30 +432,6 @@ public sealed class AssessmentApplicationService(
         }
     }
 
-    private async Task<AssessmentAiAvailability> ReadAiAvailabilityAsync(CancellationToken cancellationToken)
-    {
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(TimeSpan.FromSeconds(2));
-        try
-        {
-            return await proposalPort.GetAvailabilityAsync(timeout.Token).WaitAsync(TimeSpan.FromSeconds(2), cancellationToken);
-        }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-        {
-            return AssessmentAiAvailability.Unavailable;
-        }
-        catch (TimeoutException)
-        {
-            return AssessmentAiAvailability.Unavailable;
-        }
-        catch (Exception exception) when (exception is HttpRequestException or IOException)
-        {
-            // Agentic AI is optional before G07. Transport failures must leave
-            // the business assessment usable and explicitly retryable.
-            return AssessmentAiAvailability.Unavailable;
-        }
-    }
-
     private async Task InitializeTargetOperationalStateIfConfirmedAsync(
         string targetType,
         Guid targetId,
@@ -374,12 +464,117 @@ public sealed class AssessmentApplicationService(
         Guid actorId, string operation, string key, string digest, int statusCode, T response, CancellationToken cancellationToken) =>
         await idempotencyStore.SaveAsync(actorId, operation, key, digest, statusCode, response, cancellationToken);
 
+    private async Task<StoredOutcome<AssessmentResponse>> SaveSubmissionIdempotentlyAsync(
+        Guid assessmentId,
+        int expectedVersion,
+        IReadOnlyList<ComponentDependencyResult> dependencies,
+        Guid actorId,
+        string operation,
+        string key,
+        string digest,
+        string correlationId,
+        CancellationToken cancellationToken)
+    {
+        if (!db.Database.IsRelational())
+        {
+            var assessment = RequireSubmittableDraft(
+                await db.Assessments.SingleOrDefaultAsync(x => x.Id == assessmentId, cancellationToken),
+                actorId, expectedVersion);
+            var now = DateTimeOffset.UtcNow;
+            MarkSubmitted(assessment, dependencies, actorId, correlationId, now);
+            await InitializeTargetOperationalStateIfConfirmedAsync(
+                assessment.TargetType, assessment.TargetId, dependencies, actorId, correlationId, now, cancellationToken);
+            return await SaveIdempotentAsync(
+                actorId, operation, key, digest, StatusCodes.Status200OK, ToResponse(assessment), cancellationToken);
+        }
+
+        try
+        {
+            var strategy = db.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
+            {
+                await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+                try
+                {
+                    db.ChangeTracker.Clear();
+                    var replay = await idempotencyStore.TryReplayAsync<AssessmentResponse>(
+                        actorId, operation, key, digest, cancellationToken);
+                    if (replay is not null)
+                    {
+                        await transaction.CommitAsync(cancellationToken);
+                        return replay;
+                    }
+
+                    var assessment = RequireSubmittableDraft(
+                        await db.Assessments.SingleOrDefaultAsync(x => x.Id == assessmentId, cancellationToken),
+                        actorId, expectedVersion);
+                    var now = DateTimeOffset.UtcNow;
+                    MarkSubmitted(assessment, dependencies, actorId, correlationId, now);
+                    await InitializeTargetOperationalStateIfConfirmedAsync(
+                        assessment.TargetType, assessment.TargetId, dependencies, actorId, correlationId, now, cancellationToken);
+                    var result = await SaveIdempotentAsync(
+                        actorId, operation, key, digest, StatusCodes.Status200OK, ToResponse(assessment), cancellationToken);
+                    await transaction.CommitAsync(cancellationToken);
+                    return result;
+                }
+                catch
+                {
+                    await transaction.RollbackAsync(CancellationToken.None);
+                    throw;
+                }
+            });
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            db.ChangeTracker.Clear();
+            var replay = await idempotencyStore.TryReplayAsync<AssessmentResponse>(
+                actorId, operation, key, digest, cancellationToken);
+            if (replay is not null) return replay;
+            throw Conflict("assessment_version_stale", "The assessment draft changed", "Reload the draft and retry submission with its current version.");
+        }
+        catch (DbUpdateException exception) when (exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            db.ChangeTracker.Clear();
+            var replay = await idempotencyStore.TryReplayAsync<AssessmentResponse>(actorId, operation, key, digest, cancellationToken);
+            if (replay is not null) return replay;
+            throw Conflict("assessment_submission_conflict", "The assessment draft changed", "A concurrent submission or update was recorded first.");
+        }
+    }
+
+    private static Assessment RequireSubmittableDraft(Assessment? assessment, Guid actorId, int expectedVersion)
+    {
+        if (assessment is null || assessment.InitiatedBy != actorId)
+            throw NotFound("assessment_not_found", "Assessment not found", "The assessment does not exist or is outside the caller's scope.");
+        if (assessment.WorkflowStatus != "DRAFT")
+            throw Conflict("assessment_draft_closed", "The assessment draft is closed", "Only an owned DRAFT assessment can be submitted.");
+        if (assessment.Version != expectedVersion)
+            throw Conflict("assessment_version_stale", "The assessment draft changed", "Reload the draft and submit the latest version.");
+        return assessment;
+    }
+
+    private void MarkSubmitted(
+        Assessment assessment,
+        IReadOnlyList<ComponentDependencyResult> dependencies,
+        Guid actorId,
+        string correlationId,
+        DateTimeOffset now)
+    {
+        assessment.WorkflowStatus = "SUBMITTED";
+        assessment.AiDependencyStatus = "NOT_CONNECTED";
+        assessment.AiDispatchOutcome = "NOT_REQUESTED";
+        assessment.AiDispatchRetryable = false;
+        assessment.ComponentDependenciesJson = JsonSerializer.Serialize(dependencies, OperationsValidation.JsonOptions);
+        assessment.Version++;
+        assessment.UpdatedAt = now;
+        db.OperationsAudit.Add(Audit("assessment", assessment.Id, "SUBMITTED", actorId, correlationId, now));
+    }
+
     private static AssessmentResponse ToResponse(Assessment x) => new(
         x.Id, x.WorkflowId, x.TargetType, x.TargetId, x.SourceWorkflowId,
         x.PeriodStartsAt, x.PeriodEndsAt, x.Objective, x.WorkflowStatus,
         x.AiDependencyStatus, x.AiDispatchOutcome, x.AiDispatchRetryable,
         JsonSerializer.Deserialize<List<ComponentDependencyResult>>(x.ComponentDependenciesJson, OperationsValidation.JsonOptions) ?? [],
-        x.Version, x.CreatedAt, x.UpdatedAt);
+        x.Version, x.CreatedAt, x.UpdatedAt, x.CancelledBy, x.CancelledAt);
 
     private static void EnsureActor(Guid actorId)
     {

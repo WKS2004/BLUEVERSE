@@ -18,8 +18,9 @@ agent_contract: "../agents/member-4-safety-operations-agent.md"
 
 **Contract status:** v1 target specification with the branch-local, pre-G07
 backend implemented against the Member 4 G00 proposal; the complete component
-is still partial pending shared G00 acceptance, producer integration and both
-client workflows. **Assigned owner:** Wanshaja Sooriyabandara (`@WKS2004`) —
+is still partial pending shared G00 acceptance, producer integration and client
+adoption of the new draft lifecycle. **Assigned owner:** Wanshaja
+Sooriyabandara (`@WKS2004`) —
 frozen-requirements trace label Member 4.
 Feature branch: `features/coastal-operations`; paired Agentic AI branch:
 `agentic-ai/safety-operations`.
@@ -36,24 +37,27 @@ actor context from the API gateway, image evidence, health routes and a
 JWT-enabled OpenAPI document selectable from `/api/swagger`. The backend is
 implemented against provisional branch-local contracts. The component remains
 partial: proposal production is gated by G07, the producer-owned target-status
-handoff and real peer contracts are not integrated, React and Flutter
-workflows are absent, and shared G00 remains pending.
+handoff and real peer contracts are not integrated, and shared G00 remains
+pending.
 
 ## Branch implementation status (partial)
 
 Implemented source on `features/coastal-operations` currently provides:
 
-- Assessment creation, caller-scoped assessment lists and details, generated
-  workflow IDs, UTC period storage, bounded cursor pagination and durable
-  `SUBMITTED`/AI-availability state.
+- Caller-owned assessment draft create/read/update/cancel, explicit submit,
+  generated workflow IDs, UTC period storage, bounded cursor pagination,
+  optimistic version checks, logical cancellation tombstones, audit records
+  and durable `SUBMITTED`/pre-G07 AI-availability state. Peer calls run only
+  after explicit submission; draft creation is local.
 - Reviewer decision handling with proposal/version checks, optimistic
   concurrency, idempotency, independent-reviewer checks, transactional target
   updates and audit/history writes. No proposal can be created before G07, so
   the decision route safely returns a conflict until a validated proposal is
   available.
-- Operational target status/history reads, alert draft creation and updates,
-  publish/resolve decisions, high-severity separation of duties, expiry and
-  audit records. A target baseline is inserted once only after current,
+- Operational target status/history reads, alert draft creation, updates and
+  logical withdrawal with an audit tombstone, publish/resolve decisions,
+  high-severity separation of duties, expiry and audit records. A target
+  baseline is inserted once only after current,
   validated Member 1 availability evidence; this branch-local assumption is
   not the accepted producer-owned status handoff.
 - Private assessment image evidence with strict PNG sanitization, five-image
@@ -70,17 +74,20 @@ Implemented source on `features/coastal-operations` currently provides:
   receive the client's JWT/cookies. See [ADR-0021](../../adr/ADR-0021-coastal-operations-actor-context.md).
 
 The implemented public routes are indexed in the
-[endpoint catalog](../../api/endpoint-catalog.md); React and Flutter workflows
-have not been added. The service suite currently has 248 passing default cases
-for dependency resilience, assessment and alert workflows, authorization,
-idempotency, target history, PNG sanitization, evidence storage/retention and
-health. Two opt-in PostgreSQL tests cover migrations, idempotency uniqueness
-and stale-write concurrency; they require a dedicated `blueverse_co_test*`
-database and were not run in the current environment. Most application tests
-use EF Core InMemory and do not establish PostgreSQL workflow or Compose
-acceptance. Provisional peer paths and the Member 4 status handoff still
-require producer agreement. Shared G00 remains **Pending** until all owners
-accept the component contracts.
+[endpoint catalog](../../api/endpoint-catalog.md). React and Flutter have
+existing Coastal Operations workflows, but their current flows do not yet call
+the new explicit submit, update or cancellation endpoints. The service suite
+currently has 255 passing default cases for dependency resilience, assessment draft
+lifecycle/submission, alert workflows, authorization, idempotency, target
+history, PNG sanitization, evidence storage/retention and health. Three opt-in
+PostgreSQL tests cover migrations, idempotency uniqueness, stale-write
+concurrency and concurrent idempotent submission; they require a dedicated
+`blueverse_co_test*` database and were
+skipped because `BLUEVERSE_CO_POSTGRES_TEST_CONNECTION` was not configured.
+Most application tests use EF Core InMemory and do not establish live
+PostgreSQL workflow or Compose acceptance. Provisional peer paths and the
+Member 4 status handoff still require producer agreement. Shared G00 remains
+**Pending** until all owners accept the component contracts.
 
 ## 1. Purpose and user outcome
 
@@ -119,15 +126,17 @@ freeze unresolved policy values.
 
 The current branch makes read-only, bounded requests to provisional Member
 1 availability, Member 2 marine suitability and (when `sourceWorkflowId` is
-provided) Member 3 workflow endpoints during assessment creation. Each result
+provided) Member 3 workflow endpoints when an owner explicitly submits an
+assessment draft. Draft creation does not contact peer services. Each result
 is validated against the branch-local typed contract, retained as a bounded
 assessment snapshot and exposed with its source status, attempt/retry count,
 checked time and validated evidence fields. Expired `validUntil` boundaries
 are reported as stale while retaining the validated evidence. Network/timeouts
 and retryable HTTP failures use a two-second per-attempt timeout and at most
-two retries.
+two retries. Before G07, successful submission remains `SUBMITTED` with
+`NOT_CONNECTED` AI status and no proposal.
 Missing, rejected, invalid or stale evidence stays explicit and is never a
-positive finding. These source requests run only for a business assessment;
+positive finding. These source requests run only on explicit submission;
 they are not startup probes and do not affect process liveness or database
 readiness. Default peer routes and their provisional status are recorded in
 the [Member 4 G00 proposal](../g00/member-4-coastal-operations.md); shared

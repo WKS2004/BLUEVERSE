@@ -221,7 +221,7 @@
     {
       "id": "coastal-operations-assessment",
       "status": "implemented",
-      "description": "Shared Coastal Operations workflow for permission-scoped assessment creation and review, contextual status and history, private PNG evidence, and advisory drafting, editing, publishing and resolution. Uses the current branch-local G00 producer IDs and remains subject to shared G00 acceptance; before G07 assessments are saved without an automated proposal.",
+      "description": "Shared Coastal Operations workflow for permission-scoped assessment draft creation, editing, submission and cancellation; review, contextual status and history, private PNG evidence; and advisory drafting, editing, withdrawal, publishing and resolution. Uses the current branch-local G00 producer IDs and remains subject to shared G00 acceptance; before G07 submitted assessments collect bounded coastal context and remain SUBMITTED without an automated proposal.",
       "web": {
         "route": "/operations/assessments",
         "source": "apps/web/src/app/routes.tsx"
@@ -232,6 +232,9 @@
       },
       "apiRefs": [
         "coastal-assessment-create",
+        "coastal-assessment-update",
+        "coastal-assessment-cancel",
+        "coastal-assessment-submit",
         "coastal-assessment-list",
         "coastal-assessment-detail",
         "coastal-target-status",
@@ -239,6 +242,7 @@
         "coastal-alert-list",
         "coastal-alert-create",
         "coastal-alert-update",
+        "coastal-alert-withdraw",
         "coastal-alert-decide",
         "coastal-assessment-evidence-upload",
         "coastal-assessment-evidence-content"
@@ -439,6 +443,30 @@
       "operationId": "Create"
     },
     {
+      "id": "coastal-assessment-update",
+      "method": "PATCH",
+      "path": "/api/operations/assessments/{assessmentId:guid}",
+      "publicBoundary": "api",
+      "ownerService": "coastal-operations",
+      "operationId": "UpdateDraft"
+    },
+    {
+      "id": "coastal-assessment-cancel",
+      "method": "DELETE",
+      "path": "/api/operations/assessments/{assessmentId:guid}",
+      "publicBoundary": "api",
+      "ownerService": "coastal-operations",
+      "operationId": "CancelDraft"
+    },
+    {
+      "id": "coastal-assessment-submit",
+      "method": "POST",
+      "path": "/api/operations/assessments/{assessmentId:guid}/submit",
+      "publicBoundary": "api",
+      "ownerService": "coastal-operations",
+      "operationId": "SubmitDraft"
+    },
+    {
       "id": "coastal-assessment-list",
       "method": "GET",
       "path": "/api/operations/assessments",
@@ -493,6 +521,14 @@
       "publicBoundary": "api",
       "ownerService": "coastal-operations",
       "operationId": "Update"
+    },
+    {
+      "id": "coastal-alert-withdraw",
+      "method": "DELETE",
+      "path": "/api/operations/alerts/{alertId:guid}",
+      "publicBoundary": "api",
+      "ownerService": "coastal-operations",
+      "operationId": "WithdrawDraft"
     },
     {
       "id": "coastal-alert-decide",

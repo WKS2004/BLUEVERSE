@@ -7,6 +7,9 @@ public static class CoastalAuthorizationPolicies
     public static void Configure(AuthorizationOptions options)
     {
         AddPermissionPolicy(options, PermissionCodes.OperationsAssessmentCreate);
+        AddPermissionPolicy(options, PermissionCodes.OperationsAssessmentUpdate);
+        AddPermissionPolicy(options, PermissionCodes.OperationsAssessmentDelete);
+        AddPermissionPolicy(options, PermissionCodes.OperationsAssessmentSubmit);
         AddPermissionPolicy(options, PermissionCodes.OperationsAssessmentDecide);
         AddPermissionPolicy(options, PermissionCodes.OperationsAssessmentQueueRead);
         AddPermissionPolicy(options, PermissionCodes.OperationsTargetStatusRead);

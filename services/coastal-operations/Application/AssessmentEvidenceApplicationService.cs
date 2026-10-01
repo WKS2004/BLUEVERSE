@@ -30,8 +30,8 @@ public sealed class AssessmentEvidenceApplicationService(
             ?? throw NotFound("assessment_not_found", "Assessment not found", "The assessment does not exist.");
         if (assessment.InitiatedBy != actorId)
             throw NotFound("assessment_not_found", "Assessment not found", "The assessment does not exist or is outside the caller's scope.");
-        if (assessment.WorkflowStatus is not ("SUBMITTED" or "REVISION_REQUESTED"))
-            throw Conflict("assessment_evidence_closed", "Evidence can no longer be added", "Evidence can be added only while the assessment is awaiting analysis or revision.");
+        if (assessment.WorkflowStatus is not ("DRAFT" or "SUBMITTED" or "REVISION_REQUESTED"))
+            throw Conflict("assessment_evidence_closed", "Evidence can no longer be added", "Evidence can be added only while the assessment is a draft, awaiting analysis or revision.");
 
         var count = await db.AssessmentEvidence.CountAsync(x => x.AssessmentId == assessmentId, cancellationToken);
         if (count >= MaximumEvidencePerAssessment)

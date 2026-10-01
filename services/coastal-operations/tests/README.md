@@ -7,16 +7,19 @@ dotnet test services/coastal-operations/tests/Blueverse.CoastalOperations.Tests/
 ```
 
 The suite uses stable `COASTAL-*` test IDs and covers assessment input,
-idempotency, queue/detail visibility, AI availability boundaries, reviewer
-decisions, target-state changes/history, alert lifecycle and authorization,
+draft create/update/cancel/submit, idempotency, queue/detail/tombstone
+visibility, the pre-G07 disconnected AI state, reviewer decisions,
+target-state changes/history, alert draft withdrawal/lifecycle and authorization,
 signed API actor-context validation/replay, and dynamic controller permission
 policy coverage. Optional component calls use synthetic HTTP handlers to verify
 request contracts, timeouts, retryable and non-retryable HTTP statuses,
 malformed/stale/oversized responses, cancellation, and dependency-health
 snapshots without live peer services. Configuration is bounded by the
 provisional G00 limits of a two-second attempt timeout, two retries and a
-32 KiB response body. Optional AI availability transport failures preserve
-assessment creation and are recorded as retryable unavailability.
+32 KiB response body. Assessment draft creation is local and does not probe
+peer or AI services. Submission records bounded peer outcomes; peer failures
+remain explicit and do not make the service unavailable or produce a proposal
+before G07.
 
 Contract tests also verify the DTO data-annotation boundaries used by MVC model
 validation, and reflection-based route checks ensure every protected controller
@@ -38,7 +41,7 @@ run it again when changing migrations or provider-specific persistence behavior.
 Synthetic dependency tests do not prove the other member services' final G00
 contracts or live endpoint availability.
 
-Two PostgreSQL workflow/concurrency cases are opt-in. Provision a dedicated
+Three PostgreSQL workflow/concurrency cases are opt-in. Provision a dedicated
 database whose name starts with `blueverse_co_test`, set
 `BLUEVERSE_CO_POSTGRES_TEST_CONNECTION` to its connection string, and run:
 

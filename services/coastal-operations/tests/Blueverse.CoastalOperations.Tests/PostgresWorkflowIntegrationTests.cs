@@ -1,4 +1,5 @@
 using Blueverse.CoastalOperations.Application;
+using Blueverse.CoastalOperations.Contracts;
 using Blueverse.CoastalOperations.Data;
 using Blueverse.CoastalOperations.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -100,6 +101,73 @@ public sealed class PostgresWorkflowIntegrationTests
         }
     }
 
+    [PostgresFact(DisplayName = "COASTAL-POSTGRES-003 concurrent assessment submission replays one idempotent result")]
+    [Trait("TestId", "COASTAL-POSTGRES-003")]
+    public async Task ConcurrentSubmissionWithTheSameKeyHasOneCommitAndOneReplay()
+    {
+        var connectionString = DedicatedConnectionString();
+        await MigrateAndAssertReadyAsync(connectionString);
+        var assessmentId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+        var operation = $"assessment.submit:{assessmentId:N}";
+        var key = Guid.NewGuid().ToString("N");
+
+        try
+        {
+            await using (var seedDb = CreateDb(connectionString))
+            {
+                seedDb.Assessments.Add(new Assessment
+                {
+                    Id = assessmentId,
+                    WorkflowId = Guid.NewGuid(),
+                    TargetType = "ACTIVITY",
+                    TargetId = Guid.NewGuid(),
+                    PeriodStartsAt = PeriodStart,
+                    PeriodEndsAt = PeriodStart.AddHours(1),
+                    Objective = "concurrent submission fixture",
+                    WorkflowStatus = "DRAFT",
+                    InitiatedBy = actorId,
+                    Version = 1,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                });
+                await seedDb.SaveChangesAsync();
+            }
+
+            var collector = new SubmissionBarrierCollector();
+            await using var firstDb = CreateDb(connectionString);
+            await using var secondDb = CreateDb(connectionString);
+            var firstService = new AssessmentApplicationService(firstDb, new IdempotencyStore(firstDb), collector);
+            var secondService = new AssessmentApplicationService(secondDb, new IdempotencyStore(secondDb), collector);
+            var request = new SubmitAssessmentDraftRequest { ExpectedVersion = 1 };
+            var first = firstService.SubmitDraftAsync(assessmentId, request, actorId, "first", key, CancellationToken.None);
+            var second = secondService.SubmitDraftAsync(assessmentId, request, actorId, "second", key, CancellationToken.None);
+
+            var outcomes = await Task.WhenAll(first, second);
+
+            Assert.Single(outcomes, outcome => !outcome.Replayed);
+            Assert.Single(outcomes, outcome => outcome.Replayed);
+            Assert.All(outcomes, outcome =>
+            {
+                Assert.Equal("SUBMITTED", outcome.Body.WorkflowStatus);
+                Assert.Equal(2, outcome.Body.Version);
+            });
+            await using var verifyDb = CreateDb(connectionString);
+            var persisted = await verifyDb.Assessments.AsNoTracking().SingleAsync(item => item.Id == assessmentId);
+            Assert.Equal("SUBMITTED", persisted.WorkflowStatus);
+            Assert.Equal(2, persisted.Version);
+            Assert.Equal(1, await verifyDb.IdempotencyRecords.CountAsync(item => item.ActorId == actorId && item.Operation == operation && item.Key == key));
+            Assert.Equal(1, await verifyDb.OperationsAudit.CountAsync(item => item.ResourceType == "assessment" && item.ResourceId == assessmentId && item.Action == "SUBMITTED"));
+        }
+        finally
+        {
+            await using var cleanupDb = CreateDb(connectionString);
+            await cleanupDb.OperationsAudit.Where(item => item.ResourceType == "assessment" && item.ResourceId == assessmentId).ExecuteDeleteAsync();
+            await cleanupDb.IdempotencyRecords.Where(item => item.ActorId == actorId && item.Operation == operation && item.Key == key).ExecuteDeleteAsync();
+            await cleanupDb.Assessments.Where(item => item.Id == assessmentId).ExecuteDeleteAsync();
+        }
+    }
+
     private static async Task MigrateAndAssertReadyAsync(string connectionString)
     {
         await using var db = CreateDb(connectionString);
@@ -123,6 +191,27 @@ public sealed class PostgresWorkflowIntegrationTests
     }
 
     private sealed record StoredBody(string State);
+
+    private sealed class SubmissionBarrierCollector : IComponentDependencyCollector
+    {
+        private readonly TaskCompletionSource<bool> bothRequestsReachedCollector =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int requestCount;
+
+        public async Task<IReadOnlyList<ComponentDependencyResult>> CollectAsync(
+            string targetType,
+            Guid targetId,
+            DateTimeOffset periodStartsAt,
+            DateTimeOffset periodEndsAt,
+            Guid? sourceWorkflowId,
+            CancellationToken cancellationToken)
+        {
+            if (Interlocked.Increment(ref requestCount) == 2)
+                bothRequestsReachedCollector.TrySetResult(true);
+            await bothRequestsReachedCollector.Task.WaitAsync(cancellationToken);
+            return Array.Empty<ComponentDependencyResult>();
+        }
+    }
 }
 
 public sealed class PostgresFactAttribute : FactAttribute

@@ -181,6 +181,29 @@ export function createAssessment(input: {
   }, idempotencyKey()))))
 }
 
+export function updateAssessmentDraft(assessmentId: string, input: {
+  expectedVersion: number
+  targetType: CoastalTargetType
+  targetId: string
+  sourceWorkflowId?: string
+  periodStartsAt: string
+  periodEndsAt: string
+  objective: string
+}) {
+  return request<Assessment>(() => fetch('/api/operations/assessments/{assessmentId:guid}'.replace('{assessmentId:guid}', encodeURIComponent(assessmentId)), publicApiOptions(jsonOptions('PATCH', {
+    ...input,
+    sourceWorkflowId: input.sourceWorkflowId || null,
+  }))))
+}
+
+export function cancelAssessmentDraft(assessmentId: string, expectedVersion: number) {
+  return request<Assessment>(() => fetch('/api/operations/assessments/{assessmentId:guid}'.replace('{assessmentId:guid}', encodeURIComponent(assessmentId)), publicApiOptions(jsonOptions('DELETE', { expectedVersion }, idempotencyKey()))))
+}
+
+export function submitAssessmentDraft(assessmentId: string, expectedVersion: number) {
+  return request<Assessment>(() => fetch('/api/operations/assessments/{assessmentId:guid}/submit'.replace('{assessmentId:guid}', encodeURIComponent(assessmentId)), publicApiOptions(jsonOptions('POST', { expectedVersion }, idempotencyKey()))))
+}
+
 export function getAssessmentDetail(assessmentId: string) {
   return request<AssessmentDetail>(() => fetch('/api/operations/assessments/{assessmentId:guid}'.replace('{assessmentId:guid}', encodeURIComponent(assessmentId)), publicApiOptions()))
 }
@@ -244,6 +267,10 @@ export function updateAlertDraft(alertId: string, input: {
   validUntil: string
 }) {
   return request<CoastalAlert>(() => fetch('/api/operations/alerts/{alertId:guid}'.replace('{alertId:guid}', encodeURIComponent(alertId)), publicApiOptions(jsonOptions('PATCH', input))))
+}
+
+export function withdrawAlertDraft(alertId: string, expectedVersion: number) {
+  return request<CoastalAlert>(() => fetch('/api/operations/alerts/{alertId:guid}'.replace('{alertId:guid}', encodeURIComponent(alertId)), publicApiOptions(jsonOptions('DELETE', { expectedVersion }, idempotencyKey()))))
 }
 
 export function decideAlert(alertId: string, decision: 'PUBLISH' | 'RESOLVE', expectedVersion: number) {

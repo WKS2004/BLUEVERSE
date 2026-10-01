@@ -10,13 +10,15 @@ public sealed class Assessment
     public DateTimeOffset PeriodStartsAt { get; set; }
     public DateTimeOffset PeriodEndsAt { get; set; }
     public string Objective { get; set; } = string.Empty;
-    public string WorkflowStatus { get; set; } = "SUBMITTED";
+    public string WorkflowStatus { get; set; } = "DRAFT";
     public string AiDependencyStatus { get; set; } = "NOT_CONNECTED";
     public string AiDispatchOutcome { get; set; } = "NOT_REQUESTED";
     public bool AiDispatchRetryable { get; set; }
     public string ComponentDependenciesJson { get; set; } = "[]";
     public Guid InitiatedBy { get; set; }
     public int Version { get; set; } = 1;
+    public Guid? CancelledBy { get; set; }
+    public DateTimeOffset? CancelledAt { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 
@@ -121,6 +123,8 @@ public sealed class OperationalAlert
     public Guid CreatedBy { get; set; }
     public Guid UpdatedBy { get; set; }
     public int Version { get; set; } = 1;
+    public Guid? WithdrawnBy { get; set; }
+    public DateTimeOffset? WithdrawnAt { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 

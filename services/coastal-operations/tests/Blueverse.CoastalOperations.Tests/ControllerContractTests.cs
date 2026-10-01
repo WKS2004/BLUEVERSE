@@ -104,7 +104,7 @@ public sealed class ControllerContractTests
         var evidence = new AssessmentEvidenceApplicationService(db, new AssessmentEvidenceSanitizer(), storage,
             Microsoft.Extensions.Logging.Abstractions.NullLogger<AssessmentEvidenceApplicationService>.Instance);
         var controller = new AssessmentsController(new AssessmentApplicationService(
-            db, new IdempotencyStore(db), new DisconnectedAssessmentProposalPort(), new ControllerTestCollector()))
+            db, new IdempotencyStore(db), new ControllerTestCollector()))
         {
             ControllerContext = new ControllerContext { HttpContext = NewHttpContext(actorId) }
         };

@@ -164,10 +164,13 @@ void main() {
         await tester.tap(find.text('New assessment'));
         await tester.pumpAndSettle();
         await tester.tap(
-          find.widgetWithText(FilledButton, 'Record assessment'),
+          find.widgetWithText(FilledButton, 'Save draft'),
         );
         await tester.pumpAndSettle();
-        expect(find.text('Enter a valid UUID.'), findsOneWidget);
+        expect(
+          find.text('Check the coastal record ID and try again.'),
+          findsOneWidget,
+        );
         expect(find.text('Include an explicit UTC offset.'), findsNWidgets(2));
         expect(requestCount, 0);
 
@@ -177,7 +180,7 @@ void main() {
           await tester.enterText(field, value);
         }
 
-        await enter('Canonical record ID', _targetUuid);
+        await enter('Coastal record ID', _targetUuid);
         await enter('Period starts at', '2026-10-01T09:00:00+05:30');
         await enter('Period ends at', '2026-10-01T12:00:00+05:30');
         await enter(
@@ -185,7 +188,7 @@ void main() {
           'Review the access route after heavy rain.',
         );
         await tester.tap(
-          find.widgetWithText(FilledButton, 'Record assessment'),
+          find.widgetWithText(FilledButton, 'Save draft'),
         );
         await tester.pumpAndSettle();
 
@@ -202,7 +205,7 @@ void main() {
         });
         expect(
           find.text(
-            'The assessment was recorded. Its linked coastal context is ready to review.',
+            'Assessment draft saved. Submit it when you are ready to check coastal context.',
           ),
           findsOneWidget,
         );
@@ -264,7 +267,7 @@ void main() {
     );
 
     testWidgets(
-      'MOB-OPS-UI-004 status-only and history-only access can look up a canonical coastal record',
+      'MOB-OPS-UI-004 status-only and history-only access can look up a coastal record',
       (tester) async {
         final paths = <String>[];
         final client = MockClient((request) async {
@@ -327,7 +330,7 @@ void main() {
         );
         await tester.pumpAndSettle();
         await tester.enterText(
-          find.bySemanticsLabel('Canonical record ID'),
+          find.bySemanticsLabel('Coastal record ID'),
           _targetUuid,
         );
         await tester.drag(find.byType(ListView), const Offset(0, -1000));

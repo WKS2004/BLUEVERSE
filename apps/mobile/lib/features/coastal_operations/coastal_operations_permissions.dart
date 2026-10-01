@@ -2,6 +2,9 @@ abstract final class CoastalOperationsPermissions {
   static const assessmentCreate = 'operations.assessment.create';
   static const assessmentRead = 'operations.assessment.read';
   static const assessmentQueueRead = 'operations.assessment.queue.read';
+  static const assessmentUpdate = 'operations.assessment.update';
+  static const assessmentDelete = 'operations.assessment.delete';
+  static const assessmentSubmit = 'operations.assessment.submit';
   static const assessmentDecide = 'operations.assessment.decide';
   static const evidenceUpload = 'operations.evidence.upload';
   static const evidenceRead = 'operations.evidence.read';
@@ -15,6 +18,9 @@ abstract final class CoastalOperationsPermissions {
     assessmentCreate,
     assessmentRead,
     assessmentQueueRead,
+    assessmentUpdate,
+    assessmentDelete,
+    assessmentSubmit,
     assessmentDecide,
     evidenceUpload,
     evidenceRead,

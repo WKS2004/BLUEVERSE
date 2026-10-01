@@ -68,69 +68,79 @@ public sealed class AssessmentWorkflowCoverageTests
         Assert.Empty(await db.Assessments.ToListAsync());
     }
 
-    [Theory(DisplayName = "COASTAL-ASSESSMENT-008 AI availability is reported without dispatching work")]
+    [Fact(DisplayName = "COASTAL-ASSESSMENT-008 assessment creation remains local and does not start optional calls")]
     [Trait("TestId", "COASTAL-ASSESSMENT-008")]
-    [InlineData(AssessmentAiAvailability.Available, "AVAILABLE", "NOT_REQUESTED", false)]
-    [InlineData(AssessmentAiAvailability.NotConnected, "NOT_CONNECTED", "NOT_REQUESTED", false)]
-    [InlineData(AssessmentAiAvailability.Unavailable, "UNAVAILABLE", "NOT_STARTED", true)]
-    public async Task CreateMapsAiAvailabilityAndNeverDispatches(
-        AssessmentAiAvailability availability,
-        string expectedStatus,
-        string expectedOutcome,
-        bool expectedRetryable)
+    public async Task CreateLeavesDraftWithoutPeerOrAiCalls()
     {
         await using var db = CreateDb();
-        var proposalPort = new ControlledProposalPort(availability);
-        var created = await CreateService(db, proposalPort: proposalPort).CreateAsync(
+        var collector = new CountingCollector();
+        var created = await CreateService(db, collector: collector).CreateAsync(
             Request(), Guid.NewGuid(), "ai-availability", "ai-availability-key", CancellationToken.None);
 
-        Assert.Equal(expectedStatus, created.Body.AiDependencyStatus);
-        Assert.Equal(expectedOutcome, created.Body.AiDispatchOutcome);
-        Assert.Equal(expectedRetryable, created.Body.AiDispatchRetryable);
-        Assert.Equal(1, proposalPort.AvailabilityCalls);
-        Assert.Equal(0, proposalPort.DispatchCalls);
+        Assert.Equal("DRAFT", created.Body.WorkflowStatus);
+        Assert.Equal("NOT_CONNECTED", created.Body.AiDependencyStatus);
+        Assert.Equal("NOT_REQUESTED", created.Body.AiDispatchOutcome);
+        Assert.False(created.Body.AiDispatchRetryable);
+        Assert.Equal(0, collector.Calls);
+        Assert.Empty(created.Body.ComponentDependencies);
         Assert.Equal(1, await db.Assessments.CountAsync());
     }
 
-    [Fact(DisplayName = "COASTAL-ASSESSMENT-009 AI availability timeout is stored as safe retryable unavailability")]
+    [Fact(DisplayName = "COASTAL-ASSESSMENT-009 submission collects peer outcomes once and replays idempotently")]
     [Trait("TestId", "COASTAL-ASSESSMENT-009")]
-    public async Task CreateToleratesAiAvailabilityTimeout()
+    public async Task SubmitCollectsPeerResultsAndReplaysWithoutRepeatingCalls()
     {
         await using var db = CreateDb();
-        var port = new ControlledProposalPort(AssessmentAiAvailability.Available, hangAvailability: true);
+        var actor = Guid.NewGuid();
+        var collector = new CountingCollector();
+        var service = CreateService(db, collector: collector);
+        var created = await service.CreateAsync(Request(), actor, "draft", "draft-key", CancellationToken.None);
+        var request = new SubmitAssessmentDraftRequest { ExpectedVersion = created.Body.Version };
 
-        var created = await CreateService(db, proposalPort: port).CreateAsync(
-            Request(), Guid.NewGuid(), "ai-timeout", "ai-timeout-key", CancellationToken.None);
+        var submitted = await service.SubmitDraftAsync(created.Body.AssessmentId, request, actor, "submit", "submit-key", CancellationToken.None);
+        var replay = await service.SubmitDraftAsync(created.Body.AssessmentId, request, actor, "ignored", "submit-key", CancellationToken.None);
+        var persisted = await db.Assessments.AsNoTracking().SingleAsync();
 
-        Assert.Equal("UNAVAILABLE", created.Body.AiDependencyStatus);
-        Assert.Equal("NOT_STARTED", created.Body.AiDispatchOutcome);
-        Assert.True(created.Body.AiDispatchRetryable);
+        Assert.Equal("SUBMITTED", submitted.Body.WorkflowStatus);
+        Assert.Equal("NOT_CONNECTED", submitted.Body.AiDependencyStatus);
+        Assert.Equal("NOT_REQUESTED", submitted.Body.AiDispatchOutcome);
+        Assert.False(submitted.Body.AiDispatchRetryable);
+        Assert.Equal(3, submitted.Body.ComponentDependencies.Count);
+        Assert.Equal("SUBMITTED", persisted.WorkflowStatus);
+        Assert.Equal("SUBMITTED", replay.Body.WorkflowStatus);
+        Assert.True(replay.Replayed);
+        Assert.Equal(1, collector.Calls);
+        Assert.Empty(await db.AssessmentProposals.ToListAsync());
+        Assert.Equal(2, await db.OperationsAudit.CountAsync());
         Assert.Equal(1, await db.Assessments.CountAsync());
     }
 
-    [Theory(DisplayName = "COASTAL-ASSESSMENT-016 optional AI transport failures preserve assessment creation")]
+    [Fact(DisplayName = "COASTAL-ASSESSMENT-016 unavailable peer outcomes do not block submission or start AI")]
     [Trait("TestId", "COASTAL-ASSESSMENT-016")]
-    [InlineData("http")]
-    [InlineData("io")]
-    public async Task CreateMapsAiTransportFailuresToRetryableUnavailability(string failureKind)
+    public async Task SubmitPersistsUnavailablePeerOutcomesWithoutAnAiProposal()
     {
         await using var db = CreateDb();
-        var port = new FailingAvailabilityProposalPort(failureKind);
         var actor = Guid.NewGuid();
-
-        var created = await CreateService(db, proposalPort: port).CreateAsync(
-            Request(), actor, "ai-transport-failure", "ai-transport-key", CancellationToken.None);
+        var service = CreateService(db);
+        var created = await service.CreateAsync(Request(), actor, "draft", "draft-key", CancellationToken.None);
+        var submitted = await service.SubmitDraftAsync(
+            created.Body.AssessmentId,
+            new SubmitAssessmentDraftRequest { ExpectedVersion = created.Body.Version },
+            actor,
+            "submit-unavailable",
+            "submit-unavailable-key",
+            CancellationToken.None);
 
         var persisted = await db.Assessments.AsNoTracking().SingleAsync();
-        Assert.Equal(StatusCodes.Status201Created, created.StatusCode);
-        Assert.Equal("SUBMITTED", created.Body.WorkflowStatus);
-        Assert.Equal("UNAVAILABLE", created.Body.AiDependencyStatus);
-        Assert.Equal("NOT_STARTED", created.Body.AiDispatchOutcome);
-        Assert.True(created.Body.AiDispatchRetryable);
-        Assert.Equal("UNAVAILABLE", persisted.AiDependencyStatus);
+        Assert.Equal(StatusCodes.Status200OK, submitted.StatusCode);
+        Assert.Equal("SUBMITTED", submitted.Body.WorkflowStatus);
+        Assert.Equal("NOT_CONNECTED", submitted.Body.AiDependencyStatus);
+        Assert.Equal("NOT_REQUESTED", submitted.Body.AiDispatchOutcome);
+        Assert.False(submitted.Body.AiDispatchRetryable);
+        Assert.Contains(submitted.Body.ComponentDependencies, item => item.Status == "UNAVAILABLE");
+        Assert.Contains("member-1-experience", persisted.ComponentDependenciesJson);
         Assert.Empty(await db.AssessmentProposals.ToListAsync());
-        Assert.Equal(1, await db.OperationsAudit.CountAsync(item => item.Action == "CREATED"));
-        Assert.Equal(0, port.DispatchCalls);
+        Assert.Equal(1, await db.OperationsAudit.CountAsync(item => item.Action == "SUBMITTED"));
     }
 
     [Fact(DisplayName = "COASTAL-ASSESSMENT-010 assessment detail filters evidence by permission and returns ordered decisions")]
@@ -348,9 +358,8 @@ public sealed class AssessmentWorkflowCoverageTests
 
     private static AssessmentApplicationService CreateService(
         CoastalOperationsDbContext db,
-        CountingCollector? collector = null,
-        IAssessmentProposalPort? proposalPort = null) => new(
-        db, new IdempotencyStore(db), proposalPort ?? new ControlledProposalPort(AssessmentAiAvailability.NotConnected), collector ?? new CountingCollector());
+        CountingCollector? collector = null) => new(
+        db, new IdempotencyStore(db), collector ?? new CountingCollector());
 
     private static CreateAssessmentRequest Request() => new()
     {
@@ -439,45 +448,16 @@ public sealed class AssessmentWorkflowCoverageTests
         {
             cancellationToken.ThrowIfCancellationRequested();
             Calls++;
-            IReadOnlyList<ComponentDependencyResult> results = [new(
-                "member-3-coastal-planner", "planner-workflow", "NOT_REQUESTED", 0, 0, false,
-                null, "No workflow supplied.", DateTimeOffset.UtcNow, null)];
+            IReadOnlyList<ComponentDependencyResult> results =
+            [
+                new("member-1-experience", "experience-availability", "UNAVAILABLE", 3, 2, true,
+                    "SERVICE_UNAVAILABLE", "Unavailable after bounded retries.", DateTimeOffset.UtcNow, null),
+                new("member-2-marine-safety", "marine-suitability", "UNAVAILABLE", 3, 2, true,
+                    "SERVICE_UNAVAILABLE", "Unavailable after bounded retries.", DateTimeOffset.UtcNow, null),
+                new("member-3-coastal-planner", "planner-workflow", "NOT_REQUESTED", 0, 0, false,
+                    null, "No workflow supplied.", DateTimeOffset.UtcNow, null)
+            ];
             return Task.FromResult(results);
-        }
-    }
-
-    private sealed class ControlledProposalPort(AssessmentAiAvailability availability, bool hangAvailability = false) : IAssessmentProposalPort
-    {
-        public int AvailabilityCalls { get; private set; }
-        public int DispatchCalls { get; private set; }
-
-        public async Task<AssessmentAiAvailability> GetAvailabilityAsync(CancellationToken cancellationToken)
-        {
-            AvailabilityCalls++;
-            if (hangAvailability) await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
-            return availability;
-        }
-
-        public Task<ProposalDispatchOutcome> DispatchAsync(Guid workflowId, Guid assessmentId, CancellationToken cancellationToken)
-        {
-            DispatchCalls++;
-            return Task.FromResult(new ProposalDispatchOutcome("NOT_STARTED", false));
-        }
-    }
-
-    private sealed class FailingAvailabilityProposalPort(string failureKind) : IAssessmentProposalPort
-    {
-        public int DispatchCalls { get; private set; }
-
-        public Task<AssessmentAiAvailability> GetAvailabilityAsync(CancellationToken cancellationToken) =>
-            failureKind == "http"
-                ? Task.FromException<AssessmentAiAvailability>(new HttpRequestException("synthetic optional dependency failure"))
-                : Task.FromException<AssessmentAiAvailability>(new IOException("synthetic optional dependency failure"));
-
-        public Task<ProposalDispatchOutcome> DispatchAsync(Guid workflowId, Guid assessmentId, CancellationToken cancellationToken)
-        {
-            DispatchCalls++;
-            return Task.FromResult(new ProposalDispatchOutcome("NOT_STARTED", Retryable: false));
         }
     }
 }

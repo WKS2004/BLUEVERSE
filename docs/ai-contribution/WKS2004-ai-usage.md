@@ -1775,3 +1775,109 @@ runtime lacks PyYAML.
 - Summary of what the AI Agent did: Added a permission-aware React workflow and Flutter workflow for assessments, target status/history, advisory drafts and decisions, and evidence upload/read. Connected both clients to the same registered public API workflow, preserved explicit timezone offsets, idempotency/version handling and the pre-G07 no-proposal behavior, used the current G00 producer references provisionally, and registered routes/endpoints in the UI integration and endpoint catalogs. Updated the navigation, contribution test matrix and Flutter image-picker dependency.
 - AI output accepted/changed/rejected: Kept the existing application architecture, UI patterns and DESIGN.md tokens; accepted the current G00 producer UUIDs only as branch-local integration inputs and left shared acceptance marked Pending. Corrected an off-screen tap in the new Flutter widget test after its first run. No proposal, executable agent, internal-service client route or cross-client call was added.
 - Verification/evidence: React production build and ESLint passed; the complete serialized Node test suite passed 167/167 cases. Flutter analysis passed and the complete Flutter suite passed 98/98 cases. Endpoint catalog validation passed with 49 public endpoints and 24 frontend routes; UI integration validation passed for paired routes and declared public API paths; `git diff --check` passed. No commit or push was made.
+
+## 2026-09-28 — Add full CRUD to Member 4 G00 proposal
+
+- Date/time or time range: 2026-09-28 02:08 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and Git
+- AI Model: GPT-6
+- Summary of the user's request: Change the Coastal Operations G00 contract to
+  include full CRUD; the user confirmed the acting account as `WKS2004`.
+- Summary of what the AI Agent did: Updated the Member 4 G00 proposal to define
+  full CRUD for caller-owned assessment drafts and proposed alert drafts,
+  including audited logical deletion, status transitions, version and
+  idempotency rules, and permissions. Clarified that these are proposed
+  contract changes and are not yet implemented on the partial branch.
+- AI output accepted/changed/rejected: Accepted the requested CRUD expansion;
+  limited deletion to drafts to preserve submitted workflow, approval, evidence
+  and audit history. Did not change implementation sources or the live endpoint
+  catalog.
+- Verification/evidence: `git diff --check` passed for the contract change;
+  no tests were run for this documentation-only task. No commit or push was
+  made.
+
+## 2026-09-28 — Implement Coastal Operations draft lifecycles
+
+- Date/time or time range: 2026-09-28 03:05 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, .NET SDK, Python and Git
+- AI Model: GPT-6
+- Summary of the user's request: Re-analyze the updated G00/component docs and
+  patch the Coastal Operations backend service.
+- Summary of what the AI Agent did: Implemented caller-owned assessment draft
+  update/cancel/submit and proposed-alert withdrawal, moved peer collection to
+  assessment submission, preserved bounded dependency-failure behavior and the
+  pre-G07 no-proposal state, added audit tombstones and lifecycle persistence,
+  registered the new permissions through Auth's existing role-permission
+  seeding, added migration and regression coverage, and synchronized the
+  endpoint catalog and affected implementation documentation.
+- AI output accepted/changed/rejected: Applied the revised Member 4 G00
+  proposal as branch-local behavior. Kept global G00 pending and left existing
+  API/Auth flows intact apart from the three required permission registrations.
+  Documented that existing React/Flutter flows do not yet call the new draft
+  lifecycle endpoints.
+- Verification/evidence: Coastal Operations tests passed 255/255 default
+  cases; three opt-in PostgreSQL cases were skipped because
+  `BLUEVERSE_CO_POSTGRES_TEST_CONNECTION` was not set. Auth tests passed
+  79/79. Endpoint catalog validation passed with 53 public endpoints and 24
+  frontend routes. No commit or push was made.
+
+## 2026-09-28 — Align Coastal Operations clients with draft lifecycles
+
+- Date/time or time range: 2026-09-28 07:03–07:05 (Asia/Colombo; approximate)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and Python
+- AI Model: GPT-6
+- Summary of the user's request: Re-analyze the updated Coastal Operations
+  documentation and backend, update both clients for the current setup, remove
+  technical “Canonical” wording, and make the React assessments route easier to
+  scan.
+- Summary of what the AI Agent did: Added React and Flutter requests and
+  permission-gated UI actions for assessment draft editing, submission and
+  cancellation plus proposed-advisory withdrawal. Matched evidence-upload
+  status/version behavior and queue/manager read scopes to the backend. Updated
+  user-facing coastal record copy, made the React assessment and advisory
+  sections roomier, and registered the four added public API operations in the
+  shared UI contract and endpoint catalog.
+- AI output accepted/changed/rejected: Applied the branch-local G00 lifecycle
+  behavior while preserving the existing app shells, public API boundary,
+  shared coastal design tokens, pending global G00 state and pre-G07 behavior
+  without automated proposals. Reworded labels and explanatory copy for
+  visitors and operators.
+- Verification/evidence: Endpoint catalog generation and validation passed
+  (53 public endpoints, 24 frontend routes); UI integration validation passed;
+  git diff --check passed. Test suites were not run for this UI follow-up.
+  No commit or push was made.
+
+## 2026-09-30 — Fix Admin cookie login through the edge proxy
+
+- Date/time or time range: 2026-09-30 04:00–04:06 (Asia/Colombo; approximate)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex and PowerShell
+- AI Model: GPT-6
+- Summary of the user's request: Find and quickly fix the Admin login failure that displayed Auth's generic error.
+- Summary of what the AI Agent did: Compared the Auth JSON login path with the browser-cookie path and increased the edge Nginx upstream response header buffer for `/api/` so the Admin JWT cookie response can pass through.
+- AI output accepted/changed/rejected: Kept Auth login and cookie behavior unchanged; applied only the gateway buffer adjustment.
+- Verification/evidence: Through the available HTTP proxy, the JSON login path returned 200 and its test session was logged out with 204, while the cookie login path returned 500. Docker Desktop reported no running containers, so the changed Nginx configuration could not be reloaded in a live stack. `git diff --check -- infrastructure/docker/edge-nginx/nginx.conf` reported no whitespace errors. No test suite or Nginx config test was run, and no commit or push was made.
+
+## 2026-09-30 — Correct edge proxy buffer configuration
+
+- Date/time or time range: 2026-09-30 04:35–04:43 (Asia/Colombo; approximate)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and Docker Desktop
+- AI Model: GPT-6
+- Summary of the user's request: Diagnose and fix `ERR_CONNECTION_REFUSED` after the Admin cookie-login proxy change.
+- Summary of what the AI Agent did: Corrected the earlier no-container reading after locating the Docker CLI. Docker logs showed Nginx restart failures because the first `proxy_buffer_size` change left the related buffers inconsistent. Set `proxy_buffers` to `8 16k` and `proxy_busy_buffers_size` to `32k` alongside the `16k` header buffer.
+- AI output accepted/changed/rejected: Corrected the incomplete earlier proxy adjustment; left Auth and API code unchanged.
+- Verification/evidence: Docker reported the edge container running with 14 restarts before the correction and port 80 published. `docker compose config --quiet` and `nginx -t` passed after the correction. Direct `/`, `/health`, `/api/health` and `/api/auth/health` requests returned 200. Admin cookie login and `/api/auth/me` returned 200; logout cleanup returned 204. The catalog validator passed (53 public endpoints, 24 frontend routes), and `git diff --check` reported no whitespace errors. No test suite was run; no commit or push was made.

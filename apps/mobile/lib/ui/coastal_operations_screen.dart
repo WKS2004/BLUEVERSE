@@ -38,10 +38,6 @@ String _humanize(String value) => value
     )
     .join(' ');
 
-String _shortId(String value) => value.length > 14
-    ? '${value.substring(0, 8)}…${value.substring(value.length - 4)}'
-    : value;
-
 String _formatDate(String value) {
   final date = DateTime.tryParse(value)?.toLocal();
   if (date == null) return 'Time not available';
@@ -123,12 +119,18 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
       widget.viewModel.user?.permissions ?? const [];
 
   bool get _canReadAssessments =>
-      _has(_permissions, CoastalOperationsPermissions.assessmentRead);
+      _has(_permissions, CoastalOperationsPermissions.assessmentRead) ||
+      _has(_permissions, CoastalOperationsPermissions.assessmentQueueRead);
   bool get _canReadQueue =>
-      _canReadAssessments &&
       _has(_permissions, CoastalOperationsPermissions.assessmentQueueRead);
   bool get _canCreateAssessment =>
       _has(_permissions, CoastalOperationsPermissions.assessmentCreate);
+  bool get _canUpdateAssessment =>
+      _has(_permissions, CoastalOperationsPermissions.assessmentUpdate);
+  bool get _canDeleteAssessment =>
+      _has(_permissions, CoastalOperationsPermissions.assessmentDelete);
+  bool get _canSubmitAssessment =>
+      _has(_permissions, CoastalOperationsPermissions.assessmentSubmit);
   bool get _canDecideAssessment =>
       _has(_permissions, CoastalOperationsPermissions.assessmentDecide);
   bool get _canUploadEvidence =>
@@ -140,7 +142,8 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
   bool get _canReadHistory =>
       _has(_permissions, CoastalOperationsPermissions.targetHistoryRead);
   bool get _canReadAlerts =>
-      _has(_permissions, CoastalOperationsPermissions.alertRead);
+      _has(_permissions, CoastalOperationsPermissions.alertRead) ||
+      _has(_permissions, CoastalOperationsPermissions.alertManage);
   bool get _canManageAlerts =>
       _has(_permissions, CoastalOperationsPermissions.alertManage);
   bool get _canDecideAlerts =>
@@ -282,6 +285,9 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
 
   Future<void> _refreshDetail(String assessmentId) async {
     _details.remove(assessmentId);
+    _statusByAssessment.remove(assessmentId);
+    _historyByAssessment.remove(assessmentId);
+    _detailErrors.remove(assessmentId);
     await _loadDetail(
       _assessments.firstWhere(
         (assessment) => assessment.assessmentId == assessmentId,
@@ -289,17 +295,135 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
     );
   }
 
-  Future<void> _openAssessmentForm() async {
+  Future<void> _openAssessmentForm({CoastalAssessment? existing}) async {
     final created = await showDialog<CoastalAssessment>(
       context: context,
-      builder: (_) => _AssessmentFormDialog(apiService: widget.apiService),
+      builder: (_) => _AssessmentFormDialog(
+        apiService: widget.apiService,
+        existing: existing,
+      ),
     );
     if (created == null || !mounted) return;
     setState(() {
-      _notice = 'The assessment was recorded. Its linked coastal context is ready to review.';
+      _notice = existing == null
+          ? 'Assessment draft saved. Submit it when you are ready to check coastal context.'
+          : 'Assessment draft updated.';
       _noticeIsError = false;
     });
     await _loadData();
+    if (existing != null) {
+      _details.remove(existing.assessmentId);
+      await _refreshDetail(existing.assessmentId);
+    }
+  }
+
+  Future<void> _handleAssessmentDraftAction(
+    CoastalAssessment assessment, {
+    required bool submit,
+  }) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(submit ? 'Submit this assessment?' : 'Cancel this draft?'),
+        content: Text(
+          submit
+              ? 'Submitting closes draft editing and checks the latest coastal context. No automated recommendation or operational change will be created.'
+              : 'This draft will be cancelled and retained in the audit history for authorized reviewers.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Keep draft'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(submit ? 'Submit assessment' : 'Confirm cancellation'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    setState(() => _busy = true);
+    try {
+      await blueverseLoadingScreenController.track(() {
+        if (submit) {
+          return widget.apiService.submitAssessmentDraft(
+            assessmentId: assessment.assessmentId,
+            expectedVersion: assessment.version,
+          );
+        }
+        return widget.apiService.cancelAssessmentDraft(
+          assessmentId: assessment.assessmentId,
+          expectedVersion: assessment.version,
+        );
+      });
+      if (!mounted) return;
+      setState(() {
+        _notice = submit
+            ? 'The assessment was submitted. No automated proposal was created.'
+            : 'The assessment draft was cancelled and retained in the audit history for authorized reviewers.';
+        _noticeIsError = false;
+      });
+      await _loadData();
+      if (submit) {
+        await _refreshDetail(assessment.assessmentId);
+      } else {
+        _details.remove(assessment.assessmentId);
+        _statusByAssessment.remove(assessment.assessmentId);
+        _historyByAssessment.remove(assessment.assessmentId);
+        _detailErrors.remove(assessment.assessmentId);
+      }
+    } on CoastalOperationsApiException catch (error) {
+      _setNotice(error.message, error: true);
+    } on Object {
+      _setNotice('We could not update this assessment. Refresh and retry.', error: true);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _withdrawAlertDraft(CoastalAlert alert) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Withdraw this draft?'),
+        content: Text(
+          '“${alert.title}” will be marked withdrawn and kept in the advisory history for managers.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Keep draft'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Withdraw draft'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    setState(() => _busy = true);
+    try {
+      await blueverseLoadingScreenController.track(
+        () => widget.apiService.withdrawAlertDraft(
+          alertId: alert.alertId,
+          expectedVersion: alert.version,
+        ),
+      );
+      if (!mounted) return;
+      _setNotice(
+        '“${alert.title}” was withdrawn. Its history remains available to advisory managers.',
+        error: false,
+      );
+      await _loadData();
+    } on CoastalOperationsApiException catch (error) {
+      _setNotice(error.message, error: true);
+    } on Object {
+      _setNotice('We could not withdraw this draft. Refresh and retry.', error: true);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _openAlertForm({CoastalAlert? existing}) async {
@@ -408,7 +532,7 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
         return;
       }
       setState(() => _busy = true);
-      await blueverseLoadingScreenController.track(
+      final uploaded = await blueverseLoadingScreenController.track(
         () => widget.apiService.uploadAssessmentEvidence(
           assessmentId: assessment.assessmentId,
           fileName: picked.name,
@@ -417,6 +541,13 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
       );
       if (!mounted) return;
       setState(() {
+        _assessments = _assessments
+            .map(
+              (item) => item.assessmentId == assessment.assessmentId
+                  ? item.copyWith(version: uploaded.assessmentVersion)
+                  : item,
+            )
+            .toList(growable: false);
         _notice = 'Evidence was added to the assessment.';
         _noticeIsError = false;
       });
@@ -537,7 +668,7 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '${_humanize(assessment.targetType)} · ${_shortId(assessment.targetId)}',
+                _humanize(assessment.targetType),
               ),
               const SizedBox(height: 6),
               _StatusPill(value: assessment.workflowStatus),
@@ -562,27 +693,72 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
               ),
             ),
             const SizedBox(height: 14),
-            _InfoSurface(
-              title: 'Automated operations support',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(_humanize(detail.assessment.aiDependencyStatus)),
-                  const SizedBox(height: 4),
-                  Text(_humanize(detail.assessment.aiDispatchOutcome)),
-                ],
+            if (detail.assessment.workflowStatus == 'DRAFT') ...[
+              _InfoSurface(
+                title: 'Draft assessment',
+                child: Text(
+                  'Coastal context is checked after you submit this draft.',
+                ),
               ),
-            ),
-            if (detail.assessment.aiDependencyStatus == 'NOT_CONNECTED') ...[
-              const SizedBox(height: 12),
-              const _NoticeBox(
-                text: 'Automated operations support is not connected yet. This assessment is saved without an automated proposal, so no operational change has been suggested or applied.',
+              if (_canUpdateAssessment ||
+                  _canSubmitAssessment ||
+                  _canDeleteAssessment) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    if (_canUpdateAssessment)
+                      OutlinedButton(
+                        onPressed: _busy
+                            ? null
+                            : () => _openAssessmentForm(
+                                existing: detail.assessment,
+                              ),
+                        child: const Text('Edit draft'),
+                      ),
+                    if (_canSubmitAssessment)
+                      FilledButton.tonal(
+                        onPressed: _busy
+                            ? null
+                            : () => _handleAssessmentDraftAction(
+                                detail.assessment,
+                                submit: true,
+                              ),
+                        child: const Text('Submit for review'),
+                      ),
+                    if (_canDeleteAssessment)
+                      TextButton(
+                        onPressed: _busy
+                            ? null
+                            : () => _handleAssessmentDraftAction(
+                                detail.assessment,
+                                submit: false,
+                              ),
+                        child: const Text('Cancel draft'),
+                      ),
+                  ],
+                ),
+              ],
+            ],
+            if (detail.assessment.workflowStatus != 'DRAFT') ...[
+              _InfoSurface(
+                title: 'Coastal context',
+                child: Text(_humanize(detail.assessment.aiDependencyStatus)),
               ),
             ],
-            if (detail.assessment.aiDependencyStatus == 'UNAVAILABLE') ...[
+            if (detail.assessment.workflowStatus != 'DRAFT' &&
+                detail.assessment.aiDependencyStatus == 'NOT_CONNECTED') ...[
               const SizedBox(height: 12),
               const _NoticeBox(
-                text: 'Automated operations support is temporarily unavailable. The assessment remains recorded; retry when the service is available.',
+                text: 'Coastal context was recorded, but automated proposals are not available yet. No operational change has been suggested or applied.',
+              ),
+            ],
+            if (detail.assessment.workflowStatus != 'DRAFT' &&
+                detail.assessment.aiDependencyStatus == 'UNAVAILABLE') ...[
+              const SizedBox(height: 12),
+              const _NoticeBox(
+                text: 'Coastal context could not be fully checked right now. The assessment remains submitted; refresh later to see the latest information.',
               ),
             ],
             if (detail.assessment.componentDependencies.isNotEmpty) ...[
@@ -610,7 +786,8 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                 ),
               ),
             ],
-            if (_canDecideAssessment) ...[
+            if (_canDecideAssessment &&
+                detail.assessment.workflowStatus != 'DRAFT') ...[
               const SizedBox(height: 10),
               const _NoticeBox(
                 text: 'Reviewer decisions will be available when this assessment contains a validated proposal. There is no proposal to approve or apply yet.',
@@ -644,7 +821,10 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
                   ),
-                  if (_canUploadEvidence && detail.evidence.length < 5)
+                  if (_canUploadEvidence &&
+                      const ['DRAFT', 'SUBMITTED', 'REVISION_REQUESTED']
+                          .contains(assessment.workflowStatus) &&
+                      detail.evidence.length < 5)
                     TextButton.icon(
                       onPressed: _busy
                           ? null
@@ -697,7 +877,7 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                   contentPadding: EdgeInsets.zero,
                   title: Text(_humanize(status.operationalState)),
                   subtitle: Text(
-                    'Updated ${_formatDate(status.updatedAt)} · version ${status.stateVersion}',
+                    'Updated ${_formatDate(status.updatedAt)}',
                   ),
                   leading: const Icon(Icons.waves_outlined),
                 ),
@@ -727,6 +907,7 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
 
   Widget _alertCard(CoastalAlert alert) {
     final canEdit = _canManageAlerts && alert.lifecycle == 'PROPOSED';
+    final canWithdraw = _canManageAlerts && alert.lifecycle == 'PROPOSED';
     final canPublish = _canDecideAlerts && alert.lifecycle == 'PROPOSED';
     final canResolve = _canDecideAlerts && alert.lifecycle == 'ACTIVE';
     return Card(
@@ -743,7 +924,7 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${_humanize(alert.targetType)} · ${_shortId(alert.targetId)}',
+                        _humanize(alert.targetType),
                         style: Theme.of(context).textTheme.labelSmall,
                       ),
                       const SizedBox(height: 6),
@@ -781,7 +962,7 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
               'Valid ${_formatDate(alert.validFrom)} – ${_formatDate(alert.validUntil)}',
               style: Theme.of(context).textTheme.bodySmall,
             ),
-            if (canEdit || canPublish || canResolve) ...[
+            if (canEdit || canWithdraw || canPublish || canResolve) ...[
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -791,6 +972,13 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                     TextButton(
                       onPressed: () => _openAlertForm(existing: alert),
                       child: const Text('Edit draft'),
+                    ),
+                  if (canWithdraw)
+                    OutlinedButton(
+                      onPressed: _busy
+                          ? null
+                          : () => _withdrawAlertDraft(alert),
+                      child: const Text('Withdraw draft'),
                     ),
                   if (canPublish)
                     FilledButton.tonal(
@@ -853,7 +1041,7 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
     return RefreshIndicator(
       onRefresh: _loadData,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 18, 18, 32),
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
         children: [
           Center(
             child: ConstrainedBox(
@@ -866,14 +1054,14 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                     const SizedBox(height: 14),
                     _NoticeBox(text: _notice!, error: _noticeIsError),
                   ],
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 30),
                   Text(
-                    'Today’s coastal reviews',
+                    'Assessments and advisories',
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 6),
                   const Text(
-                    'Your permissions determine which assessments, evidence and advisories appear here.',
+                    'Review coastal assessments, follow important context, and share updates with the right people.',
                     style: TextStyle(height: 1.45),
                   ),
                   const SizedBox(height: 14),
@@ -907,17 +1095,11 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                       child: _StatusPill(value: 'REVIEW QUEUE'),
                     ),
                   ],
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
                   _sectionHeading(
                     context,
                     'Assessments',
                     'A clear record of each review',
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 10),
-                    child: Text(
-                      'Showing up to 100 assessments in your permission scope.',
-                    ),
                   ),
                   if (!_canReadAssessments)
                     const _InfoSurface(
@@ -934,24 +1116,18 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                     const _InfoSurface(
                       title: 'No assessments to show yet',
                       child: Text(
-                        'When an assessment is recorded for your account or review queue, it will appear here.',
+                        'Saved drafts and submitted reviews will appear here.',
                       ),
                     )
                   else ...[
                     for (final assessment in _assessments)
                       _assessmentCard(assessment),
                   ],
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
                   _sectionHeading(
                     context,
                     'Advisories',
                     'Useful updates for the coast',
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 10),
-                    child: Text(
-                      'Showing up to 100 advisories available to your account.',
-                    ),
                   ),
                   if (!_canReadAlerts)
                     const _InfoSurface(
@@ -975,7 +1151,7 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                     for (final alert in _alerts) _alertCard(alert),
                   ],
                   if (_canReadStatus || _canReadHistory) ...[
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
                     _targetLookup(context),
                   ],
                 ],
@@ -1045,7 +1221,7 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Record a review and prepare clear advisories for the right people.',
+                      'Save an assessment draft and prepare clear advisories for the right people.',
                       style: TextStyle(color: Colors.white, height: 1.35),
                     ),
                   ],
@@ -1086,7 +1262,7 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
-            'Enter a canonical experience ID to see current operational status and recorded history.',
+            'Use the ID shown in the destination, activity, offering, or session details to see its status and history.',
           ),
           const SizedBox(height: 14),
           DropdownButtonFormField<String>(
@@ -1107,9 +1283,14 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
           const SizedBox(height: 12),
           TextFormField(
             controller: _lookupIdController,
-            decoration: const InputDecoration(labelText: 'Canonical record ID'),
+            decoration: const InputDecoration(
+              labelText: 'Coastal record ID',
+              hintText: 'Paste the ID from the coastal record details',
+            ),
             validator: (value) =>
-                _validUuid(value ?? '') ? null : 'Enter a valid UUID.',
+                _validUuid(value ?? '')
+                ? null
+                : 'Check the coastal record ID and try again.',
           ),
           const SizedBox(height: 12),
           FilledButton.tonal(
@@ -1127,7 +1308,7 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
               leading: const Icon(Icons.waves_outlined),
               title: Text(_humanize(_lookupStatus!.operationalState)),
               subtitle: Text(
-                'Updated ${_formatDate(_lookupStatus!.updatedAt)} · version ${_lookupStatus!.stateVersion}',
+                'Updated ${_formatDate(_lookupStatus!.updatedAt)}',
               ),
             ),
           ],
@@ -1153,9 +1334,10 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
 }
 
 class _AssessmentFormDialog extends StatefulWidget {
-  const _AssessmentFormDialog({required this.apiService});
+  const _AssessmentFormDialog({required this.apiService, this.existing});
 
   final CoastalOperationsApiService apiService;
+  final CoastalAssessment? existing;
 
   @override
   State<_AssessmentFormDialog> createState() => _AssessmentFormDialogState();
@@ -1171,6 +1353,18 @@ class _AssessmentFormDialogState extends State<_AssessmentFormDialog> {
   String _targetType = 'DESTINATION';
   String? _error;
   bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final existing = widget.existing;
+    _targetId.text = existing?.targetId ?? '';
+    _sourceWorkflowId.text = existing?.sourceWorkflowId ?? '';
+    _startsAt.text = existing?.periodStartsAt ?? '';
+    _endsAt.text = existing?.periodEndsAt ?? '';
+    _objective.text = existing?.objective ?? '';
+    _targetType = existing?.targetType ?? 'DESTINATION';
+  }
 
   @override
   void dispose() {
@@ -1195,18 +1389,32 @@ class _AssessmentFormDialogState extends State<_AssessmentFormDialog> {
       _error = null;
     });
     try {
-      final assessment = await blueverseLoadingScreenController.track(
-        () => widget.apiService.createAssessment(
+      final existing = widget.existing;
+      final assessment = await blueverseLoadingScreenController.track(() {
+        final sourceWorkflowId = _sourceWorkflowId.text.trim().isEmpty
+            ? null
+            : _sourceWorkflowId.text.trim();
+        if (existing != null) {
+          return widget.apiService.updateAssessmentDraft(
+            assessmentId: existing.assessmentId,
+            expectedVersion: existing.version,
+            targetType: _targetType,
+            targetId: _targetId.text.trim(),
+            sourceWorkflowId: sourceWorkflowId,
+            periodStartsAt: _startsAt.text.trim(),
+            periodEndsAt: _endsAt.text.trim(),
+            objective: _objective.text.trim(),
+          );
+        }
+        return widget.apiService.createAssessment(
           targetType: _targetType,
           targetId: _targetId.text.trim(),
-          sourceWorkflowId: _sourceWorkflowId.text.trim().isEmpty
-              ? null
-              : _sourceWorkflowId.text.trim(),
+          sourceWorkflowId: sourceWorkflowId,
           periodStartsAt: _startsAt.text.trim(),
           periodEndsAt: _endsAt.text.trim(),
           objective: _objective.text.trim(),
-        ),
-      );
+        );
+      });
       if (mounted) Navigator.pop(context, assessment);
     } on CoastalOperationsApiException catch (error) {
       if (mounted) setState(() => _error = error.message);
@@ -1217,7 +1425,11 @@ class _AssessmentFormDialogState extends State<_AssessmentFormDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Record an operations review'),
+    title: Text(
+      widget.existing == null
+          ? 'Start an operations assessment'
+          : 'Update your assessment draft',
+    ),
     content: SizedBox(
       width: 480,
       child: Form(
@@ -1227,8 +1439,10 @@ class _AssessmentFormDialogState extends State<_AssessmentFormDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'Use the canonical experience ID so the review stays connected to the right coastal record.',
+              Text(
+                widget.existing == null
+                    ? 'Save a draft now. When it is ready, submit it to check the latest coastal context.'
+                    : 'Update the details while this assessment is still a draft.',
               ),
               const SizedBox(height: 14),
               DropdownButtonFormField<String>(
@@ -1252,21 +1466,27 @@ class _AssessmentFormDialogState extends State<_AssessmentFormDialog> {
               TextFormField(
                 controller: _targetId,
                 decoration: const InputDecoration(
-                  labelText: 'Canonical record ID',
+                  labelText: 'Coastal record ID',
+                  hintText:
+                      'ID from the destination, activity, offering, or session details',
                 ),
-                validator: (value) =>
-                    _validUuid(value ?? '') ? null : 'Enter a valid UUID.',
+                validator: (value) => _validUuid(value ?? '')
+                    ? null
+                    : 'Check the coastal record ID and try again.',
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _sourceWorkflowId,
                 decoration: const InputDecoration(
-                  labelText: 'Planning workflow ID (optional)',
+                  labelText: 'Related coastal plan ID (optional)',
+                  hintText: 'ID from the related itinerary or plan',
                 ),
                 validator: (value) =>
-                    value == null || value.trim().isEmpty || _validUuid(value)
+                    value == null ||
+                    value.trim().isEmpty ||
+                    _validUuid(value)
                     ? null
-                    : 'Enter a valid UUID.',
+                    : 'Check the related coastal plan ID and try again.',
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -1320,7 +1540,13 @@ class _AssessmentFormDialogState extends State<_AssessmentFormDialog> {
       ),
       FilledButton(
         onPressed: _saving ? null : _save,
-        child: Text(_saving ? 'Recording…' : 'Record assessment'),
+        child: Text(
+          _saving
+              ? 'Saving…'
+              : widget.existing == null
+              ? 'Save draft'
+              : 'Update draft',
+        ),
       ),
     ],
   );
@@ -1467,10 +1693,13 @@ class _AlertFormDialogState extends State<_AlertFormDialog> {
                 TextFormField(
                   controller: _targetId,
                   decoration: const InputDecoration(
-                    labelText: 'Canonical record ID',
+                    labelText: 'Coastal record ID',
+                    hintText:
+                        'ID from the destination, activity, offering, or session details',
                   ),
-                  validator: (value) =>
-                      _validUuid(value ?? '') ? null : 'Enter a valid UUID.',
+                  validator: (value) => _validUuid(value ?? '')
+                      ? null
+                      : 'Check the coastal record ID and try again.',
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
@@ -1479,9 +1708,11 @@ class _AlertFormDialogState extends State<_AlertFormDialog> {
                     labelText: 'Related assessment ID (optional)',
                   ),
                   validator: (value) =>
-                      value == null || value.trim().isEmpty || _validUuid(value)
+                      value == null ||
+                      value.trim().isEmpty ||
+                      _validUuid(value)
                       ? null
-                      : 'Enter a valid UUID.',
+                      : 'Check the related assessment ID and try again.',
                 ),
                 const SizedBox(height: 12),
               ],

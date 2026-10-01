@@ -32,6 +32,11 @@ public sealed class AlertDecisionRequest
     [Range(1, int.MaxValue)] public int ExpectedVersion { get; init; }
 }
 
+public sealed class WithdrawAlertDraftRequest
+{
+    [Range(1, int.MaxValue)] public int ExpectedVersion { get; init; }
+}
+
 public sealed class AlertListQuery
 {
     [MaxLength(256)] public string? Cursor { get; init; }
@@ -54,7 +59,9 @@ public sealed record AlertResponse(
     DateTimeOffset ValidUntil,
     int Version,
     DateTimeOffset CreatedAt,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    Guid? WithdrawnBy = null,
+    DateTimeOffset? WithdrawnAt = null);
 
 public sealed record AlertQueueResponse(IReadOnlyList<AlertResponse> Items, string? NextCursor);
 

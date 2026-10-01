@@ -17,16 +17,22 @@ The current context defines these tables in `coastal_operations`:
 
 | Table | Purpose and integrity controls |
 |---|---|
-| `Assessments` | Business assessment/workflow, target reference, period, AI dependency outcome, bounded JSONB snapshots of optional Member 1–3 dependency results, initiator and optimistic version; unique workflow ID and status/period/version constraints. |
+| `Assessments` | Caller-owned business assessment/workflow, starting in `DRAFT`, target reference, period, AI dependency outcome, bounded JSONB snapshots of optional Member 1–3 results collected on submission, initiator and optimistic version; nullable cancellation actor/time tombstone; unique workflow ID and status/period/version/lifecycle constraints. |
 | `AssessmentProposals` | Versioned proposal references and validity; unique assessment/version and a maximum 30-minute validity constraint. |
 | `AssessmentEvidence` | Private image metadata, immutable assessment version, uploader, SHA-256, inspection state and 365-day expiry; content bytes live in the private evidence volume. |
 | `ReviewerDecisions` | Human decision for a proposal version; unique proposal/version. |
 | `TargetOperationalStates` | Member 4-owned state and optimistic version by target type/ID; unique target reference and state constraints. |
 | `OperationalHistory` | Target state transitions with assessment/proposal/decision references and correlation ID. |
-| `OperationalAlerts` | Draft and published alert content, target, severity, `PUBLIC`/`OPERATIONS` visibility, lifecycle, effective period and optimistic version. |
+| `OperationalAlerts` | Draft and published alert content, target, severity, `PUBLIC`/`OPERATIONS` visibility, lifecycle, effective period and optimistic version; proposed drafts can be logically withdrawn with actor/time tombstone fields. |
 | `AlertDecisions` | Audited publish/resolve/expire decisions. |
 | `IdempotencyRecords` | Actor/operation/key-scoped request digest and original response; unique scope. |
 | `OperationsAudit` | Resource/action/actor/correlation and timestamp audit records. |
+
+Migration `20260927211833_CoastalOperationsDraftLifecycles` adds the
+assessment `DRAFT`/`CANCELLED` lifecycle constraints and cancellation
+tombstone, the alert `WITHDRAWN` lifecycle and tombstone, and expands the
+idempotency operation-key column to 64 characters for per-assessment draft
+operations.
 
 The dependency snapshots retain source, endpoint outcome, attempt/retry
 counts, checked time and validated evidence fields. They do not make peer

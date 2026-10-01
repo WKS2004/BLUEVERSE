@@ -43,6 +43,25 @@ public sealed class AlertsController(AlertApplicationService alerts) : Controlle
         CancellationToken cancellationToken) =>
         Ok(await alerts.UpdateDraftAsync(alertId, request, AuthenticatedActor.GetId(User), CorrelationId(), cancellationToken));
 
+    [HttpDelete("{alertId:guid}")]
+    [HasPermission(PermissionCodes.OperationsAlertManage)]
+    [ProducesResponseType(typeof(AlertResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> WithdrawDraft(
+        Guid alertId,
+        [FromBody] WithdrawAlertDraftRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await alerts.WithdrawDraftAsync(
+            alertId, request, AuthenticatedActor.GetId(User), CorrelationId(),
+            Request.Headers["Idempotency-Key"].ToString(), cancellationToken);
+        return new ContentResult
+        {
+            StatusCode = result.StatusCode,
+            ContentType = "application/json; charset=utf-8",
+            Content = result.SerializedBody
+        };
+    }
+
     [HttpPost("{alertId:guid}/decisions")]
     [HasPermission(PermissionCodes.OperationsAlertDecide)]
     [ProducesResponseType(typeof(AlertDecisionResponse), StatusCodes.Status200OK)]

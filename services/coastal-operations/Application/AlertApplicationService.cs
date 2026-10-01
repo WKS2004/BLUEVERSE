@@ -78,9 +78,15 @@ public sealed class AlertApplicationService(CoastalOperationsDbContext db, Idemp
         if (!string.IsNullOrWhiteSpace(query.Lifecycle))
         {
             var lifecycle = query.Lifecycle.Trim().ToUpperInvariant();
-            if (lifecycle is not ("PROPOSED" or "ACTIVE" or "RESOLVED" or "EXPIRED" or "SUPERSEDED"))
+            if (lifecycle is not ("PROPOSED" or "ACTIVE" or "RESOLVED" or "EXPIRED" or "SUPERSEDED" or "WITHDRAWN"))
                 throw Invalid("alert_lifecycle_invalid", "Alert lifecycle is invalid", "Use a documented alert lifecycle value.");
+            if (lifecycle == "WITHDRAWN" && !canManage)
+                throw new CoastalOperationsException(StatusCodes.Status403Forbidden, "alert_audit_forbidden", "Alert audit access is required", "Only an authorized alert manager can inspect withdrawn draft tombstones.");
             alerts = alerts.Where(x => x.Lifecycle == lifecycle);
+        }
+        else
+        {
+            alerts = alerts.Where(x => x.Lifecycle != "WITHDRAWN");
         }
         if (query.TargetId is Guid targetId) alerts = alerts.Where(x => x.TargetId == targetId);
         if (cursorId != Guid.Empty) alerts = alerts.Where(x => x.Id.CompareTo(cursorId) < 0);
@@ -103,6 +109,8 @@ public sealed class AlertApplicationService(CoastalOperationsDbContext db, Idemp
         EnsureActor(actorId);
         var alert = await db.OperationalAlerts.SingleOrDefaultAsync(x => x.Id == alertId, cancellationToken)
             ?? throw NotFound("alert_not_found", "Alert not found", "The alert does not exist.");
+        if (alert.CreatedBy != actorId)
+            throw NotFound("alert_not_found", "Alert not found", "The alert does not exist or is outside the caller's scope.");
         if (alert.Lifecycle != "PROPOSED")
             throw Conflict("alert_not_draft", "The alert is not a draft", "Published alert content cannot be edited; create a replacement draft.");
         if (alert.Version != request.ExpectedVersion)
@@ -135,6 +143,55 @@ public sealed class AlertApplicationService(CoastalOperationsDbContext db, Idemp
         }
 
         return ToResponse(alert, now);
+    }
+
+    public async Task<StoredOutcome<AlertResponse>> WithdrawDraftAsync(
+        Guid alertId,
+        WithdrawAlertDraftRequest request,
+        Guid actorId,
+        string correlationId,
+        string? idempotencyKey,
+        CancellationToken cancellationToken)
+    {
+        EnsureActor(actorId);
+        if (request.ExpectedVersion <= 0)
+            throw Invalid("alert_version_invalid", "Alert version is invalid", "Provide a positive expected alert version.");
+        var key = OperationsValidation.ValidateIdempotencyKey(idempotencyKey);
+        var operation = $"alert.withdraw:{alertId:N}";
+        var digest = OperationsValidation.RequestDigest(request);
+        var replay = await idempotencyStore.TryReplayAsync<AlertResponse>(actorId, operation, key, digest, cancellationToken);
+        if (replay is not null) return replay;
+
+        var alert = await db.OperationalAlerts.SingleOrDefaultAsync(x => x.Id == alertId, cancellationToken);
+        if (alert is null || alert.CreatedBy != actorId)
+            throw NotFound("alert_not_found", "Alert not found", "The alert does not exist or is outside the caller's scope.");
+        if (alert.Lifecycle != "PROPOSED")
+            throw Conflict("alert_not_withdrawable", "The alert draft is closed", "Only an owned PROPOSED alert draft can be withdrawn.");
+        if (alert.Version != request.ExpectedVersion)
+            throw Conflict("alert_version_stale", "The alert draft changed", "Reload the draft and submit the latest version.");
+
+        var now = DateTimeOffset.UtcNow;
+        alert.Lifecycle = "WITHDRAWN";
+        alert.WithdrawnBy = actorId;
+        alert.WithdrawnAt = now;
+        alert.UpdatedBy = actorId;
+        alert.UpdatedAt = now;
+        alert.Version++;
+        db.OperationsAudit.Add(Audit(alert.Id, "DRAFT_WITHDRAWN", actorId, correlationId, now));
+        try
+        {
+            var response = ToResponse(alert, now);
+            return await idempotencyStore.SaveAsync(
+                actorId, operation, key, digest, StatusCodes.Status200OK, response, cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw Conflict("alert_version_stale", "The alert draft changed", "A concurrent alert update was recorded first.");
+        }
+        catch (DbUpdateException exception) when (exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            throw Conflict("alert_withdrawal_conflict", "The alert draft changed", "A concurrent alert update was recorded first.");
+        }
     }
 
     public async Task<StoredOutcome<AlertDecisionResponse>> DecideAsync(
@@ -230,7 +287,7 @@ public sealed class AlertApplicationService(CoastalOperationsDbContext db, Idemp
         var lifecycle = alert.Lifecycle == "ACTIVE" && alert.ValidUntil <= now ? "EXPIRED" : alert.Lifecycle;
         return new AlertResponse(alert.Id, alert.TargetType, alert.TargetId, alert.AssessmentId,
             alert.Title, alert.Description, alert.Severity, alert.Visibility, lifecycle, alert.ValidFrom,
-            alert.ValidUntil, alert.Version, alert.CreatedAt, alert.UpdatedAt);
+            alert.ValidUntil, alert.Version, alert.CreatedAt, alert.UpdatedAt, alert.WithdrawnBy, alert.WithdrawnAt);
     }
 
     private static OperationsAuditEntry Audit(Guid alertId, string action, Guid actorId, string correlationId, DateTimeOffset now) => new()

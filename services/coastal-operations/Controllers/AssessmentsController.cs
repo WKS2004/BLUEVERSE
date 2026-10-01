@@ -28,6 +28,44 @@ public sealed class AssessmentsController(AssessmentApplicationService assessmen
         return StoredResponse(result);
     }
 
+    [HttpPatch("{assessmentId:guid}")]
+    [HasPermission(PermissionCodes.OperationsAssessmentUpdate)]
+    [ProducesResponseType(typeof(AssessmentResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<AssessmentResponse>> UpdateDraft(
+        Guid assessmentId,
+        [FromBody] UpdateAssessmentDraftRequest request,
+        CancellationToken cancellationToken) =>
+        Ok(await assessments.UpdateDraftAsync(
+            assessmentId, request, AuthenticatedActor.GetId(User), CorrelationId(), cancellationToken));
+
+    [HttpDelete("{assessmentId:guid}")]
+    [HasPermission(PermissionCodes.OperationsAssessmentDelete)]
+    [ProducesResponseType(typeof(AssessmentResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> CancelDraft(
+        Guid assessmentId,
+        [FromBody] CancelAssessmentDraftRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await assessments.CancelDraftAsync(
+            assessmentId, request, AuthenticatedActor.GetId(User), CorrelationId(),
+            Request.Headers["Idempotency-Key"].ToString(), cancellationToken);
+        return StoredResponse(result);
+    }
+
+    [HttpPost("{assessmentId:guid}/submit")]
+    [HasPermission(PermissionCodes.OperationsAssessmentSubmit)]
+    [ProducesResponseType(typeof(AssessmentResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> SubmitDraft(
+        Guid assessmentId,
+        [FromBody] SubmitAssessmentDraftRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await assessments.SubmitDraftAsync(
+            assessmentId, request, AuthenticatedActor.GetId(User), CorrelationId(),
+            Request.Headers["Idempotency-Key"].ToString(), cancellationToken);
+        return StoredResponse(result);
+    }
+
     [HttpGet]
     [HasPermission(PermissionCodes.OperationsAssessmentRead)]
     [ProducesResponseType(typeof(AssessmentQueueResponse), StatusCodes.Status200OK)]

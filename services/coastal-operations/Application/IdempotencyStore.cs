@@ -58,6 +58,7 @@ public sealed class IdempotencyStore(CoastalOperationsDbContext db)
         }
         catch (DbUpdateConcurrencyException)
         {
+            if (db.Database.CurrentTransaction is not null) throw;
             db.ChangeTracker.Clear();
             var existing = await db.IdempotencyRecords.AsNoTracking().SingleOrDefaultAsync(
                 x => x.ActorId == actorId && x.Operation == operation && x.Key == key,
@@ -71,6 +72,7 @@ public sealed class IdempotencyStore(CoastalOperationsDbContext db)
         }
         catch (DbUpdateException exception) when (IsUniqueViolation(exception))
         {
+            if (db.Database.CurrentTransaction is not null) throw;
             db.ChangeTracker.Clear();
             var existing = await db.IdempotencyRecords.AsNoTracking().SingleOrDefaultAsync(
                 x => x.ActorId == actorId && x.Operation == operation && x.Key == key,

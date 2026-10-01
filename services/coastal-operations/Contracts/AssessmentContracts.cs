@@ -12,6 +12,27 @@ public sealed class CreateAssessmentRequest
     [Required, MaxLength(2000)] public string Objective { get; init; } = string.Empty;
 }
 
+public sealed class UpdateAssessmentDraftRequest
+{
+    [Range(1, int.MaxValue)] public int ExpectedVersion { get; init; }
+    [Required, MaxLength(32)] public string TargetType { get; init; } = string.Empty;
+    public Guid TargetId { get; init; }
+    public Guid? SourceWorkflowId { get; init; }
+    [Required, MaxLength(64)] public string PeriodStartsAt { get; init; } = string.Empty;
+    [Required, MaxLength(64)] public string PeriodEndsAt { get; init; } = string.Empty;
+    [Required, MaxLength(2000)] public string Objective { get; init; } = string.Empty;
+}
+
+public sealed class CancelAssessmentDraftRequest
+{
+    [Range(1, int.MaxValue)] public int ExpectedVersion { get; init; }
+}
+
+public sealed class SubmitAssessmentDraftRequest
+{
+    [Range(1, int.MaxValue)] public int ExpectedVersion { get; init; }
+}
+
 public sealed record AssessmentResponse(
     Guid AssessmentId,
     Guid WorkflowId,
@@ -28,7 +49,9 @@ public sealed record AssessmentResponse(
     IReadOnlyList<ComponentDependencyResult> ComponentDependencies,
     int Version,
     DateTimeOffset CreatedAt,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    Guid? CancelledBy = null,
+    DateTimeOffset? CancelledAt = null);
 
 public sealed record AssessmentQueueResponse(IReadOnlyList<AssessmentResponse> Items, string? NextCursor);
 
@@ -37,6 +60,7 @@ public sealed class AssessmentListQuery
     [MaxLength(256)] public string? Cursor { get; init; }
     [Range(1, 100)] public int PageSize { get; init; } = 25;
     [MaxLength(32)] public string? WorkflowStatus { get; init; }
+    public bool IncludeCancelled { get; init; }
 }
 
 public sealed class ReviewerDecisionRequest
