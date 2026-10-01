@@ -229,4 +229,43 @@ public sealed class DestinationsApiTests : IClassFixture<TestWebApplicationFacto
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
+
+    [Fact]
+    [Trait("CaseId", "EXP-API-DEST-011")]
+    public async Task DeleteDestination_Existing_Returns_NoContent_And_Deletes()
+    {
+        using var client = _factory.CreateClient();
+
+        var createReq = new CreateDestinationRequest(
+            Name: "Delete Target Bay",
+            Slug: $"del-bay-{Guid.NewGuid():N}"[..18],
+            Description: "Destination targeted for deletion",
+            Region: "Southern Province",
+            Latitude: 6.01,
+            Longitude: 80.25);
+
+        using var createRes = await client.PostAsJsonAsync("/api/experiences/destinations", createReq);
+        Assert.Equal(HttpStatusCode.Created, createRes.StatusCode);
+        var created = await createRes.Content.ReadFromJsonAsync<DestinationDto>();
+        Assert.NotNull(created);
+
+        // Delete destination
+        using var delRes = await client.DeleteAsync($"/api/experiences/destinations/{created.Id}");
+        Assert.Equal(HttpStatusCode.NoContent, delRes.StatusCode);
+
+        // Subsequent lookup returns 404
+        using var getRes = await client.GetAsync($"/api/experiences/destinations/{created.Id}");
+        Assert.Equal(HttpStatusCode.NotFound, getRes.StatusCode);
+    }
+
+    [Fact]
+    [Trait("CaseId", "EXP-API-DEST-012")]
+    public async Task DeleteDestination_UnknownId_Returns_NotFound()
+    {
+        using var client = _factory.CreateClient();
+        var unknownId = Guid.NewGuid();
+
+        using var delRes = await client.DeleteAsync($"/api/experiences/destinations/{unknownId}");
+        Assert.Equal(HttpStatusCode.NotFound, delRes.StatusCode);
+    }
 }

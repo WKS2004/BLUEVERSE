@@ -57,6 +57,7 @@ export default function CatalogueManagementPage() {
     }
   }, [location.hash])
 
+
   // Destinations state
   const [destinations, setDestinations] = useState<DestinationDto[]>([])
   const [newDestName, setNewDestName] = useState('')
@@ -462,11 +463,36 @@ export default function CatalogueManagementPage() {
         setSelectedOfferingForSched('')
         setSchedules([])
       }
-      setStatusMessage(`Offering "${off.title}" deleted successfully.`)
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : 'Offering deletion failed.')
     }
   }
+
+  // Handle URL query parameters for direct edit deep links
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search)
+    const editDestId = searchParams.get('editDestination')
+    const editOffId = searchParams.get('editOffering')
+    const tabParam = searchParams.get('tab')
+
+    if (tabParam === 'destinations' || tabParam === 'activities' || tabParam === 'offerings' || tabParam === 'diagnostics') {
+      setActiveTab(tabParam)
+    }
+
+    if (editDestId && destinations.length > 0) {
+      const target = destinations.find((d) => d.id === editDestId)
+      if (target) {
+        setActiveTab('destinations')
+        startEditDestination(target)
+      }
+    } else if (editOffId && offerings.length > 0) {
+      const target = offerings.find((o) => o.id === editOffId)
+      if (target) {
+        setActiveTab('offerings')
+        startEditOffering(target)
+      }
+    }
+  }, [location.search, destinations, offerings])
 
   // Load diagnostics
   async function handleLoadDiagnostics() {

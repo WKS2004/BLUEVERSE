@@ -337,4 +337,45 @@ public sealed class OfferingsApiTests : IClassFixture<TestWebApplicationFactory>
         Assert.True(doc.RootElement.TryGetProperty("title", out var title));
         Assert.Equal("Schedule Not Found", title.GetString());
     }
+
+    [Fact]
+    [Trait("CaseId", "EXP-API-OFF-013")]
+    public async Task DeleteOffering_Existing_Returns_NoContent_And_Deletes()
+    {
+        using var client = _factory.CreateClient();
+
+        // 1. Setup destination and activity
+        var destRes = await client.PostAsJsonAsync("/api/experiences/destinations",
+            new CreateDestinationRequest("Del Off Bay", null, "Desc", "Southern", 6.0, 80.2));
+        var dest = await destRes.Content.ReadFromJsonAsync<DestinationDto>();
+
+        var actRes = await client.PostAsJsonAsync("/api/experiences/activities",
+            new CreateActivityRequest($"ACT_D_{Guid.NewGuid():N}"[..15], "Del Act", "Desc", "Sport"));
+        var act = await actRes.Content.ReadFromJsonAsync<ActivityDto>();
+
+        // 2. Create offering
+        var createRes = await client.PostAsJsonAsync("/api/experiences/offerings",
+            new CreateOfferingRequest(dest!.Id, act!.Id, "Offering To Delete", "Description", 45m, "USD", 60, 4));
+        var off = await createRes.Content.ReadFromJsonAsync<OfferingDto>();
+        Assert.NotNull(off);
+
+        // 3. Delete offering
+        using var delRes = await client.DeleteAsync($"/api/experiences/offerings/{off.Id}");
+        Assert.Equal(HttpStatusCode.NoContent, delRes.StatusCode);
+
+        // 4. Subsequent lookup returns 404
+        using var getRes = await client.GetAsync($"/api/experiences/offerings/{off.Id}");
+        Assert.Equal(HttpStatusCode.NotFound, getRes.StatusCode);
+    }
+
+    [Fact]
+    [Trait("CaseId", "EXP-API-OFF-014")]
+    public async Task DeleteOffering_UnknownId_Returns_NotFound()
+    {
+        using var client = _factory.CreateClient();
+        var unknownId = Guid.NewGuid();
+
+        using var delRes = await client.DeleteAsync($"/api/experiences/offerings/{unknownId}");
+        Assert.Equal(HttpStatusCode.NotFound, delRes.StatusCode);
+    }
 }

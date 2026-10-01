@@ -1,5 +1,57 @@
 # Ushan Srinuka — AI Usage Contributions
 
+## 2026-10-02 — Experiences discovery UI consolidation: removal of inline CRUD and Nearby tab, unified catalogue search, and deep-link routing
+
+- Date/time or time range: 2026-10-02 01:25 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Antigravity
+- Tool/App: Google Antigravity
+- AI Model: Gemini 2.5 Pro
+- Summary of the user's request:
+  1. In `http://localhost/experiences` (`ExperiencesPage.tsx`):
+     - Remove inline mutation modals/forms (`destModalOpen`, `offModalOpen`, `deleteDialog`, and related submission handlers).
+     - Remove all Delete buttons from Destinations and Offerings cards.
+     - Keep the "Add Destination" button: change its behavior to redirect/link to `/experiences/manage#destinations`.
+     - Keep the "Add Offering" button: update it to redirect/link to `/experiences/manage#offerings`.
+     - Keep the "Edit" buttons on Destination and Offering cards: update their behavior to redirect/link to `/experiences/manage?editDestination={dest.id}#destinations` and `/experiences/manage?editOffering={off.id}#offerings`.
+  2. Remove the "Nearby Proximity Search" tab and its dedicated view entirely.
+  3. Combine natural keyword searching (places, coastal spots, activities, tags) into the primary search bar in the "Destinations & Offerings" tab.
+  4. In `CatalogueManagementPage.tsx`, support deep-linking via URL query params (`editDestination`, `editOffering`, `tab`) to automatically open the respective item's edit modal.
+  5. In the Interactive Coastal Map view, update the "Find Experiences Nearby" button to direct the user to explore experiences in the unified catalogue tab with the selected spot's name.
+- Summary of what the AI Agent did:
+  - In `apps/web/src/pages/experiences/CatalogueManagementPage.tsx`:
+    - Added deep-linking `useEffect` evaluating URL query params (`editDestination`, `editOffering`, `tab`) against loaded catalogue items to automatically switch to the relevant tab and open the editing modal (`startEditDestination(target)` or `startEditOffering(target)`).
+  - In `apps/web/src/pages/experiences/ExperiencesPage.tsx`:
+    - Removed unused inline creation/editing modal state, handlers, and deletion dialogs.
+    - Updated the "Add Destination" button to a `<Link to="/experiences/manage#destinations">` styled consistently with the design system.
+    - Updated the "Add Offering" button to a `<Link to="/experiences/manage#offerings">`.
+    - Removed all Delete buttons from Destination and Offering cards.
+    - Updated the Destination card Edit button to `<Link to={`/experiences/manage?editDestination=${dest.id}#destinations`}>`.
+    - Updated the Offering card Edit button to `<Link to={`/experiences/manage?editOffering=${off.id}#offerings`}>`.
+    - Removed the "Nearby Proximity Search" tab button and its section (`activeTab === 'nearby'`) completely.
+    - Integrated multi-facet searching and filtering across destinations, offerings, regions, and activities in the unified catalogue view.
+    - Updated the Interactive Coastal Map card action from navigating to the removed nearby tab to setting the search query and activating the catalogue tab.
+  - Testing & Validation:
+    - Updated React component tests in `apps/web/src/pages/experiences/__tests__/experiences.component.test.js`:
+      - `WEB-EXP-002`: verified unified keyword search across destinations and offerings.
+      - `WEB-EXP-011`: verified location keyword search in the unified coastal discovery search bar.
+      - `WEB-EXP-010`: verified interactive map action button "Explore Experiences Here" updates state.
+      - Executed `node --test src/pages/experiences/__tests__/experiences.component.test.js`: all 12 tests passed cleanly (12 pass, 0 fail).
+    - Added backend integration tests in `services/experience-biodiversity/tests/Blueverse.ExperienceBiodiversity.Tests/`:
+      - `EXP-API-DEST-011` & `EXP-API-DEST-012` in `DestinationsApiTests.cs`: verified destination deletion (204 No Content) and 404 Not Found on non-existent targets.
+      - `EXP-API-ACT-007` & `EXP-API-ACT-008` in `ActivitiesApiTests.cs`: verified activity deletion (204 No Content) and 404 Not Found on non-existent targets.
+      - `EXP-API-OFF-013` & `EXP-API-OFF-014` in `OfferingsApiTests.cs`: verified offering deletion (204 No Content) and 404 Not Found on non-existent targets.
+    - Executed `npm run build` in `apps/web` (passed cleanly; TypeScript and Vite bundle succeeded).
+    - Executed `python scripts/validation/validate_ui_integrations.py` (passed with code 0).
+    - Executed `python .agents/scripts/validate_endpoint_catalog.py` (passed with code 0; 72 endpoints, 32 routes).
+- AI output accepted/changed/rejected: Accepted all structural UI updates, modal removals, deep-link handling, unified catalogue search, and automated test suite expansions across React Web and Backend Service.
+- Verification/evidence:
+  - `npm run build` completed with code 0 (`vite v8.3.0 building client environment for production... built in 1.70s`);
+  - `node --test src/pages/experiences/__tests__/experiences.component.test.js` executed 12 tests with 12 passing (0 failing);
+  - `python scripts/validation/validate_ui_integrations.py` returned OK;
+  - `python .agents/scripts/validate_endpoint_catalog.py` returned OK.
+
 ## 2026-09-28 — Role and permission-based catalogue access control, backend authorization enforcement, and UI protection
 
 - Date/time or time range: 2026-09-28 23:35 +05:30 (Asia/Colombo)

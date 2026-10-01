@@ -250,34 +250,25 @@ test('WEB-EXP-001 discovery hub renders catalogue search, destination cards, and
 })
 
 // -------------------------------------------------------------
-// WEB-EXP-002: Discovery Near Me Proximity Search
+// WEB-EXP-002: Discovery Unified Catalogue Filter & Search
 // -------------------------------------------------------------
-test('WEB-EXP-002 discovery hub supports Near Me tab and radius search (ui-integration: experience-discovery)', async () => {
+test('WEB-EXP-002 discovery hub supports unified keyword search across destinations and offerings (ui-integration: experience-discovery)', async () => {
+  let capturedQuery = ''
   globalThis.fetch = async (input) => {
     const url = String(input)
     if (url.includes('/api/experiences/destinations')) {
-      return jsonResponse({ total: 0, page: 1, pageSize: 20, items: [] })
+      const parsed = new URL(url, 'http://localhost')
+      capturedQuery = parsed.searchParams.get('query') || ''
+      return jsonResponse({ total: 1, page: 1, pageSize: 20, items: [mockDestination] })
     }
-    if (url.includes('/api/experiences/activities') || url.includes('/api/experiences/offerings')) {
-      return jsonResponse({ total: 0, page: 1, pageSize: 20, items: [] })
+    if (url.includes('/api/experiences/activities')) {
+      return jsonResponse({ total: 1, page: 1, pageSize: 20, items: [mockActivity] })
+    }
+    if (url.includes('/api/experiences/offerings')) {
+      return jsonResponse({ total: 1, page: 1, pageSize: 20, items: [mockOffering] })
     }
     if (url.includes('/api/experiences/favourites')) {
       return jsonResponse([])
-    }
-    if (url.includes('/api/experiences/nearby')) {
-      return jsonResponse({
-        center: { latitude: 5.9482, longitude: 80.4578, radiusMeters: 50000, limit: 10 },
-        count: 1,
-        results: [
-          {
-            destination: mockDestination,
-            distanceMeters: 1250,
-            distanceKm: 1.25,
-            activeOfferingsCount: 3,
-            topOfferings: [mockOffering],
-          },
-        ],
-      })
     }
     return jsonResponse({})
   }
@@ -285,62 +276,41 @@ test('WEB-EXP-002 discovery hub supports Near Me tab and radius search (ui-integ
   renderInApp(createElement(ExperiencesPage), { path: '/experiences' })
   await screen.findByRole('heading', { name: /Explore our coast/i })
 
-  // Switch to "Nearby Proximity Search" tab
-  const nearMeTab = screen.getByRole('button', { name: /Nearby Proximity Search/i })
-  await userEvent.setup().click(nearMeTab)
+  // Verify unified search bar is present in catalog tab
+  const searchInput = screen.getByPlaceholderText(/e\.g\. Coral reef, Whales, Mirissa, Snorkeling\.\.\./i)
+  assert.ok(searchInput)
 
-  // Verify proximity controls
-  assert.ok(screen.getByText(/Proximity Search/i))
-  assert.ok(screen.getByRole('button', { name: /Mirissa/i }))
+  // Enter a search term
+  await userEvent.setup().type(searchInput, 'Mirissa')
+  const filterBtn = screen.getByRole('button', { name: /^Filter$/i })
+  await userEvent.setup().click(filterBtn)
 
-  // Click preset spot
-  await userEvent.setup().click(screen.getByRole('button', { name: /Mirissa/i }))
+  // Verify query was sent to API
+  assert.equal(capturedQuery, 'Mirissa')
 
-  // Submit the proximity search
-  await userEvent.setup().click(screen.getByRole('button', { name: /Find Coastal Destinations/i }))
-
-  // Verify proximity result
-  assert.ok(await screen.findByText(/1\.3 km away/i))
+  // Verify matching destination is visible
+  assert.ok((await screen.findAllByText('Mirissa Bay')).length >= 1)
 })
 
 // -------------------------------------------------------------
-// WEB-EXP-011: Discovery Near Me Location Keyword Search
+// WEB-EXP-011: Discovery Keyword and Region Filtering
 // -------------------------------------------------------------
-test('WEB-EXP-011 discovery hub supports location keyword search for nearby coastal discovery (ui-integration: experience-discovery)', async () => {
+test('WEB-EXP-011 discovery hub supports location keyword search for coastal discovery (ui-integration: experience-discovery)', async () => {
   let capturedUrl = ''
   globalThis.fetch = async (input) => {
     const url = String(input)
     if (url.includes('/api/experiences/destinations')) {
+      capturedUrl = url
       return jsonResponse({ total: 1, page: 1, pageSize: 20, items: [mockDestination] })
     }
-    if (url.includes('/api/experiences/activities') || url.includes('/api/experiences/offerings')) {
-      return jsonResponse({ total: 0, page: 1, pageSize: 20, items: [] })
+    if (url.includes('/api/experiences/activities')) {
+      return jsonResponse({ total: 1, page: 1, pageSize: 20, items: [mockActivity] })
+    }
+    if (url.includes('/api/experiences/offerings')) {
+      return jsonResponse({ total: 1, page: 1, pageSize: 20, items: [mockOffering] })
     }
     if (url.includes('/api/experiences/favourites')) {
       return jsonResponse([])
-    }
-    if (url.includes('/api/experiences/nearby')) {
-      capturedUrl = url
-      return jsonResponse({
-        query: {
-          location: 'weligama',
-          resolvedLocation: 'Weligama Bay Haven',
-          latitude: 5.9723,
-          longitude: 80.4287,
-          radiusMeters: 50000,
-          limit: 15,
-        },
-        count: 1,
-        results: [
-          {
-            destination: mockDestination,
-            distanceMeters: 2400,
-            distanceKm: 2.4,
-            activeOfferingsCount: 3,
-            topOfferings: [mockOffering],
-          },
-        ],
-      })
     }
     return jsonResponse({})
   }
@@ -348,23 +318,19 @@ test('WEB-EXP-011 discovery hub supports location keyword search for nearby coas
   renderInApp(createElement(ExperiencesPage), { path: '/experiences' })
   await screen.findByRole('heading', { name: /Explore our coast/i })
 
-  // Switch to "Nearby Proximity Search" tab
-  const nearMeTab = screen.getByRole('button', { name: /Nearby Proximity Search/i })
-  await userEvent.setup().click(nearMeTab)
-
-  // Type a natural location keyword into the location search bar
-  const locationInput = screen.getByPlaceholderText(/e\.g\. Mirissa, Weligama/i)
-  await userEvent.setup().type(locationInput, 'weligama')
+  // Type a natural location keyword into the unified search bar
+  const searchInput = screen.getByPlaceholderText(/e\.g\. Coral reef, Whales, Mirissa, Snorkeling\.\.\./i)
+  await userEvent.setup().type(searchInput, 'Southern Province')
 
   // Submit search
-  await userEvent.setup().click(screen.getByRole('button', { name: /Find Coastal Destinations/i }))
+  const filterBtn = screen.getByRole('button', { name: /^Filter$/i })
+  await userEvent.setup().click(filterBtn)
 
-  // Verify API was called with ?q=weligama
-  assert.ok(capturedUrl.includes('q=weligama'))
+  // Verify API was called with query
+  assert.ok(capturedUrl.includes('query=Southern+Province') || capturedUrl.includes('query=Southern%20Province'))
 
-  // Verify proximity result and resolved location notice
-  assert.ok(await screen.findByText(/2\.4 km away/i))
-  assert.ok(screen.getByText(/Weligama Bay Haven/i))
+  // Verify result rendered
+  assert.ok((await screen.findAllByText('Mirissa Bay')).length >= 1)
 })
 
 // -------------------------------------------------------------
@@ -757,6 +723,6 @@ test('WEB-EXP-010 discovery hub renders interactive coastal map and searches pla
 
   // Verify place search result and selected location card
   assert.ok((await screen.findAllByText(/Mirissa Beach, Southern Province/i)).length >= 1)
-  assert.ok(screen.getByRole('button', { name: /Find Experiences Nearby/i }))
+  assert.ok(screen.getByRole('button', { name: /Explore Experiences Here/i }))
 })
 

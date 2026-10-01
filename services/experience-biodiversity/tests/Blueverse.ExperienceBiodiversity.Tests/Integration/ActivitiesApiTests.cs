@@ -167,4 +167,41 @@ public sealed class ActivitiesApiTests : IClassFixture<TestWebApplicationFactory
         Assert.NotNull(items);
         Assert.Contains(items, a => a.Id == created.Id);
     }
+
+    [Fact]
+    [Trait("CaseId", "EXP-API-ACT-007")]
+    public async Task DeleteActivity_Existing_Returns_NoContent_And_Deletes()
+    {
+        using var client = _factory.CreateClient();
+
+        var createReq = new CreateActivityRequest(
+            Code: $"ACT_DEL_{Guid.NewGuid():N}"[..18],
+            Name: "Delete Target Activity",
+            Description: "Activity to be deleted",
+            Category: "DeleteTest");
+
+        using var createRes = await client.PostAsJsonAsync("/api/experiences/activities", createReq);
+        Assert.Equal(HttpStatusCode.Created, createRes.StatusCode);
+        var created = await createRes.Content.ReadFromJsonAsync<ActivityDto>();
+        Assert.NotNull(created);
+
+        // Delete activity
+        using var delRes = await client.DeleteAsync($"/api/experiences/activities/{created.Id}");
+        Assert.Equal(HttpStatusCode.NoContent, delRes.StatusCode);
+
+        // Subsequent lookup returns 404
+        using var getRes = await client.GetAsync($"/api/experiences/activities/{created.Id}");
+        Assert.Equal(HttpStatusCode.NotFound, getRes.StatusCode);
+    }
+
+    [Fact]
+    [Trait("CaseId", "EXP-API-ACT-008")]
+    public async Task DeleteActivity_UnknownId_Returns_NotFound()
+    {
+        using var client = _factory.CreateClient();
+        var unknownId = Guid.NewGuid();
+
+        using var delRes = await client.DeleteAsync($"/api/experiences/activities/{unknownId}");
+        Assert.Equal(HttpStatusCode.NotFound, delRes.StatusCode);
+    }
 }
