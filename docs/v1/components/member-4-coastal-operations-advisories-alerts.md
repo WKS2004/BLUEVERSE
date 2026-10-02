@@ -16,16 +16,29 @@ agent_contract: "../agents/member-4-safety-operations-agent.md"
 
 # Wanshaja Sooriyabandara (Member 4) — Coastal Operations, Advisories & Alerts
 
+The [latest record navigation and audit update](../coastal-operations-record-navigation-and-audit.md) adds 500 ms search, pinned category tabs, Assessments/Alerts-specific 5/10/25/50/100 page sizes, refresh-safe workspaces, full Logs record actions and detailed activity. Earlier search timing is superseded. Shared G00/G07 and live producer/agent acceptance remain Pending.
+
 **Contract status:** v1 target specification with the branch-local, pre-G07
 backend implemented against the Member 4 G00 proposal; the complete component
-is still partial pending shared G00 acceptance, producer integration and client
-adoption of the new draft lifecycle. **Assigned owner:** Wanshaja
+is still partial pending shared G00 acceptance, producer integration and post-G07 Agentic AI. **Assigned owner:** Wanshaja
 Sooriyabandara (`@WKS2004`) —
 frozen-requirements trace label Member 4.
 Feature branch: `features/coastal-operations`; paired Agentic AI branch:
 `agentic-ai/safety-operations`.
 
 ## G00 shared-contract decisions
+
+The 2026-10-01 user-directed update is specified in the
+[publication, permissions, audit and UI contract](../coastal-operations-publication-and-ui.md).
+Separate client pages, search/lifecycle tabs, specific alert grants, scoped
+activity and durable assessment delivery are required. Assessment publication
+uses submit; alert publication is independent. G00/G07 remain pending.
+The [record experience follow-up](../coastal-operations-record-experience.md)
+is implemented on this branch: titled drafts, own-draft discovery for queue
+readers, named associations, one DB IANA selector with server UTC resolution,
+stacked heroes/search and ID/title/created result metadata. Catalogue/planner
+choices remain `NOT_CONNECTED` until their owners implement those services;
+unlinked drafts cannot publish. The database migration backfills legacy titles.
 
 The Member 4 G00 proposals are in [G00 Decisions — Coastal Operations](../g00/member-4-coastal-operations.md). They cover component IDs and handoffs, candidate routes and permissions, state/error semantics, service identity, health behavior, and AI/image-evidence seams.
 
@@ -66,6 +79,10 @@ Implemented source on `features/coastal-operations` currently provides:
   are recorded in [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md).
 - Alert `PUBLIC`/`OPERATIONS` visibility. Non-managers see only currently
   active public alerts; alert managers can review every lifecycle and audience.
+- Granular alert create/update/delete/publish/resolve grants and audit reading,
+  with compatible manage/decide grants and server-owned resource scopes.
+- Durable assessment publication payloads with finite leased delivery, bounded
+  retry/timeouts and audited outcomes; this is member-owned transport state.
 - PostgreSQL schema and migrations, plus the typed disconnected
   `IAssessmentProposalPort`. No model call, executable agent, proposal
   generator, tool, orchestration or Agentic execution state is present.
@@ -74,16 +91,15 @@ Implemented source on `features/coastal-operations` currently provides:
   receive the client's JWT/cookies. See [ADR-0021](../../adr/ADR-0021-coastal-operations-actor-context.md).
 
 The implemented public routes are indexed in the
-[endpoint catalog](../../api/endpoint-catalog.md). React and Flutter have
-existing Coastal Operations workflows, but their current flows do not yet call
-the new explicit submit, update or cancellation endpoints. The service suite
-currently has 255 passing default cases for dependency resilience, assessment draft
-lifecycle/submission, alert workflows, authorization, idempotency, target
-history, PNG sanitization, evidence storage/retention and health. Three opt-in
-PostgreSQL tests cover migrations, idempotency uniqueness, stale-write
-concurrency and concurrent idempotent submission; they require a dedicated
-`blueverse_co_test*` database and were
-skipped because `BLUEVERSE_CO_POSTGRES_TEST_CONNECTION` was not configured.
+[endpoint catalog](../../api/endpoint-catalog.md). React and Flutter provide
+separate `/operations/assessments` and `/operations/alerts` pages under Coastal
+Operations navigation. Both clients provide grant-aware draft CRUD,
+publication, server search/filters, pagination and scoped activity. Assessment
+publication creates one immutable durable delivery envelope in the same
+transaction as submission/audit/idempotency; the disconnected port creates no
+proposal before G07. See the [publication contract](../coastal-operations-publication-and-ui.md)
+for current source and verification evidence.
+
 Most application tests use EF Core InMemory and do not establish live
 PostgreSQL workflow or Compose acceptance. Provisional peer paths and the
 Member 4 status handoff still require producer agreement. Shared G00 remains
@@ -388,8 +404,10 @@ The operator may capture/select and upload optional image evidence in Flutter
 or choose an image file in React. Reviewers in either client see the same
 authorized attachment metadata and content through the public API, which
 routes to Wanshaja Sooriyabandara's private service. A submitted
-assessment version's evidence is immutable; additions/corrections are
-separately authorized and audited. This branch implements a strict PNG
+assessment version's authored fields and evidence are immutable. Only an
+owned DRAFT permits image uploads/removals; corrections after publication
+require a new draft. Removal retains audit metadata and retries private-byte
+cleanup under [ADR-0023](../../adr/ADR-0023-coastal-draft-evidence-removal.md). This branch implements a strict PNG
 allowlist, five-file/5 MiB limits, private Compose-volume storage, server-side
 sanitization and 365-day retention. The branch-local decisions are recorded in
 [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md); ratify
@@ -500,3 +518,6 @@ implementation evidence or accepted team contracts.
 - Component work areas on one member branch: [Wanshaja Sooriyabandara (Member 4) phase plan](../phases/member-4-phase-plan.md); producer/consumer relationships: [component relationship map](../component-relationships.md); PR and G07 process: [member branch workflow](../member-branch-workflow.md).
 - Device and evidence media: [v1 device-capability contract](../device-capabilities.md) and [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md).
 - Related contracts: [v1 workflows](../workflows.md), [member Agentic AI integration boundary](../agentic-ai-integration-boundary.md), [permissions and parity](../cross-platform-and-permissions.md), [quality and delivery](../quality-and-delivery.md), [requirements coverage and readiness](../requirements-coverage-and-readiness.md), [Agentic AI safety](../../agentic-ai/safety.md), [tool catalog](../../agentic-ai/tools.md), [endpoint catalog](../../api/endpoint-catalog.md), [UI integration](../../contracts/ui-integration.json).
+
+
+The [2026-10-02 record navigation/activity follow-up](../coastal-operations-record-navigation-and-audit.md) specifies 500ms search, collection pagination, pinned tabs, refresh-safe view intent and signed actor/field-change audit snapshots. Shared G00/G07 acceptance remains Pending.

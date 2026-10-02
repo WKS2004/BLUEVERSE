@@ -115,11 +115,29 @@ void main() {
     );
 
     testWidgets(
-      'MOB-OPS-UI-002 assessment creators submit an offset-aware review without queue access',
+      'MOB-OPS-UI-002 assessment creators save a titled draft with named choices and one time zone',
       (tester) async {
         late http.Request createRequest;
         var requestCount = 0;
         final client = MockClient((request) async {
+          if (request.url.path == '/api/operations/form-options') {
+            return http.Response(
+              jsonEncode({
+                'timeZones': [
+                  {
+                    'id': 'Etc/UTC',
+                    'country': 'Worldwide',
+                    'location': 'UTC',
+                    'rulesAvailable': true,
+                  },
+                ],
+                'targets': {'status': 'NOT_CONNECTED', 'items': []},
+                'plans': {'status': 'NOT_CONNECTED', 'items': []},
+                'assessments': [],
+              }),
+              200,
+            );
+          }
           requestCount++;
           createRequest = request;
           expect(request.method, 'POST');
@@ -163,15 +181,18 @@ void main() {
         expect(requestCount, 0);
         await tester.tap(find.text('New assessment'));
         await tester.pumpAndSettle();
-        await tester.tap(
+        FocusManager.instance.primaryFocus?.unfocus();
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(
           find.widgetWithText(FilledButton, 'Save draft'),
         );
         await tester.pumpAndSettle();
-        expect(
-          find.text('Check the coastal record ID and try again.'),
-          findsOneWidget,
-        );
-        expect(find.text('Include an explicit UTC offset.'), findsNWidgets(2));
+        await tester.tap(find.widgetWithText(FilledButton, 'Save draft'));
+        await tester.pumpAndSettle();
+        expect(find.text('Add a clear title.'), findsOneWidget);
+        expect(find.text('Choose a date and time.'), findsNWidgets(2));
+        expect(find.bySemanticsLabel('Coastal record ID'), findsNothing);
+        expect(find.text('Time zone'), findsOneWidget);
         expect(requestCount, 0);
 
         Future<void> enter(String label, String value) async {
@@ -180,16 +201,38 @@ void main() {
           await tester.enterText(field, value);
         }
 
-        await enter('Coastal record ID', _targetUuid);
-        await enter('Period starts at', '2026-10-01T09:00:00+05:30');
-        await enter('Period ends at', '2026-10-01T12:00:00+05:30');
+        await enter('Assessment title', 'Rain access review');
+        tester
+                .widget<TextFormField>(
+                  find.ancestor(
+                    of: find.bySemanticsLabel('Starts at'),
+                    matching: find.byType(TextFormField),
+                  ),
+                )
+                .controller!
+                .text =
+            '2026-10-01T09:00';
+        tester
+                .widget<TextFormField>(
+                  find.ancestor(
+                    of: find.bySemanticsLabel('Ends at'),
+                    matching: find.byType(TextFormField),
+                  ),
+                )
+                .controller!
+                .text =
+            '2026-10-01T12:00';
         await enter(
-          'What should the team assess?',
+          'What should be reviewed?',
           'Review the access route after heavy rain.',
         );
-        await tester.tap(
+        FocusManager.instance.primaryFocus?.unfocus();
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(
           find.widgetWithText(FilledButton, 'Save draft'),
         );
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(FilledButton, 'Save draft'));
         await tester.pumpAndSettle();
 
         expect(requestCount, 1);
@@ -197,10 +240,11 @@ void main() {
         expect(createRequest.headers['idempotency-key'], startsWith('mobile-'));
         expect(jsonDecode(createRequest.body), {
           'targetType': 'DESTINATION',
-          'targetId': _targetUuid,
           'sourceWorkflowId': null,
-          'periodStartsAt': '2026-10-01T09:00:00+05:30',
-          'periodEndsAt': '2026-10-01T12:00:00+05:30',
+          'title': 'Rain access review',
+          'timeZoneId': 'Etc/UTC',
+          'periodStartsAt': '2026-10-01T09:00',
+          'periodEndsAt': '2026-10-01T12:00',
           'objective': 'Review the access route after heavy rain.',
         });
         expect(
@@ -267,7 +311,7 @@ void main() {
     );
 
     testWidgets(
-      'MOB-OPS-UI-004 status-only and history-only access can look up a coastal record',
+      'MOB-OPS-UI-004 selected assessment offers authorized status and history without a UUID lookup panel',
       (tester) async {
         final paths = <String>[];
         final client = MockClient((request) async {
@@ -295,6 +339,25 @@ void main() {
               200,
             );
           }
+          if (request.url.path == '/api/operations/assessments') {
+            return http.Response(
+              jsonEncode({
+                'items': [_assessmentJson()],
+                'nextCursor': null,
+              }),
+              200,
+            );
+          }
+          if (request.url.path.endsWith('/assessments/$_assessmentUuid')) {
+            return http.Response(
+              jsonEncode({
+                'assessment': _assessmentJson(),
+                'decisions': [],
+                'evidence': [],
+              }),
+              200,
+            );
+          }
           throw StateError('Unexpected route ${request.url.path}');
         });
         final authTransport = MockClient((_) async => http.Response('{}', 401));
@@ -309,6 +372,7 @@ void main() {
         );
         final user = mobileTestUser(
           permissions: const [
+            'operations.assessment.read',
             'operations.target.status.read',
             'operations.target.history.read',
           ],
@@ -329,21 +393,25 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        await tester.enterText(
-          find.bySemanticsLabel('Coastal record ID'),
-          _targetUuid,
+        expect(find.text('Check a coastal record'), findsNothing);
+        expect(find.bySemanticsLabel('Coastal record ID'), findsNothing);
+        await tester.ensureVisible(
+          find.text('Review the access route after heavy rain.'),
         );
-        await tester.drag(find.byType(ListView), const Offset(0, -1000));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Check record'));
+        await tester.tap(
+          find.text('Review the access route after heavy rain.'),
+        );
         await tester.pumpAndSettle();
 
         expect(find.text('Open'), findsOneWidget);
         expect(
-          find.text('No state changes have been recorded for this record.'),
+          find.text('No operational state changes have been recorded.'),
           findsOneWidget,
         );
         expect(paths, [
+          '/api/operations/assessments',
+          '/api/operations/assessments/$_assessmentUuid',
           '/api/operations/targets/DESTINATION/$_targetUuid/status',
           '/api/operations/targets/DESTINATION/$_targetUuid/history',
         ]);

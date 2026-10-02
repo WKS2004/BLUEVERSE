@@ -25,6 +25,18 @@ change the shared workflow, permission or source-of-truth semantics below.
 
 ## Canonical assessed operational assessment
 
+First save a titled editable owner draft using named coastal record/plan
+choices and one time-zone selector for both local dates. Producer selectors
+remain unavailable until those services exist; unlinked drafts can save but
+cannot publish. The service generates IDs and resolves UTC instants. Title
+search includes the caller's drafts; UUID filters are Advanced search.
+See the [record experience contract](coastal-operations-record-experience.md).
+Draft CRUD makes no agent calls. Explicit
+**Publish assessment** uses submit, closes editing and atomically stores the
+[business delivery envelope](coastal-operations-publication-and-ui.md).
+Before G07 the port stays disconnected. After G07 the Member 4 entry point
+starts the coordinated workflow below. Alert publication never dispatches it.
+
 The evaluation path starts with a Coastal Operator using Flutter and ends with
 an Operations Reviewer using React. Both roles' permitted actions and status
 views must also be available in both clients.

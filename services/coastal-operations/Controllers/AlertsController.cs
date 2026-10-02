@@ -19,12 +19,12 @@ public sealed class AlertsController(AlertApplicationService alerts) : Controlle
         [FromQuery] AlertListQuery query,
         CancellationToken cancellationToken)
     {
-        var canManage = User.HasClaim("permission", CoastalPermissions.AlertManage);
+        var canManage = CoastalAlertAccess.CanManage(User);
         return Ok(await alerts.GetQueueAsync(query, AuthenticatedActor.GetId(User), canManage, cancellationToken));
     }
 
     [HttpPost]
-    [HasPermission(PermissionCodes.OperationsAlertManage)]
+    [HasPermission(PermissionCodes.OperationsAlertCreate)]
     [ProducesResponseType(typeof(AlertResponse), StatusCodes.Status201Created)]
     public async Task<ActionResult<AlertResponse>> Create(
         [FromBody] CreateAlertRequest request,
@@ -35,7 +35,7 @@ public sealed class AlertsController(AlertApplicationService alerts) : Controlle
     }
 
     [HttpPatch("{alertId:guid}")]
-    [HasPermission(PermissionCodes.OperationsAlertManage)]
+    [HasPermission(PermissionCodes.OperationsAlertUpdate)]
     [ProducesResponseType(typeof(AlertResponse), StatusCodes.Status200OK)]
     public async Task<ActionResult<AlertResponse>> Update(
         Guid alertId,
@@ -44,7 +44,7 @@ public sealed class AlertsController(AlertApplicationService alerts) : Controlle
         Ok(await alerts.UpdateDraftAsync(alertId, request, AuthenticatedActor.GetId(User), CorrelationId(), cancellationToken));
 
     [HttpDelete("{alertId:guid}")]
-    [HasPermission(PermissionCodes.OperationsAlertManage)]
+    [HasPermission(PermissionCodes.OperationsAlertDelete)]
     [ProducesResponseType(typeof(AlertResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> WithdrawDraft(
         Guid alertId,
@@ -70,6 +70,8 @@ public sealed class AlertsController(AlertApplicationService alerts) : Controlle
         [FromBody] AlertDecisionRequest request,
         CancellationToken cancellationToken)
     {
+        if (!CoastalAlertAccess.CanDecide(User, request.Decision))
+            return Forbid();
         var result = await alerts.DecideAsync(
             alertId,
             request,
@@ -83,6 +85,18 @@ public sealed class AlertsController(AlertApplicationService alerts) : Controlle
             ContentType = "application/json; charset=utf-8",
             Content = result.SerializedBody
         };
+    }
+
+    [HttpGet("{alertId:guid}/audit")]
+    [HasPermission(PermissionCodes.OperationsAuditRead)]
+    [ProducesResponseType(typeof(OperationsAuditPage), StatusCodes.Status200OK)]
+    public async Task<ActionResult<OperationsAuditPage>> GetAudit(
+        Guid alertId, [FromQuery] AuditListQuery query,
+        [FromServices] OperationsAuditReader audit, CancellationToken cancellationToken)
+    {
+        Response.Headers.CacheControl = "no-store";
+        return Ok(await audit.GetAlertAsync(alertId, AuthenticatedActor.GetId(User),
+            CoastalAlertAccess.CanManage(User), query, cancellationToken));
     }
 
     private string CorrelationId() => User.FindFirst("correlation_id")?.Value ??

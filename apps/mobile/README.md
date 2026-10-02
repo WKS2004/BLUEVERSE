@@ -1,5 +1,19 @@
 # BLUEVERSE Mobile
 
+The [2026-10-02 navigation/activity contract](../../docs/v1/coastal-operations-record-navigation-and-audit.md) updates all collections to 500 ms live search, fixed category tabs above scrolling content and shared white record cards. Assessments/Alerts per page offers 5/10/25/50/100 server cursor pages. Logs opens full record details/actions. Named create/edit query routes restore current saved data after refresh; unsaved inputs are not persisted. Activity shows verified names/roles/time and before/after values; old missing snapshots stay explicit.
+The [focused workspace follow-up](../../docs/v1/coastal-operations-focused-workspaces.md) supplies distinct hero photographs and compact search beneath workspace actions. The latest contract supersedes its debounce interval. Reads retain records with a local spinner; full details/forms preserve shared chrome and Back. Existing public API permissions apply; published authored content remains read only and cancellation confirmations use red styling.
+
+Coastal Operations offers `/operations/assessments` and `/operations/alerts`,
+with native route/lifecycle tabs, grant-aware actions, server search/filtering,
+pagination, imagery and scoped activity. It shares publication semantics and
+capabilities with React through the [contract](../../docs/v1/coastal-operations-publication-and-ui.md).
+The [record experience follow-up](../../docs/v1/coastal-operations-record-experience.md)
+stacks hero and title search, removes the bottom UUID lookup, and adds title/
+named association fields and one database time-zone choice. Native date/time
+pickers submit local values for server resolution. IDs appear in result cards
+and Advanced search. Absent catalogue/planner services permit unlinked drafts,
+with publication blocked until a real target is selected.
+
 The mobile client is a Flutter/Dart application and an equal product surface
 for every authorized role and workflow. Its implemented workflows provide
 coastal onboarding, account registration and sign-in, saved-account switching,
@@ -14,8 +28,9 @@ preserve the same business capabilities as React; layout and device input
 may vary without assigning a stakeholder group to this client.
 
 `lib/main.dart` registers `/signin`, `/signup`, `/profile`, `/dashboard`,
-`/admin`, `/admin/permissions`, `/admin/roles`, `/admin/users`, `/404` and
-`/500`; the launch screen is `/` and restores the saved account before showing
+`/admin`, `/admin/permissions`, `/admin/roles`, `/admin/users`,
+`/operations/assessments`, `/operations/alerts`, `/404` and `/500`;
+the launch screen is `/` and restores the saved account before showing
 onboarding.
 
 Flutter applies the same palette, typography hierarchy, imagery, spacing,

@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Data/ReferenceData/time-zone-locations.json" />
     <Compile Remove="tests/**" />
     <EmbeddedResource Remove="tests/**" />
     <Content Remove="tests/**" />

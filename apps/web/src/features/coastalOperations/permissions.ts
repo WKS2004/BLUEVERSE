@@ -15,9 +15,25 @@ export const coastalOperationsPermissions = {
   alertRead: 'operations.alert.read',
   alertManage: 'operations.alert.manage',
   alertDecide: 'operations.alert.decide',
+  alertCreate: 'operations.alert.create',
+  alertUpdate: 'operations.alert.update',
+  alertDelete: 'operations.alert.delete',
+  alertPublish: 'operations.alert.publish',
+  alertResolve: 'operations.alert.resolve',
+  auditRead: 'operations.audit.read',
 } as const
 
 const allPermissionCodes = Object.values(coastalOperationsPermissions)
+
+export function coastalNavigationLinks(user: Pick<AuthUser, 'permissions'> | null) {
+  const grants = new Set(user?.permissions.map((permission) => permission.toLowerCase()))
+  const logs = grants.has(coastalOperationsPermissions.auditRead) && (grants.has(coastalOperationsPermissions.assessmentRead) || grants.has(coastalOperationsPermissions.assessmentQueueRead) || grants.has(coastalOperationsPermissions.alertRead) || allPermissionCodes.some((code) => code.startsWith('operations.alert.') && grants.has(code)))
+  return [
+    ...(allPermissionCodes.some((code) => code.startsWith('operations.assessment.') && grants.has(code)) ? [{ label: 'Assessments', href: '/operations/assessments' }] : []),
+    ...(allPermissionCodes.some((code) => code.startsWith('operations.alert.') && grants.has(code)) ? [{ label: 'Alerts', href: '/operations/alerts' }] : []),
+    ...(logs ? [{ label: 'Logs', href: '/operations/logs' }] : []),
+  ]
+}
 
 export function hasCoastalOperationsAccess(user: Pick<AuthUser, 'permissions'> | null): boolean {
   if (!user) return false

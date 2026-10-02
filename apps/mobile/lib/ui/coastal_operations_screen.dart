@@ -7,15 +7,14 @@ import '../data/models/coastal_operations_models.dart';
 import '../data/services/coastal_operations_api_service.dart';
 import '../features/coastal_operations/coastal_operations_permissions.dart';
 import 'account_screens.dart';
+import 'coastal_operations_search.dart';
+import 'coastal_operations_draft_forms.dart';
+import 'coastal_operations_activity.dart';
+import 'coastal_operations_record_card.dart';
 import 'auth_view_model.dart';
 import 'blueverse_theme.dart';
 import 'feedback/loading_screen_controller.dart';
 
-const _coastalTargetTypes = ['DESTINATION', 'ACTIVITY', 'OFFERING', 'SESSION'];
-const _uuidPattern =
-    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$';
-const _explicitInstantPattern =
-    r'T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-](?:0\d|1[0-3]):[0-5]\d|[+-]14:00)$';
 const _maxEvidenceBytes = 5 * 1024 * 1024;
 
 Future<Object?> _settle<T>(Future<T> future) async {
@@ -29,14 +28,19 @@ Future<Object?> _settle<T>(Future<T> future) async {
 bool _has(List<String> grants, String permission) =>
     grants.any((grant) => grant.toLowerCase() == permission);
 
-String _humanize(String value) => value
-    .toLowerCase()
-    .split('_')
-    .map(
-      (part) =>
-          part.isEmpty ? part : '${part[0].toUpperCase()}${part.substring(1)}',
-    )
-    .join(' ');
+String _humanize(String value) => value.toUpperCase() == 'PROPOSED'
+    ? 'Draft'
+    : value.toUpperCase() == 'SUBMITTED'
+    ? 'Published for assessment'
+    : value
+          .toLowerCase()
+          .split('_')
+          .map(
+            (part) => part.isEmpty
+                ? part
+                : '${part[0].toUpperCase()}${part.substring(1)}',
+          )
+          .join(' ');
 
 String _formatDate(String value) {
   final date = DateTime.tryParse(value)?.toLocal();
@@ -62,32 +66,24 @@ String _month(int month) => const [
   'Dec',
 ][month - 1];
 
-bool _validUuid(String value) => RegExp(_uuidPattern).hasMatch(value.trim());
-
-bool _validInstant(String value) {
-  return RegExp(_explicitInstantPattern).hasMatch(value.trim()) &&
-      DateTime.tryParse(value.trim()) != null;
-}
-
-bool _validPeriod(String startsAt, String endsAt) {
-  final start = DateTime.tryParse(startsAt.trim());
-  final end = DateTime.tryParse(endsAt.trim());
-  return _validInstant(startsAt) &&
-      _validInstant(endsAt) &&
-      start != null &&
-      end != null &&
-      end.isAfter(start);
-}
+enum CoastalOperationsSection { all, assessments, alerts }
 
 class CoastalOperationsScreen extends StatefulWidget {
   const CoastalOperationsScreen({
     required this.viewModel,
     required this.apiService,
+    this.section = CoastalOperationsSection.all,
+    this.initialView,
+    this.initialRecordId,
+    this.fromLogs = false,
     super.key,
   });
 
   final AuthViewModel viewModel;
   final CoastalOperationsApiService apiService;
+  final CoastalOperationsSection section;
+  final String? initialView, initialRecordId;
+  final bool fromLogs;
 
   @override
   State<CoastalOperationsScreen> createState() =>
@@ -95,8 +91,21 @@ class CoastalOperationsScreen extends StatefulWidget {
 }
 
 class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
+  int _pageSize = 25, _assessmentPage = 0, _alertPage = 0;
+  List<String?> _assessmentPages = [null], _alertPages = [null];
+  bool _restoreBusy = false, _restoreAttempted = false;
+  String? _restoreError;
   List<CoastalAssessment> _assessments = const [];
   List<CoastalAlert> _alerts = const [];
+  Map<String, String> _assessmentFilters = const {};
+  Map<String, String> _alertFilters = const {};
+  String? _assessmentCursor;
+  String? _alertCursor;
+  int _loadGeneration = 0;
+  bool get _showAssessments =>
+      widget.section != CoastalOperationsSection.alerts;
+  bool get _showAlerts =>
+      widget.section != CoastalOperationsSection.assessments;
   String? _assessmentError;
   String? _alertError;
   String? _notice;
@@ -104,16 +113,69 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
   bool _loading = true;
   bool _busy = false;
   String? _loadedUserId;
+  String _loadedGrants = '';
+  CoastalAssessment? _selectedAssessment;
+  CoastalAlert? _selectedAlert;
+  String? _selectedAlertId;
+  String? _alertDetailError;
+  bool _alertDetailLoading = false;
+  bool? _formAssessments;
+  CoastalAssessment? _editingAssessment;
+  CoastalAlert? _editingAlert;
+  bool get _focused =>
+      _restoreBusy ||
+      _restoreError != null ||
+      _formAssessments != null ||
+      _selectedAssessment != null ||
+      _selectedAlertId != null;
+  void _backToList() {
+    final name = ModalRoute.of(context)?.settings.name;
+    if (widget.fromLogs && name != null && name.contains('?view=')) {
+      final navigator = Navigator.of(context);
+      var found = false;
+      navigator.popUntil((route) {
+        if (route.settings.name == '/operations/logs') {
+          found = true;
+          return true;
+        }
+        return route.isFirst;
+      });
+      if (!found) navigator.pushNamed('/operations/logs');
+      return;
+    }
+    if (name != null && name.contains('?view=')) {
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context, true);
+      } else {
+        Navigator.pushReplacementNamed(
+          context,
+          widget.fromLogs
+              ? '/operations/logs'
+              : _showAlerts && !_showAssessments
+              ? '/operations/alerts'
+              : '/operations/assessments',
+        );
+      }
+      return;
+    }
+    setState(() {
+      _restoreBusy = false;
+      _restoreError = null;
+      _formAssessments = null;
+      _editingAssessment = null;
+      _editingAlert = null;
+      _selectedAssessment = null;
+      _selectedAlert = null;
+      _selectedAlertId = null;
+      _alertDetailError = null;
+      _alertDetailLoading = false;
+    });
+  }
+
   final Map<String, CoastalAssessmentDetail> _details = {};
   final Map<String, CoastalOperationalStatus> _statusByAssessment = {};
   final Map<String, List<CoastalHistoryItem>> _historyByAssessment = {};
   final Map<String, String> _detailErrors = {};
-  final _lookupFormKey = GlobalKey<FormState>();
-  final _lookupIdController = TextEditingController();
-  String _lookupType = 'DESTINATION';
-  CoastalOperationalStatus? _lookupStatus;
-  List<CoastalHistoryItem> _lookupHistory = const [];
-  String? _lookupError;
 
   List<String> get _permissions =>
       widget.viewModel.user?.permissions ?? const [];
@@ -141,13 +203,28 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
       _has(_permissions, CoastalOperationsPermissions.targetStatusRead);
   bool get _canReadHistory =>
       _has(_permissions, CoastalOperationsPermissions.targetHistoryRead);
+  bool get _canManageAlerts =>
+      CoastalOperationsPermissions.canManageAlerts(_permissions);
   bool get _canReadAlerts =>
       _has(_permissions, CoastalOperationsPermissions.alertRead) ||
+      _canManageAlerts;
+  bool get _canCreateAlerts =>
+      _has(_permissions, CoastalOperationsPermissions.alertCreate) ||
       _has(_permissions, CoastalOperationsPermissions.alertManage);
-  bool get _canManageAlerts =>
+  bool get _canUpdateAlerts =>
+      _has(_permissions, CoastalOperationsPermissions.alertUpdate) ||
       _has(_permissions, CoastalOperationsPermissions.alertManage);
-  bool get _canDecideAlerts =>
+  bool get _canDeleteAlerts =>
+      _has(_permissions, CoastalOperationsPermissions.alertDelete) ||
+      _has(_permissions, CoastalOperationsPermissions.alertManage);
+  bool get _canPublishAlerts =>
+      _has(_permissions, CoastalOperationsPermissions.alertPublish) ||
       _has(_permissions, CoastalOperationsPermissions.alertDecide);
+  bool get _canResolveAlerts =>
+      _has(_permissions, CoastalOperationsPermissions.alertResolve) ||
+      _has(_permissions, CoastalOperationsPermissions.alertDecide);
+  bool get _canReadAudit =>
+      _has(_permissions, CoastalOperationsPermissions.auditRead);
   bool get _hasAccess => CoastalOperationsPermissions.hasAccess(_permissions);
 
   @override
@@ -155,6 +232,7 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
     super.initState();
     widget.viewModel.addListener(_syncAccount);
     _loadedUserId = widget.viewModel.user?.id;
+    _loadedGrants = _permissions.join('|');
     if (widget.viewModel.user == null && !widget.viewModel.isLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && widget.viewModel.user == null) {
@@ -163,25 +241,60 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
       });
     } else if (widget.viewModel.user != null) {
       unawaited(_loadData());
+      if (widget.initialView != null) {
+        _restoreAttempted = true;
+        _restoreBusy = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) unawaited(_restoreView());
+        });
+      }
     }
   }
 
   @override
   void dispose() {
     widget.viewModel.removeListener(_syncAccount);
-    _lookupIdController.dispose();
+    _loadGeneration++;
     super.dispose();
   }
 
   void _syncAccount() {
     final id = widget.viewModel.user?.id;
-    if (id == _loadedUserId) return;
+    final grants = _permissions.join('|');
+    if (id == _loadedUserId && grants == _loadedGrants) return;
+    _loadedGrants = grants;
+    _formAssessments = null;
+    _selectedAssessment = null;
+    _selectedAlert = null;
+    _selectedAlertId = null;
+    _alertDetailError = null;
+    _alertDetailLoading = false;
+    _editingAssessment = null;
+    _editingAlert = null;
+    _assessmentFilters = const {};
+    _alertFilters = const {};
     _loadedUserId = id;
-    if (id != null) unawaited(_loadData());
+    _loadGeneration++;
+    _details.clear();
+    _statusByAssessment.clear();
+    _historyByAssessment.clear();
+    _detailErrors.clear();
+    _assessments = const [];
+    _alerts = const [];
+    if (id != null) {
+      unawaited(_loadData());
+      if (!_restoreAttempted && widget.initialView != null) {
+        _restoreAttempted = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) unawaited(_restoreView());
+        });
+      }
+    }
     if (mounted) setState(() {});
   }
 
   Future<void> _loadData() async {
+    final generation = ++_loadGeneration;
     if (!_hasAccess) {
       if (mounted) setState(() => _loading = false);
       return;
@@ -190,38 +303,282 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
       _loading = true;
       _assessmentError = null;
       _alertError = null;
+      _assessmentCursor = null;
+      _alertCursor = null;
     });
-    await blueverseLoadingScreenController.track(() async {
+    {
       final results = await Future.wait<Object?>([
-        _canReadAssessments
-            ? _settle(widget.apiService.listAssessments())
+        _canReadAssessments && _showAssessments
+            ? _settle(
+                widget.apiService.listAssessments(
+                  filters: {..._assessmentFilters, 'pageSize': '$_pageSize'},
+                  cursor: _assessmentPages[_assessmentPage],
+                ),
+              )
             : Future<Object?>.value(null),
-        _canReadAlerts
-            ? _settle(widget.apiService.listAlerts())
+        _canReadAlerts && _showAlerts
+            ? _settle(
+                widget.apiService.listAlerts(
+                  filters: {..._alertFilters, 'pageSize': '$_pageSize'},
+                  cursor: _alertPages[_alertPage],
+                ),
+              )
             : Future<Object?>.value(null),
       ]);
-      if (!mounted) return;
+      if (!mounted || generation != _loadGeneration) return;
       final assessmentResult = results[0];
       final alertResult = results[1];
       setState(() {
         if (assessmentResult is CoastalPage<CoastalAssessment>) {
           _assessments = assessmentResult.items;
-        } else if (_canReadAssessments) {
+          _assessmentCursor = assessmentResult.nextCursor;
+        } else if (_canReadAssessments && _showAssessments) {
           _assessmentError =
               'We could not load assessments. Check your connection and retry.';
         }
         if (alertResult is CoastalPage<CoastalAlert>) {
           _alerts = alertResult.items;
-        } else if (_canReadAlerts) {
+          _alertCursor = alertResult.nextCursor;
+        } else if (_canReadAlerts && _showAlerts) {
           _alertError =
               'We could not load advisories. Check your connection and retry.';
         }
         _loading = false;
       });
-    });
+      if (_selectedAlert != null) await _openAlertDetails(_selectedAlert!);
+    }
   }
 
+  void _resetPages() {
+    _assessmentPage = 0;
+    _alertPage = 0;
+    _assessmentPages = [null];
+    _alertPages = [null];
+  }
+
+  Widget _pagination(bool assessments) {
+    final page = assessments ? _assessmentPage : _alertPage;
+    final next = assessments ? _assessmentCursor : _alertCursor;
+    return CoastalOperationsPagination(
+      assessments: assessments,
+      size: _pageSize,
+      count: assessments ? _assessments.length : _alerts.length,
+      page: page,
+      onSize: (value) {
+        setState(() {
+          _pageSize = value;
+          _resetPages();
+        });
+        unawaited(_loadData());
+      },
+      previous: _loading || page == 0
+          ? null
+          : () {
+              setState(() {
+                if (assessments) {
+                  _assessmentPage--;
+                } else {
+                  _alertPage--;
+                }
+              });
+              unawaited(_loadData());
+            },
+      next: _loading || next == null
+          ? null
+          : () {
+              setState(() {
+                if (assessments) {
+                  _assessmentPages = [..._assessmentPages.take(page + 1), next];
+                  _assessmentPage++;
+                } else {
+                  _alertPages = [..._alertPages.take(page + 1), next];
+                  _alertPage++;
+                }
+              });
+              unawaited(_loadData());
+            },
+    );
+  }
+
+  bool _navigateView(bool assessments, String view, [String? id]) {
+    final name = ModalRoute.of(context)?.settings.name;
+    if (name == null || !name.startsWith('/operations/')) return false;
+    final uri = Uri(
+      path: assessments ? '/operations/assessments' : '/operations/alerts',
+      queryParameters: {
+        'view': view,
+        'id': ?id,
+        if (widget.fromLogs) 'origin': 'logs',
+      },
+    );
+    Navigator.pushNamed(context, uri.toString()).then((result) {
+      if (!mounted || result == null) return;
+      if (result is String) {
+        setState(() {
+          _notice = result;
+          _noticeIsError = false;
+        });
+      }
+      unawaited(_loadData());
+    });
+    return true;
+  }
+
+  Future<void> _restoreView() async {
+    final scope = '$_loadedUserId:$_loadedGrants';
+    setState(() {
+      _restoreBusy = true;
+      _restoreError = null;
+    });
+    final assessments = widget.section != CoastalOperationsSection.alerts;
+    try {
+      if (widget.initialView == 'create') {
+        if (assessments ? !_canCreateAssessment : !_canCreateAlerts) {
+          throw StateError(
+            'Your current access does not allow creating this draft.',
+          );
+        }
+        setState(() => _formAssessments = assessments);
+        return;
+      }
+      final id = widget.initialRecordId;
+      if (id == null ||
+          !RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F-]{27}$').hasMatch(id)) {
+        throw StateError('This record link is invalid. Return to the records.');
+      }
+      if (assessments) {
+        if (!_canReadAssessments ||
+            (widget.initialView == 'edit' && !_canUpdateAssessment)) {
+          throw StateError('This draft is outside your current access.');
+        }
+        final detail = await widget.apiService.getAssessmentDetail(id);
+        if (!mounted || scope != '$_loadedUserId:$_loadedGrants') return;
+        if (widget.initialView == 'edit') {
+          if (detail.assessment.workflowStatus != 'DRAFT') {
+            throw StateError('This assessment is no longer an editable draft.');
+          }
+          setState(() {
+            _editingAssessment = detail.assessment;
+            _formAssessments = true;
+          });
+        } else {
+          setState(() => _selectedAssessment = detail.assessment);
+          await _loadDetail(detail.assessment);
+        }
+      } else {
+        if (!_canReadAlerts ||
+            (widget.initialView == 'edit' && !_canUpdateAlerts)) {
+          throw StateError('This advisory is outside your current access.');
+        }
+        final result = await (widget.fromLogs
+            ? widget.apiService.listAlertLogRecords(filters: {'recordId': id})
+            : widget.apiService.listAlerts(filters: {'recordId': id}));
+        if (!mounted || scope != '$_loadedUserId:$_loadedGrants') return;
+        final record = result.items.where((r) => r.alertId == id).firstOrNull;
+        if (record == null) {
+          throw StateError(
+            'This advisory is unavailable or outside your current access.',
+          );
+        }
+        if (widget.initialView == 'edit') {
+          if (record.lifecycle != 'PROPOSED') {
+            throw StateError('This advisory is no longer an editable draft.');
+          }
+          setState(() {
+            _editingAlert = record;
+            _formAssessments = false;
+          });
+        } else {
+          setState(() {
+            _selectedAlert = record;
+            _selectedAlertId = id;
+          });
+        }
+      }
+    } on Object catch (error) {
+      if (mounted && scope == '$_loadedUserId:$_loadedGrants') {
+        setState(
+          () => _restoreError = error is CoastalOperationsApiException
+              ? error.message
+              : error is StateError
+              ? error.message.toString()
+              : 'The draft could not be restored. Return and retry.',
+        );
+      }
+    } finally {
+      if (mounted && scope == '$_loadedUserId:$_loadedGrants') {
+        setState(() => _restoreBusy = false);
+      }
+    }
+  }
+
+  void _openActivity(String id, bool assessment) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => SizedBox(
+        height: MediaQuery.sizeOf(context).height * .85,
+        child: CoastalOperationsActivity(
+          apiService: widget.apiService,
+          id: id,
+          assessment: assessment,
+        ),
+      ),
+    );
+  }
+
+  Widget _navigation() => Wrap(
+    spacing: 12,
+    runSpacing: 8,
+    children: [
+      if (CoastalOperationsPermissions.hasAssessmentAccess(_permissions))
+        TextButton(
+          onPressed: _showAssessments
+              ? null
+              : () => Navigator.pushReplacementNamed(
+                  context,
+                  '/operations/assessments',
+                ),
+          child: const Text('Assessments'),
+        ),
+      if (CoastalOperationsPermissions.hasAlertAccess(_permissions))
+        TextButton(
+          onPressed: _showAlerts
+              ? null
+              : () => Navigator.pushReplacementNamed(
+                  context,
+                  '/operations/alerts',
+                ),
+          child: const Text('Alerts'),
+        ),
+      if (CoastalOperationsPermissions.canReadLogs(_permissions))
+        TextButton(
+          onPressed: () =>
+              Navigator.pushReplacementNamed(context, '/operations/logs'),
+          child: const Text('Logs'),
+        ),
+    ],
+  );
+  Widget _search(bool assessments) => CoastalOperationsSearch(
+    key: ValueKey('search:$assessments:$_loadedUserId:$_loadedGrants'),
+    assessments: assessments,
+    canManage: assessments ? _canReadQueue : _canManageAlerts,
+    loading: _loading,
+    active: !_focused,
+    onApply: (query) {
+      _resetPages();
+      if (assessments) {
+        _assessmentFilters = query;
+      } else {
+        _alertFilters = query;
+      }
+      unawaited(_loadData());
+    },
+  );
+
   Future<void> _loadDetail(CoastalAssessment assessment) async {
+    final scope = '$_loadedUserId:$_loadedGrants';
     if (_details.containsKey(assessment.assessmentId)) return;
     setState(() => _detailErrors.remove(assessment.assessmentId));
     try {
@@ -231,7 +588,9 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
       CoastalOperationalStatus? status;
       List<CoastalHistoryItem> history = const [];
       final results = await Future.wait<Object?>([
-        _canReadStatus
+        _canReadStatus &&
+                detail.assessment.targetId !=
+                    '00000000-0000-0000-0000-000000000000'
             ? _settle(
                 widget.apiService.getTargetStatus(
                   targetType: detail.assessment.targetType,
@@ -239,7 +598,9 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                 ),
               )
             : Future<Object?>.value(null),
-        _canReadHistory
+        _canReadHistory &&
+                detail.assessment.targetId !=
+                    '00000000-0000-0000-0000-000000000000'
             ? _settle(
                 widget.apiService.getTargetHistory(
                   targetType: detail.assessment.targetType,
@@ -254,11 +615,14 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
       if (results[1] case final CoastalPage<CoastalHistoryItem> historyPage) {
         history = historyPage.items;
       }
-      if (!mounted) {
+      if (!mounted || scope != '$_loadedUserId:$_loadedGrants') {
         return;
       }
       setState(() {
         _details[assessment.assessmentId] = detail;
+        if (_selectedAssessment?.assessmentId == assessment.assessmentId) {
+          _selectedAssessment = detail.assessment;
+        }
         if (status != null) {
           _statusByAssessment[assessment.assessmentId] = status;
         }
@@ -270,11 +634,11 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
         }
       });
     } on CoastalOperationsApiException catch (error) {
-      if (mounted) {
+      if (mounted && scope == '$_loadedUserId:$_loadedGrants') {
         setState(() => _detailErrors[assessment.assessmentId] = error.message);
       }
     } on Object {
-      if (mounted) {
+      if (mounted && scope == '$_loadedUserId:$_loadedGrants') {
         setState(
           () => _detailErrors[assessment.assessmentId] =
               'We could not open this assessment. Refresh and try again.',
@@ -291,30 +655,68 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
     await _loadDetail(
       _assessments.firstWhere(
         (assessment) => assessment.assessmentId == assessmentId,
+        orElse: () => _selectedAssessment!,
       ),
     );
   }
 
   Future<void> _openAssessmentForm({CoastalAssessment? existing}) async {
-    final created = await showDialog<CoastalAssessment>(
-      context: context,
-      builder: (_) => _AssessmentFormDialog(
-        apiService: widget.apiService,
-        existing: existing,
-      ),
-    );
-    if (created == null || !mounted) return;
-    setState(() {
-      _notice = existing == null
-          ? 'Assessment draft saved. Submit it when you are ready to check coastal context.'
-          : 'Assessment draft updated.';
-      _noticeIsError = false;
-    });
-    await _loadData();
-    if (existing != null) {
-      _details.remove(existing.assessmentId);
-      await _refreshDetail(existing.assessmentId);
+    if (_navigateView(
+      true,
+      existing == null ? 'create' : 'edit',
+      existing?.assessmentId,
+    )) {
+      return;
     }
+    setState(() {
+      _formAssessments = true;
+      _editingAssessment = existing;
+      _editingAlert = null;
+    });
+  }
+
+  void _draftSaved(Object result) {
+    if (widget.fromLogs &&
+        ModalRoute.of(context)?.settings.name?.contains('?view=') == true) {
+      _backToList();
+      return;
+    }
+    if (ModalRoute.of(context)?.settings.name?.contains('?view=') == true) {
+      if (Navigator.canPop(context)) {
+        Navigator.pop(
+          context,
+          result is CoastalAssessment
+              ? 'Assessment draft saved. Submit it when you are ready to check coastal context.'
+              : 'Advisory draft saved. It has not been published.',
+        );
+      } else {
+        Navigator.pushReplacementNamed(
+          context,
+          result is CoastalAssessment
+              ? '/operations/assessments'
+              : '/operations/alerts',
+        );
+      }
+      return;
+    }
+    _backToList();
+    if (result is CoastalAssessment) {
+      _details.remove(result.assessmentId);
+      setState(() {
+        _selectedAssessment = _canReadAssessments ? result : null;
+        _notice = 'Assessment draft saved. Submit it when you are ready to check coastal context.';
+        _noticeIsError = false;
+      });
+      if (_canReadAssessments) unawaited(_loadDetail(result));
+    } else if (result is CoastalAlert) {
+      setState(() {
+        _selectedAlert = result;
+        _selectedAlertId = result.alertId;
+        _notice = 'Advisory draft saved. It has not been published.';
+        _noticeIsError = false;
+      });
+    }
+    unawaited(_loadData());
   }
 
   Future<void> _handleAssessmentDraftAction(
@@ -324,10 +726,16 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(submit ? 'Submit this assessment?' : 'Cancel this draft?'),
+        title: Text(
+          submit
+              ? (widget.section == CoastalOperationsSection.all
+                    ? 'Submit this assessment?'
+                    : 'Publish this assessment?')
+              : 'Cancel this draft?',
+        ),
         content: Text(
           submit
-              ? 'Submitting closes draft editing and checks the latest coastal context. No automated recommendation or operational change will be created.'
+              ? 'Publishing closes draft editing and checks coastal context. The review is queued for the assessment agent when connected. Publication does not approve a recommendation or change coastal access.'
               : 'This draft will be cancelled and retained in the audit history for authorized reviewers.',
         ),
         actions: [
@@ -336,8 +744,20 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
             child: const Text('Keep draft'),
           ),
           FilledButton(
+            style: submit
+                ? null
+                : FilledButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                    foregroundColor: Theme.of(context).colorScheme.onError,
+                  ),
             onPressed: () => Navigator.pop(context, true),
-            child: Text(submit ? 'Submit assessment' : 'Confirm cancellation'),
+            child: Text(
+              submit
+                  ? (widget.section == CoastalOperationsSection.all
+                        ? 'Submit assessment'
+                        : 'Confirm publication')
+                  : 'Confirm cancellation',
+            ),
           ),
         ],
       ),
@@ -372,11 +792,15 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
         _statusByAssessment.remove(assessment.assessmentId);
         _historyByAssessment.remove(assessment.assessmentId);
         _detailErrors.remove(assessment.assessmentId);
+        _backToList();
       }
     } on CoastalOperationsApiException catch (error) {
       _setNotice(error.message, error: true);
     } on Object {
-      _setNotice('We could not update this assessment. Refresh and retry.', error: true);
+      _setNotice(
+        'We could not update this assessment. Refresh and retry.',
+        error: true,
+      );
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -396,6 +820,10 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
             child: const Text('Keep draft'),
           ),
           FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Withdraw draft'),
           ),
@@ -420,25 +848,28 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
     } on CoastalOperationsApiException catch (error) {
       _setNotice(error.message, error: true);
     } on Object {
-      _setNotice('We could not withdraw this draft. Refresh and retry.', error: true);
+      _setNotice(
+        'We could not withdraw this draft. Refresh and retry.',
+        error: true,
+      );
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
   Future<void> _openAlertForm({CoastalAlert? existing}) async {
-    final saved = await showDialog<CoastalAlert>(
-      context: context,
-      builder: (_) =>
-          _AlertFormDialog(apiService: widget.apiService, existing: existing),
-    );
-    if (saved == null || !mounted) return;
+    if (_navigateView(
+      false,
+      existing == null ? 'create' : 'edit',
+      existing?.alertId,
+    )) {
+      return;
+    }
     setState(() {
-      _notice =
-          '“${saved.title}” is saved as a proposed draft. It has not been published.';
-      _noticeIsError = false;
+      _formAssessments = false;
+      _editingAlert = existing;
+      _editingAssessment = null;
     });
-    await _loadData();
   }
 
   Future<void> _decideAlert(CoastalAlert alert, String decision) async {
@@ -465,6 +896,9 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
         ),
         actions: [
           TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
@@ -564,6 +998,70 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
     }
   }
 
+  Future<void> _removeEvidence(
+    CoastalAssessment assessment,
+    CoastalEvidence evidence,
+  ) async {
+    final scope = '$_loadedUserId:$_loadedGrants';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Remove this draft image?',
+          style: TextStyle(color: Theme.of(context).colorScheme.error),
+        ),
+        content: const Text(
+          'This image will be removed from the draft. Its recorded activity will be retained.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Keep image'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Confirm removal'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true ||
+        !mounted ||
+        scope != '$_loadedUserId:$_loadedGrants') {
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      await blueverseLoadingScreenController.track(
+        () => widget.apiService.removeAssessmentEvidence(
+          assessmentId: assessment.assessmentId,
+          evidenceId: evidence.evidenceId,
+          expectedVersion: assessment.version,
+        ),
+      );
+      if (!mounted || scope != '$_loadedUserId:$_loadedGrants') return;
+      _setNotice('The image was removed from the draft.', error: false);
+      await _refreshDetail(assessment.assessmentId);
+    } on Object catch (error) {
+      if (mounted && scope == '$_loadedUserId:$_loadedGrants') {
+        _setNotice(
+          error is CoastalOperationsApiException
+              ? error.message
+              : 'The image could not be removed. Please retry.',
+          error: true,
+        );
+      }
+    } finally {
+      if (mounted && scope == '$_loadedUserId:$_loadedGrants') {
+        setState(() => _busy = false);
+      }
+    }
+  }
+
   Future<void> _viewEvidence(
     String assessmentId,
     CoastalEvidence evidence,
@@ -597,48 +1095,6 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
     }
   }
 
-  Future<void> _lookupTarget() async {
-    if (!(_lookupFormKey.currentState?.validate() ?? false)) return;
-    setState(() {
-      _lookupError = null;
-      _lookupStatus = null;
-      _lookupHistory = const [];
-    });
-    final results = await Future.wait<Object?>([
-      _canReadStatus
-          ? _settle(
-              widget.apiService.getTargetStatus(
-                targetType: _lookupType,
-                targetId: _lookupIdController.text.trim(),
-              ),
-            )
-          : Future<Object?>.value(null),
-      _canReadHistory
-          ? _settle(
-              widget.apiService.getTargetHistory(
-                targetType: _lookupType,
-                targetId: _lookupIdController.text.trim(),
-              ),
-            )
-          : Future<Object?>.value(null),
-    ]);
-    if (!mounted) return;
-    final status = results[0];
-    final history = results[1];
-    setState(() {
-      if (status is CoastalOperationalStatus) _lookupStatus = status;
-      if (history is CoastalPage<CoastalHistoryItem>) {
-        _lookupHistory = history.items;
-      }
-      if (status == null && history == null) {
-        _lookupError = 'That coastal record is not available to your account. Check its ID and permissions, then retry.';
-      } else if ((_canReadStatus && status == null) ||
-          (_canReadHistory && history == null)) {
-        _lookupError = 'Some coastal status or history is not available yet.';
-      }
-    });
-  }
-
   void _setNotice(String message, {required bool error}) {
     if (!mounted) return;
     setState(() {
@@ -647,269 +1103,385 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
     });
   }
 
-  Widget _assessmentCard(CoastalAssessment assessment) {
+  Widget _assessmentCard(CoastalAssessment assessment) =>
+      CoastalOperationsRecordCard(
+        record: assessment,
+        onOpen: () {
+          if (_navigateView(true, 'detail', assessment.assessmentId)) return;
+          setState(() => _selectedAssessment = assessment);
+          unawaited(_loadDetail(assessment));
+        },
+        onActivity: _canReadAudit
+            ? () => _openActivity(assessment.assessmentId, true)
+            : null,
+      );
+
+  Widget _assessmentDetails(CoastalAssessment assessment) {
     final detail = _details[assessment.assessmentId];
     final status = _statusByAssessment[assessment.assessmentId];
     final history = _historyByAssessment[assessment.assessmentId] ?? const [];
     final detailError = _detailErrors[assessment.assessmentId];
     return Card(
-      child: ExpansionTile(
-        key: PageStorageKey<String>('assessment-${assessment.assessmentId}'),
-        onExpansionChanged: (expanded) {
-          if (expanded) unawaited(_loadDetail(assessment));
-        },
-        title: Text(
-          assessment.objective,
-          style: const TextStyle(fontWeight: FontWeight.w700),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 6),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _humanize(assessment.targetType),
-              ),
-              const SizedBox(height: 6),
-              _StatusPill(value: assessment.workflowStatus),
-            ],
-          ),
-        ),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
-        children: [
-          if (detailError != null)
-            _NoticeBox(text: detailError, error: true)
-          else if (detail == null)
-            const Padding(
-              padding: EdgeInsets.all(12),
-              child: LinearProgressIndicator(),
-            )
-          else ...[
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Period: ${_formatDate(detail.assessment.periodStartsAt)} – ${_formatDate(detail.assessment.periodEndsAt)}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
-            const SizedBox(height: 14),
-            if (detail.assessment.workflowStatus == 'DRAFT') ...[
-              _InfoSurface(
-                title: 'Draft assessment',
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (detailError != null)
+              _NoticeBox(text: detailError, error: true)
+            else if (detail == null)
+              const Padding(
+                padding: EdgeInsets.all(12),
+                child: LinearProgressIndicator(),
+              )
+            else ...[
+              Align(
+                alignment: Alignment.centerLeft,
                 child: Text(
-                  'Coastal context is checked after you submit this draft.',
+                  'Period: ${_formatDate(detail.assessment.periodStartsAt)} – ${_formatDate(detail.assessment.periodEndsAt)}',
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
-              if (_canUpdateAssessment ||
-                  _canSubmitAssessment ||
-                  _canDeleteAssessment) ...[
+              const SizedBox(height: 14),
+              if (detail.assessment.workflowStatus == 'DRAFT') ...[
+                _InfoSurface(
+                  title: 'Draft assessment',
+                  child: Text(
+                    'Coastal context is checked after you submit this draft.',
+                  ),
+                ),
+                if (_canUpdateAssessment ||
+                    _canSubmitAssessment ||
+                    _canDeleteAssessment) ...[
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: [
+                      if (_canUpdateAssessment)
+                        OutlinedButton(
+                          onPressed: _busy
+                              ? null
+                              : () => _openAssessmentForm(
+                                  existing: detail.assessment,
+                                ),
+                          child: const Text('Edit draft'),
+                        ),
+                      if (_canSubmitAssessment)
+                        FilledButton.tonal(
+                          onPressed: _busy
+                              ? null
+                              : () => _handleAssessmentDraftAction(
+                                  detail.assessment,
+                                  submit: true,
+                                ),
+                          child: Text(
+                            widget.section == CoastalOperationsSection.all
+                                ? 'Submit for review'
+                                : 'Publish assessment',
+                          ),
+                        ),
+                      if (_canDeleteAssessment)
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            foregroundColor: Theme.of(context)
+                                .colorScheme
+                                .error,
+                          ),
+                          onPressed: _busy
+                              ? null
+                              : () => _handleAssessmentDraftAction(
+                                  detail.assessment,
+                                  submit: false,
+                                ),
+                          child: const Text('Cancel draft'),
+                        ),
+                    ],
+                  ),
+                ],
+              ],
+              if (detail.assessment.workflowStatus != 'DRAFT') ...[
+                _InfoSurface(
+                  title: 'Coastal context',
+                  child: Text(_humanize(detail.assessment.aiDependencyStatus)),
+                ),
+              ],
+              if (detail.assessment.workflowStatus != 'DRAFT' &&
+                  detail.assessment.aiDependencyStatus == 'NOT_CONNECTED') ...[
                 const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
+                const _NoticeBox(
+                  text: 'Coastal context was recorded, but automated proposals are not available yet. No operational change has been suggested or applied.',
+                ),
+              ],
+              if (detail.assessment.workflowStatus != 'DRAFT' &&
+                  detail.assessment.aiDependencyStatus == 'UNAVAILABLE') ...[
+                const SizedBox(height: 12),
+                const _NoticeBox(
+                  text: 'Coastal context could not be fully checked right now. The assessment remains submitted; refresh later to see the latest information.',
+                ),
+              ],
+              if (detail.assessment.componentDependencies.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Coastal context checks',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ...detail.assessment.componentDependencies.map(
+                  (dependency) => ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(_dependencyLabel(dependency.service)),
+                    subtitle: Text(_humanize(dependency.status)),
+                    trailing: dependency.checkedAt == null
+                        ? null
+                        : Text(
+                            _formatDate(dependency.checkedAt!),
+                            style: Theme.of(context).textTheme.labelSmall,
+                          ),
+                  ),
+                ),
+              ],
+              if (_canDecideAssessment &&
+                  detail.assessment.workflowStatus != 'DRAFT') ...[
+                const SizedBox(height: 10),
+                const _NoticeBox(
+                  text: 'Reviewer decisions will be available when this assessment contains a validated proposal. There is no proposal to approve or apply yet.',
+                ),
+              ],
+              if (_canReadAudit)
+                TextButton.icon(
+                  onPressed: () => _openActivity(assessment.assessmentId, true),
+                  icon: const Icon(Icons.history),
+                  label: const Text('View activity'),
+                ),
+              if (detail.decisions.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Recorded decisions',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
+                ...detail.decisions.map(
+                  (decision) => ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(_humanize(decision.decision)),
+                    subtitle: Text(_formatDate(decision.decidedAt)),
+                  ),
+                ),
+              ],
+              if (_canReadEvidence || _canUploadEvidence) ...[
+                const SizedBox(height: 16),
+                Row(
                   children: [
-                    if (_canUpdateAssessment)
-                      OutlinedButton(
-                        onPressed: _busy
-                            ? null
-                            : () => _openAssessmentForm(
-                                existing: detail.assessment,
-                              ),
-                        child: const Text('Edit draft'),
+                    Expanded(
+                      child: Text(
+                        'Evidence',
+                        style: Theme.of(context).textTheme.titleSmall,
                       ),
-                    if (_canSubmitAssessment)
-                      FilledButton.tonal(
+                    ),
+                    if (_canUploadEvidence &&
+                        detail.assessment.workflowStatus == 'DRAFT' &&
+                        detail.evidence.length < 5)
+                      TextButton.icon(
                         onPressed: _busy
                             ? null
-                            : () => _handleAssessmentDraftAction(
-                                detail.assessment,
-                                submit: true,
-                              ),
-                        child: const Text('Submit for review'),
-                      ),
-                    if (_canDeleteAssessment)
-                      TextButton(
-                        onPressed: _busy
-                            ? null
-                            : () => _handleAssessmentDraftAction(
-                                detail.assessment,
-                                submit: false,
-                              ),
-                        child: const Text('Cancel draft'),
+                            : () => _uploadEvidence(assessment),
+                        icon: const Icon(Icons.add_photo_alternate_outlined),
+                        label: const Text('Add PNG'),
                       ),
                   ],
                 ),
-              ],
-            ],
-            if (detail.assessment.workflowStatus != 'DRAFT') ...[
-              _InfoSurface(
-                title: 'Coastal context',
-                child: Text(_humanize(detail.assessment.aiDependencyStatus)),
-              ),
-            ],
-            if (detail.assessment.workflowStatus != 'DRAFT' &&
-                detail.assessment.aiDependencyStatus == 'NOT_CONNECTED') ...[
-              const SizedBox(height: 12),
-              const _NoticeBox(
-                text: 'Coastal context was recorded, but automated proposals are not available yet. No operational change has been suggested or applied.',
-              ),
-            ],
-            if (detail.assessment.workflowStatus != 'DRAFT' &&
-                detail.assessment.aiDependencyStatus == 'UNAVAILABLE') ...[
-              const SizedBox(height: 12),
-              const _NoticeBox(
-                text: 'Coastal context could not be fully checked right now. The assessment remains submitted; refresh later to see the latest information.',
-              ),
-            ],
-            if (detail.assessment.componentDependencies.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Coastal context checks',
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-              ),
-              const SizedBox(height: 8),
-              ...detail.assessment.componentDependencies.map(
-                (dependency) => ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(_dependencyLabel(dependency.service)),
-                  subtitle: Text(_humanize(dependency.status)),
-                  trailing: dependency.checkedAt == null
-                      ? null
-                      : Text(
-                          _formatDate(dependency.checkedAt!),
-                          style: Theme.of(context).textTheme.labelSmall,
-                        ),
-                ),
-              ),
-            ],
-            if (_canDecideAssessment &&
-                detail.assessment.workflowStatus != 'DRAFT') ...[
-              const SizedBox(height: 10),
-              const _NoticeBox(
-                text: 'Reviewer decisions will be available when this assessment contains a validated proposal. There is no proposal to approve or apply yet.',
-              ),
-            ],
-            if (detail.decisions.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Recorded decisions',
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-              ),
-              ...detail.decisions.map(
-                (decision) => ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(_humanize(decision.decision)),
-                  subtitle: Text(_formatDate(decision.decidedAt)),
-                ),
-              ),
-            ],
-            if (_canReadEvidence || _canUploadEvidence) ...[
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
+                if (_canReadEvidence && detail.evidence.isEmpty)
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('No evidence images have been added.'),
+                  ),
+                if (!_canReadEvidence && _canUploadEvidence)
+                  const Align(
+                    alignment: Alignment.centerLeft,
                     child: Text(
-                      'Evidence',
-                      style: Theme.of(context).textTheme.titleSmall,
+                      'Evidence details require separate read access.',
                     ),
                   ),
-                  if (_canUploadEvidence &&
-                      const ['DRAFT', 'SUBMITTED', 'REVISION_REQUESTED']
-                          .contains(assessment.workflowStatus) &&
-                      detail.evidence.length < 5)
-                    TextButton.icon(
-                      onPressed: _busy
-                          ? null
-                          : () => _uploadEvidence(assessment),
-                      icon: const Icon(Icons.add_photo_alternate_outlined),
-                      label: const Text('Add PNG'),
+                if (_canReadEvidence)
+                  ...detail.evidence.map(
+                    (evidence) => ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        '${(evidence.byteLength / 1024).round()} KiB PNG',
+                      ),
+                      subtitle: Text(_humanize(evidence.inspectionStatus)),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            tooltip: 'View evidence image',
+                            onPressed: _busy
+                                ? null
+                                : () => _viewEvidence(
+                                    assessment.assessmentId,
+                                    evidence,
+                                  ),
+                            icon: const Icon(Icons.visibility_outlined),
+                          ),
+                          if (_canUploadEvidence &&
+                              detail.assessment.workflowStatus == 'DRAFT')
+                            IconButton(
+                              tooltip: 'Remove evidence image',
+                              color: Theme.of(context).colorScheme.error,
+                              onPressed: _busy
+                                  ? null
+                                  : () => _removeEvidence(
+                                      detail.assessment,
+                                      evidence,
+                                    ),
+                              icon: const Icon(Icons.delete_outline),
+                            ),
+                        ],
+                      ),
                     ),
-                ],
-              ),
-              if (_canReadEvidence && detail.evidence.isEmpty)
-                const Align(
+                  ),
+              ],
+              if (_canReadStatus || _canReadHistory) ...[
+                const SizedBox(height: 16),
+                Align(
                   alignment: Alignment.centerLeft,
-                  child: Text('No evidence images have been added.'),
+                  child: Text(
+                    'Operational status and history',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
                 ),
-              if (!_canReadEvidence && _canUploadEvidence)
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('Evidence details require separate read access.'),
-                ),
-              if (_canReadEvidence)
-                ...detail.evidence.map(
-                  (evidence) => ListTile(
+                if (status != null)
+                  ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(_humanize(status.operationalState)),
+                    subtitle: Text('Updated ${_formatDate(status.updatedAt)}'),
+                    leading: const Icon(Icons.waves_outlined),
+                  ),
+                if (_canReadHistory && history.isEmpty)
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'No operational state changes have been recorded.',
+                    ),
+                  ),
+                ...history.map(
+                  (item) => ListTile(
                     dense: true,
                     contentPadding: EdgeInsets.zero,
                     title: Text(
-                      '${(evidence.byteLength / 1024).round()} KiB PNG',
+                      '${_humanize(item.previousState)} → ${_humanize(item.newState)}',
                     ),
-                    subtitle: Text(_humanize(evidence.inspectionStatus)),
-                    trailing: IconButton(
-                      tooltip: 'View evidence image',
-                      onPressed: () =>
-                          _viewEvidence(assessment.assessmentId, evidence),
-                      icon: const Icon(Icons.visibility_outlined),
-                    ),
+                    subtitle: Text(_formatDate(item.createdAt)),
                   ),
                 ),
-            ],
-            if (_canReadStatus || _canReadHistory) ...[
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Operational status and history',
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-              ),
-              if (status != null)
-                ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(_humanize(status.operationalState)),
-                  subtitle: Text(
-                    'Updated ${_formatDate(status.updatedAt)}',
-                  ),
-                  leading: const Icon(Icons.waves_outlined),
-                ),
-              if (_canReadHistory && history.isEmpty)
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'No operational state changes have been recorded.',
-                  ),
-                ),
-              ...history.map(
-                (item) => ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(
-                    '${_humanize(item.previousState)} → ${_humanize(item.newState)}',
-                  ),
-                  subtitle: Text(_formatDate(item.createdAt)),
-                ),
-              ),
+              ],
             ],
           ],
-        ],
+        ),
       ),
     );
   }
 
-  Widget _alertCard(CoastalAlert alert) {
-    final canEdit = _canManageAlerts && alert.lifecycle == 'PROPOSED';
-    final canWithdraw = _canManageAlerts && alert.lifecycle == 'PROPOSED';
-    final canPublish = _canDecideAlerts && alert.lifecycle == 'PROPOSED';
-    final canResolve = _canDecideAlerts && alert.lifecycle == 'ACTIVE';
+  Future<void> _openAlertDetails(CoastalAlert alert) async {
+    final scope = '$_loadedUserId:$_loadedGrants';
+    setState(() {
+      _selectedAlertId = alert.alertId;
+      _selectedAlert = null;
+      _alertDetailLoading = true;
+      _alertDetailError = null;
+    });
+    try {
+      final page = await widget.apiService.listAlerts(
+        filters: {'recordId': alert.alertId},
+      );
+      if (!mounted ||
+          scope != '$_loadedUserId:$_loadedGrants' ||
+          _selectedAlertId != alert.alertId) {
+        return;
+      }
+      final matching = page.items.where(
+        (item) => item.alertId == alert.alertId,
+      );
+      setState(() {
+        _selectedAlert = matching.isEmpty ? null : matching.first;
+        _alertDetailError = matching.isEmpty
+            ? 'This advisory is unavailable or outside your current access.'
+            : null;
+      });
+    } on Object catch (error) {
+      if (mounted &&
+          scope == '$_loadedUserId:$_loadedGrants' &&
+          _selectedAlertId == alert.alertId) {
+        setState(
+          () => _alertDetailError = error is CoastalOperationsApiException
+              ? error.message
+              : 'The latest advisory could not be loaded. Return to the list and retry.',
+        );
+      }
+    } finally {
+      if (mounted &&
+          scope == '$_loadedUserId:$_loadedGrants' &&
+          _selectedAlertId == alert.alertId) {
+        setState(() => _alertDetailLoading = false);
+      }
+    }
+  }
+
+  Widget _alertCard(CoastalAlert alert, {bool focused = false}) {
+    if (!focused) {
+      return CoastalOperationsRecordCard(
+        record: alert,
+        onOpen: () {
+          if (_navigateView(false, 'detail', alert.alertId)) return;
+          unawaited(_openAlertDetails(alert));
+        },
+        onActivity: _canReadAudit
+            ? () => _openActivity(alert.alertId, false)
+            : null,
+        actions: Wrap(
+          spacing: 8,
+          children: [
+            if (_canUpdateAlerts && alert.lifecycle == 'PROPOSED')
+              TextButton(
+                onPressed: () => _openAlertForm(existing: alert),
+                child: const Text('Edit draft'),
+              ),
+            if (_canDeleteAlerts && alert.lifecycle == 'PROPOSED')
+              TextButton(
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                ),
+                onPressed: _busy ? null : () => _withdrawAlertDraft(alert),
+                child: const Text('Withdraw draft'),
+              ),
+            if (_canPublishAlerts && alert.lifecycle == 'PROPOSED')
+              FilledButton.tonal(
+                onPressed: _busy ? null : () => _decideAlert(alert, 'PUBLISH'),
+                child: const Text('Publish advisory'),
+              ),
+            if (_canResolveAlerts && alert.lifecycle == 'ACTIVE')
+              OutlinedButton(
+                onPressed: _busy ? null : () => _decideAlert(alert, 'RESOLVE'),
+                child: const Text('Resolve advisory'),
+              ),
+          ],
+        ),
+      );
+    }
+    final canEdit = _canUpdateAlerts && alert.lifecycle == 'PROPOSED';
+    final canWithdraw = _canDeleteAlerts && alert.lifecycle == 'PROPOSED';
+    final canPublish = _canPublishAlerts && alert.lifecycle == 'PROPOSED';
+    final canResolve = _canResolveAlerts && alert.lifecycle == 'ACTIVE';
     return Card(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
@@ -928,10 +1500,19 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                         style: Theme.of(context).textTheme.labelSmall,
                       ),
                       const SizedBox(height: 6),
-                      Text(
-                        alert.title,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
+                      if (focused)
+                        Text(
+                          alert.title,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        )
+                      else
+                        TextButton(
+                          onPressed: () => _openAlertDetails(alert),
+                          child: Text(
+                            alert.title,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -939,6 +1520,14 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
               ],
             ),
             const SizedBox(height: 10),
+            Text(
+              'ID: ${alert.alertId}',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            Text(
+              'Created ${_formatDate(alert.createdAt)}',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
             Text(alert.description, style: const TextStyle(height: 1.45)),
             const SizedBox(height: 10),
             Wrap(
@@ -975,6 +1564,12 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                     ),
                   if (canWithdraw)
                     OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Theme.of(context).colorScheme.error,
+                        side: BorderSide(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
                       onPressed: _busy
                           ? null
                           : () => _withdrawAlertDraft(alert),
@@ -997,6 +1592,12 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                 ],
               ),
             ],
+            if (_canReadAudit)
+              TextButton.icon(
+                onPressed: () => _openActivity(alert.alertId, false),
+                icon: const Icon(Icons.history),
+                label: const Text('View activity'),
+              ),
           ],
         ),
       ),
@@ -1030,10 +1631,104 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                 ? const _AccessState()
                 : !_hasAccess
                 ? const _AccessDeniedState()
-                : _buildWorkspace(context),
+                : Column(
+                    children: [
+                      _navigation(),
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            Offstage(
+                              offstage: _focused,
+                              child: _buildWorkspace(context),
+                            ),
+                            if (_focused) _focusedWorkspace(context),
+                          ],
+                        ),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.all(8),
+                        child: Text('BLUEVERSE · Care for the coast'),
+                      ),
+                    ],
+                  ),
           ),
         );
       },
+    );
+  }
+
+  Widget _focusedWorkspace(BuildContext context) {
+    final assessment =
+        _formAssessments ??
+        (_selectedAssessment != null ||
+            (widget.section == CoastalOperationsSection.assessments &&
+                _selectedAlertId == null));
+    final name = widget.fromLogs
+        ? 'Logs'
+        : assessment
+        ? 'Assessments'
+        : 'Alerts';
+    final title = _formAssessments != null
+        ? (_editingAssessment != null || _editingAlert != null
+              ? 'Edit draft'
+              : assessment
+              ? 'New assessment'
+              : 'New advisory')
+        : _selectedAssessment?.title ??
+              _selectedAlert?.title ??
+              (_selectedAlertId != null
+                  ? 'Advisory details'
+                  : 'Assessment details');
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: _backToList,
+            icon: const Icon(Icons.arrow_back),
+            label: Text('Back to $name'),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Focus(
+          autofocus: true,
+          child: Semantics(
+            header: true,
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        if (_notice != null) _NoticeBox(text: _notice!, error: _noticeIsError),
+        if (_restoreBusy) const LinearProgressIndicator(),
+        if (_restoreError != null)
+          _NoticeBox(text: _restoreError!, error: true),
+        if (_formAssessments != null)
+          CoastalDraftDialog(
+            key: ValueKey(
+              'form:$_formAssessments:${_editingAssessment?.assessmentId}:${_editingAlert?.alertId}',
+            ),
+            apiService: widget.apiService,
+            assessments: _formAssessments!,
+            assessment: _editingAssessment,
+            alert: _editingAlert,
+            embedded: true,
+            onSaved: _draftSaved,
+            onCancel: _backToList,
+          )
+        else if (_selectedAssessment != null) ...[
+          Text(_selectedAssessment!.objective),
+          _assessmentDetails(_selectedAssessment!),
+        ] else if (_alertDetailError != null)
+          _NoticeBox(text: _alertDetailError!, error: true)
+        else if (_alertDetailLoading)
+          const LinearProgressIndicator()
+        else if (_selectedAlert != null)
+          _alertCard(_selectedAlert!, focused: true),
+      ],
     );
   }
 
@@ -1055,8 +1750,14 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                     _NoticeBox(text: _notice!, error: _noticeIsError),
                   ],
                   const SizedBox(height: 30),
+                  const Text('OPERATIONS WORKSPACE'),
+                  const SizedBox(height: 8),
                   Text(
-                    'Assessments and advisories',
+                    widget.section == CoastalOperationsSection.all
+                        ? 'Assessments and advisories'
+                        : _showAssessments
+                        ? 'Assessments'
+                        : 'Alerts',
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 6),
@@ -1069,13 +1770,13 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                     spacing: 10,
                     runSpacing: 8,
                     children: [
-                      if (_canCreateAssessment)
+                      if (_showAssessments && _canCreateAssessment)
                         FilledButton.icon(
                           onPressed: _busy ? null : _openAssessmentForm,
                           icon: const Icon(Icons.add),
                           label: const Text('New assessment'),
                         ),
-                      if (_canManageAlerts)
+                      if (_showAlerts && _canCreateAlerts)
                         OutlinedButton.icon(
                           onPressed: _busy ? null : _openAlertForm,
                           icon: const Icon(Icons.campaign_outlined),
@@ -1088,7 +1789,7 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                       ),
                     ],
                   ),
-                  if (_canReadQueue) ...[
+                  if (_showAssessments && _canReadQueue) ...[
                     const SizedBox(height: 10),
                     const Align(
                       alignment: Alignment.centerLeft,
@@ -1096,63 +1797,53 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                     ),
                   ],
                   const SizedBox(height: 32),
-                  _sectionHeading(
-                    context,
-                    'Assessments',
-                    'A clear record of each review',
-                  ),
-                  if (!_canReadAssessments)
-                    const _InfoSurface(
-                      title: 'Assessment reading is not included',
-                      child: Text(
-                        'Your current permissions allow other Coastal Operations actions, but do not include assessment reading.',
-                      ),
-                    )
-                  else if (_assessmentError != null)
-                    _NoticeBox(text: _assessmentError!, error: true)
-                  else if (_loading)
-                    const Center(child: CircularProgressIndicator())
-                  else if (_assessments.isEmpty)
-                    const _InfoSurface(
-                      title: 'No assessments to show yet',
-                      child: Text(
-                        'Saved drafts and submitted reviews will appear here.',
-                      ),
-                    )
-                  else ...[
-                    for (final assessment in _assessments)
-                      _assessmentCard(assessment),
-                  ],
-                  const SizedBox(height: 32),
-                  _sectionHeading(
-                    context,
-                    'Advisories',
-                    'Useful updates for the coast',
-                  ),
-                  if (!_canReadAlerts)
-                    const _InfoSurface(
-                      title: 'Advisory reading is not included',
-                      child: Text(
-                        'Your current permissions do not include advisory reading. You may prepare a draft if you have advisory management access.',
-                      ),
-                    )
-                  else if (_alertError != null)
-                    _NoticeBox(text: _alertError!, error: true)
-                  else if (_loading)
-                    const Center(child: CircularProgressIndicator())
-                  else if (_alerts.isEmpty)
-                    const _InfoSurface(
-                      title: 'No advisories to show',
-                      child: Text(
-                        'Active public updates and authorized operations drafts will appear here.',
-                      ),
-                    )
-                  else ...[
-                    for (final alert in _alerts) _alertCard(alert),
-                  ],
-                  if (_canReadStatus || _canReadHistory) ...[
+                  if (_showAssessments) ...[
+                    _search(true),
+                    if (_assessmentError != null)
+                      _NoticeBox(text: _assessmentError!, error: true),
+                    if (!_canReadAssessments)
+                      const _InfoSurface(
+                        title: 'Assessment reading is not included',
+                        child: Text(
+                          'Your current permissions allow other Coastal Operations actions, but do not include assessment reading.',
+                        ),
+                      )
+                    else if (_assessments.isEmpty && !_loading)
+                      const _InfoSurface(
+                        title: 'No assessments to show yet',
+                        child: Text(
+                          'Saved drafts and submitted reviews will appear here.',
+                        ),
+                      )
+                    else ...[
+                      for (final assessment in _assessments)
+                        _assessmentCard(assessment),
+                    ],
                     const SizedBox(height: 32),
-                    _targetLookup(context),
+                    if (_canReadAssessments) _pagination(true),
+                  ],
+                  if (_showAlerts) ...[
+                    _search(false),
+                    if (_alertError != null)
+                      _NoticeBox(text: _alertError!, error: true),
+                    if (!_canReadAlerts)
+                      const _InfoSurface(
+                        title: 'Advisory reading is not included',
+                        child: Text(
+                          'Your current permissions do not include advisory reading. You may prepare a draft if you have advisory management access.',
+                        ),
+                      )
+                    else if (_alerts.isEmpty && !_loading)
+                      const _InfoSurface(
+                        title: 'No advisories to show',
+                        child: Text(
+                          'Active public updates and authorized operations drafts will appear here.',
+                        ),
+                      )
+                    else ...[
+                      for (final alert in _alerts) _alertCard(alert),
+                    ],
+                    if (_canReadAlerts) _pagination(false),
                   ],
                 ],
               ),
@@ -1172,7 +1863,12 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
           fit: StackFit.expand,
           children: [
             Image.asset(
-              'assets/coastal/onboarding/coastal-walk.jpg',
+              _showAssessments
+                  ? 'assets/coastal/onboarding/assessment-hero.png'
+                  : 'assets/coastal/onboarding/alerts-hero.png',
+              semanticLabel: _showAssessments
+                  ? 'Coastal field workers inspecting a beach access path'
+                  : 'A coastal steward guiding visitors toward a safe path',
               fit: BoxFit.cover,
               alignment: Alignment.center,
               errorBuilder: (_, _, _) => const ColoredBox(
@@ -1211,7 +1907,9 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Look after the places we share.',
+                      widget.section == CoastalOperationsSection.alerts
+                          ? 'Clear updates. Safer coastal days.'
+                          : 'Look after the places we share.',
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(
                             color: Colors.white,
@@ -1220,8 +1918,10 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                           ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Save an assessment draft and prepare clear advisories for the right people.',
+                    Text(
+                      widget.section == CoastalOperationsSection.alerts
+                          ? 'Prepare a clear notice, choose its audience, and follow it through publication and resolution.'
+                          : 'Gather evidence in a draft, publish it for assessment, and follow the recommendation and human review when available.',
                       style: TextStyle(color: Colors.white, height: 1.35),
                     ),
                   ],
@@ -1233,600 +1933,6 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
       ),
     );
   }
-
-  Widget _sectionHeading(BuildContext context, String eyebrow, String title) =>
-      Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              eyebrow.toUpperCase(),
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: BlueversePalette.coastBlue,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.2,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(title, style: Theme.of(context).textTheme.titleLarge),
-          ],
-        ),
-      );
-
-  Widget _targetLookup(BuildContext context) => _InfoSurface(
-    title: 'Check a coastal record',
-    child: Form(
-      key: _lookupFormKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text(
-            'Use the ID shown in the destination, activity, offering, or session details to see its status and history.',
-          ),
-          const SizedBox(height: 14),
-          DropdownButtonFormField<String>(
-            initialValue: _lookupType,
-            decoration: const InputDecoration(labelText: 'Record type'),
-            items: _coastalTargetTypes
-                .map(
-                  (type) => DropdownMenuItem(
-                    value: type,
-                    child: Text(_humanize(type)),
-                  ),
-                )
-                .toList(growable: false),
-            onChanged: (value) {
-              if (value != null) setState(() => _lookupType = value);
-            },
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _lookupIdController,
-            decoration: const InputDecoration(
-              labelText: 'Coastal record ID',
-              hintText: 'Paste the ID from the coastal record details',
-            ),
-            validator: (value) =>
-                _validUuid(value ?? '')
-                ? null
-                : 'Check the coastal record ID and try again.',
-          ),
-          const SizedBox(height: 12),
-          FilledButton.tonal(
-            onPressed: _lookupTarget,
-            child: const Text('Check record'),
-          ),
-          if (_lookupError != null) ...[
-            const SizedBox(height: 12),
-            _NoticeBox(text: _lookupError!, error: true),
-          ],
-          if (_lookupStatus != null) ...[
-            const SizedBox(height: 12),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.waves_outlined),
-              title: Text(_humanize(_lookupStatus!.operationalState)),
-              subtitle: Text(
-                'Updated ${_formatDate(_lookupStatus!.updatedAt)}',
-              ),
-            ),
-          ],
-          if (_canReadHistory &&
-              _lookupStatus != null &&
-              _lookupHistory.isEmpty)
-            const Text('No state changes have been recorded for this record.'),
-          if (_canReadHistory)
-            ..._lookupHistory.map(
-              (item) => ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  '${_humanize(item.previousState)} → ${_humanize(item.newState)}',
-                ),
-                subtitle: Text(_formatDate(item.createdAt)),
-              ),
-            ),
-        ],
-      ),
-    ),
-  );
-}
-
-class _AssessmentFormDialog extends StatefulWidget {
-  const _AssessmentFormDialog({required this.apiService, this.existing});
-
-  final CoastalOperationsApiService apiService;
-  final CoastalAssessment? existing;
-
-  @override
-  State<_AssessmentFormDialog> createState() => _AssessmentFormDialogState();
-}
-
-class _AssessmentFormDialogState extends State<_AssessmentFormDialog> {
-  final _formKey = GlobalKey<FormState>();
-  final _targetId = TextEditingController();
-  final _sourceWorkflowId = TextEditingController();
-  final _startsAt = TextEditingController();
-  final _endsAt = TextEditingController();
-  final _objective = TextEditingController();
-  String _targetType = 'DESTINATION';
-  String? _error;
-  bool _saving = false;
-
-  @override
-  void initState() {
-    super.initState();
-    final existing = widget.existing;
-    _targetId.text = existing?.targetId ?? '';
-    _sourceWorkflowId.text = existing?.sourceWorkflowId ?? '';
-    _startsAt.text = existing?.periodStartsAt ?? '';
-    _endsAt.text = existing?.periodEndsAt ?? '';
-    _objective.text = existing?.objective ?? '';
-    _targetType = existing?.targetType ?? 'DESTINATION';
-  }
-
-  @override
-  void dispose() {
-    _targetId.dispose();
-    _sourceWorkflowId.dispose();
-    _startsAt.dispose();
-    _endsAt.dispose();
-    _objective.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    if (!_validPeriod(_startsAt.text, _endsAt.text)) {
-      setState(
-        () => _error = 'Enter valid RFC 3339 times with offsets and an end later than the start.',
-      );
-      return;
-    }
-    setState(() {
-      _saving = true;
-      _error = null;
-    });
-    try {
-      final existing = widget.existing;
-      final assessment = await blueverseLoadingScreenController.track(() {
-        final sourceWorkflowId = _sourceWorkflowId.text.trim().isEmpty
-            ? null
-            : _sourceWorkflowId.text.trim();
-        if (existing != null) {
-          return widget.apiService.updateAssessmentDraft(
-            assessmentId: existing.assessmentId,
-            expectedVersion: existing.version,
-            targetType: _targetType,
-            targetId: _targetId.text.trim(),
-            sourceWorkflowId: sourceWorkflowId,
-            periodStartsAt: _startsAt.text.trim(),
-            periodEndsAt: _endsAt.text.trim(),
-            objective: _objective.text.trim(),
-          );
-        }
-        return widget.apiService.createAssessment(
-          targetType: _targetType,
-          targetId: _targetId.text.trim(),
-          sourceWorkflowId: sourceWorkflowId,
-          periodStartsAt: _startsAt.text.trim(),
-          periodEndsAt: _endsAt.text.trim(),
-          objective: _objective.text.trim(),
-        );
-      });
-      if (mounted) Navigator.pop(context, assessment);
-    } on CoastalOperationsApiException catch (error) {
-      if (mounted) setState(() => _error = error.message);
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: Text(
-      widget.existing == null
-          ? 'Start an operations assessment'
-          : 'Update your assessment draft',
-    ),
-    content: SizedBox(
-      width: 480,
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                widget.existing == null
-                    ? 'Save a draft now. When it is ready, submit it to check the latest coastal context.'
-                    : 'Update the details while this assessment is still a draft.',
-              ),
-              const SizedBox(height: 14),
-              DropdownButtonFormField<String>(
-                initialValue: _targetType,
-                decoration: const InputDecoration(
-                  labelText: 'Coastal record type',
-                ),
-                items: _coastalTargetTypes
-                    .map(
-                      (type) => DropdownMenuItem(
-                        value: type,
-                        child: Text(_humanize(type)),
-                      ),
-                    )
-                    .toList(growable: false),
-                onChanged: (value) {
-                  if (value != null) setState(() => _targetType = value);
-                },
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _targetId,
-                decoration: const InputDecoration(
-                  labelText: 'Coastal record ID',
-                  hintText:
-                      'ID from the destination, activity, offering, or session details',
-                ),
-                validator: (value) => _validUuid(value ?? '')
-                    ? null
-                    : 'Check the coastal record ID and try again.',
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _sourceWorkflowId,
-                decoration: const InputDecoration(
-                  labelText: 'Related coastal plan ID (optional)',
-                  hintText: 'ID from the related itinerary or plan',
-                ),
-                validator: (value) =>
-                    value == null ||
-                    value.trim().isEmpty ||
-                    _validUuid(value)
-                    ? null
-                    : 'Check the related coastal plan ID and try again.',
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _startsAt,
-                decoration: const InputDecoration(
-                  labelText: 'Period starts at',
-                  hintText: '2026-09-28T09:00:00+05:30',
-                  helperText: 'Include Z or the correct UTC offset.',
-                ),
-                validator: (value) => _validInstant(value ?? '')
-                    ? null
-                    : 'Include an explicit UTC offset.',
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _endsAt,
-                decoration: const InputDecoration(
-                  labelText: 'Period ends at',
-                  hintText: '2026-09-28T11:00:00+05:30',
-                  helperText: 'Choose the offset that applies on this date.',
-                ),
-                validator: (value) => _validInstant(value ?? '')
-                    ? null
-                    : 'Include an explicit UTC offset.',
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _objective,
-                maxLength: 2000,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'What should the team assess?',
-                ),
-                validator: (value) => value == null || value.trim().isEmpty
-                    ? 'Add a short assessment objective.'
-                    : null,
-              ),
-              if (_error != null) ...[
-                const SizedBox(height: 8),
-                _NoticeBox(text: _error!, error: true),
-              ],
-            ],
-          ),
-        ),
-      ),
-    ),
-    actions: [
-      TextButton(
-        onPressed: _saving ? null : () => Navigator.pop(context),
-        child: const Text('Cancel'),
-      ),
-      FilledButton(
-        onPressed: _saving ? null : _save,
-        child: Text(
-          _saving
-              ? 'Saving…'
-              : widget.existing == null
-              ? 'Save draft'
-              : 'Update draft',
-        ),
-      ),
-    ],
-  );
-}
-
-class _AlertFormDialog extends StatefulWidget {
-  const _AlertFormDialog({required this.apiService, this.existing});
-
-  final CoastalOperationsApiService apiService;
-  final CoastalAlert? existing;
-
-  @override
-  State<_AlertFormDialog> createState() => _AlertFormDialogState();
-}
-
-class _AlertFormDialogState extends State<_AlertFormDialog> {
-  final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _targetId;
-  late final TextEditingController _assessmentId;
-  late final TextEditingController _title;
-  late final TextEditingController _description;
-  late final TextEditingController _validFrom;
-  late final TextEditingController _validUntil;
-  late String _targetType;
-  late String _severity;
-  late String _visibility;
-  String? _error;
-  bool _saving = false;
-
-  @override
-  void initState() {
-    super.initState();
-    final existing = widget.existing;
-    _targetId = TextEditingController(text: existing?.targetId ?? '');
-    _assessmentId = TextEditingController(text: existing?.assessmentId ?? '');
-    _title = TextEditingController(text: existing?.title ?? '');
-    _description = TextEditingController(text: existing?.description ?? '');
-    _validFrom = TextEditingController(text: existing?.validFrom ?? '');
-    _validUntil = TextEditingController(text: existing?.validUntil ?? '');
-    _targetType = existing?.targetType ?? 'DESTINATION';
-    _severity = existing?.severity ?? 'MODERATE';
-    _visibility = existing?.visibility ?? 'OPERATIONS';
-  }
-
-  @override
-  void dispose() {
-    _targetId.dispose();
-    _assessmentId.dispose();
-    _title.dispose();
-    _description.dispose();
-    _validFrom.dispose();
-    _validUntil.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    if (!_validPeriod(_validFrom.text, _validUntil.text)) {
-      setState(
-        () => _error = 'Enter valid RFC 3339 times with offsets and an end later than the start.',
-      );
-      return;
-    }
-    setState(() {
-      _saving = true;
-      _error = null;
-    });
-    try {
-      final existing = widget.existing;
-      final alert = await blueverseLoadingScreenController.track(() {
-        if (existing != null) {
-          return widget.apiService.updateAlertDraft(
-            alertId: existing.alertId,
-            expectedVersion: existing.version,
-            title: _title.text.trim(),
-            description: _description.text.trim(),
-            severity: _severity,
-            visibility: _visibility,
-            validFrom: _validFrom.text.trim(),
-            validUntil: _validUntil.text.trim(),
-          );
-        }
-        return widget.apiService.createAlertDraft(
-          targetType: _targetType,
-          targetId: _targetId.text.trim(),
-          assessmentId: _assessmentId.text.trim().isEmpty
-              ? null
-              : _assessmentId.text.trim(),
-          title: _title.text.trim(),
-          description: _description.text.trim(),
-          severity: _severity,
-          visibility: _visibility,
-          validFrom: _validFrom.text.trim(),
-          validUntil: _validUntil.text.trim(),
-        );
-      });
-      if (mounted) Navigator.pop(context, alert);
-    } on CoastalOperationsApiException catch (error) {
-      if (mounted) setState(() => _error = error.message);
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: Text(
-      widget.existing == null
-          ? 'Prepare a coastal advisory'
-          : 'Edit proposed advisory',
-    ),
-    content: SizedBox(
-      width: 480,
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'This creates an unpublished draft. Publishing is a separate permission-checked action.',
-              ),
-              const SizedBox(height: 14),
-              if (widget.existing == null) ...[
-                DropdownButtonFormField<String>(
-                  initialValue: _targetType,
-                  decoration: const InputDecoration(
-                    labelText: 'Coastal record type',
-                  ),
-                  items: _coastalTargetTypes
-                      .map(
-                        (type) => DropdownMenuItem(
-                          value: type,
-                          child: Text(_humanize(type)),
-                        ),
-                      )
-                      .toList(growable: false),
-                  onChanged: (value) {
-                    if (value != null) setState(() => _targetType = value);
-                  },
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _targetId,
-                  decoration: const InputDecoration(
-                    labelText: 'Coastal record ID',
-                    hintText:
-                        'ID from the destination, activity, offering, or session details',
-                  ),
-                  validator: (value) => _validUuid(value ?? '')
-                      ? null
-                      : 'Check the coastal record ID and try again.',
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _assessmentId,
-                  decoration: const InputDecoration(
-                    labelText: 'Related assessment ID (optional)',
-                  ),
-                  validator: (value) =>
-                      value == null ||
-                      value.trim().isEmpty ||
-                      _validUuid(value)
-                      ? null
-                      : 'Check the related assessment ID and try again.',
-                ),
-                const SizedBox(height: 12),
-              ],
-              DropdownButtonFormField<String>(
-                initialValue: _severity,
-                decoration: const InputDecoration(labelText: 'Severity'),
-                items: const ['LOW', 'MODERATE', 'HIGH', 'CRITICAL']
-                    .map(
-                      (value) => DropdownMenuItem(
-                        value: value,
-                        child: Text(_humanize(value)),
-                      ),
-                    )
-                    .toList(growable: false),
-                onChanged: (value) {
-                  if (value != null) setState(() => _severity = value);
-                },
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: _visibility,
-                decoration: const InputDecoration(
-                  labelText: 'Who can see this?',
-                ),
-                items: const [
-                  DropdownMenuItem(
-                    value: 'OPERATIONS',
-                    child: Text('Operations team'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'PUBLIC',
-                    child: Text('Public coastal visitors'),
-                  ),
-                ],
-                onChanged: (value) {
-                  if (value != null) setState(() => _visibility = value);
-                },
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _title,
-                maxLength: 160,
-                decoration: const InputDecoration(labelText: 'Title'),
-                validator: (value) => value == null || value.trim().isEmpty
-                    ? 'Add a clear title.'
-                    : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _description,
-                maxLength: 4000,
-                minLines: 3,
-                maxLines: 5,
-                decoration: const InputDecoration(
-                  labelText: 'What should people know?',
-                ),
-                validator: (value) => value == null || value.trim().isEmpty
-                    ? 'Add the advisory details.'
-                    : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _validFrom,
-                decoration: const InputDecoration(
-                  labelText: 'Visible from',
-                  hintText: '2026-09-28T09:00:00+05:30',
-                ),
-                validator: (value) => _validInstant(value ?? '')
-                    ? null
-                    : 'Include an explicit UTC offset.',
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _validUntil,
-                decoration: const InputDecoration(
-                  labelText: 'Valid until',
-                  hintText: '2026-09-28T11:00:00+05:30',
-                ),
-                validator: (value) => _validInstant(value ?? '')
-                    ? null
-                    : 'Include an explicit UTC offset.',
-              ),
-              if (_severity == 'HIGH' || _severity == 'CRITICAL') ...[
-                const SizedBox(height: 12),
-                const _NoticeBox(
-                  text: 'A different authorized reviewer from the draft creator and linked assessment initiator must publish this advisory.',
-                ),
-              ],
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                _NoticeBox(text: _error!, error: true),
-              ],
-            ],
-          ),
-        ),
-      ),
-    ),
-    actions: [
-      TextButton(
-        onPressed: _saving ? null : () => Navigator.pop(context),
-        child: const Text('Cancel'),
-      ),
-      FilledButton(
-        onPressed: _saving ? null : _save,
-        child: Text(
-          _saving
-              ? 'Saving…'
-              : widget.existing == null
-              ? 'Create draft'
-              : 'Save draft',
-        ),
-      ),
-    ],
-  );
 }
 
 class _StatusPill extends StatelessWidget {
@@ -1846,6 +1952,15 @@ class _StatusPill extends StatelessWidget {
       'APPROVED',
     ].contains(normalized);
     final quiet = [
+      'DRAFT',
+      'NOT_REQUESTED',
+      'NOT_STARTED',
+      'CANCELLED',
+      'WITHDRAWN',
+      'EXPIRED',
+      'RESOLVED',
+      'LOW',
+      'MODERATE',
       'NOT_CONNECTED',
       'SUBMITTED',
       'PROPOSED',

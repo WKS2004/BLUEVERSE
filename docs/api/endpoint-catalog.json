@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "status": "active",
-  "auditedAt": "2026-09-27",
+  "auditedAt": "2026-10-02",
   "purpose": "Fast, repository-local inventory of implemented frontend routes, gateway routes, public API endpoints, test-only routes, and Agentic AI endpoint status.",
   "authority": {
     "uiWorkflowRegistry": "docs/contracts/ui-integration.json",
@@ -257,8 +257,8 @@
       "client": "react",
       "route": "/operations/assessments",
       "source": "apps/web/src/app/routes.tsx",
-      "description": "Permission-aware Coastal Operations workspace for assessments, context checks, PNG evidence and advisories.",
-      "usage": "Uses the signed-in browser session and public API gateway; decisions remain unavailable until a validated proposal exists.",
+      "description": "Separate permission-aware Coastal Operations Assessment workspace for drafts, publication, context checks, PNG evidence and activity.",
+      "usage": "500ms live title search, record-specific 5/10/25/50/100 pagination and pinned section tabs. Query view=create or view=edit|detail&id=UUID restores the focused workspace on refresh; Logs uses kind=assessments|alerts and returns to Logs.",
       "workflowId": "coastal-operations-assessment",
       "status": "implemented"
     },
@@ -267,10 +267,50 @@
       "client": "flutter",
       "route": "/operations/assessments",
       "source": "apps/mobile/lib/main.dart",
-      "description": "Permission-aware Coastal Operations workspace for assessments, context checks, PNG evidence and advisories.",
-      "usage": "Uses the active secure mobile account and public API gateway; the gallery supplies PNG evidence and assessments remain proposal-free before G07.",
+      "description": "Separate permission-aware Coastal Operations Assessment workspace for drafts, publication, context checks, PNG evidence and activity.",
+      "usage": "500ms live title search, record-specific 5/10/25/50/100 pagination and pinned section tabs. Query view=create or view=edit|detail&id=UUID restores the focused workspace on refresh; Logs uses kind=assessments|alerts and returns to Logs.",
       "workflowId": "coastal-operations-assessment",
       "status": "implemented"
+    },
+    {
+      "id": "react-coastal-operations-alerts",
+      "client": "react",
+      "route": "/operations/alerts",
+      "source": "apps/web/src/app/routes.tsx",
+      "description": "Separate Coastal Operations Alert page.",
+      "usage": "500ms live title search, record-specific 5/10/25/50/100 pagination and pinned section tabs. Query view=create or view=edit|detail&id=UUID restores the focused workspace on refresh; Logs uses kind=assessments|alerts and returns to Logs.",
+      "workflowId": "coastal-operations-alerts",
+      "status": "implemented"
+    },
+    {
+      "id": "flutter-coastal-operations-alerts",
+      "client": "flutter",
+      "route": "/operations/alerts",
+      "source": "apps/mobile/lib/main.dart",
+      "description": "Separate Coastal Operations Alert page.",
+      "usage": "500ms live title search, record-specific 5/10/25/50/100 pagination and pinned section tabs. Query view=create or view=edit|detail&id=UUID restores the focused workspace on refresh; Logs uses kind=assessments|alerts and returns to Logs.",
+      "workflowId": "coastal-operations-alerts",
+      "status": "implemented"
+    },
+    {
+      "id": "react-coastal-operations-logs",
+      "client": "react",
+      "route": "/operations/logs",
+      "source": "apps/web/src/app/routes.tsx",
+      "workflowId": "coastal-operations-logs",
+      "status": "implemented",
+      "description": "Permission-scoped retained Assessment/Alert records and activity logs.",
+      "usage": "500ms live title search, record-specific 5/10/25/50/100 pagination and pinned section tabs. Query view=create or view=edit|detail&id=UUID restores the focused workspace on refresh; Logs uses kind=assessments|alerts and returns to Logs."
+    },
+    {
+      "id": "flutter-coastal-operations-logs",
+      "client": "flutter",
+      "route": "/operations/logs",
+      "source": "apps/mobile/lib/main.dart",
+      "workflowId": "coastal-operations-logs",
+      "status": "implemented",
+      "description": "Permission-scoped retained Assessment/Alert records and activity logs.",
+      "usage": "500ms live title search, record-specific 5/10/25/50/100 pagination and pinned section tabs. Query view=create or view=edit|detail&id=UUID restores the focused workspace on refresh; Logs uses kind=assessments|alerts and returns to Logs."
     }
   ],
   "gatewayRoutes": [
@@ -731,7 +771,7 @@
       "operationId": "Get",
       "status": "implemented",
       "auth": "anonymous",
-      "description": "Reports Coastal Operations PostgreSQL connectivity and migration readiness plus the latest status of optional Member 1–3 peer requests.",
+      "description": "Reports Coastal Operations PostgreSQL connectivity and migration readiness plus the latest status of optional Member 1\u20133 peer requests.",
       "usage": "Used by the API gateway and Docker-stack readiness diagnostics; peer status is informational and does not gate readiness.",
       "source": "services/coastal-operations/Controllers/HealthController.cs"
     },
@@ -757,7 +797,7 @@
       "operationId": "Ready",
       "status": "implemented",
       "auth": "anonymous",
-      "description": "Reports Coastal Operations database connectivity and migration readiness plus the latest optional Member 1–3 dependency outcomes.",
+      "description": "Reports Coastal Operations database connectivity and migration readiness plus the latest optional Member 1\u20133 dependency outcomes.",
       "usage": "Used to determine whether the required PostgreSQL schema is ready; absent or unhealthy peer components do not make Coastal Operations unready.",
       "source": "services/coastal-operations/Controllers/HealthController.cs"
     },
@@ -784,7 +824,7 @@
       "status": "implemented",
       "auth": "permission:operations.assessment.create",
       "description": "Creates a caller-owned Coastal Operations assessment draft without calling peer services or the disconnected pre-G07 AI seam.",
-      "usage": "Requires an Idempotency-Key. Returns DRAFT with NOT_CONNECTED AI status and no peer dependency results. Submit the draft separately to collect bounded Member 1–3 outcomes.",
+      "usage": "Requires an Idempotency-Key. Returns DRAFT with NOT_CONNECTED AI status and no peer dependency results. Submit the draft separately to collect bounded Member 1\u20133 outcomes.",
       "source": "services/coastal-operations/Controllers/AssessmentsController.cs",
       "uiWorkflowIds": [
         "coastal-operations-assessment"
@@ -831,8 +871,8 @@
       "operationId": "SubmitDraft",
       "status": "implemented",
       "auth": "permission:operations.assessment.submit",
-      "description": "Submits a caller-owned assessment draft and records bounded Member 1–3 dependency outcomes.",
-      "usage": "Requires expectedVersion and Idempotency-Key. Peer calls have bounded timeouts/retries; dependency failure is recorded without failing the service. Before G07 the result remains SUBMITTED with AI status NOT_CONNECTED and no proposal.",
+      "description": "Submits a caller-owned assessment draft and records bounded Member 1\u20133 dependency outcomes.",
+      "usage": "Requires expectedVersion and Idempotency-Key. Peer calls have bounded timeouts/retries; dependency failure is recorded without failing the service. Before G07 the result remains SUBMITTED with AI status NOT_CONNECTED and no proposal. User-facing Publish assessment atomically stores a complete immutable business delivery envelope; no live AI endpoint exists before G07.",
       "source": "services/coastal-operations/Controllers/AssessmentsController.cs",
       "uiWorkflowIds": [
         "coastal-operations-assessment"
@@ -848,7 +888,7 @@
       "status": "implemented",
       "auth": "permission:operations.assessment.read",
       "description": "Lists the caller's assessments or the authorized review queue with bounded cursor pagination.",
-      "usage": "operations.assessment.read is scoped to the caller's own non-cancelled assessments, including drafts; operations.assessment.queue.read grants the submitted-work queue. Cancelled drafts are excluded by default and require includeCancelled=true for authorized audit readers.",
+      "usage": "Title keyword search defaults to all types; recordId/targetId are advanced exact UUID filters. Authorized scope precedes filtering/pagination; reviewer All includes own drafts. Public alert readers see only valid ACTIVE PUBLIC alerts.",
       "source": "services/coastal-operations/Controllers/AssessmentsController.cs",
       "uiWorkflowIds": [
         "coastal-operations-assessment"
@@ -925,10 +965,10 @@
       "status": "implemented",
       "auth": "permission:operations.alert.read",
       "description": "Lists authorized Coastal Operations alert records with lifecycle and target filters.",
-      "usage": "Non-managers see only currently active PUBLIC alerts within their validity period. Alert managers can inspect all visibility scopes; WITHDRAWN records are included only when explicitly requested.",
+      "usage": "Title keyword search defaults to all types; recordId/targetId are advanced exact UUID filters. Authorized scope precedes filtering/pagination; reviewer All includes own drafts. Public alert readers see only valid ACTIVE PUBLIC alerts.",
       "source": "services/coastal-operations/Controllers/AlertsController.cs",
       "uiWorkflowIds": [
-        "coastal-operations-assessment"
+        "coastal-operations-alerts"
       ]
     },
     {
@@ -939,12 +979,12 @@
       "publicBoundary": "api",
       "operationId": "Create",
       "status": "implemented",
-      "auth": "permission:operations.alert.manage",
+      "auth": "permission:operations.alert.create",
       "description": "Creates an unpublished, versioned operational alert draft.",
       "usage": "Validates its time period, target identity and optional matching assessment; no external alert delivery is performed.",
       "source": "services/coastal-operations/Controllers/AlertsController.cs",
       "uiWorkflowIds": [
-        "coastal-operations-assessment"
+        "coastal-operations-alerts"
       ]
     },
     {
@@ -955,12 +995,12 @@
       "publicBoundary": "api",
       "operationId": "Update",
       "status": "implemented",
-      "auth": "permission:operations.alert.manage",
+      "auth": "permission:operations.alert.update",
       "description": "Updates a proposed alert draft using optimistic version checks.",
       "usage": "Only PROPOSED drafts can be edited; active alert content must be replaced by a new proposal.",
       "source": "services/coastal-operations/Controllers/AlertsController.cs",
       "uiWorkflowIds": [
-        "coastal-operations-assessment"
+        "coastal-operations-alerts"
       ]
     },
     {
@@ -973,10 +1013,10 @@
       "status": "implemented",
       "auth": "permission:operations.alert.decide",
       "description": "Publishes or resolves an alert through an authorized, idempotent lifecycle decision.",
-      "usage": "Requires Idempotency-Key and expected version. HIGH/CRITICAL publication requires a reviewer different from the drafter and linked assessment initiator.",
+      "usage": "PUBLISH requires operations.alert.publish; RESOLVE requires operations.alert.resolve. Existing operations.alert.decide remains compatible with both. Enforces version/idempotency and separate reviewers for high-impact publication.",
       "source": "services/coastal-operations/Controllers/AlertsController.cs",
       "uiWorkflowIds": [
-        "coastal-operations-assessment"
+        "coastal-operations-alerts"
       ]
     },
     {
@@ -987,12 +1027,12 @@
       "publicBoundary": "api",
       "operationId": "WithdrawDraft",
       "status": "implemented",
-      "auth": "permission:operations.alert.manage",
+      "auth": "permission:operations.alert.delete",
       "description": "Logically withdraws a caller-owned proposed alert draft with an audited tombstone.",
       "usage": "Requires expectedVersion and Idempotency-Key. Only PROPOSED alerts can be withdrawn; the WITHDRAWN record and actor/time audit remain available to alert managers.",
       "source": "services/coastal-operations/Controllers/AlertsController.cs",
       "uiWorkflowIds": [
-        "coastal-operations-assessment"
+        "coastal-operations-alerts"
       ]
     },
     {
@@ -1005,7 +1045,7 @@
       "status": "implemented",
       "auth": "permission:operations.evidence.upload",
       "description": "Validates and privately stores one assessment image, then returns versioned evidence metadata.",
-      "usage": "Accepts only static PNG image content up to 5 MiB for an owned DRAFT, SUBMITTED or REVISION_REQUESTED assessment; at most five immutable attachments are allowed per assessment, and each accepted upload increments the assessment version.",
+      "usage": "Accepts sanitized PNG up to 5 MiB only on an owned DRAFT; maximum five current attachments. Published evidence/content cannot be edited.",
       "source": "services/coastal-operations/Controllers/AssessmentsController.cs",
       "uiWorkflowIds": [
         "coastal-operations-assessment"
@@ -1021,7 +1061,7 @@
       "status": "implemented",
       "auth": "permission:operations.evidence.read",
       "description": "Returns privately stored PNG evidence after owner/reviewer scope and content integrity checks.",
-      "usage": "Returns no-store image content through the public API; callers receive no storage URL. Reviewers also need assessment queue access.",
+      "usage": "Returns no-store image content through the public API; callers receive no storage URL. Reviewers also need assessment queue access. Removed attachments return 410 even while byte cleanup is pending.",
       "source": "services/coastal-operations/Controllers/AssessmentsController.cs",
       "uiWorkflowIds": [
         "coastal-operations-assessment"
@@ -1127,8 +1167,8 @@
       "operationId": "AssignPermissions",
       "status": "implemented",
       "auth": "permission:all(auth.role.read,auth.role.update,auth.permission.read)",
-      "description": "Replaces a non-system role’s permission set. Requires role read, role update and permission catalogue read together; system-role grants remain protected.",
-      "usage": "Role editors can grant or remove permissions from eligible non-system roles. The Auth service checks the caller’s current role assignments and invalidates affected user sessions.",
+      "description": "Replaces a non-system role\u2019s permission set. Requires role read, role update and permission catalogue read together; system-role grants remain protected.",
+      "usage": "Role editors can grant or remove permissions from eligible non-system roles. The Auth service checks the caller\u2019s current role assignments and invalidates affected user sessions.",
       "source": "services/auth/Controllers/RolesController.cs"
     },
     {
@@ -1205,9 +1245,106 @@
       "operationId": "AssignRoles",
       "status": "implemented",
       "auth": "permission:all(auth.user.read,auth.user.update,auth.role.read)",
-      "description": "Replaces an account’s roles with user read, user update and role read grants together; system-role changes require the dedicated grant, and an Admin cannot remove its own Admin system role.",
+      "description": "Replaces an account\u2019s roles with user read, user update and role read grants together; system-role changes require the dedicated grant, and an Admin cannot remove its own Admin system role.",
       "usage": "Authorized user editors can add or remove user roles; the service checks current caller grants, rejects Admin self-demotion before changing assignments or sessions, applies system-role constraints and invalidates sessions after accepted changes.",
       "source": "services/auth/Controllers/UsersController.cs"
+    },
+    {
+      "id": "coastal-assessment-audit",
+      "method": "GET",
+      "path": "/api/operations/assessments/{assessmentId:guid}/audit",
+      "ownerService": "coastal-operations",
+      "publicBoundary": "api",
+      "operationId": "GetAudit",
+      "status": "implemented",
+      "auth": "permission:operations.audit.read",
+      "description": "Returns scoped assessment activity history.",
+      "usage": "Requires explicit audit.read and owner or authorized manager scope; cursor pagination; action, actor, time and correlation only. Includes captured actor name/roles, readable summary and allowlisted before/after changes when recorded; legacy rows explicitly lack snapshots.",
+      "source": "services/coastal-operations/Controllers/AssessmentsController.cs",
+      "uiWorkflowIds": [
+        "coastal-operations-assessment"
+      ]
+    },
+    {
+      "id": "coastal-alert-audit",
+      "method": "GET",
+      "path": "/api/operations/alerts/{alertId:guid}/audit",
+      "ownerService": "coastal-operations",
+      "publicBoundary": "api",
+      "operationId": "GetAudit",
+      "status": "implemented",
+      "auth": "permission:operations.audit.read",
+      "description": "Returns scoped alert activity history.",
+      "usage": "Requires explicit audit.read and owner or authorized manager scope; cursor pagination; action, actor, time and correlation only. Includes captured actor name/roles, readable summary and allowlisted before/after changes when recorded; legacy rows explicitly lack snapshots.",
+      "source": "services/coastal-operations/Controllers/AlertsController.cs",
+      "uiWorkflowIds": [
+        "coastal-operations-alerts"
+      ]
+    },
+    {
+      "id": "coastal-form-options",
+      "method": "GET",
+      "path": "/api/operations/form-options",
+      "ownerService": "coastal-operations",
+      "publicBoundary": "api",
+      "operationId": "GetFormOptions",
+      "status": "implemented",
+      "auth": "permission:operations.form.options.read",
+      "description": "Named draft associations and database-backed global time-zone choices.",
+      "usage": "Derived from existing Coastal Operations grants. Scoped assessment choices; absent owning catalogue/planner returns unavailable. One selected IANA zone resolves both local dates on the server.",
+      "source": "services/coastal-operations/Controllers/FormOptionsController.cs",
+      "uiWorkflowIds": [
+        "coastal-operations-assessment",
+        "coastal-operations-alerts"
+      ]
+    },
+    {
+      "id": "coastal-assessment-evidence-remove",
+      "method": "DELETE",
+      "path": "/api/operations/assessments/{assessmentId:guid}/evidence/{evidenceId:guid}",
+      "operationId": "RemoveEvidence",
+      "auth": "permission:operations.evidence.upload",
+      "description": "Removes an owned draft attachment while retaining audit metadata.",
+      "usage": "JSON expectedVersion; owner/DRAFT gate, optimistic version and REMOVED event; durable cleanup after commit; 409 after publication.",
+      "source": "services/coastal-operations/Controllers/AssessmentsController.cs",
+      "ownerService": "coastal-operations",
+      "publicBoundary": "api",
+      "status": "implemented",
+      "uiWorkflowIds": [
+        "coastal-operations-assessment"
+      ]
+    },
+    {
+      "id": "coastal-assessment-log-records",
+      "method": "GET",
+      "path": "/api/operations/logs/assessments",
+      "operationId": "Assessments",
+      "auth": "permission:operations.audit.read",
+      "description": "Lists scoped assessment records including cancelled history.",
+      "usage": "Also requires assessment read or queue read. Owner/queue scopes, typed filters and cursor pageSize 1\u2013100. Audit timelines use existing record endpoints.",
+      "source": "services/coastal-operations/Controllers/LogsController.cs",
+      "ownerService": "coastal-operations",
+      "publicBoundary": "api",
+      "status": "implemented",
+      "uiWorkflowIds": [
+        "coastal-operations-logs"
+      ]
+    },
+    {
+      "id": "coastal-alert-log-records",
+      "method": "GET",
+      "path": "/api/operations/logs/alerts",
+      "operationId": "Alerts",
+      "auth": "permission:operations.audit.read",
+      "description": "Lists scoped alert records across retained lifecycles.",
+      "usage": "Also requires alert read or existing management compatibility. Managers see retained records; ordinary audit readers see their own only. Cursor pageSize 1\u2013100.",
+      "source": "services/coastal-operations/Controllers/LogsController.cs",
+      "ownerService": "coastal-operations",
+      "publicBoundary": "api",
+      "status": "implemented",
+      "uiWorkflowIds": [
+        "coastal-operations-logs"
+      ]
     }
   ],
   "testOnlyEndpoints": [

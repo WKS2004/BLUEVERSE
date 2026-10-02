@@ -164,8 +164,131 @@ public sealed class PostgresWorkflowIntegrationTests
             await using var cleanupDb = CreateDb(connectionString);
             await cleanupDb.OperationsAudit.Where(item => item.ResourceType == "assessment" && item.ResourceId == assessmentId).ExecuteDeleteAsync();
             await cleanupDb.IdempotencyRecords.Where(item => item.ActorId == actorId && item.Operation == operation && item.Key == key).ExecuteDeleteAsync();
+            await cleanupDb.AssessmentDispatches.Where(item => item.AssessmentId == assessmentId).ExecuteDeleteAsync();
             await cleanupDb.Assessments.Where(item => item.Id == assessmentId).ExecuteDeleteAsync();
         }
+    }
+
+    [PostgresFact(DisplayName = "COASTAL-POSTGRES-004 retained log queries and removal tombstones use PostgreSQL migration and audit persistence")]
+    [Trait("TestId", "COASTAL-POSTGRES-004")]
+    public async Task LogsAndEvidenceRemovalPersistOnPostgres()
+    {
+        var connection = DedicatedConnectionString(); await MigrateAndAssertReadyAsync(connection);
+        var owner = Guid.NewGuid(); var assessmentId = Guid.NewGuid(); var evidenceId = Guid.NewGuid(); var alertId = Guid.NewGuid();
+        var title = $"Provider logs {assessmentId:N}"; var storage = new RemovalStorage();
+        try
+        {
+            await using var db = CreateDb(connection);
+            db.Assessments.Add(new Assessment { Id = assessmentId, WorkflowId = Guid.NewGuid(), InitiatedBy = owner,
+                TargetType = "ACTIVITY", TargetId = Guid.NewGuid(), Title = title, Objective = "Inspect access", WorkflowStatus = "DRAFT",
+                PeriodStartsAt = PeriodStart, PeriodEndsAt = PeriodStart.AddHours(1), CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow });
+            db.AssessmentEvidence.Add(new AssessmentEvidence { Id = evidenceId, AssessmentId = assessmentId, AssessmentVersion = 1, UploadedBy = owner,
+                ByteLength = 3, ContentSha256 = new string('a', 64), UploadedAt = DateTimeOffset.UtcNow, ExpiresAt = DateTimeOffset.UtcNow.AddDays(1) });
+            db.OperationalAlerts.Add(new OperationalAlert { Id = alertId, TargetType = "ACTIVITY", TargetId = Guid.NewGuid(), Title = title,
+                Description = "Archived notice", Severity = "LOW", Visibility = "OPERATIONS", Lifecycle = "WITHDRAWN", CreatedBy = owner, UpdatedBy = owner,
+                ValidFrom = PeriodStart, ValidUntil = PeriodStart.AddHours(1), CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow });
+            await db.SaveChangesAsync();
+            var result = await new AssessmentEvidenceApplicationService(db, new(), storage, Microsoft.Extensions.Logging.Abstractions.NullLogger<AssessmentEvidenceApplicationService>.Instance)
+                .RemoveAsync(assessmentId, evidenceId, 1, owner, "provider-remove", default);
+            Assert.Equal(2, result.AssessmentVersion); Assert.Equal("REMOVED", result.InspectionStatus); Assert.Equal(1, storage.Deletes);
+            await using var verify = CreateDb(connection);
+            var evidence = await verify.AssessmentEvidence.SingleAsync(x => x.Id == evidenceId);
+            Assert.NotNull(evidence.RemovedAt); Assert.NotNull(evidence.ContentDeletedAt); Assert.Equal("REMOVED", evidence.InspectionStatus);
+            var audit = await new OperationsAuditReader(verify).GetAssessmentAsync(assessmentId, owner, false, new(), default);
+            Assert.Equal("REMOVED", Assert.Single(audit.Items).Action); Assert.Equal(evidenceId, audit.Items[0].ResourceId);
+            var assessmentService = new AssessmentApplicationService(verify, new(verify), new SubmissionBarrierCollector());
+            Assert.Equal(assessmentId, Assert.Single((await assessmentService.GetQueueAsync(new() { Search = title.ToLowerInvariant(), PageSize = 5 }, owner, false, default, auditView: true)).Items).AssessmentId);
+            var alertService = new AlertApplicationService(verify, new(verify));
+            Assert.Equal(alertId, Assert.Single((await alertService.GetQueueAsync(new() { Search = title, History = true }, owner, false, default, auditView: true)).Items).AlertId);
+            Assert.Empty((await alertService.GetQueueAsync(new() { Search = title }, Guid.NewGuid(), false, default, auditView: true)).Items);
+        }
+        finally
+        {
+            await using var cleanup = CreateDb(connection);
+            await cleanup.OperationsAudit.Where(x => x.ResourceId == evidenceId || x.ResourceId == assessmentId).ExecuteDeleteAsync();
+            await cleanup.AssessmentEvidence.Where(x => x.Id == evidenceId).ExecuteDeleteAsync();
+            await cleanup.OperationalAlerts.Where(x => x.Id == alertId).ExecuteDeleteAsync();
+            await cleanup.Assessments.Where(x => x.Id == assessmentId).ExecuteDeleteAsync();
+        }
+    }
+
+    [PostgresFact(DisplayName = "COASTAL-POSTGRES-005 publication racing stale removal preserves published evidence and rejects the stale write")]
+    [Trait("TestId", "COASTAL-POSTGRES-005")]
+    public async Task PublicationRacePreservesEvidence()
+    {
+        var connection = DedicatedConnectionString(); await MigrateAndAssertReadyAsync(connection);
+        var owner = Guid.NewGuid(); var assessmentId = Guid.NewGuid(); var evidenceId = Guid.NewGuid(); var storage = new RemovalStorage();
+        try
+        {
+            await using (var seed = CreateDb(connection))
+            {
+                seed.Assessments.Add(new Assessment { Id = assessmentId, WorkflowId = Guid.NewGuid(), InitiatedBy = owner,
+                    TargetType = "ACTIVITY", TargetId = Guid.NewGuid(), Title = "Removal race", Objective = "Inspect access", WorkflowStatus = "DRAFT",
+                    PeriodStartsAt = PeriodStart, PeriodEndsAt = PeriodStart.AddHours(1), CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow });
+                seed.AssessmentEvidence.Add(new AssessmentEvidence { Id = evidenceId, AssessmentId = assessmentId, AssessmentVersion = 1, UploadedBy = owner,
+                    ByteLength = 3, ContentSha256 = new string('a', 64), UploadedAt = DateTimeOffset.UtcNow, ExpiresAt = DateTimeOffset.UtcNow.AddDays(1) });
+                await seed.SaveChangesAsync();
+            }
+            await using var stale = CreateDb(connection);
+            await stale.Assessments.SingleAsync(x => x.Id == assessmentId); await stale.AssessmentEvidence.SingleAsync(x => x.Id == evidenceId);
+            await using (var winner = CreateDb(connection))
+            {
+                var published = await winner.Assessments.SingleAsync(x => x.Id == assessmentId); published.WorkflowStatus = "SUBMITTED"; published.Version++;
+                await winner.SaveChangesAsync();
+            }
+            var error = await Assert.ThrowsAsync<CoastalOperationsException>(() => new AssessmentEvidenceApplicationService(stale, new(), storage,
+                Microsoft.Extensions.Logging.Abstractions.NullLogger<AssessmentEvidenceApplicationService>.Instance).RemoveAsync(assessmentId, evidenceId, 1, owner, "race-remove", default));
+            Assert.Equal(409, error.StatusCode); Assert.Equal("assessment_version_stale", error.Code); Assert.Equal(0, storage.Deletes);
+            await using var verify = CreateDb(connection);
+            var saved = await verify.Assessments.SingleAsync(x => x.Id == assessmentId); Assert.Equal("SUBMITTED", saved.WorkflowStatus); Assert.Equal(2, saved.Version);
+            var image = await verify.AssessmentEvidence.SingleAsync(x => x.Id == evidenceId); Assert.Equal("AVAILABLE", image.InspectionStatus); Assert.Null(image.RemovedAt); Assert.Null(image.ContentDeletedAt);
+            Assert.Empty(await verify.OperationsAudit.Where(x => x.ResourceId == evidenceId).ToListAsync());
+        }
+        finally
+        {
+            await using var cleanup = CreateDb(connection);
+            await cleanup.OperationsAudit.Where(x => x.ResourceId == evidenceId || x.ResourceId == assessmentId).ExecuteDeleteAsync();
+            await cleanup.AssessmentEvidence.Where(x => x.Id == evidenceId).ExecuteDeleteAsync();
+            await cleanup.Assessments.Where(x => x.Id == assessmentId).ExecuteDeleteAsync();
+        }
+    }
+
+    [PostgresFact(DisplayName = "COASTAL-POSTGRES-006 detailed audit migration stores JSON snapshots and rejects non-array changes")]
+    [Trait("TestId", "COASTAL-POSTGRES-006")]
+    public async Task DetailedAuditSnapshotsRoundTripWithConstraints()
+    {
+        var connection = DedicatedConnectionString(); await MigrateAndAssertReadyAsync(connection);
+        var id = Guid.NewGuid(); var rejectedId = Guid.NewGuid();
+        try
+        {
+            await using (var db = CreateDb(connection))
+            {
+                db.OperationsAudit.Add(new OperationsAuditEntry { Id = id, ResourceType = "assessment", ResourceId = id, Action = "DRAFT_UPDATED", ActorId = Guid.NewGuid(), CorrelationId = "test-detailed", CreatedAt = DateTimeOffset.UtcNow,
+                    ActorName = "Coastal Steward", ActorRolesJson = "[\"Field Officer\"]", RecordTitle = "Updated review", Summary = "Updated the draft (assessment)", ChangesJson = "[{\"field\":\"Title\",\"before\":\"Original\",\"after\":\"Updated\"}]" });
+                await db.SaveChangesAsync();
+            }
+            await using (var verify = CreateDb(connection))
+            {
+                var row = await verify.OperationsAudit.SingleAsync(x => x.Id == id);
+                Assert.Equal("Coastal Steward", row.ActorName); Assert.Equal("Updated review", row.RecordTitle);
+                Assert.Equal(new[] { "Field Officer" }, System.Text.Json.JsonSerializer.Deserialize<string[]>(row.ActorRolesJson));
+                var changes = System.Text.Json.JsonSerializer.Deserialize<AuditFieldChange[]>(row.ChangesJson, OperationsValidation.JsonOptions)!;
+                var change = Assert.Single(changes); Assert.Equal("Title", change.Field); Assert.Equal("Original", change.Before); Assert.Equal("Updated", change.After);
+                verify.OperationsAudit.Add(new OperationsAuditEntry { Id = rejectedId, ResourceType = "assessment", ResourceId = rejectedId, Action = "UPDATED", CorrelationId = "invalid-shape", Summary = "Invalid", ChangesJson = "{}", CreatedAt = DateTimeOffset.UtcNow });
+                var error = await Assert.ThrowsAsync<DbUpdateException>(() => verify.SaveChangesAsync());
+                Assert.Equal("CK_OperationsAudit_Snapshots", Assert.IsType<PostgresException>(error.InnerException).ConstraintName);
+            }
+            await using var fresh = CreateDb(connection); Assert.False(await fresh.OperationsAudit.AnyAsync(x => x.Id == rejectedId));
+        }
+        finally { await using var cleanup = CreateDb(connection); await cleanup.OperationsAudit.Where(x => x.Id == id || x.Id == rejectedId).ExecuteDeleteAsync(); }
+    }
+
+    private sealed class RemovalStorage : IAssessmentEvidenceStorage
+    {
+        public int Deletes { get; private set; }
+        public Task StoreAsync(Guid id, byte[] content, CancellationToken token) => Task.CompletedTask;
+        public Task<byte[]?> ReadAsync(Guid id, CancellationToken token) => Task.FromResult<byte[]?>([1, 2, 3]);
+        public Task DeleteAsync(Guid id, CancellationToken token) { Deletes++; return Task.CompletedTask; }
     }
 
     private static async Task MigrateAndAssertReadyAsync(string connectionString)

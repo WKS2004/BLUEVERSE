@@ -12,6 +12,10 @@ export type ComponentDependency = {
 }
 
 export type Assessment = {
+  title?: string
+  timeZoneId?: string | null
+  periodStartsLocal?: string | null
+  periodEndsLocal?: string | null
   assessmentId: string
   workflowId: string
   targetType: CoastalTargetType
@@ -56,6 +60,9 @@ export type AssessmentDetail = {
 export type CoastalPage<T> = { items: T[]; nextCursor: string | null }
 
 export type CoastalAlert = {
+  timeZoneId?: string | null
+  validFromLocal?: string | null
+  validUntilLocal?: string | null
   alertId: string
   targetType: CoastalTargetType
   targetId: string
@@ -123,7 +130,17 @@ async function readJson<T>(response: Response): Promise<T> {
     try { payload = JSON.parse(content) as unknown } catch { payload = undefined }
   }
 
-  if (!response.ok) throw new CoastalOperationsApiError(response.status, friendlyMessage(response.status))
+  if (!response.ok) {
+    const problem = payload as { code?: string } | undefined
+    const messages: Record<string, string> = {
+      local_time_nonexistent: 'That local time is skipped by a daylight-saving change. Choose another time.',
+      local_time_ambiguous: 'That local time occurs twice during a daylight-saving change. Choose another time.',
+      target_required_for_publication: 'Link this draft to a coastal record before publishing.',
+      local_time_invalid: 'Choose a valid local date and time for the selected zone.',
+      time_zone_invalid: 'Choose an active location from the time-zone list.',
+    }
+    throw new CoastalOperationsApiError(response.status, (response.status === 422 && problem?.code && messages[problem.code]) || friendlyMessage(response.status))
+  }
   if (payload === undefined || payload === null) {
     throw new CoastalOperationsApiError(response.status, 'The service returned a response that could not be read.')
   }
@@ -151,8 +168,8 @@ function publicApiOptions(init: RequestInit = {}): RequestInit {
   }
 }
 
-async function request<T>(send: () => Promise<Response>): Promise<T> {
-  return withLoadingScreen(async () => {
+async function request<T>(send: () => Promise<Response>, quiet = false): Promise<T> {
+  const operation = async () => {
     let response: Response
     try {
       response = await send()
@@ -160,16 +177,33 @@ async function request<T>(send: () => Promise<Response>): Promise<T> {
       throw new CoastalOperationsApiError(0, 'We could not reach coastal operations. Check your connection and retry.')
     }
     return readJson<T>(response)
-  })
+  }
+  return quiet ? operation() : withLoadingScreen(operation)
 }
 
-export function listAssessments() {
-  return request<CoastalPage<Assessment>>(() => fetch('/api/operations/assessments?pageSize=100', publicApiOptions()))
+export type RecordQuery = {
+  pageSize?: number; search?: string; recordId?: string; targetType?: string; targetId?: string; cursor?: string
+  workflowStatus?: string; onlyMine?: boolean; publishedOnly?: boolean; includeCancelled?: boolean
+  lifecycle?: string; history?: boolean; severity?: string; visibility?: string
+}
+
+function queryString(query: RecordQuery) {
+  const values = new URLSearchParams({ pageSize: '100' })
+  Object.entries(query).forEach(([key, value]) => {
+    if (value !== undefined && value !== '' && value !== false) values.set(key, String(value))
+  })
+  return values.toString()
+}
+
+export function listAssessments(query: RecordQuery = {}, options: { quiet?: boolean; signal?: AbortSignal } = {}) {
+  return request<CoastalPage<Assessment>>(() => fetch('/api/operations/assessments?' + queryString(query), publicApiOptions({ signal: options.signal })), options.quiet)
 }
 
 export function createAssessment(input: {
   targetType: CoastalTargetType
-  targetId: string
+  targetId?: string
+  title?: string
+  timeZoneId?: string
   sourceWorkflowId?: string
   periodStartsAt: string
   periodEndsAt: string
@@ -184,7 +218,9 @@ export function createAssessment(input: {
 export function updateAssessmentDraft(assessmentId: string, input: {
   expectedVersion: number
   targetType: CoastalTargetType
-  targetId: string
+  targetId?: string
+  title?: string
+  timeZoneId?: string
   sourceWorkflowId?: string
   periodStartsAt: string
   periodEndsAt: string
@@ -228,7 +264,9 @@ export async function getEvidenceImage(assessmentId: string, evidenceId: string)
     } catch {
       throw new CoastalOperationsApiError(0, 'We could not reach coastal operations. Check your connection and retry.')
     }
-    if (!response.ok) throw new CoastalOperationsApiError(response.status, friendlyMessage(response.status))
+    if (!response.ok) {
+      throw new CoastalOperationsApiError(response.status, friendlyMessage(response.status))
+    }
     if (!response.headers.get('content-type')?.toLowerCase().startsWith('image/png')) {
       throw new CoastalOperationsApiError(response.status, 'The evidence image could not be displayed safely.')
     }
@@ -236,13 +274,26 @@ export async function getEvidenceImage(assessmentId: string, evidenceId: string)
   })
 }
 
-export function listAlerts() {
-  return request<CoastalPage<CoastalAlert>>(() => fetch('/api/operations/alerts?pageSize=100', publicApiOptions()))
+export function listAlerts(query: RecordQuery = {}, options: { quiet?: boolean; signal?: AbortSignal } = {}) {
+  return request<CoastalPage<CoastalAlert>>(() => fetch('/api/operations/alerts?' + queryString(query), publicApiOptions({ signal: options.signal })), options.quiet)
+}
+
+export type OperationsAudit = { auditId: string; resourceType: string; resourceId: string; action: string; actorId: string; correlationId: string; createdAt: string; actorName?: string | null; actorRoles?: string[]; recordTitle?: string | null; summary?: string | null; changes?: Array<{ field: string; before: string | null; after: string | null }> }
+
+export function getAssessmentAudit(id: string, cursor?: string) {
+  return request<CoastalPage<OperationsAudit>>(() => fetch('/api/operations/assessments/{assessmentId:guid}/audit'
+    .replace('{assessmentId:guid}', encodeURIComponent(id)) + '?' + queryString({ cursor }), publicApiOptions()), true)
+}
+
+export function getAlertAudit(id: string, cursor?: string) {
+  return request<CoastalPage<OperationsAudit>>(() => fetch('/api/operations/alerts/{alertId:guid}/audit'
+    .replace('{alertId:guid}', encodeURIComponent(id)) + '?' + queryString({ cursor }), publicApiOptions()), true)
 }
 
 export function createAlertDraft(input: {
   targetType: CoastalTargetType
-  targetId: string
+  targetId?: string
+  timeZoneId?: string
   assessmentId?: string
   title: string
   description: string
@@ -258,6 +309,9 @@ export function createAlertDraft(input: {
 }
 
 export function updateAlertDraft(alertId: string, input: {
+  targetId?: string
+  targetType?: CoastalTargetType
+  timeZoneId?: string
   expectedVersion: number
   title: string
   description: string
@@ -290,4 +344,31 @@ export function getTargetHistory(targetType: CoastalTargetType, targetId: string
   return request<CoastalPage<OperationalHistoryItem>>(() => fetch('/api/operations/targets/{targetType}/{targetId:guid}/history?pageSize=25'
     .replace('{targetType}', encodeURIComponent(targetType))
     .replace('{targetId:guid}', encodeURIComponent(targetId)), publicApiOptions()))
+}
+
+export type NamedReference = { id: string; title: string; targetType?: CoastalTargetType; targetId?: string }
+export type FormOptions = {
+  timeZones: Array<{ id: string; country: string; location: string; currentOffsetMinutes: number | null; rulesAvailable: boolean }>
+  targets: { status: string; items: NamedReference[] }
+  plans: { status: string; items: NamedReference[] }
+  assessments: NamedReference[]
+}
+export async function getOperationsFormOptions() {
+  const data = await request<FormOptions>(() => fetch('/api/operations/form-options', publicApiOptions()))
+  if (!Array.isArray(data.timeZones) || !data.timeZones.some((zone) => zone.id === 'Etc/UTC') ||
+      data.timeZones.some((zone) => typeof zone.id !== 'string' || typeof zone.country !== 'string' || typeof zone.location !== 'string' || typeof zone.rulesAvailable !== 'boolean') ||
+      !data.targets || !Array.isArray(data.targets.items) || !data.plans || !Array.isArray(data.plans.items) || !Array.isArray(data.assessments)) {
+    throw new CoastalOperationsApiError(502, 'The selection lists could not be read. Please retry.')
+  }
+  return data
+}
+
+export function listAssessmentLogRecords(query: RecordQuery = {}, signal?: AbortSignal) {
+  return request<CoastalPage<Assessment>>(() => fetch('/api/operations/logs/assessments?' + queryString(query), publicApiOptions({ signal })), true)
+}
+export function listAlertLogRecords(query: RecordQuery = {}, signal?: AbortSignal) {
+  return request<CoastalPage<CoastalAlert>>(() => fetch('/api/operations/logs/alerts?' + queryString(query), publicApiOptions({ signal })), true)
+}
+export function removeAssessmentEvidence(assessmentId: string, evidenceId: string, expectedVersion: number) {
+  return request<{ evidenceId: string; assessmentId: string; assessmentVersion: number; inspectionStatus: string; removedAt: string }>(() => fetch('/api/operations/assessments/{assessmentId:guid}/evidence/{evidenceId:guid}'.replace('{assessmentId:guid}', encodeURIComponent(assessmentId)).replace('{evidenceId:guid}', encodeURIComponent(evidenceId)), publicApiOptions(jsonOptions('DELETE', { expectedVersion }))))
 }

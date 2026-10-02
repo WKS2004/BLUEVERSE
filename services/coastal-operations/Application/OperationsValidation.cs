@@ -80,6 +80,12 @@ public static partial class OperationsValidation
     public static bool IsHighImpactState(string targetType, string state) =>
         state == "TEMPORARILY_SUSPENDED" || (targetType == "SESSION" && state == "CANCELLED");
 
+    public static string AssessmentDraftDigest(CreateAssessmentRequest request) =>
+        request.Title is null && request.TimeZoneId is null ? RequestDigest(new {
+            request.TargetType, request.TargetId, request.SourceWorkflowId,
+            request.PeriodStartsAt, request.PeriodEndsAt, request.Objective
+        }) : RequestDigest(request);
+
     public static string RequestDigest<T>(T request)
     {
         var json = JsonSerializer.Serialize(request, JsonOptions);

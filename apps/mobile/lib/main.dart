@@ -10,6 +10,7 @@ import 'ui/auth_screens.dart';
 import 'ui/auth_view_model.dart';
 import 'ui/blueverse_theme.dart';
 import 'ui/coastal_operations_screen.dart';
+import 'ui/coastal_operations_logs_screen.dart';
 import 'ui/feedback/blueverse_error_screen.dart';
 import 'ui/feedback/blueverse_loading_screen.dart';
 import 'ui/feedback/loading_screen_controller.dart';
@@ -115,6 +116,16 @@ class _MyAppState extends State<MyApp> {
         '/profile': (_) => AuthProfileScreen(viewModel: _authViewModel),
         '/dashboard': (_) => AuthDashboardScreen(viewModel: _authViewModel),
         '/operations/assessments': (_) => CoastalOperationsScreen(
+          section: CoastalOperationsSection.assessments,
+          viewModel: _authViewModel,
+          apiService: _coastalOperationsApiService,
+        ),
+        '/operations/logs': (_) => CoastalOperationsLogsScreen(
+          viewModel: _authViewModel,
+          apiService: _coastalOperationsApiService,
+        ),
+        '/operations/alerts': (_) => CoastalOperationsScreen(
+          section: CoastalOperationsSection.alerts,
           viewModel: _authViewModel,
           apiService: _coastalOperationsApiService,
         ),
@@ -133,6 +144,27 @@ class _MyAppState extends State<MyApp> {
         ),
         '/404': (_) => const BlueverseErrorScreen.notFound(),
         '/500': (_) => const BlueverseErrorScreen.server(),
+      },
+      onGenerateRoute: (settings) {
+        final uri = Uri.tryParse(settings.name ?? '');
+        if (uri != null &&
+            (uri.path == '/operations/assessments' ||
+                uri.path == '/operations/alerts')) {
+          return MaterialPageRoute<void>(
+            settings: settings,
+            builder: (_) => CoastalOperationsScreen(
+              section: uri.path == '/operations/alerts'
+                  ? CoastalOperationsSection.alerts
+                  : CoastalOperationsSection.assessments,
+              viewModel: _authViewModel,
+              apiService: _coastalOperationsApiService,
+              initialView: uri.queryParameters['view'],
+              initialRecordId: uri.queryParameters['id'],
+              fromLogs: uri.queryParameters['origin'] == 'logs',
+            ),
+          );
+        }
+        return null;
       },
       onUnknownRoute: blueverseUnknownRoute,
     );

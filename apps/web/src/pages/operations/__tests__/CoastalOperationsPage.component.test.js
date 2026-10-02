@@ -34,8 +34,9 @@ function assessment(overrides = {}) {
     targetType: 'DESTINATION',
     targetId,
     sourceWorkflowId: null,
-    periodStartsAt: '2026-10-01T09:00:00+05:30',
-    periodEndsAt: '2026-10-01T12:00:00+05:30',
+    title: 'Rain access review', timeZoneId: 'Asia/Colombo',
+    periodStartsAt: '2026-10-01T03:30:00Z',
+    periodEndsAt: '2026-10-01T06:30:00Z',
     objective: 'Review the access route after heavy rain.',
     workflowStatus: 'SUBMITTED',
     aiDependencyStatus: 'NOT_CONNECTED',
@@ -91,7 +92,7 @@ test('WEB-OPS-UI-002 current assessment response is shown without inventing a pr
   })
   renderOperations(['operations.assessment.read', 'operations.assessment.decide', 'operations.target.status.read', 'operations.target.history.read'])
 
-  await screen.findByText(item.objective)
+  await screen.findByText(item.title)
   await userEvent.click(screen.getByText('Open review details'))
   await screen.findByText('Coastal context was recorded, but automated proposals are not available yet. No operational change has been suggested or applied.')
   assert.ok(screen.getByText('Coastal experience'))
@@ -100,10 +101,11 @@ test('WEB-OPS-UI-002 current assessment response is shown without inventing a pr
   assert.equal(calls.some((call) => call.method === 'POST' && call.path.includes('/decisions')), false)
 })
 
-test('WEB-OPS-UI-003 assessment creation validates the coastal record ID and submits explicit offsets (ui-integration: coastal-operations-assessment)', async () => {
+test('WEB-OPS-UI-003 assessment creation selects named records and submits one zone with local dates (ui-integration: coastal-operations-assessment)', async () => {
   let createdRequest
   const created = assessment({ assessmentId: '00000000-0000-4000-8000-000000000004' })
   const calls = installFetch({
+    'GET /api/operations/form-options': () => jsonResponse({ timeZones: [{ id: 'Asia/Colombo', country: 'Sri Lanka', location: 'Colombo', rulesAvailable: true }, { id: 'Etc/UTC', country: 'Worldwide', location: 'UTC', rulesAvailable: true }], targets: { status: 'AVAILABLE', items: [{ id: targetId, title: 'Bentota beach', targetType: 'DESTINATION' }] }, plans: { status: 'NOT_CONNECTED', items: [] }, assessments: [] }),
     'POST /api/operations/assessments': (request) => {
       createdRequest = request
       return jsonResponse(created, 201)
@@ -112,16 +114,18 @@ test('WEB-OPS-UI-003 assessment creation validates the coastal record ID and sub
   renderOperations(['operations.assessment.create'])
   await userEvent.click(screen.getByRole('button', { name: 'New assessment' }))
 
-  fireEvent.change(screen.getByLabelText('Coastal record ID'), { target: { value: targetId } })
+  await screen.findByRole('option', { name: 'Bentota beach' })
+  assert.equal(screen.queryByLabelText('Coastal record ID'), null)
+  fireEvent.change(screen.getByLabelText('Assessment title'), { target: { value: 'Rain access review' } })
+  fireEvent.change(screen.getByLabelText('Coastal record'), { target: { value: targetId } })
   fireEvent.change(screen.getByLabelText('Starts at'), { target: { value: '2026-10-01T09:00' } })
-  fireEvent.change(screen.getByLabelText('Time-zone offset at start'), { target: { value: '+05:30' } })
+  fireEvent.change(screen.getByLabelText(/Time zone/), { target: { value: 'Asia/Colombo' } })
   fireEvent.change(screen.getByLabelText('Ends at'), { target: { value: '2026-10-01T12:00' } })
-  fireEvent.change(screen.getByLabelText('Time-zone offset at end'), { target: { value: '+05:30' } })
-  fireEvent.change(screen.getByLabelText(/What should the team assess/), { target: { value: 'Review the access route after heavy rain.' } })
+  fireEvent.change(screen.getByLabelText(/What should be reviewed/), { target: { value: 'Review the access route after heavy rain.' } })
   await userEvent.click(screen.getByRole('button', { name: 'Save draft' }))
 
   await screen.findByText('Assessment draft saved. Submit it when you are ready to check coastal context.')
-  assert.equal(calls.length, 1)
+  assert.equal(calls.length, 2)
   assert.equal(createdRequest.input, '/api/operations/assessments')
   assert.equal(createdRequest.init.credentials, 'include')
   assert.equal(createdRequest.init.method, 'POST')
@@ -130,8 +134,9 @@ test('WEB-OPS-UI-003 assessment creation validates the coastal record ID and sub
     targetType: 'DESTINATION',
     targetId,
     sourceWorkflowId: null,
-    periodStartsAt: '2026-10-01T09:00:00+05:30',
-    periodEndsAt: '2026-10-01T12:00:00+05:30',
+    title: 'Rain access review', timeZoneId: 'Asia/Colombo',
+    periodStartsAt: '2026-10-01T09:00',
+    periodEndsAt: '2026-10-01T12:00',
     objective: 'Review the access route after heavy rain.',
   })
 })

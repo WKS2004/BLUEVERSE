@@ -130,6 +130,18 @@ public sealed class AssessmentsController(AssessmentApplicationService assessmen
         return StatusCode(StatusCodes.Status201Created, result);
     }
 
+    [HttpDelete("{assessmentId:guid}/evidence/{evidenceId:guid}")]
+    [HasPermission(PermissionCodes.OperationsEvidenceUpload)]
+    [ProducesResponseType(typeof(AssessmentEvidenceRemovalResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<AssessmentEvidenceRemovalResponse>> RemoveEvidence(
+        Guid assessmentId, Guid evidenceId, [FromBody] RemoveAssessmentEvidenceRequest request,
+        [FromServices] AssessmentEvidenceApplicationService evidence, CancellationToken cancellationToken)
+    {
+        Response.Headers.CacheControl = "no-store";
+        return Ok(await evidence.RemoveAsync(assessmentId, evidenceId, request.ExpectedVersion,
+            AuthenticatedActor.GetId(User), CorrelationId(), cancellationToken));
+    }
+
     [HttpGet("{assessmentId:guid}/evidence/{evidenceId:guid}")]
     [HasPermission(PermissionCodes.OperationsEvidenceRead)]
     [Produces("image/png")]
@@ -146,6 +158,18 @@ public sealed class AssessmentsController(AssessmentApplicationService assessmen
         Response.Headers.CacheControl = "no-store";
         Response.Headers["X-Content-Type-Options"] = "nosniff";
         return File(result.Bytes, result.MediaType);
+    }
+
+    [HttpGet("{assessmentId:guid}/audit")]
+    [HasPermission(PermissionCodes.OperationsAuditRead)]
+    [ProducesResponseType(typeof(OperationsAuditPage), StatusCodes.Status200OK)]
+    public async Task<ActionResult<OperationsAuditPage>> GetAudit(
+        Guid assessmentId, [FromQuery] AuditListQuery query,
+        [FromServices] OperationsAuditReader audit, CancellationToken cancellationToken)
+    {
+        Response.Headers.CacheControl = "no-store";
+        return Ok(await audit.GetAssessmentAsync(assessmentId, AuthenticatedActor.GetId(User),
+            User.HasClaim("permission", CoastalPermissions.AssessmentQueueRead), query, cancellationToken));
     }
 
     private string CorrelationId() => User.FindFirst("correlation_id")?.Value ??

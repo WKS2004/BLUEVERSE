@@ -1,5 +1,13 @@
 # Equal client coverage and permissions
 
+The [navigation/activity update](coastal-operations-record-navigation-and-audit.md)
+applies equally to React and Flutter: 500 ms search, pinned category controls,
+all five page sizes, shared record cards, authorized full details/actions from
+Logs and refresh-restored create/edit intent. Unsaved inputs reset on refresh.
+Restoration rechecks the current grants and draft state; audit scope is unchanged.
+Both timelines show recorded person/roles/time and exact before/after values,
+without inventing missing historical details.
+
 ## Binding v1 interpretation
 
 React Web and Flutter Mobile are equal product surfaces. Every role can perform
@@ -64,8 +72,35 @@ either client.
 
 ## Acceptance evidence
 
+Coastal Operations has separate Assessment and Alert routes and the same draft,
+publication, search, pagination and activity actions in both clients. The
+[2026-10-01 contract](coastal-operations-publication-and-ui.md) lists the exact
+grants, legacy compatibility, owner/manager scopes and branch verification.
+Publication retains SUBMITTED on the wire; Alert publication is an independent
+human lifecycle action. This does not claim a connected Agentic AI runtime.
+The [record experience follow-up](coastal-operations-record-experience.md)
+adds title search, named target/plan/assessment selection and one DB time-zone
+choice to both clients. Form-options access derives from existing component
+grants; assessment choices still apply owner/reviewer scope. No client requires
+UUID entry for draft creation or editing. Advanced search is the explicit ID
+filter; all record types is the default normal search.
+
 For every v1 workflow, verify both clients for each participating role,
 including permitted and denied actions, loading and empty states, validation,
 dependency failure and recovery. Preserve the same outcome and audit result
 regardless of which client submits the action. Follow the user-facing
 [experience principles](../project/ui-experience-principles.md).
+
+## Logs and evidence permission parity — 2026-10-02
+
+React and Flutter add `/operations/logs` under Coastal Operations. Both require
+`operations.audit.read` plus assessment read/queue or alert read/management
+compatibility. Lists and timelines enforce backend owner/reviewer/manager scopes,
+including inactive retained records. No new Auth grant is added. Evidence
+addition/removal reuses `operations.evidence.upload`, only on an owned DRAFT;
+reading images retains its separate grant. Published authored fields and
+attachments cannot be edited. The historical one-second search wording is
+superseded by the [latest navigation/activity contract](coastal-operations-record-navigation-and-audit.md)
+at 500 ms. Both clients offer 5/10/25/50/100 record-specific page sizes and red
+destructive controls and confirmations.
+See [latest contract](coastal-operations-logs-and-evidence.md).

@@ -5,23 +5,27 @@ namespace Blueverse.CoastalOperations.Contracts;
 public sealed class CreateAlertRequest
 {
     [Required, MaxLength(32)] public string TargetType { get; init; } = string.Empty;
-    public Guid TargetId { get; init; }
+    public Guid? TargetId { get; init; }
     public Guid? AssessmentId { get; init; }
     [Required, MaxLength(160)] public string Title { get; init; } = string.Empty;
     [Required, MaxLength(4000)] public string Description { get; init; } = string.Empty;
     [Required, MaxLength(16)] public string Severity { get; init; } = string.Empty;
     [MaxLength(16)] public string Visibility { get; init; } = "OPERATIONS";
+    [MaxLength(100)] public string? TimeZoneId { get; init; }
     [Required, MaxLength(64)] public string ValidFrom { get; init; } = string.Empty;
     [Required, MaxLength(64)] public string ValidUntil { get; init; } = string.Empty;
 }
 
 public sealed class UpdateAlertRequest
 {
+    [MaxLength(32)] public string? TargetType { get; init; }
+    public Guid? TargetId { get; init; }
     [Range(1, int.MaxValue)] public int ExpectedVersion { get; init; }
     [Required, MaxLength(160)] public string Title { get; init; } = string.Empty;
     [Required, MaxLength(4000)] public string Description { get; init; } = string.Empty;
     [Required, MaxLength(16)] public string Severity { get; init; } = string.Empty;
     [MaxLength(16)] public string? Visibility { get; init; }
+    [MaxLength(100)] public string? TimeZoneId { get; init; }
     [Required, MaxLength(64)] public string ValidFrom { get; init; } = string.Empty;
     [Required, MaxLength(64)] public string ValidUntil { get; init; } = string.Empty;
 }
@@ -39,6 +43,12 @@ public sealed class WithdrawAlertDraftRequest
 
 public sealed class AlertListQuery
 {
+    public Guid? RecordId { get; init; }
+    public bool History { get; init; }
+    [MaxLength(160)] public string? Search { get; init; }
+    [MaxLength(32)] public string? TargetType { get; init; }
+    [MaxLength(16)] public string? Severity { get; init; }
+    [MaxLength(16)] public string? Visibility { get; init; }
     [MaxLength(256)] public string? Cursor { get; init; }
     [Range(1, 100)] public int PageSize { get; init; } = 25;
     [MaxLength(16)] public string? Lifecycle { get; init; }
@@ -61,7 +71,7 @@ public sealed record AlertResponse(
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
     Guid? WithdrawnBy = null,
-    DateTimeOffset? WithdrawnAt = null);
+    DateTimeOffset? WithdrawnAt = null, string? TimeZoneId = null, string? ValidFromLocal = null, string? ValidUntilLocal = null);
 
 public sealed record AlertQueueResponse(IReadOnlyList<AlertResponse> Items, string? NextCursor);
 

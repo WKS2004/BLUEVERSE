@@ -41,29 +41,78 @@ class CoastalOperationsApiService {
   final ApiGatewayConfig _gateway;
   Uri? _preferredBaseUri;
 
-  Future<CoastalPage<CoastalAssessment>> listAssessments() async {
-    final json = await _jsonRequest('/api/operations/assessments?pageSize=100');
+  String _query(Map<String, String> filters, String? cursor) {
+    final values = {'pageSize': '100', ...filters};
+    if (cursor != null) {
+      values['cursor'] = cursor;
+    }
+    return Uri(queryParameters: values).query;
+  }
+
+  Future<CoastalPage<CoastalAssessment>> listAssessments({
+    Map<String, String> filters = const {},
+    String? cursor,
+  }) async {
+    final json = await _jsonRequest(
+      '/api/operations/assessments?${_query(filters, cursor)}',
+    );
     return _parse(() => CoastalPage.fromJson(json, CoastalAssessment.fromJson));
+  }
+
+  Future<CoastalPage<CoastalAssessment>> listAssessmentLogRecords({
+    Map<String, String> filters = const {},
+    String? cursor,
+  }) async {
+    final json = await _jsonRequest(
+      '/api/operations/logs/assessments?${_query(filters, cursor)}',
+    );
+    return _parse(() => CoastalPage.fromJson(json, CoastalAssessment.fromJson));
+  }
+
+  Future<CoastalPage<CoastalAlert>> listAlertLogRecords({
+    Map<String, String> filters = const {},
+    String? cursor,
+  }) async {
+    final json = await _jsonRequest(
+      '/api/operations/logs/alerts?${_query(filters, cursor)}',
+    );
+    return _parse(() => CoastalPage.fromJson(json, CoastalAlert.fromJson));
+  }
+
+  Future<void> removeAssessmentEvidence({
+    required String assessmentId,
+    required String evidenceId,
+    required int expectedVersion,
+  }) async {
+    await _jsonRequest(
+      '/api/operations/assessments/${Uri.encodeComponent(assessmentId)}/evidence/${Uri.encodeComponent(evidenceId)}',
+      method: 'DELETE',
+      body: {'expectedVersion': expectedVersion},
+    );
   }
 
   Future<CoastalAssessment> createAssessment({
     required String targetType,
-    required String targetId,
+    String? targetId,
     String? sourceWorkflowId,
     required String periodStartsAt,
     required String periodEndsAt,
     required String objective,
+    String? title,
+    String? timeZoneId,
   }) async {
     final json = await _jsonRequest(
       '/api/operations/assessments',
       method: 'POST',
       body: {
         'targetType': targetType,
-        'targetId': targetId,
+        'targetId': ?targetId,
         'sourceWorkflowId': sourceWorkflowId,
         'periodStartsAt': periodStartsAt,
         'periodEndsAt': periodEndsAt,
         'objective': objective,
+        'title': ?title,
+        'timeZoneId': ?timeZoneId,
       },
       idempotencyKey: _newIdempotencyKey(),
     );
@@ -74,23 +123,27 @@ class CoastalOperationsApiService {
     required String assessmentId,
     required int expectedVersion,
     required String targetType,
-    required String targetId,
+    String? targetId,
     String? sourceWorkflowId,
     required String periodStartsAt,
     required String periodEndsAt,
     required String objective,
+    String? title,
+    String? timeZoneId,
   }) async {
     final json = await _jsonRequest(
-      '/api/operations/assessments/' + Uri.encodeComponent(assessmentId),
+      '/api/operations/assessments/${Uri.encodeComponent(assessmentId)}',
       method: 'PATCH',
       body: {
         'expectedVersion': expectedVersion,
         'targetType': targetType,
-        'targetId': targetId,
+        'targetId': ?targetId,
         'sourceWorkflowId': sourceWorkflowId,
         'periodStartsAt': periodStartsAt,
         'periodEndsAt': periodEndsAt,
         'objective': objective,
+        'title': ?title,
+        'timeZoneId': ?timeZoneId,
       },
     );
     return _parse(() => CoastalAssessment.fromJson(json));
@@ -101,7 +154,7 @@ class CoastalOperationsApiService {
     required int expectedVersion,
   }) async {
     final json = await _jsonRequest(
-      '/api/operations/assessments/' + Uri.encodeComponent(assessmentId),
+      '/api/operations/assessments/${Uri.encodeComponent(assessmentId)}',
       method: 'DELETE',
       body: {'expectedVersion': expectedVersion},
       idempotencyKey: _newIdempotencyKey(),
@@ -114,9 +167,7 @@ class CoastalOperationsApiService {
     required int expectedVersion,
   }) async {
     final json = await _jsonRequest(
-      '/api/operations/assessments/' +
-          Uri.encodeComponent(assessmentId) +
-          '/submit',
+      '/api/operations/assessments/${Uri.encodeComponent(assessmentId)}/submit',
       method: 'POST',
       body: {'expectedVersion': expectedVersion},
       idempotencyKey: _newIdempotencyKey(),
@@ -170,7 +221,7 @@ class CoastalOperationsApiService {
       );
     });
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw _failure(response.statusCode);
+      throw _responseFailure(response);
     }
     if (!(response.headers[HttpHeaders.contentTypeHeader] ?? '')
         .toLowerCase()
@@ -183,19 +234,45 @@ class CoastalOperationsApiService {
     return response.bodyBytes;
   }
 
-  Future<CoastalPage<CoastalAlert>> listAlerts() async {
-    final json = await _jsonRequest('/api/operations/alerts?pageSize=100');
+  Future<CoastalPage<CoastalAlert>> listAlerts({
+    Map<String, String> filters = const {},
+    String? cursor,
+  }) async {
+    final json = await _jsonRequest(
+      '/api/operations/alerts?${_query(filters, cursor)}',
+    );
     return _parse(() => CoastalPage.fromJson(json, CoastalAlert.fromJson));
+  }
+
+  Future<CoastalPage<CoastalAuditItem>> getAssessmentAudit(
+    String id, {
+    String? cursor,
+  }) async {
+    final json = await _jsonRequest(
+      '/api/operations/assessments/${Uri.encodeComponent(id)}/audit?${_query(const {}, cursor)}',
+    );
+    return _parse(() => CoastalPage.fromJson(json, CoastalAuditItem.fromJson));
+  }
+
+  Future<CoastalPage<CoastalAuditItem>> getAlertAudit(
+    String id, {
+    String? cursor,
+  }) async {
+    final json = await _jsonRequest(
+      '/api/operations/alerts/${Uri.encodeComponent(id)}/audit?${_query(const {}, cursor)}',
+    );
+    return _parse(() => CoastalPage.fromJson(json, CoastalAuditItem.fromJson));
   }
 
   Future<CoastalAlert> createAlertDraft({
     required String targetType,
-    required String targetId,
+    String? targetId,
     String? assessmentId,
     required String title,
     required String description,
     required String severity,
     required String visibility,
+    String? timeZoneId,
     required String validFrom,
     required String validUntil,
   }) async {
@@ -204,12 +281,13 @@ class CoastalOperationsApiService {
       method: 'POST',
       body: {
         'targetType': targetType,
-        'targetId': targetId,
+        'targetId': ?targetId,
         'assessmentId': assessmentId,
         'title': title,
         'description': description,
         'severity': severity,
         'visibility': visibility,
+        'timeZoneId': ?timeZoneId,
         'validFrom': validFrom,
         'validUntil': validUntil,
       },
@@ -220,10 +298,13 @@ class CoastalOperationsApiService {
   Future<CoastalAlert> updateAlertDraft({
     required String alertId,
     required int expectedVersion,
+    String? targetId,
+    String? targetType,
     required String title,
     required String description,
     required String severity,
     required String visibility,
+    String? timeZoneId,
     required String validFrom,
     required String validUntil,
   }) async {
@@ -232,10 +313,13 @@ class CoastalOperationsApiService {
       method: 'PATCH',
       body: {
         'expectedVersion': expectedVersion,
+        'targetId': ?targetId,
+        'targetType': ?targetType,
         'title': title,
         'description': description,
         'severity': severity,
         'visibility': visibility,
+        'timeZoneId': ?timeZoneId,
         'validFrom': validFrom,
         'validUntil': validUntil,
       },
@@ -261,7 +345,7 @@ class CoastalOperationsApiService {
     required int expectedVersion,
   }) async {
     final json = await _jsonRequest(
-      '/api/operations/alerts/' + Uri.encodeComponent(alertId),
+      '/api/operations/alerts/${Uri.encodeComponent(alertId)}',
       method: 'DELETE',
       body: {'expectedVersion': expectedVersion},
       idempotencyKey: _newIdempotencyKey(),
@@ -291,6 +375,11 @@ class CoastalOperationsApiService {
     return _parse(
       () => CoastalPage.fromJson(json, CoastalHistoryItem.fromJson),
     );
+  }
+
+  Future<CoastalFormOptions> getFormOptions() async {
+    final json = await _jsonRequest('/api/operations/form-options');
+    return _parse(() => CoastalFormOptions.fromJson(json));
   }
 
   T _parse<T>(T Function() parse) {
@@ -373,7 +462,7 @@ class CoastalOperationsApiService {
 
   JsonMap _decodeObject(http.Response response) {
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw _failure(response.statusCode);
+      throw _responseFailure(response);
     }
     try {
       final payload = jsonDecode(response.body);
@@ -385,6 +474,34 @@ class CoastalOperationsApiService {
       HttpStatus.badGateway,
       'The service returned information that could not be read. Refresh and try again.',
     );
+  }
+
+  CoastalOperationsApiException _responseFailure(http.Response response) {
+    if (response.statusCode == HttpStatus.unprocessableEntity) {
+      try {
+        final problem = jsonDecode(response.body);
+        const messages = {
+          'local_time_nonexistent': 'That local time is skipped by a daylight-saving change. Choose another time.',
+          'local_time_ambiguous': 'That local time occurs twice during a daylight-saving change. Choose another time.',
+          'target_required_for_publication':
+              'Link this draft to a coastal record before publishing.',
+          'local_time_invalid':
+              'Choose a valid local date and time for the selected zone.',
+          'time_zone_invalid':
+              'Choose an active location from the time-zone list.',
+        };
+        if (problem is Map<String, dynamic> &&
+            messages[problem['code']] != null) {
+          return CoastalOperationsApiException(
+            response.statusCode,
+            messages[problem['code']]!,
+          );
+        }
+      } on FormatException {
+        // Malformed error bodies retain the established safe status message.
+      }
+    }
+    return _failure(response.statusCode);
   }
 
   CoastalOperationsApiException _failure(int status) {

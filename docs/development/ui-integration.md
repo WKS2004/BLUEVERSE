@@ -1,5 +1,18 @@
 # UI integration contract and verification
 
+The latest [navigation/activity contract](../v1/coastal-operations-record-navigation-and-audit.md) specifies 500 ms live search, pinned collection tabs, shared cards and record-specific 5/10/25/50/100 cursor pagination. Existing route query parameters preserve create/edit/detail workspace intent across refresh. Logs delegates to the same authorized full details/actions and forms, so its registry includes those public API references. Unsaved form values are not stored. Both clients render richer scoped audit snapshots and honest legacy gaps.
+
+The 2026-10-01 Coastal Operations change registers separate Assessment and Alert
+pages at `/operations/assessments` and `/operations/alerts` for React and Flutter.
+Both use searchable lifecycle tabs and scoped activity via public API only.
+See [the detailed contract](../v1/coastal-operations-publication-and-ui.md).
+Both workflows also register `GET /api/operations/form-options` for database
+time zones and named association choices. The
+[record experience contract](../v1/coastal-operations-record-experience.md)
+defines title search, result metadata, stacked heroes, Advanced ID filtering,
+native date/time controls and unavailable producer selectors. Both clients
+save unlinked titled drafts and enforce server publication outcomes.
+
 BLUEVERSE treats a UI as a cross-layer change, not only a screen change. Every
 new, generated or modified React or Flutter surface must be connected to the
 same workflow contract, the correct frontend route and the public ASP.NET Core
@@ -139,3 +152,16 @@ Run locally from the repository root:
 
 The repository's bundled Python path is reported by the workspace dependency
 loader. If a system Python is available, `python` can be used instead.
+
+## Coastal Operations Logs — 2026-10-02
+
+`coastal-operations-logs` registers React and Flutter `/operations/logs`, the
+scoped public log-record collections and existing audit timelines. Evidence
+removal is registered in `coastal-operations-assessment`. Search now waits
+500 ms after typing, retaining records and rendering a local spinner; this
+supersedes the earlier one-second interval.
+Logs use bounded server cursors with previous-page cursor positions and matching
+page-size controls. Focused create/detail views keep shared chrome, preserve
+collection state and pause collection search. Creator-only grants must not cause
+an unauthorized detail fetch after saving. Product clients never use internal
+hosts, and no executable agent is introduced by these UI changes.

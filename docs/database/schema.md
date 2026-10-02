@@ -1,5 +1,10 @@
 # Schema Design Status
 
+The [Coastal Operations follow-up](../v1/coastal-operations-record-experience.md)
+adds Assessment.Title/TimeZoneId, OperationalAlert.TimeZoneId and an IANA-seeded
+TimeZoneLocations catalogue. Titled unlinked drafts retain an empty target
+sentinel until linked; publication rejects it.
+
 The final business schema is still deferred, but the current Auth foundation
 defines a PostgreSQL/EF Core schema with checked-in migrations under
 `services/auth/Data/Migrations`.
@@ -17,16 +22,50 @@ The current context defines these tables in `coastal_operations`:
 
 | Table | Purpose and integrity controls |
 |---|---|
-| `Assessments` | Caller-owned business assessment/workflow, starting in `DRAFT`, target reference, period, AI dependency outcome, bounded JSONB snapshots of optional Member 1–3 results collected on submission, initiator and optimistic version; nullable cancellation actor/time tombstone; unique workflow ID and status/period/version/lifecycle constraints. |
+| `Assessments` | Caller-owned business assessment/workflow, title (max 160, duplicate titles permitted), starting in `DRAFT`, target reference (empty only for unlinked drafts), UTC period and nullable selected zone, AI dependency outcome, bounded JSONB snapshots of optional Member 1–3 results collected on submission, initiator and optimistic version; cancellation tombstone; unique workflow ID and status/period/version/lifecycle constraints. |
 | `AssessmentProposals` | Versioned proposal references and validity; unique assessment/version and a maximum 30-minute validity constraint. |
-| `AssessmentEvidence` | Private image metadata, immutable assessment version, uploader, SHA-256, inspection state and 365-day expiry; content bytes live in the private evidence volume. |
+| `AssessmentEvidence` | Private image metadata, immutable assessment version, uploader, SHA-256, inspection state (AVAILABLE/EXPIRED/REMOVED), nullable RemovedAt/ContentDeletedAt and 365-day expiry; a removal-state check requires a timestamp for tombstones; content bytes live in the private evidence volume. |
 | `ReviewerDecisions` | Human decision for a proposal version; unique proposal/version. |
 | `TargetOperationalStates` | Member 4-owned state and optimistic version by target type/ID; unique target reference and state constraints. |
 | `OperationalHistory` | Target state transitions with assessment/proposal/decision references and correlation ID. |
 | `OperationalAlerts` | Draft and published alert content, target, severity, `PUBLIC`/`OPERATIONS` visibility, lifecycle, effective period and optimistic version; proposed drafts can be logically withdrawn with actor/time tombstone fields. |
 | `AlertDecisions` | Audited publish/resolve/expire decisions. |
 | `IdempotencyRecords` | Actor/operation/key-scoped request digest and original response; unique scope. |
-| `OperationsAudit` | Resource/action/actor/correlation and timestamp audit records. |
+| `OperationsAudit` | Resource/action/actor/correlation and timestamp; nullable actor name (100), record title (200), readable summary (512), required ActorRolesJson/ChangesJson JSONB arrays with an array-type check. New entries capture allowlisted before/after values and historical display identity atomically with the mutation. |
+| `TimeZoneLocations` | IANA identifier primary key (max 100), country code/name, location, coordinates, description, source version and active flag. 419 seeded choices including UTC, from IANA 2026e zone.tab/iso3166.tab. Assessment/alert nullable zone references use restrictive foreign keys and indexes. Date-specific rules come from the OS, not a stored fixed offset. |
+
+Migration `20261002081218_CoastalDetailedAudit` adds the audit snapshots above.
+Existing events receive empty arrays and nullable details: no names, roles or
+field history are reconstructed. Sensitive provider payloads, hidden reasoning,
+credentials and image bytes are excluded. The same scoped audit access/retention
+applies. Down retains original event rows but drops the new detail columns.
+See [ADR-0024](../adr/ADR-0024-coastal-detailed-audit-snapshots.md). Generated SQL
+and model consistency were checked; live PostgreSQL execution remains unverified.
+
+Migration `20261001204558_CoastalDraftEvidenceRemoval` adds nullable removal and
+content-deletion timestamps, allows REMOVED, and constrains its timestamp/state
+pair. Existing rows remain unchanged. Draft removal commits evidence metadata,
+assessment version and audit atomically before deleting private bytes. Pending
+cleanup is retried in batches of 50 by the existing retention worker. Audit
+queries retain removed evidence IDs; current details, publication snapshots and
+attachment counts exclude removed images. Rollback maps removed rows to EXPIRED
+because deleted private content cannot be recovered. Logs reuse existing tables
+and indexes; they introduce no duplicate audit storage or content snapshots.
+See [ADR-0023](../adr/ADR-0023-coastal-draft-evidence-removal.md).
+
+Migration `20261001123722_CoastalOperationsNamedDraftsAndTimeZones` adds the
+catalogue, assessment Title and both selected-zone columns. It backfills titles
+from trimmed objectives (first 160 characters), preserves existing UTC instants
+and leaves legacy zones null. It does not invent producer references or create
+dispatch records. New clients submit one zone plus two local times; server
+validation resolves each instant and rejects invalid or ambiguous clock times.
+
+Migration `20261001102110_CoastalOperationsPublicationDispatch` adds `AssessmentDispatches`:
+one unique assessment envelope, immutable JSONB published payload, workflow and
+actor/correlation IDs, delivery status/attempt count, finite lease/retry time,
+created/updated timestamps and optimistic version. It is business delivery
+state; no agent plan/steps/model execution is stored. Existing assessments are
+not automatically redispatched by migration. See [ADR-0022](../adr/ADR-0022-coastal-assessment-publication-dispatch.md).
 
 Migration `20260927211833_CoastalOperationsDraftLifecycles` adds the
 assessment `DRAFT`/`CANCELLED` lifecycle constraints and cancellation
@@ -43,6 +82,7 @@ open pending shared G00.
 
 ```mermaid
 erDiagram
+    Assessments ||--o| AssessmentDispatches : queues_publication
     Assessments ||--o{ AssessmentProposals : has
     Assessments ||--o{ AssessmentEvidence : includes
     Assessments ||--o{ ReviewerDecisions : records

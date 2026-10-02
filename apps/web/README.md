@@ -1,5 +1,19 @@
 # BLUEVERSE Web
 
+The [2026-10-02 navigation/activity contract](../../docs/v1/coastal-operations-record-navigation-and-audit.md) updates all collections to 500 ms live search, pinned category tabs and shared white record cards. Assessments/Alerts per page offers 5/10/25/50/100 server cursor pages. Logs opens full record details/actions. Create/edit query routes survive refresh, loading saved values without storing unsaved inputs. Activity shows verified names/roles/time and before/after values; old unavailable snapshots remain explicit.
+The [focused workspace follow-up](../../docs/v1/coastal-operations-focused-workspaces.md) supplies distinct hero photographs and compact search beneath workspace actions. The latest contract supersedes its debounce interval. Reads retain records with a local spinner; full details/forms preserve header/footer/navigation and Back. Existing public API permissions apply; published authored content remains read only and cancellation confirmations use red styling.
+
+Coastal Operations offers `/operations/assessments` and `/operations/alerts`,
+with permission-aware route/lifecycle tabs, server search/filters, pagination,
+coastal hero imagery and scoped activity timelines. Publication semantics and
+equal mobile capability follow the [shared contract](../../docs/v1/coastal-operations-publication-and-ui.md).
+The [record experience follow-up](../../docs/v1/coastal-operations-record-experience.md)
+places the hero above title search (all types by default), removes the bottom
+lookup and header menu, and adds titled drafts, named associations and one
+time-zone dropdown from `/api/operations/form-options`. IDs appear in results
+and Advanced search. Missing catalogue/planner services show unavailable choices;
+unlinked drafts can save but cannot publish.
+
 React Web styling uses Tailwind CSS utilities with shared BLUEVERSE color and
 type tokens defined in `src/styles/index.css`. The repository-root
 [DESIGN.md](../../DESIGN.md) is the canonical visual guide for React Web and
@@ -27,7 +41,8 @@ may adapt to browser use without assigning a stakeholder group to this client.
 - `src/app/` owns application setup, the React Router route table and route
   scroll behavior. `BrowserRouter` wraps the app and `routes.tsx` declares the
   `/`, `/signin`, `/signup`, `/profile`, `/dashboard`, `/admin`,
-  `/admin/permissions`, `/admin/roles`, `/admin/users`, `/404` and `/500`
+  `/admin/permissions`, `/admin/roles`, `/admin/users`,
+  `/operations/assessments`, `/operations/alerts`, `/404` and `/500`
   routes.
 - `src/components/feedback/BackendLoadingScreen.tsx` shows the shared loading
   screen for backend work, with contextual account transitions and a wave
@@ -97,7 +112,7 @@ uses Node 24's built-in test runner; request contracts mock `fetch`, while DOM
 tests use JSDOM, React Testing Library and `user-event` with Vite SSR module
 loading. The tests cover the implemented Auth, profile, administration,
 navigation, recovery and shared-shell behaviors without a live API or browser.
-The current suite passes 157 cases (2026-09-25). These tests are not a
+See the latest change contract for current suite counts. These tests are not a
 substitute for deployed-gateway or real-browser end-to-end checks. The
 registry contains the shared home, Auth registration and session-management,
 profile management and coastal overview workflows. New workflows must

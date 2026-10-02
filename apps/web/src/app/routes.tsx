@@ -7,6 +7,7 @@ import RegistrationPage from '../pages/RegistrationPage'
 import { NotFoundPage, ServerErrorPage } from '../pages/GlobalErrorPage'
 import { AdminAccessDenied, AdminIndexPage, AdminPermissionsPage, AdminRolesPage, AdminUsersPage } from '../pages/admin/AdminPages'
 import CoastalOperationsPage from '../pages/operations/CoastalOperationsPage'
+import OperationsLogsPage from '../pages/operations/OperationsLogsPage'
 import { useAuthSession } from '../features/auth/authSession'
 import { authEntryHrefFor } from '../features/auth/authNavigation'
 import { hasAnyPermission } from '../features/authorization/permissions'
@@ -55,7 +56,9 @@ export default function AppRoutes() {
       <Route element={<RequireAuth />}>
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/operations/assessments" element={<CoastalOperationsPage />} />
+        <Route path="/operations/logs" element={<OperationsLogsPage />} />
+        <Route path="/operations/alerts" element={<CoastalOperationsPage section="alerts" />} />
+        <Route path="/operations/assessments" element={<CoastalOperationsPage section="assessments" />} />
         <Route path="/admin" element={<RequireAnyAdminPermission permissions={['auth.permission.read', 'auth.role.read', 'auth.user.read']}><AdminIndexPage /></RequireAnyAdminPermission>} />
         <Route path="/admin/permissions" element={<RequireAnyAdminPermission permissions={['auth.permission.read']}><AdminPermissionsPage /></RequireAnyAdminPermission>} />
         <Route path="/admin/roles" element={<RequireAnyAdminPermission permissions={['auth.role.read']}><AdminRolesPage /></RequireAnyAdminPermission>} />

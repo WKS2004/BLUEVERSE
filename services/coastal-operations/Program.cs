@@ -74,6 +74,9 @@ builder.Services.AddSingleton<ComponentDependencyHealthRegistry>();
 builder.Services.AddScoped<IComponentDependencyCollector, ComponentDependencyCollector>();
 builder.Services.AddScoped<IdempotencyStore>();
 builder.Services.AddScoped<AssessmentApplicationService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<OperationsAuditReader>();
+builder.Services.AddSingleton<ICoastalReferencePort, DisconnectedCoastalReferencePort>();
 builder.Services.AddScoped<AlertApplicationService>();
 builder.Services.AddScoped<TargetStatusApplicationService>();
 builder.Services.Configure<EvidenceStorageOptions>(builder.Configuration.GetSection("EvidenceStorage"));
@@ -81,6 +84,8 @@ builder.Services.AddSingleton<IAssessmentEvidenceStorage, FileSystemAssessmentEv
 builder.Services.AddSingleton<AssessmentEvidenceSanitizer>();
 builder.Services.AddScoped<AssessmentEvidenceApplicationService>();
 builder.Services.AddSingleton<IAssessmentProposalPort, DisconnectedAssessmentProposalPort>();
+builder.Services.AddScoped<AssessmentDispatchDelivery>();
+builder.Services.AddHostedService<AssessmentDispatchHostedService>();
 builder.Services.AddHostedService<AlertExpirationHostedService>();
 builder.Services.AddHostedService<AssessmentEvidenceRetentionHostedService>();
 

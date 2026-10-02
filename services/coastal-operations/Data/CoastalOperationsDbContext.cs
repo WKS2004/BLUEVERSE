@@ -3,10 +3,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Blueverse.CoastalOperations.Data;
 
-public sealed class CoastalOperationsDbContext(DbContextOptions<CoastalOperationsDbContext> options)
+public sealed class CoastalOperationsDbContext(DbContextOptions<CoastalOperationsDbContext> options, IHttpContextAccessor? httpContext = null)
     : DbContext(options)
 {
+    public DbSet<TimeZoneLocation> TimeZoneLocations => Set<TimeZoneLocation>();
     public DbSet<Assessment> Assessments => Set<Assessment>();
+    public DbSet<AssessmentDispatch> AssessmentDispatches => Set<AssessmentDispatch>();
     public DbSet<AssessmentProposal> AssessmentProposals => Set<AssessmentProposal>();
     public DbSet<AssessmentEvidence> AssessmentEvidence => Set<AssessmentEvidence>();
     public DbSet<ReviewerDecision> ReviewerDecisions => Set<ReviewerDecision>();
@@ -17,9 +19,48 @@ public sealed class CoastalOperationsDbContext(DbContextOptions<CoastalOperation
     public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
     public DbSet<OperationsAuditEntry> OperationsAudit => Set<OperationsAuditEntry>();
 
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        ChangeTracker.DetectChanges();
+        AuditSnapshotCapture.Capture(this, httpContext?.HttpContext?.User);
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema("coastal_operations");
+
+        modelBuilder.Entity<TimeZoneLocation>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasMaxLength(100);
+            entity.Property(x => x.CountryCode).HasMaxLength(2).IsRequired();
+            entity.Property(x => x.Country).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.Location).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.Coordinates).HasMaxLength(20).IsRequired();
+            entity.Property(x => x.Description).HasMaxLength(300).IsRequired();
+            entity.Property(x => x.SourceVersion).HasMaxLength(16).IsRequired();
+            entity.HasData(TimeZoneCatalogueSeed.Locations);
+        });
+        modelBuilder.Entity<AssessmentDispatch>(entity =>
+        {
+            entity.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_AssessmentDispatches_Status", "\"Status\" IN ('NOT_CONNECTED','PENDING','LEASED','ACCEPTED','UNAVAILABLE','SAFE_FAILURE')");
+                table.HasCheckConstraint("CK_AssessmentDispatches_Attempts", "\"Attempts\" BETWEEN 0 AND 3");
+                table.HasCheckConstraint("CK_AssessmentDispatches_Version", "\"Version\" > 0");
+                table.HasCheckConstraint("CK_AssessmentDispatches_Payload", "jsonb_typeof(\"PayloadJson\") = 'object'");
+                table.HasCheckConstraint("CK_AssessmentDispatches_Lease", "(\"Status\" = 'LEASED' AND \"LeaseId\" IS NOT NULL AND \"LeaseUntil\" IS NOT NULL) OR (\"Status\" <> 'LEASED' AND \"LeaseId\" IS NULL AND \"LeaseUntil\" IS NULL)");
+            });
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => x.AssessmentId).IsUnique();
+            entity.HasIndex(x => new { x.Status, x.NextAttemptAt });
+            entity.HasOne<Assessment>().WithMany().HasForeignKey(x => x.AssessmentId).OnDelete(DeleteBehavior.Restrict);
+            entity.Property(x => x.PayloadJson).HasColumnType("jsonb").IsRequired();
+            entity.Property(x => x.Status).HasMaxLength(24).IsRequired();
+            entity.Property(x => x.CorrelationId).HasMaxLength(128).IsRequired();
+            entity.Property(x => x.Version).IsConcurrencyToken();
+        });
 
         modelBuilder.Entity<Assessment>(entity =>
         {
@@ -38,6 +79,9 @@ public sealed class CoastalOperationsDbContext(DbContextOptions<CoastalOperation
             entity.HasIndex(x => new { x.InitiatedBy, x.Id });
             entity.HasIndex(x => new { x.WorkflowStatus, x.Id });
             entity.Property(x => x.TargetType).HasMaxLength(32).IsRequired();
+            entity.Property(x => x.Title).HasMaxLength(160).IsRequired();
+            entity.Property(x => x.TimeZoneId).HasMaxLength(100);
+            entity.HasOne<TimeZoneLocation>().WithMany().HasForeignKey(x => x.TimeZoneId).OnDelete(DeleteBehavior.Restrict);
             entity.Property(x => x.Objective).HasMaxLength(2000).IsRequired();
             entity.Property(x => x.WorkflowStatus).HasMaxLength(32).IsRequired();
             entity.Property(x => x.AiDependencyStatus).HasMaxLength(24).IsRequired();
@@ -55,7 +99,8 @@ public sealed class CoastalOperationsDbContext(DbContextOptions<CoastalOperation
             {
                 table.HasCheckConstraint("CK_AssessmentEvidence_Version", "\"AssessmentVersion\" > 0");
                 table.HasCheckConstraint("CK_AssessmentEvidence_ByteLength", "\"ByteLength\" BETWEEN 1 AND 5242880");
-                table.HasCheckConstraint("CK_AssessmentEvidence_InspectionStatus", "\"InspectionStatus\" IN ('AVAILABLE','EXPIRED')");
+                table.HasCheckConstraint("CK_AssessmentEvidence_InspectionStatus", "\"InspectionStatus\" IN ('AVAILABLE','EXPIRED','REMOVED')");
+                table.HasCheckConstraint("CK_AssessmentEvidence_Removal", "(\"InspectionStatus\" = 'REMOVED' AND \"RemovedAt\" IS NOT NULL) OR (\"InspectionStatus\" <> 'REMOVED' AND \"RemovedAt\" IS NULL AND \"ContentDeletedAt\" IS NULL)");
                 table.HasCheckConstraint("CK_AssessmentEvidence_Expiry", "\"ExpiresAt\" > \"UploadedAt\"");
             });
             entity.HasKey(x => x.Id);
@@ -140,6 +185,8 @@ public sealed class CoastalOperationsDbContext(DbContextOptions<CoastalOperation
             entity.HasIndex(x => new { x.TargetType, x.TargetId, x.Lifecycle });
             entity.HasIndex(x => new { x.Visibility, x.Lifecycle, x.ValidFrom, x.ValidUntil });
             entity.Property(x => x.TargetType).HasMaxLength(32).IsRequired();
+            entity.Property(x => x.TimeZoneId).HasMaxLength(100);
+            entity.HasOne<TimeZoneLocation>().WithMany().HasForeignKey(x => x.TimeZoneId).OnDelete(DeleteBehavior.Restrict);
             entity.Property(x => x.Title).HasMaxLength(160).IsRequired();
             entity.Property(x => x.Description).HasMaxLength(4000).IsRequired();
             entity.Property(x => x.Severity).HasMaxLength(16).IsRequired();
@@ -174,6 +221,14 @@ public sealed class CoastalOperationsDbContext(DbContextOptions<CoastalOperation
 
         modelBuilder.Entity<OperationsAuditEntry>(entity =>
         {
+            entity.Property(x => x.ActorName).HasMaxLength(100);
+            entity.Property(x => x.RecordTitle).HasMaxLength(200);
+            entity.Property(x => x.Summary).HasMaxLength(512);
+            entity.Property(x => x.ActorRolesJson).HasColumnType("jsonb").IsRequired();
+            entity.Property(x => x.ChangesJson).HasColumnType("jsonb").IsRequired();
+            entity.ToTable(t => {
+                t.HasCheckConstraint("CK_OperationsAudit_Snapshots", "jsonb_typeof(\"ActorRolesJson\") = 'array' AND jsonb_typeof(\"ChangesJson\") = 'array'");
+            });
             entity.HasKey(x => x.Id);
             entity.HasIndex(x => new { x.ResourceType, x.ResourceId, x.CreatedAt });
             entity.Property(x => x.ResourceType).HasMaxLength(32).IsRequired();

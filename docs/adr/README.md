@@ -54,3 +54,11 @@ G00.
 ADR-0021 records the Member 4 branch's signed API actor-context choice for
 Coastal Operations. The envelope and its scale-out behavior remain provisional
 until shared G00 acceptance.
+
+[ADR-0022](ADR-0022-coastal-assessment-publication-dispatch.md) records durable
+assessment publication delivery, distinct alert publication, scoped activity
+and separate client pages. It preserves the disconnected pre-G07 port.
+
+- [ADR-0023: Coastal draft evidence removal](ADR-0023-coastal-draft-evidence-removal.md) — retained audit metadata, draft-only mutation and durable content cleanup.
+
+- [ADR-0024: Coastal detailed activity snapshots](ADR-0024-coastal-detailed-audit-snapshots.md) — atomic field history and verified signed display identity.

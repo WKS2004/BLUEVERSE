@@ -172,6 +172,24 @@ public sealed class CoastalActorContextAuthenticationTests
         Assert.True(guard.TryUse(nonce, DateTimeOffset.UtcNow.AddMinutes(1)));
     }
 
+    [Fact(DisplayName = "COASTAL-AUTH-CONTEXT-009 signed display identity creates name/role snapshots without changing permissions")]
+    [Trait("TestId", "COASTAL-AUTH-CONTEXT-009")]
+    public async Task SignedDisplayIdentityBecomesVerifiedClaims()
+    {
+        var actor = Guid.NewGuid();
+        var headers = SignedHeaders("GET", "/api/operations/alerts", actor, ["operations.alert.read"]);
+        var snapshot = Convert.ToBase64String(JsonSerializer.SerializeToUtf8Bytes(new { name = "Coastal Steward", roles = new[] { "Field Officer" } }));
+        headers[CoastalActorContextHeaders.Identity] = snapshot;
+        var canonical = string.Join('\n', "GET", "/api/operations/alerts", headers[CoastalActorContextHeaders.ActorId], headers[CoastalActorContextHeaders.Permissions], headers[CoastalActorContextHeaders.CorrelationId], headers[CoastalActorContextHeaders.IssuedAt], headers[CoastalActorContextHeaders.Nonce], snapshot);
+        headers[CoastalActorContextHeaders.Signature] = Convert.ToBase64String(HMACSHA256.HashData(Key, Encoding.UTF8.GetBytes(canonical)));
+        var handler = CreateHandler(new CoastalActorContextReplayGuard());
+        await handler.InitializeAsync(Scheme(), Context("GET", "/api/operations/alerts", string.Empty, headers));
+        var result = await handler.AuthenticateAsync();
+        Assert.True(result.Succeeded); Assert.Equal("Coastal Steward", result.Principal!.FindFirstValue(ClaimTypes.Name));
+        Assert.Equal("Field Officer", Assert.Single(result.Principal.FindAll(ClaimTypes.Role)).Value);
+        Assert.Equal("operations.alert.read", Assert.Single(result.Principal.FindAll("permission")).Value);
+    }
+
     private static CoastalActorContextEnvelopeVerifier Verifier() => new(Configuration(KeyBase64));
 
     private static IConfiguration Configuration(string? key) => new ConfigurationBuilder()

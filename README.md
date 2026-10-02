@@ -1,6 +1,31 @@
 # BLUEVERSE
 
+The [2026-10-02 record navigation and activity update](docs/v1/coastal-operations-record-navigation-and-audit.md) adds 500 ms search, pinned category tabs, shared record cards and 5/10/25/50/100 Assessments/Alerts per page across all collections. Create/edit workspace intent survives refresh; unsaved inputs are not persisted. Logs opens the same full details/actions. New activity captures the verified person/roles and exact field changes; older missing details remain unavailable. Shared G00/G07 and live producer/agent acceptance remain pending.
+
 **Coastal Tourism & Marine Resilience**
+
+Coastal Operations publication, permissions, record activity and the separate
+Assessment/Alert client pages follow the [2026-10-01 contract](docs/v1/coastal-operations-publication-and-ui.md).
+Assessment publication uses submit and stores a durable business delivery
+envelope; before G07 no executable agent or live Agentic AI endpoint is called.
+Service startup applies the additive dispatch migration along with existing
+Coastal Operations migrations, including `20261001204558_CoastalDraftEvidenceRemoval`
+and `20261002081218_CoastalDetailedAudit`.
+Rebuild/restart both API and Coastal Operations with the documented Compose
+commands from the repository root (`docker compose up -d --build api coastal-operations`)
+to align the extended signed identity envelope and apply the additive audit
+columns. Use the same configured actor-context key; no new environment setting
+is required. The new migration has not been applied to a live database here.
+Existing images and audit rows are retained; old assessments are not retroactively dispatched.
+The Logs page is `/operations/logs` in both clients and requires audit plus
+record-read access. Unpublished evidence may be removed; published content is
+read only. Private-byte cleanup retries through the existing retention worker.
+The [record experience update](docs/v1/coastal-operations-record-experience.md)
+adds titled drafts, title search, named selectors and one database-backed IANA
+time-zone selector in both clients. Catalogue/planner services are not yet
+implemented: selectors report `NOT_CONNECTED`, drafts may remain unlinked,
+and publication requires a real coastal target. No stakeholder types an ID
+into a draft form. IDs remain visible in results and Advanced search.
 
 BLUEVERSE is an integrated coastal ecosystem platform combining coastal tourism, marine intelligence, environmental resilience, safety, sustainability and future coastal-livelihood capabilities.
 
@@ -8,8 +33,10 @@ The checked-in application provides the **v0 foundation** for the SE3090
 integrated full-stack and Agentic AI project. The submission target is
 **v0 plus v1**. React and Flutter implement the shared Auth registration and session workflows,
 backed by the public API gateway, internal Auth service and PostgreSQL. The
-four v1 business components, four agents and biodiversity integration are
-documented targets, not yet implemented behavior.
+Coastal Operations component has a branch implementation with draft lifecycles
+and both clients. Shared integration of all four v1 components, the four agents
+and biodiversity integration remain targets; see the linked contract for
+implemented behavior and outstanding acceptance.
 
 ## Project identity
 
@@ -39,7 +66,8 @@ React Web / Flutter Mobile
 ```
 
 The diagram combines the implemented v0 foundation and the v1 target. Today,
-the API integrates Auth, which owns its PostgreSQL-backed behavior. For v1, each
+the API integrates Auth and this branch's private Coastal Operations service,
+which own their PostgreSQL-backed behavior. For v1, each
 member's private .NET service owns its component business rules, persistence
 and assigned provider adapters. The API remains the only client-facing
 boundary and receives only the authentication/permission and routing
@@ -302,7 +330,14 @@ build and run in the foreground while watching logs, use
 `docker compose up --build`. Auth waits for PostgreSQL to become healthy, applies its
 migrations and seeds the configured administrator account.
 Coastal Operations applies its own EF Core schema migrations before reporting
-readiness. The API signs the authenticated actor and `operations.*` permission
+readiness, including `20261001123722_CoastalOperationsNamedDraftsAndTimeZones`.
+That migration backfills assessment titles and seeds 419 time-zone/location
+choices from IANA 2026e; existing records retain their UTC instants. For native
+service deployment, keep OS time-zone rules current (Linux `tzdata`, Windows
+time-zone updates and ICU). The form disables locations whose rules are absent;
+UTC remains available. The metadata version does not pin OS daylight-saving rules.
+
+The API signs the authenticated actor and `operations.*` permission
 claims with `COASTAL_OPERATIONS_CONTEXT_KEY`; its bearer token and cookies are
 removed before the private-service request is sent.
 

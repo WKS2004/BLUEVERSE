@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import { hasAnyPermission } from '../../features/authorization/permissions'
 import { useAuthSession } from '../../features/auth/authSession'
-import { hasCoastalOperationsAccess } from '../../features/coastalOperations/permissions'
+import { hasCoastalOperationsAccess, coastalNavigationLinks } from '../../features/coastalOperations/permissions'
 
 type Area = 'profile' | 'dashboard' | 'admin' | 'operations'
 type NavigationGroup = { id: Area; label: string; href: string; children: { label: string; href: string }[] }
@@ -25,9 +25,7 @@ function groupsFor(permissions: string[]): NavigationGroup[] {
   ]
   if (hasCoastalOperationsAccess({ permissions })) {
     groups.push({
-      id: 'operations', label: 'Coastal Operations', href: '/operations/assessments', children: [
-        { label: 'Assessments & advisories', href: '/operations/assessments' },
-      ],
+      id: 'operations', label: 'Coastal Operations', href: coastalNavigationLinks({ permissions })[0]?.href ?? '/operations/assessments', children: coastalNavigationLinks({ permissions }),
     })
   }
   const links = [

@@ -1,5 +1,14 @@
 # Wanshaja Sooriyabandara (Member 4) phase plan — Coastal Operations, Advisories & Alerts
 
+The 2026-10-01 [publication and UI change](../coastal-operations-publication-and-ui.md)
+requires documents first, then permission review, durable dispatch, scoped
+activity/search and separate equal client pages. G00/G07 remain pending.
+The [record experience follow-up](../coastal-operations-record-experience.md)
+adds titles, draft search fixes, named selector seams and seeded IANA locations
+to that work. Producer catalogue/planner integration remains pending; the
+completed client selectors explicitly report availability. Publication still
+requires a canonical target and actual agents remain gated by G07.
+
 **Assigned owner:** Wanshaja Sooriyabandara (`@WKS2004`). Feature branch:
 `features/coastal-operations`; Agentic AI branch after G07:
 `agentic-ai/safety-operations`.

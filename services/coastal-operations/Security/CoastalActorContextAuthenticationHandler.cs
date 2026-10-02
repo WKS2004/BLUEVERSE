@@ -21,6 +21,7 @@ public sealed class CoastalActorContextAuthenticationHandler(
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
+        var identityHeader = Request.Headers[CoastalActorContextHeaders.Identity].ToString();
         var actorHeader = Request.Headers[CoastalActorContextHeaders.ActorId].ToString();
         var permissionsHeader = Request.Headers[CoastalActorContextHeaders.Permissions].ToString();
         var correlationHeader = Request.Headers[CoastalActorContextHeaders.CorrelationId].ToString();
@@ -43,7 +44,7 @@ public sealed class CoastalActorContextAuthenticationHandler(
                 signatureHeader,
                 out var actorId,
                 out var permissions,
-                out var expiresAt))
+                out var expiresAt, string.IsNullOrEmpty(identityHeader) ? null : identityHeader))
         {
             return Task.FromResult(AuthenticateResult.Fail("The API actor context is invalid or expired."));
         }
@@ -57,6 +58,18 @@ public sealed class CoastalActorContextAuthenticationHandler(
             new("sub", actorId.ToString()),
             new("correlation_id", correlationHeader)
         };
+        if (!string.IsNullOrEmpty(identityHeader))
+        {
+            try
+            {
+                using var snapshot = JsonDocument.Parse(Convert.FromBase64String(identityHeader));
+                if (snapshot.RootElement.TryGetProperty("name", out var name) && name.ValueKind == JsonValueKind.String)
+                    claims.Add(new(ClaimTypes.Name, name.GetString()!));
+                foreach (var role in snapshot.RootElement.GetProperty("roles").EnumerateArray()) claims.Add(new(ClaimTypes.Role, role.GetString()!));
+            }
+            catch (Exception exception) when (exception is FormatException or JsonException or InvalidOperationException or KeyNotFoundException)
+            { return Task.FromResult(AuthenticateResult.Fail("The API identity snapshot is invalid.")); }
+        }
         claims.AddRange(permissions.Select(permission => new Claim("permission", permission)));
         var identity = new ClaimsIdentity(claims, SchemeName);
         var ticket = new AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName);
@@ -66,6 +79,7 @@ public sealed class CoastalActorContextAuthenticationHandler(
 
 public static class CoastalActorContextHeaders
 {
+    public const string Identity = "X-Blueverse-Actor-Identity";
     public const string ActorId = "X-Blueverse-Actor-Id";
     public const string Permissions = "X-Blueverse-Permissions";
     public const string CorrelationId = "X-Blueverse-Correlation-Id";
@@ -107,7 +121,7 @@ public sealed class CoastalActorContextEnvelopeVerifier
         string signatureHeader,
         out Guid actorId,
         out IReadOnlyList<string> permissions,
-        out DateTimeOffset expiresAt)
+        out DateTimeOffset expiresAt, string? identityHeader = null)
     {
         actorId = Guid.Empty;
         permissions = [];
@@ -162,7 +176,20 @@ public sealed class CoastalActorContextEnvelopeVerifier
             return false;
         }
 
-        var canonical = string.Join('\n', method.ToUpperInvariant(), pathAndQuery, actorId.ToString("N"), permissionsHeader, correlationHeader, issuedAtHeader, nonce);
+        if (identityHeader is not null)
+        {
+            if (identityHeader.Length > 8192) return false;
+            try
+            {
+                using var document = JsonDocument.Parse(Convert.FromBase64String(identityHeader));
+                var root = document.RootElement;
+                if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("roles", out var roles) || roles.ValueKind != JsonValueKind.Array || roles.GetArrayLength() > 32) return false;
+                if (root.TryGetProperty("name", out var name) && name.ValueKind != JsonValueKind.Null && (name.ValueKind != JsonValueKind.String || name.GetString()!.Length > 100)) return false;
+                if (roles.EnumerateArray().Any(x => x.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(x.GetString()) || x.GetString()!.Length > 128)) return false;
+            }
+            catch (Exception exception) when (exception is FormatException or JsonException) { return false; }
+        }
+        var canonical = string.Join('\n', method.ToUpperInvariant(), pathAndQuery, actorId.ToString("N"), permissionsHeader, correlationHeader, issuedAtHeader, nonce) + (identityHeader is null ? string.Empty : "\n" + identityHeader);
         var expectedSignature = HMACSHA256.HashData(_key, Encoding.UTF8.GetBytes(canonical));
         if (!CryptographicOperations.FixedTimeEquals(expectedSignature, providedSignature)) return false;
 

@@ -24,13 +24,13 @@ public sealed class AssessmentApplicationService(
     {
         EnsureActor(actorId);
         var key = OperationsValidation.ValidateIdempotencyKey(idempotencyKey);
-        var digest = OperationsValidation.RequestDigest(request);
+        var digest = OperationsValidation.AssessmentDraftDigest(request);
         var replay = await idempotencyStore.TryReplayAsync<AssessmentResponse>(
             actorId, "assessment.create", key, digest, cancellationToken);
         if (replay is not null) return replay;
 
         var targetType = OperationsValidation.NormalizeTargetType(request.TargetType);
-        if (request.TargetId == Guid.Empty || (request.SourceWorkflowId == Guid.Empty))
+        if (request.TargetId == Guid.Empty || (request.TargetId is null && string.IsNullOrWhiteSpace(request.Title)) || (request.SourceWorkflowId == Guid.Empty))
         {
             throw Invalid("target_identity_invalid", "Target identity is invalid", "Provide a non-empty target ID and omit an empty source workflow ID.");
         }
@@ -41,14 +41,16 @@ public sealed class AssessmentApplicationService(
             throw Invalid("objective_required", "An assessment objective is required", "Describe the operational question to assess.");
         }
 
-        var period = OperationsValidation.ParsePeriod(request.PeriodStartsAt, request.PeriodEndsAt);
+        var title = OperationsTimeZones.Title(request.Title, objective);
+        var period = await OperationsTimeZones.ParsePeriodAsync(db, request.TimeZoneId, request.PeriodStartsAt, request.PeriodEndsAt, cancellationToken);
         var now = DateTimeOffset.UtcNow;
         var assessment = new Assessment
         {
             Id = Guid.CreateVersion7(),
             WorkflowId = Guid.CreateVersion7(),
             TargetType = targetType,
-            TargetId = request.TargetId,
+            TargetId = request.TargetId ?? Guid.Empty,
+            Title = title, TimeZoneId = request.TimeZoneId,
             SourceWorkflowId = request.SourceWorkflowId,
             PeriodStartsAt = period.StartsAt,
             PeriodEndsAt = period.EndsAt,
@@ -96,16 +98,19 @@ public sealed class AssessmentApplicationService(
             throw Conflict("assessment_version_stale", "The assessment draft changed", "Reload the draft and submit the latest version.");
 
         var targetType = OperationsValidation.NormalizeTargetType(request.TargetType);
-        if (request.TargetId == Guid.Empty || request.SourceWorkflowId == Guid.Empty)
+        if (request.TargetId == Guid.Empty || (request.TargetId is null && string.IsNullOrWhiteSpace(request.Title)) || request.SourceWorkflowId == Guid.Empty)
             throw Invalid("target_identity_invalid", "Target identity is invalid", "Provide a non-empty target ID and omit an empty source workflow ID.");
         var objective = request.Objective.Trim();
         if (objective.Length == 0)
             throw Invalid("objective_required", "An assessment objective is required", "Describe the operational question to assess.");
-        var period = OperationsValidation.ParsePeriod(request.PeriodStartsAt, request.PeriodEndsAt);
+        var title = OperationsTimeZones.Title(request.Title, objective);
+        var period = await OperationsTimeZones.ParsePeriodAsync(db, request.TimeZoneId, request.PeriodStartsAt, request.PeriodEndsAt, cancellationToken);
 
         var now = DateTimeOffset.UtcNow;
         assessment.TargetType = targetType;
-        assessment.TargetId = request.TargetId;
+        assessment.TargetId = request.TargetId ?? Guid.Empty;
+        assessment.Title = title;
+        assessment.TimeZoneId = request.TimeZoneId;
         assessment.SourceWorkflowId = request.SourceWorkflowId;
         assessment.PeriodStartsAt = period.StartsAt;
         assessment.PeriodEndsAt = period.EndsAt;
@@ -186,6 +191,8 @@ public sealed class AssessmentApplicationService(
         if (assessment.Version != request.ExpectedVersion)
             throw Conflict("assessment_version_stale", "The assessment draft changed", "Reload the draft and submit the latest version.");
 
+        if (assessment.TargetId == Guid.Empty)
+            throw Invalid("target_required_for_publication", "Choose a coastal record before publishing", "Link this draft to a real coastal record when the catalogue is available.");
         var componentDependencies = await componentDependencyCollector.CollectAsync(
             assessment.TargetType,
             assessment.TargetId,
@@ -202,24 +209,37 @@ public sealed class AssessmentApplicationService(
         AssessmentListQuery query,
         Guid actorId,
         bool canReadQueue,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, bool auditView = false)
     {
         EnsureActor(actorId);
-        if (query.IncludeCancelled && !canReadQueue)
+        if (query.IncludeCancelled && !canReadQueue && !auditView)
             throw new CoastalOperationsException(StatusCodes.Status403Forbidden, "assessment_audit_forbidden", "Assessment audit access is required", "Only an authorized assessment queue reader can include cancelled draft tombstones.");
         if (!OperationsValidation.TryReadCursor(query.Cursor, out var cursorId))
         {
             throw Invalid("cursor_invalid", "The assessment cursor is invalid", "Use the cursor returned by the previous page.");
         }
 
+        var search = CoastalRecordQueries.Search(query.Search, query.PageSize);
         var items = db.Assessments.AsNoTracking().AsQueryable();
-        if (canReadQueue)
+        if (canReadQueue && !query.OnlyMine)
         {
-            items = items.Where(x => x.WorkflowStatus != "DRAFT" && (query.IncludeCancelled || x.WorkflowStatus != "CANCELLED"));
+            items = items.Where(x => (x.WorkflowStatus != "DRAFT" || x.InitiatedBy == actorId) && (auditView || query.IncludeCancelled || x.WorkflowStatus != "CANCELLED"));
         }
         else
         {
-            items = items.Where(x => x.InitiatedBy == actorId && x.WorkflowStatus != "CANCELLED");
+            items = items.Where(x => x.InitiatedBy == actorId && (auditView || query.IncludeCancelled || x.WorkflowStatus != "CANCELLED"));
+        }
+        if (!string.IsNullOrWhiteSpace(query.TargetType))
+        {
+            var targetType = OperationsValidation.NormalizeTargetType(query.TargetType);
+            items = items.Where(x => x.TargetType == targetType);
+        }
+        if (query.TargetId is Guid targetId) items = items.Where(x => x.TargetId == targetId);
+        if (query.RecordId is Guid recordId) items = items.Where(x => x.Id == recordId);
+        if (query.PublishedOnly) items = items.Where(x => x.WorkflowStatus != "DRAFT" && x.WorkflowStatus != "CANCELLED");
+        if (search is not null)
+        {
+            items = items.Where(x => (x.Title != "" ? x.Title.ToLower().Contains(search) : x.Objective.ToLower().Contains(search)));
         }
         if (!string.IsNullOrWhiteSpace(query.WorkflowStatus))
         {
@@ -228,7 +248,7 @@ public sealed class AssessmentApplicationService(
             {
                 throw Invalid("workflow_status_invalid", "The workflow status is invalid", "Use a documented Coastal Operations workflow status.");
             }
-            if (status == "CANCELLED" && !query.IncludeCancelled)
+            if (status == "CANCELLED" && !query.IncludeCancelled && !auditView)
                 throw new CoastalOperationsException(StatusCodes.Status403Forbidden, "assessment_audit_forbidden", "Assessment audit access is required", "Use the authorized includeCancelled audit filter to read cancelled draft tombstones.");
 
             items = items.Where(x => x.WorkflowStatus == status);
@@ -252,7 +272,7 @@ public sealed class AssessmentApplicationService(
     {
         EnsureActor(actorId);
         var assessment = await db.Assessments.AsNoTracking().SingleOrDefaultAsync(x => x.Id == assessmentId, cancellationToken);
-        if (assessment is null || (!canReadQueue && assessment.InitiatedBy != actorId))
+        if (assessment is null || (assessment.InitiatedBy != actorId && (!canReadQueue || assessment.WorkflowStatus == "DRAFT")))
         {
             throw NotFound("assessment_not_found", "Assessment not found", "The assessment does not exist or is outside the caller's scope.");
         }
@@ -481,7 +501,7 @@ public sealed class AssessmentApplicationService(
                 await db.Assessments.SingleOrDefaultAsync(x => x.Id == assessmentId, cancellationToken),
                 actorId, expectedVersion);
             var now = DateTimeOffset.UtcNow;
-            MarkSubmitted(assessment, dependencies, actorId, correlationId, now);
+            await MarkSubmittedAsync(assessment, dependencies, actorId, correlationId, now, cancellationToken);
             await InitializeTargetOperationalStateIfConfirmedAsync(
                 assessment.TargetType, assessment.TargetId, dependencies, actorId, correlationId, now, cancellationToken);
             return await SaveIdempotentAsync(
@@ -509,7 +529,7 @@ public sealed class AssessmentApplicationService(
                         await db.Assessments.SingleOrDefaultAsync(x => x.Id == assessmentId, cancellationToken),
                         actorId, expectedVersion);
                     var now = DateTimeOffset.UtcNow;
-                    MarkSubmitted(assessment, dependencies, actorId, correlationId, now);
+                    await MarkSubmittedAsync(assessment, dependencies, actorId, correlationId, now, cancellationToken);
                     await InitializeTargetOperationalStateIfConfirmedAsync(
                         assessment.TargetType, assessment.TargetId, dependencies, actorId, correlationId, now, cancellationToken);
                     var result = await SaveIdempotentAsync(
@@ -552,12 +572,13 @@ public sealed class AssessmentApplicationService(
         return assessment;
     }
 
-    private void MarkSubmitted(
+    private async Task MarkSubmittedAsync(
         Assessment assessment,
         IReadOnlyList<ComponentDependencyResult> dependencies,
         Guid actorId,
         string correlationId,
-        DateTimeOffset now)
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
     {
         assessment.WorkflowStatus = "SUBMITTED";
         assessment.AiDependencyStatus = "NOT_CONNECTED";
@@ -567,6 +588,24 @@ public sealed class AssessmentApplicationService(
         assessment.Version++;
         assessment.UpdatedAt = now;
         db.OperationsAudit.Add(Audit("assessment", assessment.Id, "SUBMITTED", actorId, correlationId, now));
+        var evidence = await db.AssessmentEvidence.AsNoTracking()
+            .Where(x => x.AssessmentId == assessment.Id && x.InspectionStatus == "AVAILABLE" && x.ExpiresAt > now)
+            .OrderBy(x => x.UploadedAt)
+            .Select(x => new AssessmentEvidenceResponse(x.Id, x.AssessmentVersion, x.MediaType,
+                x.ByteLength, x.ContentSha256, x.InspectionStatus, x.UploadedAt, x.ExpiresAt))
+            .ToListAsync(cancellationToken);
+        var dispatchId = Guid.CreateVersion7();
+        var payload = new PublishedAssessmentDispatch(dispatchId, assessment.WorkflowId,
+            assessment.Id, assessment.Version, assessment.TargetType, assessment.TargetId,
+            assessment.SourceWorkflowId, assessment.PeriodStartsAt, assessment.PeriodEndsAt,
+            assessment.Objective, actorId, correlationId, now, dependencies, evidence, assessment.Title, assessment.TimeZoneId);
+        db.AssessmentDispatches.Add(new AssessmentDispatch
+        {
+            Id = dispatchId, AssessmentId = assessment.Id, WorkflowId = assessment.WorkflowId,
+            PayloadJson = JsonSerializer.Serialize(payload, OperationsValidation.JsonOptions),
+            ActorId = actorId, CorrelationId = correlationId, NextAttemptAt = now,
+            CreatedAt = now, UpdatedAt = now
+        });
     }
 
     private static AssessmentResponse ToResponse(Assessment x) => new(
@@ -574,7 +613,7 @@ public sealed class AssessmentApplicationService(
         x.PeriodStartsAt, x.PeriodEndsAt, x.Objective, x.WorkflowStatus,
         x.AiDependencyStatus, x.AiDispatchOutcome, x.AiDispatchRetryable,
         JsonSerializer.Deserialize<List<ComponentDependencyResult>>(x.ComponentDependenciesJson, OperationsValidation.JsonOptions) ?? [],
-        x.Version, x.CreatedAt, x.UpdatedAt, x.CancelledBy, x.CancelledAt);
+        x.Version, x.CreatedAt, x.UpdatedAt, x.CancelledBy, x.CancelledAt, x.Title, x.TimeZoneId, OperationsTimeZones.LocalValue(x.PeriodStartsAt, x.TimeZoneId), OperationsTimeZones.LocalValue(x.PeriodEndsAt, x.TimeZoneId));
 
     private static void EnsureActor(Guid actorId)
     {

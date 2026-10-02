@@ -162,6 +162,12 @@ public static class AuthDataSeeder
 
     private static Dictionary<string, (Guid Id, string Description)> CoastalOperationsPermissionDefinitions() => new()
     {
+        [PermissionCodes.OperationsAlertCreate] = (Guid.Parse("11111111-1111-1111-1111-111111111215"), "Create coastal operational alert drafts"),
+        [PermissionCodes.OperationsAlertUpdate] = (Guid.Parse("11111111-1111-1111-1111-111111111216"), "Edit coastal operational alert drafts"),
+        [PermissionCodes.OperationsAlertDelete] = (Guid.Parse("11111111-1111-1111-1111-111111111217"), "Withdraw coastal operational alert drafts"),
+        [PermissionCodes.OperationsAlertPublish] = (Guid.Parse("11111111-1111-1111-1111-111111111218"), "Publish coastal operational alerts"),
+        [PermissionCodes.OperationsAlertResolve] = (Guid.Parse("11111111-1111-1111-1111-111111111219"), "Resolve coastal operational alerts"),
+        [PermissionCodes.OperationsAuditRead] = (Guid.Parse("11111111-1111-1111-1111-111111111220"), "Read scoped Coastal Operations activity logs"),
         [PermissionCodes.OperationsAssessmentCreate] = (Guid.Parse("11111111-1111-1111-1111-111111111201"), "Create coastal operational assessments"),
         [PermissionCodes.OperationsAssessmentRead] = (Guid.Parse("11111111-1111-1111-1111-111111111202"), "Read own coastal operational assessments"),
         [PermissionCodes.OperationsAssessmentQueueRead] = (Guid.Parse("11111111-1111-1111-1111-111111111203"), "Read the coastal operational assessment queue"),

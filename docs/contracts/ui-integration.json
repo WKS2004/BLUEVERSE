@@ -221,7 +221,7 @@
     {
       "id": "coastal-operations-assessment",
       "status": "implemented",
-      "description": "Shared Coastal Operations workflow for permission-scoped assessment draft creation, editing, submission and cancellation; review, contextual status and history, private PNG evidence; and advisory drafting, editing, withdrawal, publishing and resolution. Uses the current branch-local G00 producer IDs and remains subject to shared G00 acceptance; before G07 submitted assessments collect bounded coastal context and remain SUBMITTED without an automated proposal.",
+      "description": "Separate searchable Assessment page with draft CRUD, Publish using submit, durable typed delivery, scoped activity, evidence and review. Agent delivery remains disconnected before G07. Distinct hero imagery, compact 500ms live search with local loading, and exclusive create/edit/detail workspace views retain shared chrome. Evidence changes are DRAFT-only, including removal. Shared white record cards, pinned section tabs, Assessments/Alerts per-page cursor controls and refresh-safe query view intent; captured actor/role/field-change activity snapshots with honest legacy gaps.",
       "web": {
         "route": "/operations/assessments",
         "source": "apps/web/src/app/routes.tsx"
@@ -239,13 +239,69 @@
         "coastal-assessment-detail",
         "coastal-target-status",
         "coastal-target-history",
+        "coastal-assessment-evidence-upload",
+        "coastal-assessment-evidence-content",
+        "coastal-assessment-audit",
+        "coastal-form-options",
+        "coastal-assessment-evidence-remove"
+      ]
+    },
+    {
+      "id": "coastal-operations-alerts",
+      "status": "implemented",
+      "description": "Separate Alert page with draft CRUD, publish/resolve, searchable lifecycle and audience filters, pagination and scoped activity; no agent dispatch. Distinct hero imagery, compact 500ms live search with local loading, and exclusive create/edit/detail workspace views retain shared chrome. Shared white record cards, pinned section tabs, Assessments/Alerts per-page cursor controls and refresh-safe query view intent; captured actor/role/field-change activity snapshots with honest legacy gaps.",
+      "web": {
+        "route": "/operations/alerts",
+        "source": "apps/web/src/app/routes.tsx"
+      },
+      "mobile": {
+        "route": "/operations/alerts",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": [
         "coastal-alert-list",
         "coastal-alert-create",
         "coastal-alert-update",
         "coastal-alert-withdraw",
         "coastal-alert-decide",
+        "coastal-alert-audit",
+        "coastal-form-options"
+      ]
+    },
+    {
+      "id": "coastal-operations-logs",
+      "status": "implemented",
+      "description": "Audit-granted retained Assessment/Alert records with compact 500ms title search, per-record activity and 5/10/25/50/100-record cursor paging. Owner/reviewer/manager scopes remain server-enforced. Shared white record cards, pinned section tabs, Assessments/Alerts per-page cursor controls and refresh-safe query view intent; captured actor/role/field-change activity snapshots with honest legacy gaps.",
+      "web": {
+        "route": "/operations/logs",
+        "source": "apps/web/src/app/routes.tsx"
+      },
+      "mobile": {
+        "route": "/operations/logs",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": [
+        "coastal-assessment-log-records",
+        "coastal-alert-log-records",
+        "coastal-assessment-audit",
+        "coastal-alert-audit",
+        "coastal-assessment-create",
+        "coastal-assessment-update",
+        "coastal-assessment-cancel",
+        "coastal-assessment-submit",
+        "coastal-assessment-list",
+        "coastal-assessment-detail",
+        "coastal-target-status",
+        "coastal-target-history",
         "coastal-assessment-evidence-upload",
-        "coastal-assessment-evidence-content"
+        "coastal-assessment-evidence-content",
+        "coastal-form-options",
+        "coastal-assessment-evidence-remove",
+        "coastal-alert-list",
+        "coastal-alert-create",
+        "coastal-alert-update",
+        "coastal-alert-withdraw",
+        "coastal-alert-decide"
       ]
     }
   ],
@@ -553,6 +609,57 @@
       "publicBoundary": "api",
       "ownerService": "coastal-operations",
       "operationId": "GetEvidence"
+    },
+    {
+      "id": "coastal-assessment-audit",
+      "method": "GET",
+      "path": "/api/operations/assessments/{assessmentId:guid}/audit",
+      "publicBoundary": "api",
+      "ownerService": "coastal-operations",
+      "operationId": "GetAudit"
+    },
+    {
+      "id": "coastal-alert-audit",
+      "method": "GET",
+      "path": "/api/operations/alerts/{alertId:guid}/audit",
+      "publicBoundary": "api",
+      "ownerService": "coastal-operations",
+      "operationId": "GetAudit"
+    },
+    {
+      "id": "coastal-form-options",
+      "method": "GET",
+      "path": "/api/operations/form-options",
+      "publicBoundary": "api",
+      "ownerService": "coastal-operations",
+      "operationId": "GetFormOptions"
+    },
+    {
+      "id": "coastal-assessment-evidence-remove",
+      "method": "DELETE",
+      "path": "/api/operations/assessments/{assessmentId:guid}/evidence/{evidenceId:guid}",
+      "description": "Owner-only unpublished draft evidence removal with current version, retained audit tombstone and deferred private-byte cleanup.",
+      "publicBoundary": "api",
+      "ownerService": "coastal-operations",
+      "operationId": "RemoveEvidence"
+    },
+    {
+      "id": "coastal-assessment-log-records",
+      "method": "GET",
+      "path": "/api/operations/logs/assessments",
+      "description": "Audit/read-gated retained assessments including own drafts and cancellations; scoped title filters and cursor pagination.",
+      "publicBoundary": "api",
+      "ownerService": "coastal-operations",
+      "operationId": "Assessments"
+    },
+    {
+      "id": "coastal-alert-log-records",
+      "method": "GET",
+      "path": "/api/operations/logs/alerts",
+      "description": "Audit/read-gated retained alerts including inactive and withdrawn records within manager or owner scope.",
+      "publicBoundary": "api",
+      "ownerService": "coastal-operations",
+      "operationId": "Alerts"
     }
   ]
 }

@@ -12,6 +12,7 @@ namespace Blueverse.Api.Security;
 
 public static class CoastalActorContextTransform
 {
+    public const string IdentityHeader = "X-Blueverse-Actor-Identity";
     public const string ActorHeader = "X-Blueverse-Actor-Id";
     public const string PermissionsHeader = "X-Blueverse-Permissions";
     public const string CorrelationIdHeader = "X-Blueverse-Correlation-Id";
@@ -41,7 +42,7 @@ public static class CoastalActorContextTransform
     {
         var principal = context.HttpContext.User;
 
-        foreach (var header in new[] { ActorHeader, PermissionsHeader, CorrelationIdHeader, IssuedAtHeader, NonceHeader, SignatureHeader })
+        foreach (var header in new[] { IdentityHeader, ActorHeader, PermissionsHeader, CorrelationIdHeader, IssuedAtHeader, NonceHeader, SignatureHeader })
             RequestTransform.RemoveHeader(context, header);
         RequestTransform.RemoveHeader(context, "Authorization");
         RequestTransform.RemoveHeader(context, "Cookie");
@@ -63,9 +64,14 @@ public static class CoastalActorContextTransform
         var issuedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
         var nonce = Guid.NewGuid().ToString("N");
         var pathAndQuery = context.Path.ToUriComponent() + context.HttpContext.Request.QueryString.ToUriComponent();
-        var canonical = Canonical(context.HttpContext.Request.Method, pathAndQuery, actorId, permissionsBase64, correlationId, issuedAt, nonce);
+        var name = principal.FindFirstValue("name") ?? principal.FindFirstValue(ClaimTypes.Name);
+        var roles = principal.FindAll("role").Concat(principal.FindAll(ClaimTypes.Role)).Select(x => x.Value)
+            .Where(x => !string.IsNullOrWhiteSpace(x) && x.Length <= 128).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).Take(32).ToArray();
+        var identity = string.IsNullOrWhiteSpace(name) && roles.Length == 0 ? null : Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { name = name is { Length: <= 100 } ? name : null, roles })));
+        var canonical = Canonical(context.HttpContext.Request.Method, pathAndQuery, actorId, permissionsBase64, correlationId, issuedAt, nonce, identity);
         var signature = Convert.ToBase64String(HMACSHA256.HashData(key, Encoding.UTF8.GetBytes(canonical)));
 
+        if (identity is not null) RequestTransform.AddHeader(context, IdentityHeader, identity);
         RequestTransform.AddHeader(context, ActorHeader, actorId.ToString("N"));
         RequestTransform.AddHeader(context, PermissionsHeader, permissionsBase64);
         RequestTransform.AddHeader(context, CorrelationIdHeader, correlationId);
@@ -74,6 +80,6 @@ public static class CoastalActorContextTransform
         RequestTransform.AddHeader(context, SignatureHeader, signature);
     }
 
-    public static string Canonical(string method, string pathAndQuery, Guid actorId, string permissionsBase64, string correlationId, string issuedAt, string nonce) =>
-        string.Join('\n', method.ToUpperInvariant(), pathAndQuery, actorId.ToString("N"), permissionsBase64, correlationId, issuedAt, nonce);
+    public static string Canonical(string method, string pathAndQuery, Guid actorId, string permissionsBase64, string correlationId, string issuedAt, string nonce, string? identity = null) =>
+        string.Join('\n', method.ToUpperInvariant(), pathAndQuery, actorId.ToString("N"), permissionsBase64, correlationId, issuedAt, nonce) + (identity is null ? string.Empty : "\n" + identity);
 }

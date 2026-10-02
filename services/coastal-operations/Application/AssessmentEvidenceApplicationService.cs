@@ -30,10 +30,10 @@ public sealed class AssessmentEvidenceApplicationService(
             ?? throw NotFound("assessment_not_found", "Assessment not found", "The assessment does not exist.");
         if (assessment.InitiatedBy != actorId)
             throw NotFound("assessment_not_found", "Assessment not found", "The assessment does not exist or is outside the caller's scope.");
-        if (assessment.WorkflowStatus is not ("DRAFT" or "SUBMITTED" or "REVISION_REQUESTED"))
-            throw Conflict("assessment_evidence_closed", "Evidence can no longer be added", "Evidence can be added only while the assessment is a draft, awaiting analysis or revision.");
+        if (assessment.WorkflowStatus != "DRAFT")
+            throw Conflict("assessment_evidence_closed", "Evidence can no longer be added", "Published evidence cannot be changed. Add images only to your draft.");
 
-        var count = await db.AssessmentEvidence.CountAsync(x => x.AssessmentId == assessmentId, cancellationToken);
+        var count = await db.AssessmentEvidence.CountAsync(x => x.AssessmentId == assessmentId && x.InspectionStatus != "REMOVED", cancellationToken);
         if (count >= MaximumEvidencePerAssessment)
             throw new CoastalOperationsException(StatusCodes.Status422UnprocessableEntity,
                 "evidence_count_limit", "Evidence limit reached", "An assessment can contain at most five image attachments.");
@@ -95,6 +95,47 @@ public sealed class AssessmentEvidenceApplicationService(
             evidence.UploadedAt, evidence.ExpiresAt);
     }
 
+    public async Task<AssessmentEvidenceRemovalResponse> RemoveAsync(
+        Guid assessmentId, Guid evidenceId, int expectedVersion, Guid actorId, string correlationId, CancellationToken cancellationToken)
+    {
+        EnsureActor(actorId);
+        if (expectedVersion < 1) throw new CoastalOperationsException(422, "version_invalid", "Version is required", "Use the current draft version.");
+        var assessment = await db.Assessments.SingleOrDefaultAsync(x => x.Id == assessmentId, cancellationToken);
+        if (assessment is null || assessment.InitiatedBy != actorId)
+            throw NotFound("assessment_not_found", "Assessment not found", "The assessment is unavailable or outside your scope.");
+        if (assessment.WorkflowStatus != "DRAFT")
+            throw Conflict("assessment_evidence_closed", "Published evidence cannot be changed", "Evidence can be removed only from an unpublished draft.");
+        var evidence = await db.AssessmentEvidence.SingleOrDefaultAsync(x => x.Id == evidenceId && x.AssessmentId == assessmentId, cancellationToken)
+            ?? throw NotFound("evidence_not_found", "Evidence not found", "The image is unavailable or outside this assessment.");
+        if (evidence.InspectionStatus == "REMOVED") return new(evidence.Id, assessment.Id, assessment.Version, "REMOVED", evidence.RemovedAt!.Value);
+        if (assessment.Version != expectedVersion)
+            throw Conflict("assessment_version_stale", "The assessment changed", "Reload the draft before removing evidence.");
+        var now = DateTimeOffset.UtcNow;
+        evidence.InspectionStatus = "REMOVED";
+        evidence.RemovedAt = now;
+        assessment.Version++;
+        assessment.UpdatedAt = now;
+        db.OperationsAudit.Add(new OperationsAuditEntry { Id = Guid.CreateVersion7(), ResourceType = "evidence", ResourceId = evidence.Id, Action = "REMOVED", ActorId = actorId, CorrelationId = correlationId, CreatedAt = now });
+        try { await db.SaveChangesAsync(cancellationToken); }
+        catch (DbUpdateConcurrencyException) { throw Conflict("assessment_version_stale", "The assessment changed", "Reload the draft before removing evidence."); }
+        await DeleteRemovedContentAsync(evidence);
+        return new(evidence.Id, assessment.Id, assessment.Version, "REMOVED", now);
+    }
+
+    private async Task DeleteRemovedContentAsync(AssessmentEvidence evidence)
+    {
+        try
+        {
+            await storage.DeleteAsync(evidence.Id, CancellationToken.None);
+            evidence.ContentDeletedAt = DateTimeOffset.UtcNow;
+            await db.SaveChangesAsync(CancellationToken.None);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or DbUpdateException)
+        {
+            logger.LogWarning(exception, "Removed evidence {EvidenceId} content cleanup will be retried.", evidence.Id);
+        }
+    }
+
     public async Task<AssessmentEvidenceContent> GetContentAsync(
         Guid assessmentId,
         Guid evidenceId,
@@ -110,6 +151,8 @@ public sealed class AssessmentEvidenceApplicationService(
         var evidence = await db.AssessmentEvidence.AsNoTracking().SingleOrDefaultAsync(
             x => x.Id == evidenceId && x.AssessmentId == assessmentId, cancellationToken)
             ?? throw NotFound("evidence_not_found", "Evidence not found", "The image does not exist or is outside the assessment scope.");
+        if (evidence.InspectionStatus == "REMOVED")
+            throw new CoastalOperationsException(410, "evidence_removed", "Evidence was removed", "This image is no longer attached to the assessment.");
         if (evidence.InspectionStatus == "EXPIRED" || evidence.ExpiresAt <= DateTimeOffset.UtcNow)
             throw new CoastalOperationsException(StatusCodes.Status410Gone,
                 "evidence_expired", "Evidence has expired", "The private image retention period has ended.");
@@ -143,6 +186,9 @@ public sealed class AssessmentEvidenceApplicationService(
 
     public async Task<int> ExpireBatchAsync(DateTimeOffset now, CancellationToken cancellationToken)
     {
+        var removed = await db.AssessmentEvidence.Where(x => x.InspectionStatus == "REMOVED" && x.ContentDeletedAt == null)
+            .OrderBy(x => x.RemovedAt).Take(50).ToListAsync(cancellationToken);
+        foreach (var evidence in removed) await DeleteRemovedContentAsync(evidence);
         var expired = await db.AssessmentEvidence
             .Where(x => x.InspectionStatus == "AVAILABLE" && x.ExpiresAt <= now)
             .OrderBy(x => x.ExpiresAt)

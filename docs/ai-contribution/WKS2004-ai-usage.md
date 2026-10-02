@@ -1881,3 +1881,286 @@ runtime lacks PyYAML.
 - Summary of what the AI Agent did: Corrected the earlier no-container reading after locating the Docker CLI. Docker logs showed Nginx restart failures because the first `proxy_buffer_size` change left the related buffers inconsistent. Set `proxy_buffers` to `8 16k` and `proxy_busy_buffers_size` to `32k` alongside the `16k` header buffer.
 - AI output accepted/changed/rejected: Corrected the incomplete earlier proxy adjustment; left Auth and API code unchanged.
 - Verification/evidence: Docker reported the edge container running with 14 restarts before the correction and port 80 published. `docker compose config --quiet` and `nginx -t` passed after the correction. Direct `/`, `/health`, `/api/health` and `/api/auth/health` requests returned 200. Admin cookie login and `/api/auth/me` returned 200; logout cleanup returned 204. The catalog validator passed (53 public endpoints, 24 frontend routes), and `git diff --check` reported no whitespace errors. No test suite was run; no commit or push was made.
+
+## 2026-10-01 — Coastal Operations publication and separate client pages
+
+- Date/time or time range: 2026-10-01 16:40 (Asia/Colombo; completion record)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, .NET/EF Core, Node.js, Flutter/Dart,
+  Python and in-app browser
+- AI Model: GPT-6
+- Summary of the user's request: Update all necessary documents including G00
+  before implementation, review Coastal Operations permissions, support draft
+  CRUD/publication and complete assessment delivery, log changes, and provide
+  separate Assessment/Alert pages with tabs, search/filtering, imagery and good
+  UX in both clients. Approve the existing Auth seed test update and PostgreSQL
+  submission-fixture cleanup.
+- Summary of what the AI Agent did: Updated the branch-local G00 proposal,
+  publication contract, ADR-0022, schema, permissions, workflow, client,
+  endpoint and test documentation before coding. Added six granular grants,
+  scoped collection filters and audit timelines, a transactional publication
+  snapshot and additive migration, bounded service-owned delivery with safe
+  disconnected/failure outcomes, and dedicated React/Flutter navigation,
+  searchable pages, lifecycle tabs, hero imagery, actions and pagination.
+  Added requirement-based backend and client tests, and updated the two
+  existing tests only after explicit approval. Synchronized final documentation
+  with source and validation results.
+- AI output accepted/changed/rejected: Accepted the requested branch-local
+  lifecycle and UX changes. Revised audit ordering to use time plus ID,
+  protected pagination from stale responses, distinguished alert decision
+  grants, and preserved legacy permission compatibility. Kept production AI
+  disconnected because G07 is pending; rejected claims that publication means
+  agent execution or approval. Preserved original PostgreSQL assertions and
+  historical usage records; changed the obsolete seed count from 26 to 32
+  and removed only the submission fixture's own dispatch during cleanup.
+- Verification/evidence: Coastal Operations 280 passing cases and three opt-in
+  PostgreSQL skips; Auth 79 and public API 22 passing cases; React 171 and
+  Flutter 104 passing cases; 35 UI/catalog validator tests passed. TypeScript,
+  Vite production build, changed-source ESLint and Flutter analysis passed.
+  Endpoint validation passed with 55 public endpoints and 26 frontend routes;
+  UI integration validation passed. EF reported no model drift, and migration
+  SQL was generated and inspected. Synthetic browser review checked dedicated
+  pages and a phone-width alert layout without overflow. No dedicated
+  PostgreSQL connection was configured; live database/concurrency, Docker
+  startup, peer contracts and agent handoffs are not verified. Shared G00 and
+  G07 remain pending. See `docs/v1/coastal-operations-publication-and-ui.md`,
+  `PublicationAndSearchTests.cs`, `OperationsPages.component.test.js` and the
+  new mobile page/search tests. No commit or push was made.
+
+## 2026-10-01 — Coastal Operations titled drafts and record experience fixes
+
+- Date/time or time range: 2026-10-01 18:58 (Asia/Colombo; completion record)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, .NET/EF Core, Node.js, Flutter/Dart,
+  Python, official IANA data and in-app browser
+- AI Model: GPT-6
+- Summary of the user's request: Always update AI-Usage; fix missing draft
+  search, replace UUID-entry draft fields with titles/named dropdowns, create
+  global database-backed time zones with one selector for both dates, stack
+  heroes above title search, default to all record types, move IDs to Advanced
+  search, show title/UUID/created date, replace related-plan ID entry, remove
+  the bottom lookup and header menu, and update documentation. The user
+  explicitly approved updates to the affected existing client tests.
+- Summary of what the AI Agent did: Recorded the follow-up requirements before
+  source changes and synchronized G00, schema, workflow, UI, security, setup,
+  endpoint and test documents. Added assessment titles, scoped draft discovery,
+  explicit record-ID filters, a private named-reference seam and public
+  form-options endpoint. Seeded 419 IANA 2026e locations through an additive
+  migration, backfilled legacy titles and resolved local dates to UTC using
+  server time-zone rules. Updated React/Flutter forms, pickers, layouts,
+  navigation and result metadata; added backend/client regressions and made
+  the approved existing-test updates. Preserved legacy request replay digests
+  and immutable publication snapshots with title/zone context.
+- AI output accepted/changed/rejected: Retained the requested title/selector/
+  search/time-zone and layout changes. Revised error handling after TypeScript
+  detected an out-of-scope variable in the image-error path. Corrected a newly
+  authored regression's creation-action label to the established `CREATED`
+  audit contract while retaining its full state/side-effect assertions.
+  Rejected fabricated canonical target/plan choices: absent producer services
+  explicitly report `NOT_CONNECTED`; titled drafts can remain unlinked, but
+  cannot publish. Existing client assertions unrelated to obsolete inputs were
+  preserved. Historical AI usage entries were not edited; no individual
+  assessed reflection was authored.
+- Verification/evidence: Coastal Operations 299 passed with three opt-in
+  PostgreSQL skips; React 176, Flutter 107 and UI/catalog validator suites 35
+  passed. TypeScript, Vite build, changed-source ESLint and Flutter analysis
+  passed. UI registry and endpoint catalogue validation passed (56 public
+  endpoints, 26 frontend routes, no implemented AI endpoint). EF reported no
+  model drift; generated SQL was inspected for 419 seeds, title backfill,
+  indexes and restrictive zone foreign keys. Synthetic browser review checked
+  desktop/phone layouts, form selectors and no document horizontal overflow;
+  temporary preview files and server were removed. No dedicated PostgreSQL
+  connection was configured, so live migrations/provider queries/concurrency,
+  Docker rules and producer/agent handoffs remain unverified. G00/G07 remain
+  Pending. See `docs/v1/coastal-operations-record-experience.md`,
+  `RecordExperienceTests.cs`, `RecordExperience.component.test.js` and
+  `coastal_operations_record_experience_test.dart`. No commit or push was made.
+- Final same-task follow-up: React edit forms now use server-provided civil
+  times, matching Flutter, so an older browser time-zone database cannot shift
+  an edited period. Two `WEB-OPS-RECORD-006` cases verified both assessment and
+  alert edits with a server-known/browser-unknown synthetic zone. The final web
+  suite passed **178** cases; TypeScript, Vite, ESLint and both route validators
+  passed again. Other final counts remain 299 backend, 107 mobile and 35
+  validator cases, with three PostgreSQL skips. The current contract/test matrix
+  reflects the final totals; this note appends evidence without rewriting
+  earlier usage records.
+
+## 2026-10-01 — Coastal Operations focused workspaces and live search
+
+- Date/time or time range: 2026-10-01 22:10 (Asia/Colombo; completion of authorized implementation and static/browser review)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, built-in ImageGen, PowerShell, Node.js/TypeScript/Vite,
+  Flutter/Dart, Python and in-app browser
+- AI Model: GPT-6; the image-generation tool did not expose its model name.
+- Summary of the user's request: Create distinct Assessment/Alert hero images,
+  move workspace actions below the hero, merge minimal icon search with records,
+  keep lifecycle headings/tabs, fetch two seconds after typing, replace blocking
+  search loading with a local spinner, and provide whole-workspace record/form
+  views with Back while retaining header/footer/navigation. Always update AI-Usage.
+- Summary of what the AI Agent did: Recorded the focused-workspace contract and
+  G00 links before coding, generated two coastal photographs, and copied the
+  assets unchanged into React and Flutter. Implemented compact expandable
+  filters/reset/search icons, debounced automatic requests, quiet collection
+  reads with retained cards and stale-response guards, and focused create/edit/
+  detail views with Back and preserved list state. Reused scoped public routes,
+  permissions and existing validated forms; synchronized UI registry, endpoint
+  catalogue, client/component/readiness docs and regression acceptance notes.
+- AI output accepted/changed/rejected: Accepted the requested layout and photo
+  direction. Fixed synchronous-effect linting, sticky-header Back positioning,
+  paused pending timers during focused views, retained independent mobile
+  filters, added deterministic Advanced ID validation even with collapsed
+  controls, and revalidated alert details after mutation without a new endpoint.
+  Corrected the synthetic preview fixture's missing required detail arrays.
+  No stock/evidence claim was made for generated illustrations. Existing tests
+  were preserved while the required approval was pending; historical usage
+  entries and student-authored reflection were not changed.
+- Verification/evidence: TypeScript, Vite production build, changed-source
+  ESLint, Flutter formatting/static analysis, endpoint catalogue and UI registry
+  validators passed. Catalogue totals remain 56 public endpoints and 26 frontend
+  routes with no implemented AI endpoint. Synthetic browser review covered both
+  heroes, automatic search, disclosure/reset, full creation/details, Back/chrome
+  and phone views without horizontal overflow. Temporary preview files/server
+  were removed. Automated regression edits/additions/execution await the user
+  approval requested under AGENTS.md; earlier task suite counts are not reused
+  as current evidence. No live backend/provider/Docker or real-device acceptance
+  was run. Shared G00/G07 remain pending. No commit or push was made. Full image
+  prompts, provenance and saved asset paths are recorded in
+  `docs/v1/coastal-operations-focused-workspaces.md`.
+
+
+## 2026-10-02 — Coastal Operations Logs, evidence removal and workspace recheck
+
+- Date/time or time range: 2026-10-02 03:04 (Asia/Colombo; completion record)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, .NET/EF Core, Node.js/TypeScript/Vite,
+  Flutter/Dart, Python and in-app browser
+- AI Model: GPT-6
+- Summary of the user's request: Recheck the previous hero/search/full-workspace
+  task, add Coastal Operations Logs with Assessment/Alert switches and compact
+  search, expose retained active/inactive activity, offer 5/10/25/50/100 cards
+  per page, allow draft image removal only before publication, make cancelling
+  actions/confirmations red, reduce search debounce to one second and keep
+  documentation/AI-Usage current. The user approved the affected existing tests.
+- Summary of what the AI Agent did: Recorded requirements and ADR-0023 before
+  source updates. Added scoped public Logs collections, audit-aware retained
+  record queries, corresponding React/Flutter navigation/workspaces and server
+  cursor pagination. Added owner/draft/version-checked image removal, durable
+  REMOVED metadata/audit and post-commit private-byte cleanup with worker retry;
+  restricted uploads to drafts and supplied an additive EF migration. Updated
+  search timing, quiet activity loading, destructive styling and shared route/
+  API registry, schema, security, G00/component, setup and test documentation.
+  Rechecked the previous task, fixed hidden focused-form search controls,
+  mobile nested scrolling and creator-only saves, and updated approved tests.
+- AI output accepted/changed/rejected: Retained the requested Logs, pagination,
+  draft-only image management and one-second feedback behavior. Revised the
+  Logs grid/pagination after phone screenshots exposed horizontal overflow.
+  Corrected synthetic preview status data that omitted required API fields.
+  Rejected deleting image bytes before the authorized database commit; retained
+  metadata so audit associations survive. Changed obsolete existing test
+  interactions only under the user's approval and preserved unrelated assertions.
+  An earlier parallel web test run exhausted Windows resources/cache writes;
+  reran the complete suite serially without weakening expectations. No historical
+  usage entries or student-authored individual reflection were rewritten.
+- Verification/evidence: Coastal Operations **322 passed, 5 opt-in PostgreSQL
+  skipped, 0 failed**; complete web **185 passed**; complete Flutter **113
+  passed**; route/UI validator suites **35 passed**. TypeScript, Vite build,
+  changed-source ESLint, Flutter analysis/formatting, endpoint/UI registry,
+  agent-resource validation and diff checks passed. Catalogue records 59 public
+  endpoints/28 frontend routes and no implemented AI endpoint. EF reported no
+  model drift; idempotent SQL was generated/inspected, including safe expired
+  metadata on rollback. Synthetic desktop/390px phone browser checks covered
+  Logs/search/switches/page-size/full-workspace/Back/chrome/red confirmation;
+  final phone content width 375px, with no horizontal overflow. Temporary preview
+  files, server and tab were removed. No dedicated PostgreSQL test connection
+  or local Docker runtime was available, so live migrations/provider concurrency
+  remain unverified. No deployed gateway, real device, producer or agent
+  acceptance is claimed; shared G00/G07 remain Pending. Evidence is summarized
+  in `docs/v1/coastal-operations-logs-and-evidence.md`, the component test files
+  and `docs/testing/test-matrix.md`. No commit or push was made.
+
+## 2026-10-02 — Coastal record navigation and detailed activity
+
+- Date/time or time range: 2026-10-02 14:50 (Asia/Colombo; completion record)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, .NET/EF Core, Node.js/TypeScript/Vite,
+  Flutter/Dart, Python and in-app browser
+- AI Model: GPT-6
+- Summary of the user's request: Add record-specific page sizes to Assessments
+  and Alerts, update Logs empty copy, reduce searches to 500 ms, pin category
+  tabs, preserve create/edit workspaces after refresh, share the Logs card
+  design and full record detail behavior, and show complete person/role/time
+  and field-change activity. Keep documentation and AI-Usage current. The user
+  approved affected existing-test updates while retaining unrelated assertions.
+- Summary of what the AI Agent did: Recorded the change contract before source
+  changes. Added shared record cards/pagination and pinned controls in React
+  and Flutter, public-route query intent restoration with current grant/draft
+  checks, full details/actions from Logs and 500 ms searches. Added atomic
+  allowlisted audit snapshots, additive PostgreSQL migration and optional
+  bounded signed display identity from verified API JWT claims. Preserved Auth
+  logic, permission authorization and the disconnected pre-G07 boundary.
+  Updated G00/component contracts, ADR-0024, schema, security, route/UI registry,
+  setup, readiness and test documentation.
+- AI output accepted/changed/rejected: Accepted the requested pagination,
+  navigation, shared cards and rich activity. Fixed startup edit restoration,
+  recovery Back labels, Logs-to-edit routing and mobile return/scroll behavior
+  after regression evidence. Corrected test tap timing for offscreen controls
+  without removing assertions. Added safe empty-array migration defaults.
+  Rejected reconstructing older history from current values or persisting
+  unsaved form contents in URLs/storage. Display identity is signature-bound,
+  never accepted from client headers. Historical contribution records and the
+  student's individual reflection were not rewritten.
+- Verification/evidence: Full web **193 passed**, Flutter **121 passed**,
+  Coastal Operations **331 passed, 6 opt-in PostgreSQL skipped, 0 failed**,
+  API **23 passed**, validator regression suite **35 passed**. TypeScript,
+  changed-source ESLint, Vite build, Flutter analysis, endpoint/UI contract,
+  agent-resource validation and diff checks passed. Catalogue: 59 public
+  endpoints/28 frontend routes/no implemented AI endpoint. EF model drift
+  check passed and idempotent SQL was generated/inspected. Synthetic browser
+  checks verified create/edit refresh and saved values, full details/activity,
+  sticky Logs tabs at 80 px and 390 px phone layout without horizontal overflow
+  (375 px content/client width). Temporary preview sources/server/tab and
+  viewport override were cleaned up. No dedicated PostgreSQL connection or
+  Docker runtime was available; live migration/provider concurrency remains
+  unverified. No deployment, physical device, producer or agent acceptance is
+  claimed. Older audit details remain unavailable; refresh preserves view and
+  saved data, not unsaved typing. Shared G00/G07 remain Pending. Evidence:
+  `docs/v1/coastal-operations-record-navigation-and-audit.md`, navigation/audit
+  tests and `docs/testing/test-matrix.md`. No commit or push was made.
+
+## 2026-10-03 — Coastal Operations workspace cleanup
+
+- Date/time or time range: 2026-10-03 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex and PowerShell
+- AI Model: GPT-6
+- Summary of the user's request: Recheck completed Coastal Operations work and
+  remove unnecessary files.
+- Summary of what the AI Agent did: Reviewed the worktree inventory and recent
+  documentation for conflicting superseded search intervals. Removed only
+  generated migration SQL, test output logs and the temporary synthetic browser
+  screenshot. Confirmed temporary preview source files were already absent.
+  Kept implementation, generated migration source/snapshot, requested hero
+  assets, tests and documentation. Left pre-existing ignored build directories
+  untouched.
+- AI output accepted/changed/rejected: Kept project and test deliverables;
+  removed only exact temporary artifacts created for verification. Updated old
+  documentation pointers so the 500 ms contract supersedes earlier timing.
+  No historical AI usage entries or student-authored reflections were changed.
+- Verification/evidence: Endpoint catalog (59 public endpoints, 28 frontend
+  routes, no implemented AI endpoint), UI integration validation, agent
+  resources and 35 validator tests passed during the associated recheck; the
+  full web, mobile, Coastal Operations and API suites also passed with six
+  opt-in PostgreSQL tests skipped. `git diff --check` passed. Exact temporary
+  files and previews are absent; requested source/assets remain in the worktree.

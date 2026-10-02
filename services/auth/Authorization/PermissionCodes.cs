@@ -25,6 +25,12 @@ public static class PermissionCodes
     public const string OperationsTargetHistoryRead = "operations.target.history.read";
     public const string OperationsEvidenceUpload = "operations.evidence.upload";
     public const string OperationsEvidenceRead = "operations.evidence.read";
+    public const string OperationsAlertCreate = "operations.alert.create";
+    public const string OperationsAlertUpdate = "operations.alert.update";
+    public const string OperationsAlertDelete = "operations.alert.delete";
+    public const string OperationsAlertPublish = "operations.alert.publish";
+    public const string OperationsAlertResolve = "operations.alert.resolve";
+    public const string OperationsAuditRead = "operations.audit.read";
     public const string OperationsAlertRead = "operations.alert.read";
     public const string OperationsAlertManage = "operations.alert.manage";
     public const string OperationsAlertDecide = "operations.alert.decide";

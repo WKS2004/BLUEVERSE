@@ -206,10 +206,28 @@ class AuthCoastalOperationsNavigationMenu extends StatelessWidget {
     if (!CoastalOperationsPermissions.hasAccess(permissions)) {
       return const SizedBox.shrink();
     }
-    return IconButton(
+    return PopupMenuButton<String>(
       tooltip: 'Coastal operations',
-      onPressed: () => Navigator.pushNamed(context, '/operations/assessments'),
+      onSelected: (route) => Navigator.pushNamed(context, route),
       icon: const Icon(Icons.waves_outlined),
+      itemBuilder: (_) => [
+        const PopupMenuItem<String>(
+          enabled: false,
+          child: Text('Coastal Operations'),
+        ),
+        if (CoastalOperationsPermissions.hasAssessmentAccess(permissions))
+          const PopupMenuItem(
+            value: '/operations/assessments',
+            child: Text('Assessments'),
+          ),
+        if (CoastalOperationsPermissions.canReadLogs(permissions))
+          const PopupMenuItem(value: '/operations/logs', child: Text('Logs')),
+        if (CoastalOperationsPermissions.hasAlertAccess(permissions))
+          const PopupMenuItem(
+            value: '/operations/alerts',
+            child: Text('Alerts'),
+          ),
+      ],
     );
   }
 }

@@ -100,7 +100,7 @@ public sealed class AssessmentEvidenceApplicationServiceTests
         Assert.Equal(0, storage.StoreCalls);
     }
 
-    [Fact(DisplayName = "COASTAL-EVIDENCE-008 uploads are closed after assessment leaves submitted or revision state")]
+    [Fact(DisplayName = "COASTAL-EVIDENCE-008 uploads are closed once the assessment is published or cancelled")]
     [Trait("TestId", "COASTAL-EVIDENCE-008")]
     public async Task UploadRejectsClosedAssessment()
     {
@@ -351,6 +351,123 @@ public sealed class AssessmentEvidenceApplicationServiceTests
         Assert.DoesNotContain(successfulId, storage.Content.Keys);
     }
 
+    [Fact(DisplayName = "COASTAL-EVIDENCE-026 draft removal commits one tombstone and audit, denies content and permits a replacement")]
+    [Trait("TestId", "COASTAL-EVIDENCE-026")]
+    public async Task RemoveDraftEvidenceAndReplace()
+    {
+        await using var db = CreateDb();
+        var owner = Guid.NewGuid(); var assessment = AddAssessment(db, owner);
+        var storage = new MemoryEvidenceStorage(); var service = CreateService(db, storage);
+        await db.SaveChangesAsync();
+        var uploaded = await service.UploadAsync(assessment.Id, owner, "upload", "image/png", new MemoryStream(ValidPng()), default);
+        var removed = await service.RemoveAsync(assessment.Id, uploaded.EvidenceId, 2, owner, "remove", default);
+        var replay = await service.RemoveAsync(assessment.Id, uploaded.EvidenceId, 2, owner, "retry", default);
+        Assert.Equal(removed, replay); Assert.Equal(3, removed.AssessmentVersion);
+        Assert.Equal("REMOVED", removed.InspectionStatus); Assert.Equal(uploaded.EvidenceId, removed.EvidenceId);
+        var saved = await db.AssessmentEvidence.AsNoTracking().SingleAsync();
+        Assert.Equal(removed.RemovedAt, saved.RemovedAt); Assert.NotNull(saved.ContentDeletedAt);
+        Assert.Equal(uploaded.ContentSha256, saved.ContentSha256); Assert.Equal(3, (await db.Assessments.AsNoTracking().SingleAsync()).Version);
+        Assert.Empty(storage.Content); Assert.Equal(1, storage.DeleteCalls);
+        var audit = await new OperationsAuditReader(db).GetAssessmentAsync(assessment.Id, owner, false, new(), default);
+        Assert.Equal(new[] { "REMOVED", "UPLOADED" }, audit.Items.Select(x => x.Action));
+        Assert.All(audit.Items, x => Assert.Equal(uploaded.EvidenceId, x.ResourceId));
+        Assert.Equal("remove", audit.Items[0].CorrelationId); Assert.Equal(owner, audit.Items[0].ActorId);
+        var denied = await Assert.ThrowsAsync<CoastalOperationsException>(() => service.GetContentAsync(assessment.Id, uploaded.EvidenceId, owner, false, default));
+        Assert.Equal(410, denied.StatusCode); Assert.Equal("evidence_removed", denied.Code); Assert.Equal(0, storage.ReadCalls);
+        for (var i = 0; i < 5; i++) await service.UploadAsync(assessment.Id, owner, "replacement", "image/png", new MemoryStream(ValidPng()), default);
+        Assert.Equal(6, await db.AssessmentEvidence.CountAsync()); Assert.Equal(5, storage.Content.Count);
+        Assert.Equal(8, (await db.Assessments.AsNoTracking().SingleAsync()).Version);
+    }
+
+    [Theory(DisplayName = "COASTAL-EVIDENCE-027 every published or cancelled state rejects both upload and removal without side effects")]
+    [Trait("TestId", "COASTAL-EVIDENCE-027")]
+    [InlineData("SUBMITTED")][InlineData("REVISION_REQUESTED")][InlineData("PENDING_APPROVAL")]
+    [InlineData("APPROVED")][InlineData("REJECTED")][InlineData("CANCELLED")][InlineData("APPLIED")]
+    public async Task PublishedEvidenceIsImmutable(string state)
+    {
+        await using var db = CreateDb(); var owner = Guid.NewGuid(); var assessment = AddAssessment(db, owner, state);
+        var image = Evidence(assessment.Id, owner, Guid.NewGuid(), DateTimeOffset.UtcNow.AddDays(1));
+        db.AssessmentEvidence.Add(image); await db.SaveChangesAsync();
+        var storage = new MemoryEvidenceStorage(); storage.Content.Add(image.Id, [1, 2, 3]); var service = CreateService(db, storage);
+        var upload = await Assert.ThrowsAsync<CoastalOperationsException>(() => service.UploadAsync(assessment.Id, owner, "upload", "image/png", new MemoryStream(ValidPng()), default));
+        var remove = await Assert.ThrowsAsync<CoastalOperationsException>(() => service.RemoveAsync(assessment.Id, image.Id, 1, owner, "remove", default));
+        Assert.Equal(409, upload.StatusCode); Assert.Equal("assessment_evidence_closed", upload.Code);
+        Assert.Equal(409, remove.StatusCode); Assert.Equal("assessment_evidence_closed", remove.Code);
+        Assert.Equal(state, (await db.Assessments.AsNoTracking().SingleAsync()).WorkflowStatus);
+        Assert.Equal(1, (await db.Assessments.AsNoTracking().SingleAsync()).Version);
+        Assert.Equal("AVAILABLE", (await db.AssessmentEvidence.AsNoTracking().SingleAsync()).InspectionStatus);
+        Assert.Empty(await db.OperationsAudit.ToListAsync()); Assert.Equal(0, storage.StoreCalls); Assert.Equal(0, storage.DeleteCalls);
+        Assert.Equal(new byte[] { 1, 2, 3 }, storage.Content[image.Id]);
+    }
+
+    [Theory(DisplayName = "COASTAL-EVIDENCE-028 removal validates actor, ownership, linkage and version without writes")]
+    [Trait("TestId", "COASTAL-EVIDENCE-028")]
+    [InlineData("anonymous", 401, "actor_invalid")][InlineData("other-owner", 404, "assessment_not_found")]
+    [InlineData("other-image", 404, "evidence_not_found")][InlineData("missing-assessment", 404, "assessment_not_found")]
+    [InlineData("stale", 409, "assessment_version_stale")][InlineData("invalid-version", 422, "version_invalid")]
+    public async Task InvalidRemoval(string condition, int status, string code)
+    {
+        await using var db = CreateDb(); var owner = Guid.NewGuid(); var assessment = AddAssessment(db, owner);
+        var image = Evidence(assessment.Id, owner, Guid.NewGuid(), DateTimeOffset.UtcNow.AddDays(1));
+        var other = AddAssessment(db, owner); var unrelated = Evidence(other.Id, owner, Guid.NewGuid(), DateTimeOffset.UtcNow.AddDays(1));
+        db.AssessmentEvidence.AddRange(image, unrelated); await db.SaveChangesAsync();
+        var storage = new MemoryEvidenceStorage(); storage.Content.Add(image.Id, [1, 2, 3]);
+        var exception = await Assert.ThrowsAsync<CoastalOperationsException>(() => CreateService(db, storage).RemoveAsync(
+            condition == "missing-assessment" ? Guid.NewGuid() : assessment.Id,
+            condition == "other-image" ? unrelated.Id : image.Id,
+            condition == "stale" ? 2 : condition == "invalid-version" ? 0 : 1,
+            condition == "anonymous" ? Guid.Empty : condition == "other-owner" ? Guid.NewGuid() : owner, "remove", default));
+        Assert.Equal(status, exception.StatusCode); Assert.Equal(code, exception.Code);
+        Assert.Equal(1, (await db.Assessments.AsNoTracking().SingleAsync(x => x.Id == assessment.Id)).Version);
+        Assert.All(await db.AssessmentEvidence.AsNoTracking().ToListAsync(), x => { Assert.Equal("AVAILABLE", x.InspectionStatus); Assert.Null(x.RemovedAt); });
+        Assert.Empty(await db.OperationsAudit.ToListAsync()); Assert.Equal(0, storage.DeleteCalls); Assert.Single(storage.Content);
+    }
+
+    [Fact(DisplayName = "COASTAL-EVIDENCE-029 storage cleanup failure retains a durable removal and retries without duplicate audit")]
+    [Trait("TestId", "COASTAL-EVIDENCE-029")]
+    public async Task FailedCleanupIsRetried()
+    {
+        var options = new DbContextOptionsBuilder<CoastalOperationsDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
+        var storage = new MemoryEvidenceStorage(); var owner = Guid.NewGuid(); Guid assessmentId, imageId;
+        await using (var db = CreateDb(options))
+        {
+            var assessment = AddAssessment(db, owner); assessmentId = assessment.Id;
+            var image = Evidence(assessment.Id, owner, Guid.NewGuid(), DateTimeOffset.UtcNow.AddDays(1)); imageId = image.Id;
+            db.AssessmentEvidence.Add(image); await db.SaveChangesAsync(); storage.Content[image.Id] = [1, 2, 3]; storage.DeleteFailures.Add(image.Id);
+            var result = await CreateService(db, storage).RemoveAsync(assessment.Id, image.Id, 1, owner, "remove", default);
+            Assert.Equal("REMOVED", result.InspectionStatus); Assert.Equal(2, result.AssessmentVersion);
+        }
+        await using var fresh = CreateDb(options);
+        Assert.Null((await fresh.AssessmentEvidence.AsNoTracking().SingleAsync()).ContentDeletedAt);
+        var service = CreateService(fresh, storage);
+        var read = await Assert.ThrowsAsync<CoastalOperationsException>(() => service.GetContentAsync(assessmentId, imageId, owner, false, default));
+        Assert.Equal(410, read.StatusCode); Assert.Equal(0, storage.ReadCalls); Assert.Single(storage.Content);
+        storage.DeleteFailures.Clear(); Assert.Equal(0, await service.ExpireBatchAsync(DateTimeOffset.UtcNow, default));
+        Assert.Empty(storage.Content); Assert.NotNull((await fresh.AssessmentEvidence.AsNoTracking().SingleAsync()).ContentDeletedAt);
+        Assert.Single(await fresh.OperationsAudit.ToListAsync()); Assert.Equal(2, (await fresh.Assessments.AsNoTracking().SingleAsync()).Version);
+        await service.ExpireBatchAsync(DateTimeOffset.UtcNow, default); Assert.Equal(2, storage.DeleteCalls);
+    }
+
+    [Fact(DisplayName = "COASTAL-EVIDENCE-030 failed metadata commit never deletes private bytes")]
+    [Trait("TestId", "COASTAL-EVIDENCE-030")]
+    public async Task FailedRemovalCommitPreservesContent()
+    {
+        var interceptor = new FailSaveChangesInterceptor();
+        var options = new DbContextOptionsBuilder<CoastalOperationsDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).AddInterceptors(interceptor).Options;
+        var storage = new MemoryEvidenceStorage();
+        await using (var db = CreateDb(options))
+        {
+            var owner = Guid.NewGuid(); var assessment = AddAssessment(db, owner);
+            var image = Evidence(assessment.Id, owner, Guid.NewGuid(), DateTimeOffset.UtcNow.AddDays(1)); db.AssessmentEvidence.Add(image);
+            await db.SaveChangesAsync(); storage.Content[image.Id] = [1, 2, 3]; interceptor.ShouldFail = true;
+            await Assert.ThrowsAsync<InvalidOperationException>(() => CreateService(db, storage).RemoveAsync(assessment.Id, image.Id, 1, owner, "remove", default));
+        }
+        interceptor.ShouldFail = false; await using var fresh = CreateDb(options);
+        Assert.Equal("AVAILABLE", (await fresh.AssessmentEvidence.SingleAsync()).InspectionStatus);
+        Assert.Equal(1, (await fresh.Assessments.SingleAsync()).Version); Assert.Empty(await fresh.OperationsAudit.ToListAsync());
+        Assert.Equal(0, storage.DeleteCalls); Assert.Single(storage.Content);
+    }
+
     private static CoastalOperationsDbContext CreateDb(DbContextOptions<CoastalOperationsDbContext>? options = null) => new(
         options ?? new DbContextOptionsBuilder<CoastalOperationsDbContext>()
             .UseInMemoryDatabase($"coastal-evidence-tests-{Guid.NewGuid():N}")
@@ -359,7 +476,7 @@ public sealed class AssessmentEvidenceApplicationServiceTests
     private static AssessmentEvidenceApplicationService CreateService(CoastalOperationsDbContext db, MemoryEvidenceStorage storage) => new(
         db, new AssessmentEvidenceSanitizer(), storage, NullLogger<AssessmentEvidenceApplicationService>.Instance);
 
-    private static Assessment AddAssessment(CoastalOperationsDbContext db, Guid owner, string status = "SUBMITTED")
+    private static Assessment AddAssessment(CoastalOperationsDbContext db, Guid owner, string status = "DRAFT")
     {
         var assessment = new Assessment
         {

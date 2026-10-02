@@ -2,6 +2,8 @@ namespace Blueverse.CoastalOperations.Domain;
 
 public sealed class Assessment
 {
+    public string Title { get; set; } = string.Empty;
+    public string? TimeZoneId { get; set; }
     public Guid Id { get; set; }
     public Guid WorkflowId { get; set; }
     public string TargetType { get; set; } = string.Empty;
@@ -40,6 +42,8 @@ public sealed class AssessmentEvidence
     public DateTimeOffset UploadedAt { get; set; }
     public DateTimeOffset ExpiresAt { get; set; }
     public DateTimeOffset? ExpiredAt { get; set; }
+    public DateTimeOffset? RemovedAt { get; set; }
+    public DateTimeOffset? ContentDeletedAt { get; set; }
 
     public Assessment Assessment { get; set; } = null!;
 }
@@ -109,6 +113,7 @@ public sealed class OperationalHistoryEntry
 
 public sealed class OperationalAlert
 {
+    public string? TimeZoneId { get; set; }
     public Guid Id { get; set; }
     public string TargetType { get; set; } = string.Empty;
     public Guid TargetId { get; set; }
@@ -155,6 +160,11 @@ public sealed class IdempotencyRecord
 
 public sealed class OperationsAuditEntry
 {
+    public string? ActorName { get; set; }
+    public string ActorRolesJson { get; set; } = "[]";
+    public string? RecordTitle { get; set; }
+    public string? Summary { get; set; }
+    public string ChangesJson { get; set; } = "[]";
     public Guid Id { get; set; }
     public string ResourceType { get; set; } = string.Empty;
     public Guid ResourceId { get; set; }

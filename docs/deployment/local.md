@@ -1,5 +1,13 @@
 # Local Deployment
 
+For the [detailed Coastal activity update](../v1/coastal-operations-record-navigation-and-audit.md),
+rebuild/restart API and Coastal Operations together from the repository root:
+`docker compose up -d --build api coastal-operations`. Both must understand the
+extended signed display-identity envelope. Use the existing actor-context key
+and environment configuration; no new setting is needed. Owning-service startup
+applies `20261002081218_CoastalDetailedAudit` with safe empty audit arrays for
+existing rows. Live migration execution was unavailable during this update.
+
 The local Compose topology includes the public API, internal Auth and private
 Coastal Operations service sources at `services/api`, `services/auth` and
 `services/coastal-operations`. Coastal Operations provides private assessment,

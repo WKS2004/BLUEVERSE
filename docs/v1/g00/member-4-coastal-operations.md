@@ -1,5 +1,15 @@
 # G00 Decisions — Coastal Operations (Member 4)
 
+The [2026-10-03 record navigation and audit follow-up](../coastal-operations-record-navigation-and-audit.md) is the latest behavior contract: it sets 500 ms search and record-specific pagination across all collections, refresh-safe views and detailed activity. Shared G00/G07 and live integration gates remain Pending.
+
+The [record experience follow-up](../coastal-operations-record-experience.md)
+adds titles, draft-inclusive discovery, named associations and server-resolved
+time zones. It supersedes UUID entry and separate offset fields; shared G00
+acceptance remains Pending.
+The [focused workspace follow-up](../coastal-operations-focused-workspaces.md)
+adds separate hero images, integrated compact live search with quiet collection
+loading and full workspace creation/detail views within the existing routes.
+
 | Field | Value |
 |---|---|
 | Status | Member 4 owner proposal for shared acceptance; global G00 remains **Pending** until all four owners agree. |
@@ -40,6 +50,17 @@ shared G00 acceptance.
 
 ## Decisions proposed by Member 4
 
+### 2026-10-01 publication, permissions, search and UI
+
+The [publication contract](../coastal-operations-publication-and-ui.md) records
+the requested update before code. Publish assessment uses submit/SUBMITTED and
+atomically records a complete Member 4 delivery envelope; before G07 production
+stays NOT_CONNECTED. Alert publication is independent. Specific alert action
+grants and audit.read supplement compatible manage/decide grants. Add scoped
+search/filter/audit routes and separate equal Assessment/Alert client pages.
+Future private AI endpoint/authentication and peer handoffs remain acceptance
+work. See [ADR-0022](../../adr/ADR-0022-coastal-assessment-publication-dispatch.md).
+
 ### Ownership, identities and time
 
 | Contract item | Member 4 proposal for G00 |
@@ -47,8 +68,8 @@ shared G00 acceptance.
 | Private service | `services/coastal-operations/`; .NET project `Blueverse.CoastalOperations`; Compose/DNS identity `coastal-operations`; internal port `8080`, with no host-published port. The service owns operational assessments, proposals, reviewer decisions, managed operational state, alerts/advisories and audit history. Discover service-local `services/coastal-operations/tests/Blueverse.CoastalOperations.Tests/` in CI. |
 | Persistence | Own PostgreSQL schema `coastal_operations` with least-privilege role `coastal_operations_app`; do not read or write another component's schema. Shared database provisioning, migration ownership and credential delivery must use the team-wide G00 decision. Record immutable audit actor, action, object/proposal version, correlation ID and UTC time; never store hidden reasoning or credentials. |
 | Identifiers | Propose UUIDs for Member 4-created `workflowId`, `assessmentId`, `proposalId`, `decisionId`, `evidenceId` and `alertId`. The Member 4 service creates `workflowId` for its business assessment. An optional `sourceWorkflowId` links an Adithya Gunawardana (Member 3) planning workflow using Member 3's agreed ID format. Business workflow IDs never stand for Agentic AI execution IDs. |
-| Target identity | `targetType` is `DESTINATION`, `ACTIVITY`, `OFFERING` or `SESSION`; `targetId` uses the canonical Ushan Srinuka (Member 1) identifier and type agreed at shared G00. Member 4 owns only its operational state/restrictions for that reference, not a second catalogue. |
-| Time | Request periods use RFC 3339 timestamps with explicit offsets and a half-open interval `[start, end)`, normalized and persisted as UTC instants. Supply an IANA time-zone ID when a user-entered local schedule needs to retain its civil-time meaning. Never infer a period from device time. Preserve source observation, retrieval and validity timestamps; revalidate freshness immediately before execution. |
+| Target identity | `targetType` is `DESTINATION`, `ACTIVITY`, `OFFERING` or `SESSION`; published `targetId` uses the canonical Ushan Srinuka (Member 1) identifier. New titled drafts may omit the target and store the explicit `Guid.Empty` unlinked sentinel; submission/publication rejects it. Users select real named references after producer integration. Member 4 does not create a second catalogue. |
+| Time | New clients send local ISO date/time values and one active database `timeZoneId` for both ends of the half-open interval `[start, end)`. The service resolves each date using platform IANA rules and stores UTC plus the zone; ambiguous/nonexistent times are rejected. Legacy RFC3339 requests without a zone remain supported. Never infer a period from device/server time. Preserve observation/retrieval/validity times and revalidate freshness before execution. |
 
 ### Member-to-member handoff proposal
 
@@ -133,8 +154,9 @@ registries when the component UI/API is built.
 | Method and proposed `/api/...` path | Operation and success contract | Permission |
 |---|---|---|
 | `POST /api/operations/assessments` | `CreateAssessmentDraftRequest` → `AssessmentWorkflowResponse` (`201`); creates a caller-owned `DRAFT` with canonical target, explicit period, objective and optional `sourceWorkflowId`. Requires `Idempotency-Key`. Does not call peer components or dispatch AI until submission. | `operations.assessment.create` |
-| `GET /api/operations/assessments` | `AssessmentQueueResponse` (`200`); resource-scoped operator list includes the caller's drafts; the reviewer queue includes only submitted work. Cursor pagination applies. Cancelled drafts are excluded by default and available only through an authorized audit filter. | `operations.assessment.read` or `operations.assessment.queue.read` |
-| `GET /api/operations/assessments/{assessmentId}` | `AssessmentDetailResponse` (`200`); workflow/dependency status, authorized proposal, decision, validation, progress, audit/history and result summary. The owner may inspect their cancelled draft. Future agent plan/step summaries appear only after G07 and successful dispatch. | `operations.assessment.read` |
+| `GET /api/operations/assessments` | `AssessmentQueueResponse` (`200`); includes caller-owned drafts and permitted submitted work for reviewers. Normal search matches titles; explicit recordId/targetId are Advanced filters. Other owners' drafts remain private. Cursor pagination and cancelled-history scope apply. | `operations.assessment.read` or `operations.assessment.queue.read` |
+| `GET /api/operations/assessments/{assessmentId}` | `AssessmentDetailResponse` (`200`); workflow/dependency status, authorized proposal, decision, validation, progress, audit/history and result summary. The owner may inspect their cancelled draft. Future agent plan/step summaries appear only after G07 and successful dispatch. | `operations.assessment.read` or `operations.assessment.queue.read`, with resource scope |
+| `GET /api/operations/form-options` | Database time-zone locations, caller-scoped named assessments and private reference-port target/plan choices with explicit availability. No-store. Producer services are currently absent; target/plan arrays remain empty rather than fabricated. | `operations.form.options.read` policy derived from existing Coastal Operations grants; no new seeded Auth permission |
 | `PATCH /api/operations/assessments/{assessmentId}` | `UpdateAssessmentDraftRequest` → `AssessmentWorkflowResponse` (`200`); updates only the caller's `DRAFT`, requires the expected assessment version, and cannot change server-owned IDs, audit fields or workflow status. | `operations.assessment.update` |
 | `DELETE /api/operations/assessments/{assessmentId}` | Logically cancels only the caller's `DRAFT`, returns its `CANCELLED` status (`200`), and writes an audit tombstone. Requires expected assessment version and `Idempotency-Key`; it never physically erases the assessment. Submitted or otherwise closed assessments return `409`. | `operations.assessment.delete` |
 | `POST /api/operations/assessments/{assessmentId}/submit` | Validates and submits the current draft (`200`); requires expected assessment version and `Idempotency-Key`. On success, records the bounded Member 1–3 peer outcomes. Before G07 it remains `SUBMITTED` with `aiDependencyStatus: NOT_CONNECTED` and no proposal. | `operations.assessment.submit` |
@@ -144,10 +166,12 @@ registries when the component UI/API is built.
 | `POST /api/operations/assessments/{assessmentId}/evidence` | Multipart image upload → `EvidenceUploadResponse` (`201` only after private persistence and inspection). Evidence is an immutable attachment; draft edits or deletion do not overwrite or physically delete it. | `operations.evidence.upload` |
 | `GET /api/operations/assessments/{assessmentId}/evidence/{evidenceId}` | Authorized image content (`200`); never return a storage URL. | `operations.evidence.read` |
 | `GET /api/operations/alerts` | `AlertQueueResponse` (`200`); alerts visible to the caller, filtered by target, status and validity. | `operations.alert.read` |
-| `POST /api/operations/alerts` | `CreateAlertDraftRequest` → `AlertResponse` (`201`); authorized creation of an unpublished advisory/alert for a managed target and effective period. | `operations.alert.manage` |
-| `PATCH /api/operations/alerts/{alertId}` | `UpdateAlertDraftRequest` → `AlertResponse` (`200`); change only a `PROPOSED` draft using its expected version; active content requires a new audited proposal. | `operations.alert.manage` |
-| `DELETE /api/operations/alerts/{alertId}` | Logically withdraws only a `PROPOSED` draft, returns its `WITHDRAWN` lifecycle (`200`), and records an audit tombstone. Requires expected alert version and `Idempotency-Key`. Active or terminal alerts cannot be deleted; they must follow their lifecycle. | `operations.alert.manage` |
-| `POST /api/operations/alerts/{alertId}/decisions` | `AlertDecisionRequest` → `AlertDecisionResponse` (`200`); authorized activation or resolution with expected alert version and `Idempotency-Key`. | `operations.alert.decide` |
+| `POST /api/operations/alerts` | `CreateAlertDraftRequest` → `AlertResponse` (`201`); authorized creation of an unpublished advisory/alert for a managed target and effective period. | `operations.alert.create` or legacy `operations.alert.manage` |
+| `PATCH /api/operations/alerts/{alertId}` | `UpdateAlertDraftRequest` → `AlertResponse` (`200`); change only a `PROPOSED` draft using its expected version; active content requires a new audited proposal. | `operations.alert.update` or legacy `operations.alert.manage` |
+| `DELETE /api/operations/alerts/{alertId}` | Logically withdraws only a `PROPOSED` draft, returns its `WITHDRAWN` lifecycle (`200`), and records an audit tombstone. Requires expected alert version and `Idempotency-Key`. Active or terminal alerts cannot be deleted; they must follow their lifecycle. | `operations.alert.delete` or legacy `operations.alert.manage` |
+| `POST /api/operations/alerts/{alertId}/decisions` | `AlertDecisionRequest` → `AlertDecisionResponse` (`200`); authorized activation or resolution with expected alert version and `Idempotency-Key`. | Action-specific `operations.alert.publish` / `operations.alert.resolve`, or legacy `operations.alert.decide` |
+| `GET /api/operations/assessments/{assessmentId}/audit` | Paginated safe activity metadata; assessment owner or authorized reviewer of a published record. | `operations.audit.read` plus resource scope |
+| `GET /api/operations/alerts/{alertId}/audit` | Paginated safe activity metadata; alert creator or authorized alert manager. | `operations.audit.read` plus resource scope |
 
 Assessment drafts provide the component's full CRUD lifecycle: create, read,
 update and logically delete before submission. Submission closes that editing
@@ -181,8 +205,10 @@ system role through role-permission records. Coastal Operations still enforces
 the named permission policies, and all other roles require explicit grants.
 `operations.assessment.update`, `operations.assessment.delete` and
 `operations.assessment.submit` are distinct grants; create/read permission
-alone does not imply them. Alert draft deletion uses the existing
-`operations.alert.manage` permission.
+alone does not imply them. Alert draft deletion requires `operations.alert.delete`; legacy
+`operations.alert.manage` remains an alternative. Alert create/update use their
+specific grants or legacy manage. Publication and resolution require their
+separate grants or legacy decide; manage alone cannot authorize either.
 An assessment initiator cannot decide their own high-impact proposal; a
 different authorized reviewer is required. React and Flutter expose the same
 authorized actions and outcomes.
@@ -305,25 +331,27 @@ are anonymous and do not depend on the optional Agentic service; its
 availability is reported only in the authorized business workflow. An absent
 AI runtime does not block service startup or healthy non-AI operations.
 
-The future typed `SafetyOperationsDispatchRequest` uses `contractVersion: 1`
-and contains the business workflow/assessment IDs, canonical target reference,
-objective, explicit period, source workflow link where present, source
-evidence references and correlation ID. It carries no raw image or storage
-URL. The `SafetyOperationsDispatchResponse` uses the same versioned contract
-and returns a structured proposal with proposed action/target, evidence
-references, uncertainty and suggested approval need; Member 4 validates it
-deterministically and alone can execute an approved business action.
+The implemented `PublishedAssessmentDispatch` snapshot contains stable
+dispatch/workflow/assessment IDs, published version, canonical target,
+title, objective, UTC period and selected time zone, optional source workflow, actor/correlation,
+publication time, validated peer outcomes and safe evidence metadata. Its
+maximum serialized size is 128 KiB of UTF-8 JSON. It carries no raw image or
+storage URL. The future HTTP transport and proposal-result contracts still
+require shared acceptance after G07. Transport acceptance is distinct from a
+validated proposal; Member 4 alone can execute an approved business action.
 
 Keep `aiDependencyStatus` (`NOT_CONNECTED`, `UNAVAILABLE`, `AVAILABLE`)
 separate from business `workflowStatus`; an `AVAILABLE` probe does not prove a
 later dispatch succeeded. Keep `aiDispatchOutcome` separately as
 `NOT_REQUESTED`, `NOT_STARTED`, `SUCCEEDED`, `UNAVAILABLE` or `INVALID_RESULT`,
-with an explicit retryable flag. Bound the private probe to one 2-second
-attempt and dispatch to one 15-second attempt, with no automatic dispatch
-retry. A timeout is unavailable and retryable; an invalid or unauthorized
-response is invalid and not retryable. An absent runtime is not connected and
-not retryable until configured. These outcomes produce no proposal or state
-mutation. Record availability in the authorized assessment status; do not add
+with an explicit retryable flag. The service-owned delivery seam bounds both
+availability and dispatch calls to five seconds, uses thirty-second leases
+and retry delays, and permits at most three delivery attempts. A timeout is
+unavailable and retryable within that limit; an invalid response is not
+retryable. An absent runtime is not connected and receives no delivery until
+configured. Exhaustion or invalid delivery moves a submitted assessment to
+SAFE_FAILURE; acceptance leaves it SUBMITTED with no manufactured proposal,
+decision or target mutation. Record availability in the authorized assessment status; do not add
 a public AI health route. Keep service liveness, database readiness and
 optional AI availability separate.
 
@@ -365,3 +393,6 @@ formats/count/size, inspection, storage configuration and retention before
 uploads are implemented. After shared agreement, record accepted G00 values
 in the owning contracts and only then mark G00 accepted in the
 [branch tracker](../member-branch-workflow.md#component-branch-status).
+
+
+The [2026-10-02 record navigation/activity follow-up](../coastal-operations-record-navigation-and-audit.md) specifies 500ms search, collection pagination, pinned tabs, refresh-safe view intent and signed actor/field-change audit snapshots. Shared G00/G07 acceptance remains Pending.

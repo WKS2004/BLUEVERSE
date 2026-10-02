@@ -32,9 +32,15 @@ public sealed class AuthDataSeederTests
 
         Assert.Equal(1, await db.Users.CountAsync(user => user.Email == "bootstrap@blueverse.local"));
         Assert.Contains(admin.UserRoles, userRole => userRole.RoleId == adminRole.Id);
-        // Twelve Auth permissions and fourteen Coastal Operations permissions are registered here.
+        // Twelve Auth permissions and twenty Coastal Operations permissions are registered here.
         var registeredPermissionCount = await db.Permissions.CountAsync();
-        Assert.Equal(26, registeredPermissionCount);
+        Assert.Equal(32, registeredPermissionCount);
+        var coastalGrants = await db.Permissions.Select(item => item.Code).ToListAsync();
+        Assert.All(new[] {
+            PermissionCodes.OperationsAlertCreate, PermissionCodes.OperationsAlertUpdate,
+            PermissionCodes.OperationsAlertDelete, PermissionCodes.OperationsAlertPublish,
+            PermissionCodes.OperationsAlertResolve, PermissionCodes.OperationsAuditRead
+        }, code => Assert.Contains(code, coastalGrants));
         Assert.Equal(
             registeredPermissionCount,
             await db.RolePermissions.CountAsync(item => item.RoleId == adminRole.Id));

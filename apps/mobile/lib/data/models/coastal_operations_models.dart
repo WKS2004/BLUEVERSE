@@ -35,6 +35,10 @@ List<JsonMap> _maps(dynamic value, String name) {
 
 class CoastalAssessment {
   const CoastalAssessment({
+    this.title = '',
+    this.timeZoneId,
+    this.periodStartsLocal,
+    this.periodEndsLocal,
     required this.assessmentId,
     required this.workflowId,
     required this.targetType,
@@ -53,6 +57,10 @@ class CoastalAssessment {
     required this.updatedAt,
   });
 
+  final String title;
+  final String? timeZoneId;
+  final String? periodStartsLocal;
+  final String? periodEndsLocal;
   final String assessmentId;
   final String workflowId;
   final String targetType;
@@ -71,6 +79,10 @@ class CoastalAssessment {
   final String updatedAt;
 
   CoastalAssessment copyWith({int? version}) => CoastalAssessment(
+    title: title,
+    timeZoneId: timeZoneId,
+    periodStartsLocal: periodStartsLocal,
+    periodEndsLocal: periodEndsLocal,
     assessmentId: assessmentId,
     workflowId: workflowId,
     targetType: targetType,
@@ -90,6 +102,10 @@ class CoastalAssessment {
   );
 
   factory CoastalAssessment.fromJson(JsonMap json) => CoastalAssessment(
+    title: _nullableString(json, 'title') ?? _string(json, 'objective'),
+    timeZoneId: _nullableString(json, 'timeZoneId'),
+    periodStartsLocal: _nullableString(json, 'periodStartsLocal'),
+    periodEndsLocal: _nullableString(json, 'periodEndsLocal'),
     assessmentId: _string(json, 'assessmentId'),
     workflowId: _string(json, 'workflowId'),
     targetType: _string(json, 'targetType'),
@@ -216,6 +232,11 @@ class CoastalAssessmentDetail {
 
 class CoastalAlert {
   const CoastalAlert({
+    this.updatedAt = '',
+    this.createdAt = '',
+    this.timeZoneId,
+    this.validFromLocal,
+    this.validUntilLocal,
     required this.alertId,
     required this.targetType,
     required this.targetId,
@@ -230,6 +251,11 @@ class CoastalAlert {
     required this.version,
   });
 
+  final String? timeZoneId;
+  final String? validFromLocal;
+  final String? validUntilLocal;
+  final String createdAt;
+  final String updatedAt;
   final String alertId;
   final String targetType;
   final String targetId;
@@ -244,6 +270,14 @@ class CoastalAlert {
   final int version;
 
   factory CoastalAlert.fromJson(JsonMap json) => CoastalAlert(
+    createdAt: _nullableString(json, 'createdAt') ?? '',
+    updatedAt:
+        _nullableString(json, 'updatedAt') ??
+        _nullableString(json, 'createdAt') ??
+        '',
+    timeZoneId: _nullableString(json, 'timeZoneId'),
+    validFromLocal: _nullableString(json, 'validFromLocal'),
+    validUntilLocal: _nullableString(json, 'validUntilLocal'),
     alertId: _string(json, 'alertId'),
     targetType: _string(json, 'targetType'),
     targetId: _string(json, 'targetId'),
@@ -318,5 +352,140 @@ class CoastalHistoryItem {
     previousState: _string(json, 'previousState'),
     newState: _string(json, 'newState'),
     createdAt: _string(json, 'createdAt'),
+  );
+}
+
+class CoastalAuditItem {
+  const CoastalAuditItem({
+    this.actorName,
+    this.actorRoles = const [],
+    this.summary,
+    this.recordTitle,
+    this.changes = const [],
+    required this.auditId,
+    required this.action,
+    required this.actorId,
+    required this.correlationId,
+    required this.createdAt,
+  });
+  final String? actorName, summary, recordTitle;
+  final List<String> actorRoles;
+  final List<CoastalAuditChange> changes;
+  final String auditId;
+  final String action;
+  final String actorId;
+  final String correlationId;
+  final String createdAt;
+  factory CoastalAuditItem.fromJson(JsonMap json) => CoastalAuditItem(
+    actorName: _nullableString(json, 'actorName'),
+    summary: _nullableString(json, 'summary'),
+    recordTitle: _nullableString(json, 'recordTitle'),
+    actorRoles: json['actorRoles'] is List
+        ? (json['actorRoles'] as List).whereType<String>().toList()
+        : const [],
+    changes: json['changes'] is List
+        ? _maps(
+            json['changes'],
+            'activity changes',
+          ).map(CoastalAuditChange.fromJson).toList()
+        : const [],
+    auditId: _string(json, 'auditId'),
+    action: _string(json, 'action'),
+    actorId: _string(json, 'actorId'),
+    correlationId: _string(json, 'correlationId'),
+    createdAt: _string(json, 'createdAt'),
+  );
+}
+
+class CoastalAuditChange {
+  const CoastalAuditChange({required this.field, this.before, this.after});
+  final String field;
+  final String? before, after;
+  factory CoastalAuditChange.fromJson(JsonMap json) => CoastalAuditChange(
+    field: _string(json, 'field'),
+    before: _nullableString(json, 'before'),
+    after: _nullableString(json, 'after'),
+  );
+}
+
+class CoastalNamedReference {
+  const CoastalNamedReference({
+    required this.id,
+    required this.title,
+    this.targetType,
+    this.targetId,
+  });
+  final String id;
+  final String title;
+  final String? targetType;
+  final String? targetId;
+  factory CoastalNamedReference.fromJson(JsonMap json) => CoastalNamedReference(
+    id: _string(json, 'id'),
+    title: _string(json, 'title'),
+    targetType: _nullableString(json, 'targetType'),
+    targetId: _nullableString(json, 'targetId'),
+  );
+}
+
+class CoastalTimeZoneChoice {
+  const CoastalTimeZoneChoice({
+    this.currentOffsetMinutes,
+    required this.id,
+    required this.country,
+    required this.location,
+    required this.rulesAvailable,
+  });
+  final int? currentOffsetMinutes;
+  final String id;
+  final String country;
+  final String location;
+  final bool rulesAvailable;
+  factory CoastalTimeZoneChoice.fromJson(JsonMap json) => CoastalTimeZoneChoice(
+    currentOffsetMinutes: json['currentOffsetMinutes'] is int
+        ? json['currentOffsetMinutes'] as int
+        : null,
+    id: _string(json, 'id'),
+    country: _string(json, 'country'),
+    location: _string(json, 'location'),
+    rulesAvailable: _boolean(json, 'rulesAvailable'),
+  );
+}
+
+class CoastalReferenceOptions {
+  const CoastalReferenceOptions({required this.status, required this.items});
+  final String status;
+  final List<CoastalNamedReference> items;
+  factory CoastalReferenceOptions.fromJson(JsonMap json) =>
+      CoastalReferenceOptions(
+        status: _string(json, 'status'),
+        items: _maps(
+          json['items'],
+          'reference choices',
+        ).map(CoastalNamedReference.fromJson).toList(),
+      );
+}
+
+class CoastalFormOptions {
+  const CoastalFormOptions({
+    required this.timeZones,
+    required this.targets,
+    required this.plans,
+    required this.assessments,
+  });
+  final List<CoastalTimeZoneChoice> timeZones;
+  final CoastalReferenceOptions targets;
+  final CoastalReferenceOptions plans;
+  final List<CoastalNamedReference> assessments;
+  factory CoastalFormOptions.fromJson(JsonMap json) => CoastalFormOptions(
+    timeZones: _maps(
+      json['timeZones'],
+      'time zones',
+    ).map(CoastalTimeZoneChoice.fromJson).toList(),
+    targets: CoastalReferenceOptions.fromJson(_map(json['targets'], 'targets')),
+    plans: CoastalReferenceOptions.fromJson(_map(json['plans'], 'plans')),
+    assessments: _maps(
+      json['assessments'],
+      'assessment choices',
+    ).map(CoastalNamedReference.fromJson).toList(),
   );
 }

@@ -191,7 +191,9 @@ function SiteHeader({ active = 'home', compactMobile = false }: SiteHeaderProps)
           </nav>
         )}
 
-        <div className="hidden shrink-0 items-center gap-2 sm:flex">{authLinks()}</div>
+        <div className="hidden shrink-0 items-center gap-2 sm:flex">
+          {authLinks()}
+        </div>
         <div className="flex shrink-0 items-center gap-2 sm:hidden">
           {user && status === 'signed-in' && accountMenu(true)}
           <button aria-controls="mobile-site-menu" aria-expanded={menuOpen} aria-label={menuOpen ? 'Close menu' : 'Open menu'} className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-coast-line bg-white/70 text-coast-deep transition duration-200 hover:-translate-y-0.5 hover:bg-coast-sage focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coast-blue active:scale-95" onClick={() => { setMenuOpen((open) => !open); setAccountMenuOpen(false) }} type="button">
