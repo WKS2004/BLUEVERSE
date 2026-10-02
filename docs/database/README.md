@@ -2,8 +2,9 @@
 
 PostgreSQL infrastructure is present in Compose. The Auth EF Core model,
 migrations and application persistence code are checked in under
-`services/auth`. Experience & Biodiversity also has a connection foundation,
-but no component business tables are implemented yet.
+`services/auth`. The Experience & Biodiversity feature branch also contains
+an EF Core model and initial migration for five component tables; shared G00
+data-ownership agreement and integrated acceptance remain pending.
 
 PostgreSQL is the authoritative relational database.
 The [v0 persistence component](../v0/components/postgresql-ef-core.md)
@@ -46,7 +47,11 @@ database, PostgreSQL role or schema-provisioning SQL file is used. The
 [`ExperienceBiodiversityDbContext`](../../services/experience-biodiversity/Data/ExperienceBiodiversityDbContext.cs)
 uses PostgreSQL's default `public` schema, as Auth does. Its migration history
 uses the separate `__EFMigrationsHistory_ExperienceBiodiversity` table in that
-same schema, so the two EF contexts track their migrations independently.
+same schema, so the two EF contexts track their migrations independently. The
+initial migration creates `destinations`, `activities`, `offerings`,
+`schedules` and `favourites`; it is applied by the component service at startup.
+These tables are branch implementation evidence and do not imply that the
+shared G00 database/schema ownership decision has been accepted.
 When running the service directly on the host, set
 `ConnectionStrings__DefaultConnection` to the same connection values but use
 `Host=127.0.0.1` instead of the Compose-only `Host=postgres`. Supply the
@@ -61,9 +66,8 @@ uses a placeholder password and is safe only for generating migration files.
 
 At startup the service performs a bounded connection check and applies its
 EF Core migrations, following the Auth service pattern. Process liveness
-remains independent from database availability. There are no domain entities,
-tables or migrations in this scaffold yet. No manual database provisioning
-step is required for either new or existing PostgreSQL volumes.
+remains independent from database availability. No manual database
+provisioning step is required for either new or existing PostgreSQL volumes.
 
 ## Agent fast path
 

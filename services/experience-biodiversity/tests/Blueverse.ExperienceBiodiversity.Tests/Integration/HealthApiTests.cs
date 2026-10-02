@@ -18,7 +18,7 @@ public sealed class HealthApiTests : IClassFixture<TestWebApplicationFactory>
     [Trait("CaseId", "EXP-API-HLT-001")]
     public async Task GetHealth_Returns_Ok_With_HealthyStatus()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAnonymousClient();
 
         using var response = await client.GetAsync("/api/experiences/health");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);

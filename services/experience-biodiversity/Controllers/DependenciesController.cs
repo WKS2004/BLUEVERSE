@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Blueverse.ExperienceBiodiversity.DTOs;
 using Blueverse.ExperienceBiodiversity.Services;
@@ -5,6 +6,7 @@ using Blueverse.ExperienceBiodiversity.Services;
 namespace Blueverse.ExperienceBiodiversity.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/experiences/dependencies")]
 public sealed class DependenciesController : ControllerBase
 {

@@ -19,7 +19,7 @@ public sealed class MapApiTests : IClassFixture<TestWebApplicationFactory>
     [Trait("CaseId", "EXP-API-MAP-001")]
     public async Task GetMapConfiguration_Returns_OpenFreeMap_Styles_And_Attribution()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAnonymousClient();
 
         using var response = await client.GetAsync("/api/experiences/map/config");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -39,7 +39,7 @@ public sealed class MapApiTests : IClassFixture<TestWebApplicationFactory>
     [Trait("CaseId", "EXP-API-MAP-002")]
     public async Task SearchPlaces_MissingQuery_Returns_BadRequest()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
 
         using var response = await client.GetAsync("/api/experiences/map/search");
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -54,7 +54,7 @@ public sealed class MapApiTests : IClassFixture<TestWebApplicationFactory>
     [Trait("CaseId", "EXP-API-MAP-003")]
     public async Task SearchPlaces_QueryTooShort_Returns_BadRequest()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
 
         using var response = await client.GetAsync("/api/experiences/map/search?q=a");
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -69,7 +69,7 @@ public sealed class MapApiTests : IClassFixture<TestWebApplicationFactory>
     [Trait("CaseId", "EXP-API-MAP-004")]
     public async Task SearchPlaces_ValidQuery_Returns_Ok_With_Results()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
 
         using var response = await client.GetAsync("/api/experiences/map/search?q=Mirissa");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);

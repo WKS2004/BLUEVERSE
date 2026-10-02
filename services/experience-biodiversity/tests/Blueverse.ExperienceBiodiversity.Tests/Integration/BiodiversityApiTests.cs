@@ -19,7 +19,7 @@ public sealed class BiodiversityApiTests : IClassFixture<TestWebApplicationFacto
     [Trait("CaseId", "EXP-API-BIO-001")]
     public async Task GetBiodiversity_Returns_Safe_Unavailable_When_Inference_Service_Not_Configured()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAuthenticatedClient(Guid.NewGuid(), "experiences.catalogue.manage");
 
         // 1. Create a destination
         var createReq = new CreateDestinationRequest("Nilaveli Marine Park", null, "Coral park", "Eastern Province", 8.68, 81.18);

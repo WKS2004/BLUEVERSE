@@ -21,7 +21,7 @@ public sealed class NearbyApiTests : IClassFixture<TestWebApplicationFactory>
     [Trait("CaseId", "EXP-API-NRB-001")]
     public async Task GetNearby_MissingCoordinates_Returns_BadRequest()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAnonymousClient();
 
         // 1. Neither coordinate
         using var res1 = await client.GetAsync("/api/experiences/nearby");
@@ -40,7 +40,7 @@ public sealed class NearbyApiTests : IClassFixture<TestWebApplicationFactory>
     [Trait("CaseId", "EXP-API-NRB-002")]
     public async Task GetNearby_InvalidLatitude_Returns_BadRequest()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
 
         using var response = await client.GetAsync("/api/experiences/nearby?latitude=95.0&longitude=80.0");
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -55,7 +55,7 @@ public sealed class NearbyApiTests : IClassFixture<TestWebApplicationFactory>
     [Trait("CaseId", "EXP-API-NRB-003")]
     public async Task GetNearby_InvalidLongitude_Returns_BadRequest()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
 
         using var response = await client.GetAsync("/api/experiences/nearby?latitude=5.0&longitude=190.0");
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -70,7 +70,7 @@ public sealed class NearbyApiTests : IClassFixture<TestWebApplicationFactory>
     [Trait("CaseId", "EXP-API-NRB-004")]
     public async Task GetNearby_ValidCoordinates_Returns_NearbyDestinations_OrderedByDistance()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
 
         // Seed a published destination to be certain
         var destReq = new CreateDestinationRequest("Mirissa Coast", $"mirissa-{Guid.NewGuid():N}"[..18], "Whale haven", "Southern Province", 5.9482, 80.4716);
@@ -103,7 +103,7 @@ public sealed class NearbyApiTests : IClassFixture<TestWebApplicationFactory>
     [Trait("CaseId", "EXP-API-NRB-005")]
     public async Task GetNearby_LocationKeyword_ResolvesLocationAndReturnsNearbyDestinations()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
 
         // Seed a published destination to be searched
         var destReq = new CreateDestinationRequest("Weligama Bay Haven", $"weligama-{Guid.NewGuid():N}"[..18], "Surf bay", "Southern Province", 5.9723, 80.4287);

@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using Blueverse.ExperienceBiodiversity.DTOs;
 using Blueverse.ExperienceBiodiversity.Models;
@@ -21,7 +22,7 @@ public sealed class DestinationsApiTests : IClassFixture<TestWebApplicationFacto
     [Trait("CaseId", "EXP-API-DEST-001")]
     public async Task GetAllDestinations_Returns_Ok_And_Json_List()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAnonymousClient();
 
         using var response = await client.GetAsync("/api/experiences/destinations");
         var content = await response.Content.ReadAsStringAsync();
@@ -38,7 +39,7 @@ public sealed class DestinationsApiTests : IClassFixture<TestWebApplicationFacto
     [Trait("CaseId", "EXP-API-DEST-002")]
     public async Task CreateDestination_And_Transition_Publication_Lifecycle()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
 
         var createReq = new CreateDestinationRequest(
             Name: "Kite Lagoon Kalpitiya",
@@ -78,7 +79,7 @@ public sealed class DestinationsApiTests : IClassFixture<TestWebApplicationFacto
     [Trait("CaseId", "EXP-API-DEST-003")]
     public async Task GetDestinationById_Unknown_Returns_NotFound_ProblemDetails()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAnonymousClient();
         var unknownId = Guid.NewGuid();
 
         using var response = await client.GetAsync($"/api/experiences/destinations/{unknownId}");
@@ -96,7 +97,7 @@ public sealed class DestinationsApiTests : IClassFixture<TestWebApplicationFacto
     [Trait("CaseId", "EXP-API-DEST-004")]
     public async Task UpdateDestination_UpdatesProperties_And_Returns_UpdatedDto()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
 
         // 1. Create
         var createReq = new CreateDestinationRequest("Weligama Bay", $"weligama-{Guid.NewGuid():N}"[..18], "Surf and sand", "Southern Province", 5.97, 80.42);
@@ -121,7 +122,7 @@ public sealed class DestinationsApiTests : IClassFixture<TestWebApplicationFacto
     [Trait("CaseId", "EXP-API-DEST-005")]
     public async Task UpdateDestination_UnknownId_Returns_NotFound_ProblemDetails()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
         var unknownId = Guid.NewGuid();
 
         var updateReq = new UpdateDestinationRequest("Non-existent", "non-existent", "Desc", "Region", 6.0, 80.0);
@@ -138,7 +139,7 @@ public sealed class DestinationsApiTests : IClassFixture<TestWebApplicationFacto
     [Trait("CaseId", "EXP-API-DEST-006")]
     public async Task GetAllDestinations_WithFilters_AppliesFiltersCorrectly()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAnonymousClient();
 
         // Query with explicit region and status filters
         using var response = await client.GetAsync("/api/experiences/destinations?region=Southern&status=PUBLISHED&page=1&pageSize=10");
@@ -158,7 +159,7 @@ public sealed class DestinationsApiTests : IClassFixture<TestWebApplicationFacto
     [Trait("CaseId", "EXP-API-DEST-007")]
     public async Task GetDestinationMarineConditions_Returns_Ok_Or_NotFound()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
 
         // 1. Unknown destination -> 404
         using var unknownRes = await client.GetAsync($"/api/experiences/destinations/{Guid.NewGuid()}/marine-conditions");
@@ -183,7 +184,7 @@ public sealed class DestinationsApiTests : IClassFixture<TestWebApplicationFacto
     [Trait("CaseId", "EXP-API-DEST-008")]
     public async Task GetDestinationOperationalAdvisories_Returns_Ok_Or_NotFound()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
 
         // 1. Unknown destination -> 404
         using var unknownRes = await client.GetAsync($"/api/experiences/destories-operational-advisories/{Guid.NewGuid()}");
@@ -219,6 +220,68 @@ public sealed class DestinationsApiTests : IClassFixture<TestWebApplicationFacto
     }
 
     [Fact]
+    [Trait("CaseId", "EXP-API-DEST-015")]
+    public async Task CreateDestination_SpoofedUserHeaders_Returns_Unauthorized()
+    {
+        using var anonClient = _factory.CreateAnonymousClient();
+        anonClient.DefaultRequestHeaders.Add("X-User-Id", Guid.NewGuid().ToString());
+        anonClient.DefaultRequestHeaders.Add("X-User-Roles", "Admin");
+        anonClient.DefaultRequestHeaders.Add("X-User-Permissions", "experiences.catalogue.manage");
+
+        var name = $"Header Spoof Bay {Guid.NewGuid():N}";
+        var createReq = new CreateDestinationRequest(name, null, "Must not be created", "Southern", 6.1, 80.2);
+        using var response = await anonClient.PostAsJsonAsync("/api/experiences/destinations", createReq);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Empty(await response.Content.ReadAsStringAsync());
+        Assert.False(await _factory.DestinationExistsAsync(name));
+    }
+
+    [Fact]
+    [Trait("CaseId", "EXP-API-DEST-014")]
+    public async Task CreateDestination_UnsignedJwtWithAdminPermissionClaims_Returns_Unauthorized()
+    {
+        using var client = _factory.CreateAnonymousClient();
+        var payload = Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new
+        {
+            sub = Guid.NewGuid().ToString(),
+            role = new[] { "Admin" },
+            permission = new[] { "experiences.catalogue.manage", "auth.role.system.manage" }
+        })))
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
+        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
+            "Bearer",
+            $"eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.{payload}.");
+
+        var name = $"Unsigned Token Bay {Guid.NewGuid():N}";
+        var createReq = new CreateDestinationRequest(name, null, "Must not be created", "Southern", 6.1, 80.2);
+        using var response = await client.PostAsJsonAsync("/api/experiences/destinations", createReq);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Empty(await response.Content.ReadAsStringAsync());
+        Assert.False(await _factory.DestinationExistsAsync(name));
+    }
+
+    [Fact]
+    [Trait("CaseId", "EXP-API-DEST-013")]
+    public async Task CreateDestination_ReadPermissionWithoutManage_Returns_Forbidden()
+    {
+        using var client = _factory.CreateAuthenticatedClient(
+            Guid.NewGuid(),
+            "experiences.catalogue.read");
+
+        var name = $"Read Only Bay {Guid.NewGuid():N}";
+        var createReq = new CreateDestinationRequest(name, null, "Must not be created", "Southern", 6.1, 80.2);
+        using var response = await client.PostAsJsonAsync("/api/experiences/destinations", createReq);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Empty(await response.Content.ReadAsStringAsync());
+        Assert.False(await _factory.DestinationExistsAsync(name));
+    }
+
+    [Fact]
     [Trait("CaseId", "EXP-API-DEST-010")]
     public async Task GetDestinations_DraftStatusFilter_WithoutPermission_Returns_Forbidden()
     {
@@ -234,7 +297,7 @@ public sealed class DestinationsApiTests : IClassFixture<TestWebApplicationFacto
     [Trait("CaseId", "EXP-API-DEST-011")]
     public async Task DeleteDestination_Existing_Returns_NoContent_And_Deletes()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
 
         var createReq = new CreateDestinationRequest(
             Name: "Delete Target Bay",
@@ -262,7 +325,7 @@ public sealed class DestinationsApiTests : IClassFixture<TestWebApplicationFacto
     [Trait("CaseId", "EXP-API-DEST-012")]
     public async Task DeleteDestination_UnknownId_Returns_NotFound()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
         var unknownId = Guid.NewGuid();
 
         using var delRes = await client.DeleteAsync($"/api/experiences/destinations/{unknownId}");

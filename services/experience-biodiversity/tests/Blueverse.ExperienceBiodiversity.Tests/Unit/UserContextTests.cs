@@ -11,102 +11,86 @@ public sealed class UserContextTests
 {
     [Fact]
     [Trait("CaseId", "EXP-UNIT-USR-001")]
-    public void CurrentUserId_FromClaimsPrincipal_ReturnsParsedGuid()
+    public void CurrentUserId_FromAuthenticatedClaimsPrincipal_ReturnsParsedGuid()
     {
         var expectedId = Guid.NewGuid();
-        var claims = new[]
-        {
+        var identity = new ClaimsIdentity(
+        [
             new Claim("sub", expectedId.ToString()),
             new Claim(ClaimTypes.Role, "tourist"),
-            new Claim("permission", "experiences.read")
-        };
-        var identity = new ClaimsIdentity(claims, "TestAuth");
-        var principal = new ClaimsPrincipal(identity);
+            new Claim("permission", "experiences.catalogue.read")
+        ], "TestAuth");
 
-        var httpContext = new DefaultHttpContext { User = principal };
-        var accessor = new HttpContextAccessor { HttpContext = httpContext };
-        var userContext = new UserContext(accessor);
+        var httpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) };
+        var userContext = new UserContext(new HttpContextAccessor { HttpContext = httpContext });
 
         Assert.True(userContext.IsAuthenticated);
         Assert.Equal(expectedId, userContext.CurrentUserId);
         Assert.Contains("tourist", userContext.Roles);
-        Assert.Contains("experiences.read", userContext.Permissions);
+        Assert.Contains("experiences.catalogue.read", userContext.Permissions);
     }
 
     [Fact]
     [Trait("CaseId", "EXP-UNIT-USR-002")]
-    public void CurrentUserId_FromHeader_ReturnsParsedGuid()
+    public void CurrentUserId_FromUserHeaders_IsNotTrusted()
     {
-        var expectedId = Guid.NewGuid();
         var httpContext = new DefaultHttpContext();
-        httpContext.Request.Headers["X-User-Id"] = expectedId.ToString();
+        httpContext.Request.Headers["X-User-Id"] = Guid.NewGuid().ToString();
+        httpContext.Request.Headers["X-User-Roles"] = "Admin";
+        httpContext.Request.Headers["X-User-Permissions"] = "experiences.catalogue.manage";
+        var userContext = new UserContext(new HttpContextAccessor { HttpContext = httpContext });
 
-        var accessor = new HttpContextAccessor { HttpContext = httpContext };
-        var userContext = new UserContext(accessor);
-
-        Assert.True(userContext.IsAuthenticated);
-        Assert.Equal(expectedId, userContext.CurrentUserId);
+        Assert.False(userContext.IsAuthenticated);
+        Assert.Null(userContext.CurrentUserId);
+        Assert.Empty(userContext.Roles);
+        Assert.Empty(userContext.Permissions);
     }
 
     [Fact]
     [Trait("CaseId", "EXP-UNIT-USR-003")]
-    public void CurrentUserId_FromBearerJwtHeader_ExtractsSubAndRoles()
+    public void CurrentUserId_FromUnsignedBearerJwt_IsNotTrusted()
     {
-        var expectedId = Guid.NewGuid();
         var payloadJson = JsonSerializer.Serialize(new
         {
-            sub = expectedId.ToString(),
-            role = new[] { "community_lead", "contributor" },
-            permission = new[] { "destinations.manage", "experiences.publish" }
+            sub = Guid.NewGuid().ToString(),
+            role = new[] { "Admin" },
+            permission = new[] { "experiences.catalogue.manage", "auth.role.system.manage" }
         });
-        var token = CreateFakeJwt(payloadJson);
-
         var httpContext = new DefaultHttpContext();
-        httpContext.Request.Headers["Authorization"] = $"Bearer {token}";
+        httpContext.Request.Headers["Authorization"] = $"Bearer {CreateFakeJwt(payloadJson)}";
+        var userContext = new UserContext(new HttpContextAccessor { HttpContext = httpContext });
 
-        var accessor = new HttpContextAccessor { HttpContext = httpContext };
-        var userContext = new UserContext(accessor);
-
-        Assert.True(userContext.IsAuthenticated);
-        Assert.Equal(expectedId, userContext.CurrentUserId);
-        Assert.Contains("community_lead", userContext.Roles);
-        Assert.Contains("contributor", userContext.Roles);
-        Assert.Contains("destinations.manage", userContext.Permissions);
-        Assert.Contains("experiences.publish", userContext.Permissions);
+        Assert.False(userContext.IsAuthenticated);
+        Assert.Null(userContext.CurrentUserId);
+        Assert.Empty(userContext.Roles);
+        Assert.Empty(userContext.Permissions);
     }
 
     [Fact]
     [Trait("CaseId", "EXP-UNIT-USR-004")]
-    public void CurrentUserId_FromCookieJwt_ExtractsSubAndSingleRole()
+    public void CurrentUserId_FromUnsignedCookieJwt_IsNotTrusted()
     {
-        var expectedId = Guid.NewGuid();
         var payloadJson = JsonSerializer.Serialize(new
         {
-            sub = expectedId.ToString(),
-            role = "admin",
-            permission = "system.admin"
+            sub = Guid.NewGuid().ToString(),
+            role = "Admin",
+            permission = "auth.role.system.manage"
         });
-        var token = CreateFakeJwt(payloadJson);
-
         var httpContext = new DefaultHttpContext();
-        httpContext.Request.Headers["Cookie"] = $"blueverse_access_token={token}";
+        httpContext.Request.Headers["Cookie"] = $"blueverse_access_token={CreateFakeJwt(payloadJson)}";
+        var userContext = new UserContext(new HttpContextAccessor { HttpContext = httpContext });
 
-        var accessor = new HttpContextAccessor { HttpContext = httpContext };
-        var userContext = new UserContext(accessor);
-
-        Assert.True(userContext.IsAuthenticated);
-        Assert.Equal(expectedId, userContext.CurrentUserId);
-        Assert.Contains("admin", userContext.Roles);
-        Assert.Contains("system.admin", userContext.Permissions);
+        Assert.False(userContext.IsAuthenticated);
+        Assert.Null(userContext.CurrentUserId);
+        Assert.Empty(userContext.Roles);
+        Assert.Empty(userContext.Permissions);
     }
 
     [Fact]
     [Trait("CaseId", "EXP-UNIT-USR-005")]
     public void UnauthenticatedContext_ReturnsNullIdAndEmptyCollections()
     {
-        var httpContext = new DefaultHttpContext();
-        var accessor = new HttpContextAccessor { HttpContext = httpContext };
-        var userContext = new UserContext(accessor);
+        var userContext = new UserContext(new HttpContextAccessor { HttpContext = new DefaultHttpContext() });
 
         Assert.False(userContext.IsAuthenticated);
         Assert.Null(userContext.CurrentUserId);
@@ -116,13 +100,11 @@ public sealed class UserContextTests
 
     [Fact]
     [Trait("CaseId", "EXP-UNIT-USR-006")]
-    public void MalformedJwt_DoesNotThrowAndReturnsNullId()
+    public void MalformedJwt_DoesNotCreateAnAuthenticatedPrincipal()
     {
         var httpContext = new DefaultHttpContext();
         httpContext.Request.Headers["Authorization"] = "Bearer not-a-valid-jwt-token";
-
-        var accessor = new HttpContextAccessor { HttpContext = httpContext };
-        var userContext = new UserContext(accessor);
+        var userContext = new UserContext(new HttpContextAccessor { HttpContext = httpContext });
 
         Assert.False(userContext.IsAuthenticated);
         Assert.Null(userContext.CurrentUserId);
@@ -132,34 +114,55 @@ public sealed class UserContextTests
 
     [Fact]
     [Trait("CaseId", "EXP-UNIT-USR-007")]
-    public void HasPermission_WithAdminRole_ReturnsTrue()
+    public void HasPermission_AdminRoleWithoutPermission_DoesNotGrantAccess()
     {
-        var httpContext = new DefaultHttpContext();
-        httpContext.Request.Headers["X-User-Id"] = Guid.NewGuid().ToString();
-        httpContext.Request.Headers["X-User-Roles"] = "Admin";
+        var identity = new ClaimsIdentity(
+        [
+            new Claim("sub", Guid.NewGuid().ToString()),
+            new Claim(ClaimTypes.Role, "Admin")
+        ], "TestAuth");
+        var userContext = new UserContext(new HttpContextAccessor
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        });
 
-        var accessor = new HttpContextAccessor { HttpContext = httpContext };
-        var userContext = new UserContext(accessor);
-
-        Assert.True(userContext.HasPermission("experiences.catalogue.manage"));
-        Assert.True(userContext.HasAnyPermission("experiences.catalogue.manage", "something.else"));
+        Assert.False(userContext.HasPermission("experiences.catalogue.manage"));
+        Assert.False(userContext.HasAnyPermission("experiences.catalogue.manage", "something.else"));
     }
 
     [Fact]
     [Trait("CaseId", "EXP-UNIT-USR-008")]
-    public void HasPermission_WithoutRequiredPermission_ReturnsFalse()
+    public void HasPermission_UserHeadersDoNotGrantAccess()
     {
         var httpContext = new DefaultHttpContext();
         httpContext.Request.Headers["X-User-Id"] = Guid.NewGuid().ToString();
         httpContext.Request.Headers["X-User-Roles"] = "tourist";
         httpContext.Request.Headers["X-User-Permissions"] = "experiences.catalogue.read";
+        var userContext = new UserContext(new HttpContextAccessor { HttpContext = httpContext });
 
-        var accessor = new HttpContextAccessor { HttpContext = httpContext };
-        var userContext = new UserContext(accessor);
-
-        Assert.True(userContext.HasPermission("experiences.catalogue.read"));
+        Assert.False(userContext.HasPermission("experiences.catalogue.read"));
         Assert.False(userContext.HasPermission("experiences.catalogue.manage"));
         Assert.False(userContext.HasAnyPermission("auth.role.system.manage", "admin.privilege"));
+    }
+
+    [Fact]
+    [Trait("CaseId", "EXP-UNIT-USR-009")]
+    public void HasPermission_UsesSignedPermissionClaimsAndExplicitCatalogueHierarchy()
+    {
+        var identity = new ClaimsIdentity(
+        [
+            new Claim("sub", Guid.NewGuid().ToString()),
+            new Claim(ClaimTypes.Role, "Admin"),
+            new Claim("permission", "experiences.catalogue.manage")
+        ], "TestAuth");
+        var userContext = new UserContext(new HttpContextAccessor
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        });
+
+        Assert.True(userContext.HasPermission("experiences.catalogue.manage"));
+        Assert.True(userContext.HasPermission("experiences.catalogue.read"));
+        Assert.False(userContext.HasPermission("auth.role.manage"));
     }
 
     private static string CreateFakeJwt(string payloadJson)

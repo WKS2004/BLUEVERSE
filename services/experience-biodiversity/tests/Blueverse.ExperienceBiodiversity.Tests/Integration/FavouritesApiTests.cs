@@ -20,7 +20,7 @@ public sealed class FavouritesApiTests : IClassFixture<TestWebApplicationFactory
     [Trait("CaseId", "EXP-API-FAV-001")]
     public async Task GetFavourites_Without_Auth_Returns_Unauthorized()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAnonymousClient();
 
         using var response = await client.GetAsync("/api/experiences/favourites");
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -30,10 +30,8 @@ public sealed class FavouritesApiTests : IClassFixture<TestWebApplicationFactory
     [Trait("CaseId", "EXP-API-FAV-002")]
     public async Task Add_And_Remove_Favourite_With_User_Context()
     {
-        using var client = _factory.CreateClient();
-
         var userId = Guid.NewGuid();
-        client.DefaultRequestHeaders.Add("X-User-Id", userId.ToString());
+        using var client = _factory.CreateAdminClient(userId);
 
         // 1. Create a destination to favourite
         var createReq = new CreateDestinationRequest("Mirissa Secret Bay", null, "Scenic bay", "Southern Province", 5.94, 80.46);
@@ -61,8 +59,7 @@ public sealed class FavouritesApiTests : IClassFixture<TestWebApplicationFactory
     [Trait("CaseId", "EXP-API-FAV-003")]
     public async Task AddFavourite_InvalidTargetType_Returns_BadRequest()
     {
-        using var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-User-Id", Guid.NewGuid().ToString());
+        using var client = _factory.CreateAuthenticatedClient(Guid.NewGuid());
 
         using var response = await client.PutAsync($"/api/experiences/favourites/InvalidType/{Guid.NewGuid()}", null);
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -77,8 +74,7 @@ public sealed class FavouritesApiTests : IClassFixture<TestWebApplicationFactory
     [Trait("CaseId", "EXP-API-FAV-004")]
     public async Task AddFavourite_NonExistentTargetId_Returns_NotFound()
     {
-        using var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-User-Id", Guid.NewGuid().ToString());
+        using var client = _factory.CreateAuthenticatedClient(Guid.NewGuid());
 
         using var response = await client.PutAsync($"/api/experiences/favourites/Destination/{Guid.NewGuid()}", null);
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -93,8 +89,7 @@ public sealed class FavouritesApiTests : IClassFixture<TestWebApplicationFactory
     [Trait("CaseId", "EXP-API-FAV-005")]
     public async Task RemoveFavourite_NonExistentTarget_Returns_NoContent()
     {
-        using var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-User-Id", Guid.NewGuid().ToString());
+        using var client = _factory.CreateAuthenticatedClient(Guid.NewGuid());
 
         using var response = await client.DeleteAsync($"/api/experiences/favourites/Destination/{Guid.NewGuid()}");
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
@@ -104,8 +99,7 @@ public sealed class FavouritesApiTests : IClassFixture<TestWebApplicationFactory
     [Trait("CaseId", "EXP-API-FAV-006")]
     public async Task RemoveFavourite_InvalidTargetType_Returns_BadRequest()
     {
-        using var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-User-Id", Guid.NewGuid().ToString());
+        using var client = _factory.CreateAuthenticatedClient(Guid.NewGuid());
 
         using var response = await client.DeleteAsync($"/api/experiences/favourites/UnknownKind/{Guid.NewGuid()}");
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -120,9 +114,8 @@ public sealed class FavouritesApiTests : IClassFixture<TestWebApplicationFactory
     [Trait("CaseId", "EXP-API-FAV-007")]
     public async Task AddFavourite_ForActivityAndOffering_Succeeds()
     {
-        using var client = _factory.CreateClient();
         var userId = Guid.NewGuid();
-        client.DefaultRequestHeaders.Add("X-User-Id", userId.ToString());
+        using var client = _factory.CreateAdminClient(userId);
 
         // 1. Create activity
         var actRes = await client.PostAsJsonAsync("/api/experiences/activities",

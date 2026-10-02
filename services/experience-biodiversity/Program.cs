@@ -1,9 +1,67 @@
+using System.Security.Claims;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Blueverse.ExperienceBiodiversity.Data;
 using Blueverse.ExperienceBiodiversity.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var signingKey = builder.Configuration["JWT_SIGNING_KEY"];
+if (string.IsNullOrWhiteSpace(signingKey))
+{
+    throw new InvalidOperationException("JWT_SIGNING_KEY must be configured.");
+}
+
+var signingKeyBytes = Encoding.UTF8.GetBytes(signingKey);
+if (signingKeyBytes.Length < 32)
+{
+    throw new InvalidOperationException("JWT_SIGNING_KEY must be at least 32 UTF-8 bytes.");
+}
+
+var issuer = builder.Configuration["Jwt:Issuer"] ?? "Blueverse.Auth";
+var audience = builder.Configuration["Jwt:Audience"] ?? "Blueverse.Client";
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+    options.SaveToken = false;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(signingKeyBytes),
+        ValidateIssuer = true,
+        ValidIssuer = issuer,
+        ValidateAudience = true,
+        ValidAudience = audience,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.FromMinutes(1),
+        ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
+        NameClaimType = ClaimTypes.Name,
+        RoleClaimType = ClaimTypes.Role
+    };
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            if (string.IsNullOrWhiteSpace(context.Token))
+            {
+                context.Token = context.Request.Cookies["blueverse_access_token"];
+            }
+
+            return Task.CompletedTask;
+        }
+    };
+});
+
+builder.Services.AddAuthorization();
 
 builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
@@ -132,6 +190,9 @@ app.UseExceptionHandler(exceptionApp =>
             cancellationToken: context.RequestAborted);
     });
 });
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.UseSwagger(options =>
 {

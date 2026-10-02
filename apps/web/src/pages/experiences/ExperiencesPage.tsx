@@ -51,8 +51,7 @@ export default function ExperiencesPage() {
 
   // Admin and CRUD states
   const isAdmin =
-    hasAnyPermission(user, ['experiences.catalogue.manage', 'auth.role.manage']) ||
-    (user?.roles?.includes('Admin') ?? false)
+    hasAnyPermission(user, ['experiences.catalogue.manage', 'auth.role.system.manage'])
 
   // Interactive Map state
   const [mapConfig, setMapConfig] = useState<MapConfigDto | null>(null)

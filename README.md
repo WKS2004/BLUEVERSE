@@ -239,6 +239,9 @@ cp .env.example .env
 Edit `.env` and replace the example `JWT_SIGNING_KEY`, PostgreSQL password and
 administrator password with unique local values. The JWT signing key must be
 at least 32 UTF-8 bytes. Use a password manager or secure random generator.
+The API gateway, Auth service and Experience & Biodiversity service use this
+same key so both public and private service boundaries can validate Auth-issued
+tokens.
 Auth and Experience & Biodiversity use the same `POSTGRES_DB`, `POSTGRES_USER`
 and `POSTGRES_PASSWORD` settings for the single PostgreSQL database. Never
 commit `.env`. Keep

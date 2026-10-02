@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Blueverse.ExperienceBiodiversity.Authorization;
 using Blueverse.ExperienceBiodiversity.Data;
 using Blueverse.ExperienceBiodiversity.DTOs;
 using Blueverse.ExperienceBiodiversity.Models;
@@ -9,6 +10,7 @@ using Blueverse.ExperienceBiodiversity.Services;
 namespace Blueverse.ExperienceBiodiversity.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/experiences/destinations")]
 public sealed class DestinationsController : ControllerBase
 {
@@ -29,6 +31,7 @@ public sealed class DestinationsController : ControllerBase
         _logger = logger;
     }
 
+    [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] string? query,
@@ -98,11 +101,18 @@ public sealed class DestinationsController : ControllerBase
         });
     }
 
+    [AllowAnonymous]
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken = default)
     {
         var d = await _dbContext.Destinations.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (d == null)
+        {
+            return NotFound(new { type = "https://tools.ietf.org/html/rfc7807", title = "Destination Not Found", status = 404, detail = $"Destination with ID {id} does not exist." });
+        }
+
+        if (d.Status != PublicationStatus.Published &&
+            !_userContext.HasAnyPermission("experiences.catalogue.read", "experiences.catalogue.manage", "auth.role.system.manage"))
         {
             return NotFound(new { type = "https://tools.ietf.org/html/rfc7807", title = "Destination Not Found", status = 404, detail = $"Destination with ID {id} does not exist." });
         }
@@ -120,6 +130,7 @@ public sealed class DestinationsController : ControllerBase
             d.UpdatedAt));
     }
 
+    [HasPermission("experiences.catalogue.manage")]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateDestinationRequest request, CancellationToken cancellationToken = default)
     {
@@ -175,6 +186,7 @@ public sealed class DestinationsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = destination.Id }, dto);
     }
 
+    [HasPermission("experiences.catalogue.manage")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateDestinationRequest request, CancellationToken cancellationToken = default)
     {
@@ -220,6 +232,7 @@ public sealed class DestinationsController : ControllerBase
             dest.UpdatedAt));
     }
 
+    [HasPermission("experiences.catalogue.manage")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken = default)
     {
@@ -245,6 +258,7 @@ public sealed class DestinationsController : ControllerBase
         return NoContent();
     }
 
+    [HasPermission("experiences.catalogue.manage")]
     [HttpPost("{id:guid}/publication-evaluations")]
     public async Task<IActionResult> EvaluatePublication(Guid id, [FromBody] UpdatePublicationRequest request, CancellationToken cancellationToken = default)
     {
@@ -253,7 +267,7 @@ public sealed class DestinationsController : ControllerBase
             return Unauthorized(new { type = "https://tools.ietf.org/html/rfc7807", title = "Unauthorized", status = 401, detail = "Authentication is required to evaluate publications." });
         }
 
-        if (!_userContext.HasAnyPermission("experiences.catalogue.read", "experiences.catalogue.manage", "auth.role.system.manage"))
+        if (!_userContext.HasAnyPermission("experiences.catalogue.manage", "auth.role.system.manage"))
         {
             return StatusCode(StatusCodes.Status403Forbidden, new { type = "https://tools.ietf.org/html/rfc7807", title = "Forbidden", status = 403, detail = "You do not have permission to evaluate publications." });
         }
@@ -262,6 +276,7 @@ public sealed class DestinationsController : ControllerBase
         return Ok(eval);
     }
 
+    [HasPermission("experiences.catalogue.manage")]
     [HttpPatch("{id:guid}/publication")]
     public async Task<IActionResult> UpdatePublication(Guid id, [FromBody] UpdatePublicationRequest request, CancellationToken cancellationToken = default)
     {
@@ -311,6 +326,7 @@ public sealed class DestinationsController : ControllerBase
             dest.UpdatedAt));
     }
 
+    [AllowAnonymous]
     [HttpGet("{id:guid}/marine-conditions")]
     public async Task<IActionResult> GetDestinationMarineConditions(
         Guid id,
@@ -318,7 +334,9 @@ public sealed class DestinationsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var dest = await _dbContext.Destinations.AsNoTracking().FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
-        if (dest == null)
+        if (dest == null ||
+            (dest.Status != PublicationStatus.Published &&
+             !_userContext.HasAnyPermission("experiences.catalogue.read", "experiences.catalogue.manage", "auth.role.system.manage")))
         {
             return NotFound(new { type = "https://tools.ietf.org/html/rfc7807", title = "Destination Not Found", status = 404, detail = $"Destination with ID {id} does not exist." });
         }
@@ -333,6 +351,7 @@ public sealed class DestinationsController : ControllerBase
         return Ok(conditions);
     }
 
+    [AllowAnonymous]
     [HttpGet("{id:guid}/operational-advisories")]
     public async Task<IActionResult> GetDestinationOperationalAdvisories(
         Guid id,
@@ -340,7 +359,9 @@ public sealed class DestinationsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var dest = await _dbContext.Destinations.AsNoTracking().FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
-        if (dest == null)
+        if (dest == null ||
+            (dest.Status != PublicationStatus.Published &&
+             !_userContext.HasAnyPermission("experiences.catalogue.read", "experiences.catalogue.manage", "auth.role.system.manage")))
         {
             return NotFound(new { type = "https://tools.ietf.org/html/rfc7807", title = "Destination Not Found", status = 404, detail = $"Destination with ID {id} does not exist." });
         }

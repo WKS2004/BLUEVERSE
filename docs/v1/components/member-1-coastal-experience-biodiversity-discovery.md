@@ -2,7 +2,7 @@
 contract_id: v1.component.experience-biodiversity
 contract_type: business_component
 release: v1
-implementation_status: target_not_implemented
+implementation_status: in_progress
 owner_label: member_1
 owner_full_name: "Ushan Srinuka"
 owner_github_username: "Ushan-Srinuka"
@@ -16,10 +16,10 @@ agent_contract: "../agents/member-1-coastal-experience-biodiversity-agent.md"
 
 # Ushan Srinuka (Member 1) — Coastal Experience & Biodiversity Discovery
 
-**Contract status:** v1 target specification. The current foundation does not
-contain the complete v1 business implementation described here. **Assigned
-owner:** Ushan Srinuka (`@Ushan-Srinuka`) — frozen-requirements trace label
-Member 1. Feature branch: `features/experience-biodiversity`; paired Agentic
+**Contract status:** v1 target specification. Partial implementation exists
+on `features/experience-biodiversity`, but complete component acceptance and
+shared G00 agreement are pending. **Assigned owner:** Ushan Srinuka
+(`@Ushan-Srinuka`) — frozen-requirements trace label Member 1. Paired Agentic
 AI branch: `agentic-ai/experience-biodiversity`.
 
 ## 1. Purpose and user outcome

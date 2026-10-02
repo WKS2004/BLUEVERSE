@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Blueverse.ExperienceBiodiversity.Authorization;
 using Blueverse.ExperienceBiodiversity.Data;
 using Blueverse.ExperienceBiodiversity.DTOs;
 using Blueverse.ExperienceBiodiversity.Models;
@@ -8,6 +10,7 @@ using Blueverse.ExperienceBiodiversity.Services;
 namespace Blueverse.ExperienceBiodiversity.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/experiences/activities")]
 public sealed class ActivitiesController : ControllerBase
 {
@@ -28,6 +31,7 @@ public sealed class ActivitiesController : ControllerBase
         _logger = logger;
     }
 
+    [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] string? category,
@@ -72,11 +76,18 @@ public sealed class ActivitiesController : ControllerBase
         return Ok(items);
     }
 
+    [AllowAnonymous]
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken = default)
     {
         var act = await _dbContext.Activities.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (act == null)
+        {
+            return NotFound(new { type = "https://tools.ietf.org/html/rfc7807", title = "Activity Not Found", status = 404, detail = $"Activity with ID {id} does not exist." });
+        }
+
+        if (act.Status != PublicationStatus.Published &&
+            !_userContext.HasAnyPermission("experiences.catalogue.read", "experiences.catalogue.manage", "auth.role.system.manage"))
         {
             return NotFound(new { type = "https://tools.ietf.org/html/rfc7807", title = "Activity Not Found", status = 404, detail = $"Activity with ID {id} does not exist." });
         }
@@ -92,6 +103,7 @@ public sealed class ActivitiesController : ControllerBase
             act.UpdatedAt));
     }
 
+    [HasPermission("experiences.catalogue.manage")]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateActivityRequest request, CancellationToken cancellationToken = default)
     {
@@ -140,6 +152,7 @@ public sealed class ActivitiesController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = activity.Id }, dto);
     }
 
+    [HasPermission("experiences.catalogue.manage")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateActivityRequest request, CancellationToken cancellationToken = default)
     {
@@ -177,6 +190,7 @@ public sealed class ActivitiesController : ControllerBase
             act.UpdatedAt));
     }
 
+    [HasPermission("experiences.catalogue.manage")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken = default)
     {
@@ -210,6 +224,7 @@ public sealed class ActivitiesController : ControllerBase
         return NoContent();
     }
 
+    [HasPermission("experiences.catalogue.manage")]
     [HttpPost("{id:guid}/publication-evaluations")]
     public async Task<IActionResult> EvaluatePublication(Guid id, [FromBody] UpdatePublicationRequest request, CancellationToken cancellationToken = default)
     {
@@ -218,7 +233,7 @@ public sealed class ActivitiesController : ControllerBase
             return Unauthorized(new { type = "https://tools.ietf.org/html/rfc7807", title = "Unauthorized", status = 401, detail = "Authentication is required to evaluate publications." });
         }
 
-        if (!_userContext.HasAnyPermission("experiences.catalogue.read", "experiences.catalogue.manage", "auth.role.system.manage"))
+        if (!_userContext.HasAnyPermission("experiences.catalogue.manage", "auth.role.system.manage"))
         {
             return StatusCode(StatusCodes.Status403Forbidden, new { type = "https://tools.ietf.org/html/rfc7807", title = "Forbidden", status = 403, detail = "You do not have permission to evaluate publications." });
         }
@@ -227,6 +242,7 @@ public sealed class ActivitiesController : ControllerBase
         return Ok(eval);
     }
 
+    [HasPermission("experiences.catalogue.manage")]
     [HttpPatch("{id:guid}/publication")]
     public async Task<IActionResult> UpdatePublication(Guid id, [FromBody] UpdatePublicationRequest request, CancellationToken cancellationToken = default)
     {

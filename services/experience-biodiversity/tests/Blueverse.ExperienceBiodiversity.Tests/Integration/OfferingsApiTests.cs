@@ -21,7 +21,7 @@ public sealed class OfferingsApiTests : IClassFixture<TestWebApplicationFactory>
     [Trait("CaseId", "EXP-API-OFF-001")]
     public async Task GetAllOfferings_Returns_Ok_With_Items()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAnonymousClient();
 
         using var response = await client.GetAsync("/api/experiences/offerings");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -36,7 +36,7 @@ public sealed class OfferingsApiTests : IClassFixture<TestWebApplicationFactory>
     [Trait("CaseId", "EXP-API-OFF-002")]
     public async Task GetOfferingById_Unknown_Returns_NotFound_ProblemDetails()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAnonymousClient();
         var unknownId = Guid.NewGuid();
 
         using var response = await client.GetAsync($"/api/experiences/offerings/{unknownId}");
@@ -52,7 +52,7 @@ public sealed class OfferingsApiTests : IClassFixture<TestWebApplicationFactory>
     [Trait("CaseId", "EXP-API-OFF-003")]
     public async Task CreateOffering_InvalidDestination_Returns_BadRequest()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
 
         var invalidReq = new CreateOfferingRequest(
             DestinationId: Guid.NewGuid(),
@@ -77,7 +77,7 @@ public sealed class OfferingsApiTests : IClassFixture<TestWebApplicationFactory>
     [Trait("CaseId", "EXP-API-OFF-004")]
     public async Task Schedule_Create_And_Delete_Lifecycle()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
 
         // 1. Create destination
         var destReq = new CreateDestinationRequest("Arugam Test Bay", $"arugam-bay-{Guid.NewGuid():N}"[..20], "Surf bay", "Eastern Province", 6.84, 81.83);
@@ -125,7 +125,7 @@ public sealed class OfferingsApiTests : IClassFixture<TestWebApplicationFactory>
     [Trait("CaseId", "EXP-API-OFF-005")]
     public async Task CreateOffering_InvalidActivity_Returns_BadRequest()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
 
         // 1. Create a valid destination
         var destReq = new CreateDestinationRequest("Valid Bay", null, "Valid", "Southern", 6.0, 80.0);
@@ -157,7 +157,7 @@ public sealed class OfferingsApiTests : IClassFixture<TestWebApplicationFactory>
     [Trait("CaseId", "EXP-API-OFF-006")]
     public async Task UpdateOffering_UpdatesProperties_And_Returns_UpdatedDto()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
 
         // 1. Setup destination and activity
         var destRes = await client.PostAsJsonAsync("/api/experiences/destinations",
@@ -192,7 +192,7 @@ public sealed class OfferingsApiTests : IClassFixture<TestWebApplicationFactory>
     [Trait("CaseId", "EXP-API-OFF-007")]
     public async Task UpdateOffering_UnknownId_Returns_NotFound_ProblemDetails()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
         var unknownId = Guid.NewGuid();
 
         var updateReq = new UpdateOfferingRequest("Unknown", "Desc", 10m, "USD", 30, 2);
@@ -209,7 +209,7 @@ public sealed class OfferingsApiTests : IClassFixture<TestWebApplicationFactory>
     [Trait("CaseId", "EXP-API-OFF-008")]
     public async Task AddSchedule_InvalidInterval_Returns_BadRequest()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
 
         // Setup parent offering
         var destRes = await client.PostAsJsonAsync("/api/experiences/destinations",
@@ -242,7 +242,7 @@ public sealed class OfferingsApiTests : IClassFixture<TestWebApplicationFactory>
     [Trait("CaseId", "EXP-API-OFF-009")]
     public async Task UpdateSchedule_UpdatesProperties_And_Returns_Ok()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
 
         // 1. Setup offering
         var destRes = await client.PostAsJsonAsync("/api/experiences/destinations",
@@ -283,7 +283,7 @@ public sealed class OfferingsApiTests : IClassFixture<TestWebApplicationFactory>
     [Trait("CaseId", "EXP-API-OFF-010")]
     public async Task UpdateSchedule_InvalidInterval_Returns_BadRequest()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
         var offeringId = Guid.NewGuid();
         var scheduleId = Guid.NewGuid();
 
@@ -304,7 +304,7 @@ public sealed class OfferingsApiTests : IClassFixture<TestWebApplicationFactory>
     [Trait("CaseId", "EXP-API-OFF-011")]
     public async Task UpdateSchedule_UnknownSchedule_Returns_NotFound()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
         var offeringId = Guid.NewGuid();
         var scheduleId = Guid.NewGuid();
 
@@ -325,7 +325,7 @@ public sealed class OfferingsApiTests : IClassFixture<TestWebApplicationFactory>
     [Trait("CaseId", "EXP-API-OFF-012")]
     public async Task DeleteSchedule_UnknownSchedule_Returns_NotFound()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
         var offeringId = Guid.NewGuid();
         var scheduleId = Guid.NewGuid();
 
@@ -342,7 +342,7 @@ public sealed class OfferingsApiTests : IClassFixture<TestWebApplicationFactory>
     [Trait("CaseId", "EXP-API-OFF-013")]
     public async Task DeleteOffering_Existing_Returns_NoContent_And_Deletes()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
 
         // 1. Setup destination and activity
         var destRes = await client.PostAsJsonAsync("/api/experiences/destinations",
@@ -372,7 +372,7 @@ public sealed class OfferingsApiTests : IClassFixture<TestWebApplicationFactory>
     [Trait("CaseId", "EXP-API-OFF-014")]
     public async Task DeleteOffering_UnknownId_Returns_NotFound()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
         var unknownId = Guid.NewGuid();
 
         using var delRes = await client.DeleteAsync($"/api/experiences/offerings/{unknownId}");

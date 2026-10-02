@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Blueverse.ExperienceBiodiversity.Authorization;
 using Blueverse.ExperienceBiodiversity.Data;
 using Blueverse.ExperienceBiodiversity.DTOs;
 using Blueverse.ExperienceBiodiversity.Models;
@@ -8,6 +10,7 @@ using Blueverse.ExperienceBiodiversity.Services;
 namespace Blueverse.ExperienceBiodiversity.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/experiences/offerings")]
 public sealed class OfferingsController : ControllerBase
 {
@@ -28,6 +31,7 @@ public sealed class OfferingsController : ControllerBase
         _logger = logger;
     }
 
+    [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] Guid? destinationId,
@@ -54,10 +58,17 @@ public sealed class OfferingsController : ControllerBase
                 return Forbid();
             }
             q = q.Where(o => o.Status == normStatus);
+            if (normStatus == PublicationStatus.Published)
+            {
+                q = q.Where(o => o.Destination.Status == PublicationStatus.Published &&
+                    o.Activity.Status == PublicationStatus.Published);
+            }
         }
         else
         {
-            q = q.Where(o => o.Status == PublicationStatus.Published);
+            q = q.Where(o => o.Status == PublicationStatus.Published &&
+                o.Destination.Status == PublicationStatus.Published &&
+                o.Activity.Status == PublicationStatus.Published);
         }
 
         if (destinationId.HasValue)
@@ -101,6 +112,7 @@ public sealed class OfferingsController : ControllerBase
         });
     }
 
+    [AllowAnonymous]
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken = default)
     {
@@ -110,6 +122,14 @@ public sealed class OfferingsController : ControllerBase
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
         if (o == null)
+        {
+            return NotFound(new { type = "https://tools.ietf.org/html/rfc7807", title = "Offering Not Found", status = 404, detail = $"Offering with ID {id} does not exist." });
+        }
+
+        if ((o.Status != PublicationStatus.Published ||
+             o.Destination.Status != PublicationStatus.Published ||
+             o.Activity.Status != PublicationStatus.Published) &&
+            !_userContext.HasAnyPermission("experiences.catalogue.read", "experiences.catalogue.manage", "auth.role.system.manage"))
         {
             return NotFound(new { type = "https://tools.ietf.org/html/rfc7807", title = "Offering Not Found", status = 404, detail = $"Offering with ID {id} does not exist." });
         }
@@ -132,6 +152,7 @@ public sealed class OfferingsController : ControllerBase
             o.UpdatedAt));
     }
 
+    [HasPermission("experiences.catalogue.manage")]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateOfferingRequest request, CancellationToken cancellationToken = default)
     {
@@ -196,6 +217,7 @@ public sealed class OfferingsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = offering.Id }, dto);
     }
 
+    [HasPermission("experiences.catalogue.manage")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateOfferingRequest request, CancellationToken cancellationToken = default)
     {
@@ -247,6 +269,7 @@ public sealed class OfferingsController : ControllerBase
             offering.UpdatedAt));
     }
 
+    [HasPermission("experiences.catalogue.manage")]
     [HttpPost("{id:guid}/publication-evaluations")]
     public async Task<IActionResult> EvaluatePublication(Guid id, [FromBody] UpdatePublicationRequest request, CancellationToken cancellationToken = default)
     {
@@ -255,7 +278,7 @@ public sealed class OfferingsController : ControllerBase
             return Unauthorized(new { type = "https://tools.ietf.org/html/rfc7807", title = "Unauthorized", status = 401, detail = "Authentication is required to evaluate publications." });
         }
 
-        if (!_userContext.HasAnyPermission("experiences.catalogue.read", "experiences.catalogue.manage", "auth.role.system.manage"))
+        if (!_userContext.HasAnyPermission("experiences.catalogue.manage", "auth.role.system.manage"))
         {
             return StatusCode(StatusCodes.Status403Forbidden, new { type = "https://tools.ietf.org/html/rfc7807", title = "Forbidden", status = 403, detail = "You do not have permission to evaluate publications." });
         }
@@ -264,6 +287,7 @@ public sealed class OfferingsController : ControllerBase
         return Ok(eval);
     }
 
+    [HasPermission("experiences.catalogue.manage")]
     [HttpPatch("{id:guid}/publication")]
     public async Task<IActionResult> UpdatePublication(Guid id, [FromBody] UpdatePublicationRequest request, CancellationToken cancellationToken = default)
     {
@@ -322,6 +346,7 @@ public sealed class OfferingsController : ControllerBase
             offering.UpdatedAt));
     }
 
+    [HasPermission("experiences.catalogue.manage")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken = default)
     {
@@ -349,9 +374,25 @@ public sealed class OfferingsController : ControllerBase
 
     // --- Schedules ---
 
+    [AllowAnonymous]
     [HttpGet("{id:guid}/schedules")]
     public async Task<IActionResult> GetSchedules(Guid id, CancellationToken cancellationToken = default)
     {
+        var offering = await _dbContext.Offerings
+            .AsNoTracking()
+            .Include(item => item.Destination)
+            .Include(item => item.Activity)
+            .FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
+
+        if (offering == null ||
+            ((offering.Status != PublicationStatus.Published ||
+              offering.Destination.Status != PublicationStatus.Published ||
+              offering.Activity.Status != PublicationStatus.Published) &&
+             !_userContext.HasAnyPermission("experiences.catalogue.read", "experiences.catalogue.manage", "auth.role.system.manage")))
+        {
+            return NotFound(new { type = "https://tools.ietf.org/html/rfc7807", title = "Offering Not Found", status = 404, detail = $"Offering with ID {id} does not exist." });
+        }
+
         var schedules = await _dbContext.Schedules
             .AsNoTracking()
             .Where(s => s.OfferingId == id)
@@ -370,6 +411,7 @@ public sealed class OfferingsController : ControllerBase
         return Ok(schedules);
     }
 
+    [HasPermission("experiences.catalogue.manage")]
     [HttpPost("{id:guid}/schedules")]
     public async Task<IActionResult> AddSchedule(Guid id, [FromBody] CreateScheduleRequest request, CancellationToken cancellationToken = default)
     {
@@ -422,6 +464,7 @@ public sealed class OfferingsController : ControllerBase
         return CreatedAtAction(nameof(GetSchedules), new { id }, dto);
     }
 
+    [HasPermission("experiences.catalogue.manage")]
     [HttpPut("{id:guid}/schedules/{scheduleId:guid}")]
     public async Task<IActionResult> UpdateSchedule(Guid id, Guid scheduleId, [FromBody] UpdateScheduleRequest request, CancellationToken cancellationToken = default)
     {
@@ -465,6 +508,7 @@ public sealed class OfferingsController : ControllerBase
             schedule.UpdatedAt));
     }
 
+    [HasPermission("experiences.catalogue.manage")]
     [HttpDelete("{id:guid}/schedules/{scheduleId:guid}")]
     public async Task<IActionResult> DeleteSchedule(Guid id, Guid scheduleId, CancellationToken cancellationToken = default)
     {

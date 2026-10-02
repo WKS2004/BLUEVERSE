@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Blueverse.ExperienceBiodiversity.DTOs;
 
 namespace Blueverse.ExperienceBiodiversity.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/experiences/agent")]
 public sealed class AgentSeamController : ControllerBase
 {

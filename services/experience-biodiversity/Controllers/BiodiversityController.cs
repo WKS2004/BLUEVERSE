@@ -1,34 +1,43 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Blueverse.ExperienceBiodiversity.Data;
 using Blueverse.ExperienceBiodiversity.DTOs;
+using Blueverse.ExperienceBiodiversity.Models;
 using Blueverse.ExperienceBiodiversity.Services;
 
 namespace Blueverse.ExperienceBiodiversity.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/experiences/destinations/{id:guid}/biodiversity")]
 public sealed class BiodiversityController : ControllerBase
 {
     private readonly ExperienceBiodiversityDbContext _dbContext;
     private readonly IBiodiversityConsumerService _biodiversityConsumerService;
     private readonly ILogger<BiodiversityController> _logger;
+    private readonly IUserContext _userContext;
 
     public BiodiversityController(
         ExperienceBiodiversityDbContext dbContext,
         IBiodiversityConsumerService biodiversityConsumerService,
-        ILogger<BiodiversityController> logger)
+        ILogger<BiodiversityController> logger,
+        IUserContext userContext)
     {
         _dbContext = dbContext;
         _biodiversityConsumerService = biodiversityConsumerService;
         _logger = logger;
+        _userContext = userContext;
     }
 
+    [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> GetDestinationBiodiversity(Guid id, CancellationToken cancellationToken = default)
     {
         var destination = await _dbContext.Destinations.AsNoTracking().FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
-        if (destination == null)
+        if (destination == null ||
+            (destination.Status != PublicationStatus.Published &&
+             !_userContext.HasAnyPermission("experiences.catalogue.read", "experiences.catalogue.manage", "auth.role.system.manage")))
         {
             return NotFound(new
             {

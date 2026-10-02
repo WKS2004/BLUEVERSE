@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Blueverse.ExperienceBiodiversity.Data;
@@ -8,6 +9,7 @@ using Blueverse.ExperienceBiodiversity.Services;
 namespace Blueverse.ExperienceBiodiversity.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/experiences/nearby")]
 public sealed class NearbyController : ControllerBase
 {
@@ -26,6 +28,7 @@ public sealed class NearbyController : ControllerBase
         _logger = logger;
     }
 
+    [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> GetNearby(
         [FromQuery] string? q,

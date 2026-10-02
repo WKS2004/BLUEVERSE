@@ -21,7 +21,7 @@ public sealed class ActivitiesApiTests : IClassFixture<TestWebApplicationFactory
     [Trait("CaseId", "EXP-API-ACT-001")]
     public async Task GetAllActivities_Returns_Ok_With_Array()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAnonymousClient();
 
         using var response = await client.GetAsync("/api/experiences/activities");
         var content = await response.Content.ReadAsStringAsync();
@@ -35,7 +35,7 @@ public sealed class ActivitiesApiTests : IClassFixture<TestWebApplicationFactory
     [Trait("CaseId", "EXP-API-ACT-002")]
     public async Task GetActivityById_Unknown_Returns_NotFound_ProblemDetails()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAnonymousClient();
         var unknownId = Guid.NewGuid();
 
         using var response = await client.GetAsync($"/api/experiences/activities/{unknownId}");
@@ -53,7 +53,7 @@ public sealed class ActivitiesApiTests : IClassFixture<TestWebApplicationFactory
     [Trait("CaseId", "EXP-API-ACT-003")]
     public async Task CreateActivity_And_UpdatePublication_Lifecycle()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
         var uniqueCode = $"TEST_ACT_{Guid.NewGuid():N}"[..18];
 
         var createReq = new CreateActivityRequest(
@@ -97,7 +97,7 @@ public sealed class ActivitiesApiTests : IClassFixture<TestWebApplicationFactory
     [Trait("CaseId", "EXP-API-ACT-004")]
     public async Task UpdateActivity_UpdatesProperties_And_Returns_UpdatedDto()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
 
         var createReq = new CreateActivityRequest(
             Code: $"ACT_{Guid.NewGuid():N}"[..15],
@@ -124,7 +124,7 @@ public sealed class ActivitiesApiTests : IClassFixture<TestWebApplicationFactory
     [Trait("CaseId", "EXP-API-ACT-005")]
     public async Task UpdateActivity_UnknownId_Returns_NotFound_ProblemDetails()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
         var unknownId = Guid.NewGuid();
 
         var updateReq = new UpdateActivityRequest("Missing", "Missing", "None");
@@ -141,7 +141,7 @@ public sealed class ActivitiesApiTests : IClassFixture<TestWebApplicationFactory
     [Trait("CaseId", "EXP-API-ACT-006")]
     public async Task GetAllActivities_WithCategoryFilter_ReturnsMatchingSubset()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
 
         // 1. Create a uniquely-categorized activity and publish it
         var categoryName = $"CustomCat_{Guid.NewGuid():N}"[..14];
@@ -172,7 +172,7 @@ public sealed class ActivitiesApiTests : IClassFixture<TestWebApplicationFactory
     [Trait("CaseId", "EXP-API-ACT-007")]
     public async Task DeleteActivity_Existing_Returns_NoContent_And_Deletes()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
 
         var createReq = new CreateActivityRequest(
             Code: $"ACT_DEL_{Guid.NewGuid():N}"[..18],
@@ -198,7 +198,7 @@ public sealed class ActivitiesApiTests : IClassFixture<TestWebApplicationFactory
     [Trait("CaseId", "EXP-API-ACT-008")]
     public async Task DeleteActivity_UnknownId_Returns_NotFound()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
         var unknownId = Guid.NewGuid();
 
         using var delRes = await client.DeleteAsync($"/api/experiences/activities/{unknownId}");

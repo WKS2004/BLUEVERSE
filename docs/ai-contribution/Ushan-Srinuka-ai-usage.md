@@ -608,3 +608,62 @@
 - Verification/evidence: `git diff --check` passed; relative Markdown links in
   the changed component documentation resolved. No tests or application
   validation were run for this documentation-only G00 proposal.
+
+## 2026-10-02 — Experience & Biodiversity closeout fixes 1 and 5
+
+- Date/time or time range: 2026-10-02 12:21 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop
+- AI Model: GPT-6
+- Summary of the user's request: Continue the Experience & Biodiversity
+  closeout work for items 1 and 5, and update this contribution log as Ushan.
+- Summary of what the AI Agent did: Hardened the public gateway and private
+  component service around validated Auth-issued JWT claims and explicit
+  catalogue permissions; removed caller-header, unsigned-token-payload and
+  Admin-role permission fallbacks; and updated tests for spoofed
+  headers, unsigned JWTs, read-only permission denial and denied-write side
+  effects. Reconciled branch/G00/readiness and database documentation with
+  source evidence, clarified anonymous published reads versus authenticated
+  operations, and synchronized the endpoint catalog and shared signing-key
+  configuration documentation.
+- AI output accepted/changed/rejected: Applied the security and documentation
+  changes after source review. Kept G00 and component acceptance pending and
+  did not add executable Agentic AI behavior. Updated existing security tests
+  with the user's approval. No tests or application builds were run.
+- Verification/evidence: Endpoint catalog regeneration and validation passed
+  (72 public endpoints, 32 frontend routes; no AI endpoints implemented), UI
+  integration validation passed, API/catalog JSON parsing passed, and
+  `git diff --check` passed. Docker CLI was unavailable, so Compose validation
+  was not run. Runtime behavior remains unverified. See the current branch
+  changes in `services/api/`, `services/experience-biodiversity/`,
+  `docs/v1/`, `docs/database/` and `docs/api/`.
+
+## 2026-10-03 — Experience & Biodiversity security test recheck
+
+- Date/time or time range: 2026-10-03 00:41 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop
+- AI Model: GPT-6
+- Summary of the user's request: Recheck the preceding Experience &
+  Biodiversity closeout fixes and update the backend service and React Web
+  tests.
+- Summary of what the AI Agent did: Removed the remaining Admin-role and
+  unrelated role-management permission shortcuts from the Experience pages.
+  Made service integration test clients anonymous by default with explicit
+  signed actors, added a route-wide catalogue mutation authorization matrix
+  and draft privacy coverage, expanded Experience API request-contract tests,
+  and added UI authorization regressions. Configured the Windows test host to
+  use console logging instead of the inaccessible Event Log sink.
+- AI output accepted/changed/rejected: Retained permission-based catalogue
+  access and the anonymous/read-only/manager test distinctions; corrected the
+  prior tests that had implicitly used an Admin token. No Agentic AI runtime
+  behavior was introduced.
+- Verification/evidence: Experience & Biodiversity service tests passed
+  (95/95), public API gateway tests passed (22/22), and the full React suite
+  passed serially (177/177). Experience API contract tests passed (5/5), UI
+  integration and endpoint catalog validation passed (72 public endpoints,
+  32 frontend routes), and `git diff --check` passed.

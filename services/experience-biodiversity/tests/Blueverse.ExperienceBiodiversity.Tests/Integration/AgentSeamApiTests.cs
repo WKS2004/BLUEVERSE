@@ -19,7 +19,7 @@ public sealed class AgentSeamApiTests : IClassFixture<TestWebApplicationFactory>
     [Trait("CaseId", "EXP-API-AGENT-001")]
     public async Task GetAgentContext_Returns_NotConnected_Status_Pre_G07()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAuthenticatedClient(Guid.NewGuid());
 
         using var response = await client.GetAsync("/api/experiences/agent/context");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);

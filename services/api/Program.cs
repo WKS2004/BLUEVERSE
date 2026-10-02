@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -91,7 +92,26 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("ExperienceAuthenticated", policy =>
+        policy.RequireAuthenticatedUser());
+
+    options.AddPolicy("ExperienceCatalogueRead", policy =>
+        policy.RequireAuthenticatedUser()
+            .RequireAssertion(context => ExperienceAuthorizationPolicyHelpers.HasAnyPermission(
+                context.User,
+                "experiences.catalogue.read",
+                "experiences.catalogue.manage",
+                "auth.role.system.manage")));
+
+    options.AddPolicy("ExperienceCatalogueManage", policy =>
+        policy.RequireAuthenticatedUser()
+            .RequireAssertion(context => ExperienceAuthorizationPolicyHelpers.HasAnyPermission(
+                context.User,
+                "experiences.catalogue.manage",
+                "auth.role.system.manage")));
+});
 
 // CORS Policy
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() 
@@ -177,3 +197,12 @@ app.Run();
 
 // Make the implicit Program class public so test projects can access it
 public partial class Program { }
+
+internal static class ExperienceAuthorizationPolicyHelpers
+{
+    public static bool HasAnyPermission(ClaimsPrincipal principal, params string[] permissionCodes)
+    {
+        return principal.FindAll("permission")
+            .Any(claim => permissionCodes.Contains(claim.Value, StringComparer.OrdinalIgnoreCase));
+    }
+}

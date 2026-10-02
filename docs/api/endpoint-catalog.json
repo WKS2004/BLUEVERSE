@@ -431,8 +431,8 @@
       "type": "reverse-proxy",
       "upstream": "experience-biodiversity",
       "source": "services/api/appsettings.json",
-      "description": "Authenticated API-gateway route to the private Experience & Biodiversity service.",
-      "usage": "Requires an Auth-issued JWT validated by the API default authorization policy before forwarding component requests."
+      "description": "Authenticated API-gateway fallback route to the private Experience & Biodiversity service.",
+      "usage": "Requires an Auth-issued JWT validated by the API gateway and private service for component paths not matched by the public-read or named-permission routes."
     },
     {
       "id": "public-swagger-ui",
@@ -523,6 +523,76 @@
       "source": "infrastructure/docker/frontend/nginx.conf",
       "description": "Extensionless internal error URI mapped to the frontend Nginx 500 fallback asset.",
       "usage": "Serves the branded temporary-error page when the frontend Nginx layer raises a server error."
+    },
+    {
+      "id": "experience-biodiversity-public-destinations-yarp-route",
+      "method": "ANY",
+      "path": "/api/experiences/destinations/{**catch-all}",
+      "type": "reverse-proxy",
+      "upstream": "experience-biodiversity",
+      "source": "services/api/appsettings.json",
+      "description": "Method-specific gateway routes for public destination reads and permission-protected destination mutations.",
+      "usage": "Published destination reads remain anonymous; draft or archived records are filtered by the service. POST, PUT, PATCH and DELETE requests require catalogue-management or system-role permission."
+    },
+    {
+      "id": "experience-biodiversity-public-activities-yarp-route",
+      "method": "ANY",
+      "path": "/api/experiences/activities/{**catch-all}",
+      "type": "reverse-proxy",
+      "upstream": "experience-biodiversity",
+      "source": "services/api/appsettings.json",
+      "description": "Method-specific gateway routes for public activity reads and permission-protected activity mutations.",
+      "usage": "Published activity reads remain anonymous; POST, PUT, PATCH and DELETE requests require catalogue-management or system-role permission."
+    },
+    {
+      "id": "experience-biodiversity-public-offerings-yarp-route",
+      "method": "ANY",
+      "path": "/api/experiences/offerings/{**catch-all}",
+      "type": "reverse-proxy",
+      "upstream": "experience-biodiversity",
+      "source": "services/api/appsettings.json",
+      "description": "Method-specific gateway routes for public offering/schedule reads and permission-protected mutations.",
+      "usage": "Published offering and schedule reads remain anonymous; POST, PUT, PATCH and DELETE requests require catalogue-management or system-role permission."
+    },
+    {
+      "id": "experience-biodiversity-public-map-yarp-route",
+      "method": "GET",
+      "path": "/api/experiences/map/{**catch-all}",
+      "type": "reverse-proxy",
+      "upstream": "experience-biodiversity",
+      "source": "services/api/appsettings.json",
+      "description": "Anonymous gateway route for public map configuration and place search.",
+      "usage": "Forwards the published map configuration and location search through the API without exposing the private service host."
+    },
+    {
+      "id": "experience-biodiversity-nearby-yarp-route",
+      "method": "GET",
+      "path": "/api/experiences/nearby",
+      "type": "reverse-proxy",
+      "upstream": "experience-biodiversity",
+      "source": "services/api/appsettings.json",
+      "description": "Anonymous gateway route for published nearby experience discovery.",
+      "usage": "Forwards public nearby discovery through the API while keeping component-service and provider addresses private."
+    },
+    {
+      "id": "experience-biodiversity-availability-yarp-route",
+      "method": "POST",
+      "path": "/api/experiences/availability/evaluations",
+      "type": "reverse-proxy",
+      "upstream": "experience-biodiversity",
+      "source": "services/api/appsettings.json",
+      "description": "Gateway route for availability evaluation with named catalogue-read authorization.",
+      "usage": "Requires an Auth-issued JWT with catalogue-read, catalogue-manage or system-role-manage permission before evaluating availability."
+    },
+    {
+      "id": "experience-biodiversity-favourites-yarp-route",
+      "method": "ANY",
+      "path": "/api/experiences/favourites/{**catch-all}",
+      "type": "reverse-proxy",
+      "upstream": "experience-biodiversity",
+      "source": "services/api/appsettings.json",
+      "description": "Authenticated gateway route for user-scoped experience favourites.",
+      "usage": "Requires an Auth-issued JWT; the private service derives the favourite owner only from the validated token subject."
     }
   ],
   "publicApiEndpoints": [
@@ -1054,7 +1124,7 @@
       "publicBoundary": "api",
       "operationId": "Create",
       "status": "implemented",
-      "auth": "anonymous",
+      "auth": "permission:experiences.catalogue.manage",
       "description": "Creates a new coastal activity under an existing destination in DRAFT status.",
       "usage": "Used by authorized staff or operators to define new coastal activities.",
       "source": "services/experience-biodiversity/Controllers/ActivitiesController.cs"
@@ -1067,7 +1137,7 @@
       "publicBoundary": "api",
       "operationId": "Update",
       "status": "implemented",
-      "auth": "anonymous",
+      "auth": "permission:experiences.catalogue.manage",
       "description": "Updates activity metadata, seasonal constraints, requirements, and tags.",
       "usage": "Edits existing coastal activity specifications.",
       "source": "services/experience-biodiversity/Controllers/ActivitiesController.cs"
@@ -1080,7 +1150,7 @@
       "publicBoundary": "api",
       "operationId": "Delete",
       "status": "implemented",
-      "auth": "anonymous",
+      "auth": "permission:experiences.catalogue.manage",
       "description": "Deletes a coastal activity taxonomy record and its child offerings.",
       "usage": "Allows administrators to remove obsolete activity taxonomy categories.",
       "source": "services/experience-biodiversity/Controllers/ActivitiesController.cs"
@@ -1093,7 +1163,7 @@
       "publicBoundary": "api",
       "operationId": "UpdatePublication",
       "status": "implemented",
-      "auth": "anonymous",
+      "auth": "permission:experiences.catalogue.manage",
       "description": "Transitions an activity publication status with evaluation rules and audit reasons.",
       "usage": "Publishes, unpublishes, or archives an activity following lifecycle validation.",
       "source": "services/experience-biodiversity/Controllers/ActivitiesController.cs"
@@ -1106,7 +1176,7 @@
       "publicBoundary": "api",
       "operationId": "EvaluatePublication",
       "status": "implemented",
-      "auth": "anonymous",
+      "auth": "permission:experiences.catalogue.manage",
       "description": "Evaluates whether an activity meets publication readiness without applying changes.",
       "usage": "Pre-flight validation checks before publishing an activity.",
       "source": "services/experience-biodiversity/Controllers/ActivitiesController.cs"
@@ -1119,7 +1189,7 @@
       "publicBoundary": "api",
       "operationId": "GetAgentContext",
       "status": "implemented",
-      "auth": "anonymous",
+      "auth": "authenticated",
       "description": "Read-only private Agentic AI typed seam reporting component context and not-connected status.",
       "usage": "Pre-G07 integration seam providing typed schema and safe degradation for future AI orchestration.",
       "source": "services/experience-biodiversity/Controllers/AgentSeamController.cs"
@@ -1132,7 +1202,7 @@
       "publicBoundary": "api",
       "operationId": "EvaluateAvailability",
       "status": "implemented",
-      "auth": "anonymous",
+      "auth": "permission:experiences.catalogue.read",
       "description": "Evaluates real-time offering availability against schedule coverage, capacity, and operational status.",
       "usage": "Core non-CRUD business operation called by clients and booking workflows to verify experience availability.",
       "source": "services/experience-biodiversity/Controllers/AvailabilityController.cs"
@@ -1184,7 +1254,7 @@
       "publicBoundary": "api",
       "operationId": "Create",
       "status": "implemented",
-      "auth": "anonymous",
+      "auth": "permission:experiences.catalogue.manage",
       "description": "Creates a new coastal destination in DRAFT status.",
       "usage": "Used by destination curators and administrators to register new coastal areas.",
       "source": "services/experience-biodiversity/Controllers/DestinationsController.cs"
@@ -1197,7 +1267,7 @@
       "publicBoundary": "api",
       "operationId": "Update",
       "status": "implemented",
-      "auth": "anonymous",
+      "auth": "permission:experiences.catalogue.manage",
       "description": "Updates destination details, coordinates, boundaries, and tags.",
       "usage": "Maintains destination records and geographical data.",
       "source": "services/experience-biodiversity/Controllers/DestinationsController.cs"
@@ -1210,7 +1280,7 @@
       "publicBoundary": "api",
       "operationId": "Delete",
       "status": "implemented",
-      "auth": "anonymous",
+      "auth": "permission:experiences.catalogue.manage",
       "description": "Deletes a coastal destination record.",
       "usage": "Allows administrators to remove destinations from the catalogue.",
       "source": "services/experience-biodiversity/Controllers/DestinationsController.cs"
@@ -1223,7 +1293,7 @@
       "publicBoundary": "api",
       "operationId": "UpdatePublication",
       "status": "implemented",
-      "auth": "anonymous",
+      "auth": "permission:experiences.catalogue.manage",
       "description": "Transitions a destination publication status with validation and audit logging.",
       "usage": "Publishes or archives coastal destination profiles.",
       "source": "services/experience-biodiversity/Controllers/DestinationsController.cs"
@@ -1236,7 +1306,7 @@
       "publicBoundary": "api",
       "operationId": "EvaluatePublication",
       "status": "implemented",
-      "auth": "anonymous",
+      "auth": "permission:experiences.catalogue.manage",
       "description": "Evaluates destination readiness for publication without altering current state.",
       "usage": "Pre-publication audit check verifying required coordinates and content completeness.",
       "source": "services/experience-biodiversity/Controllers/DestinationsController.cs"
@@ -1249,7 +1319,7 @@
       "publicBoundary": "api",
       "operationId": "GetUserFavourites",
       "status": "implemented",
-      "auth": "anonymous",
+      "auth": "authenticated",
       "description": "Retrieves saved destinations, activities, and offerings for the calling user.",
       "usage": "Populates personal wishlist and bookmarked coastal experiences.",
       "source": "services/experience-biodiversity/Controllers/FavouritesController.cs"
@@ -1262,7 +1332,7 @@
       "publicBoundary": "api",
       "operationId": "AddFavourite",
       "status": "implemented",
-      "auth": "anonymous",
+      "auth": "authenticated",
       "description": "Adds or updates a bookmark/favourite for a destination, activity, or offering with optional notes.",
       "usage": "Allows tourists to save coastal items to their personal wishlist.",
       "source": "services/experience-biodiversity/Controllers/FavouritesController.cs"
@@ -1275,7 +1345,7 @@
       "publicBoundary": "api",
       "operationId": "RemoveFavourite",
       "status": "implemented",
-      "auth": "anonymous",
+      "auth": "authenticated",
       "description": "Removes a bookmarked destination, activity, or offering from the user favourites.",
       "usage": "Removes items from tourist wishlists.",
       "source": "services/experience-biodiversity/Controllers/FavouritesController.cs"
@@ -1353,7 +1423,7 @@
       "publicBoundary": "api",
       "operationId": "Create",
       "status": "implemented",
-      "auth": "anonymous",
+      "auth": "permission:experiences.catalogue.manage",
       "description": "Creates a new experience offering under an activity in DRAFT status.",
       "usage": "Allows tour operators and service providers to register new offering packages.",
       "source": "services/experience-biodiversity/Controllers/OfferingsController.cs"
@@ -1366,7 +1436,7 @@
       "publicBoundary": "api",
       "operationId": "Update",
       "status": "implemented",
-      "auth": "anonymous",
+      "auth": "permission:experiences.catalogue.manage",
       "description": "Updates offering pricing, capacity, inclusions, and policies.",
       "usage": "Edits existing tour package specifications.",
       "source": "services/experience-biodiversity/Controllers/OfferingsController.cs"
@@ -1379,7 +1449,7 @@
       "publicBoundary": "api",
       "operationId": "Delete",
       "status": "implemented",
-      "auth": "anonymous",
+      "auth": "permission:experiences.catalogue.manage",
       "description": "Deletes an experience offering package and its related schedule slots.",
       "usage": "Allows administrators to remove offering packages from the catalogue.",
       "source": "services/experience-biodiversity/Controllers/OfferingsController.cs"
@@ -1392,7 +1462,7 @@
       "publicBoundary": "api",
       "operationId": "UpdatePublication",
       "status": "implemented",
-      "auth": "anonymous",
+      "auth": "permission:experiences.catalogue.manage",
       "description": "Transitions an offering publication status with verification rules.",
       "usage": "Publishes, pauses, or archives tour offerings.",
       "source": "services/experience-biodiversity/Controllers/OfferingsController.cs"
@@ -1405,7 +1475,7 @@
       "publicBoundary": "api",
       "operationId": "EvaluatePublication",
       "status": "implemented",
-      "auth": "anonymous",
+      "auth": "permission:experiences.catalogue.manage",
       "description": "Evaluates offering readiness for publication without altering current state.",
       "usage": "Checks pricing validity, capacity constraints, and parent activity publication status.",
       "source": "services/experience-biodiversity/Controllers/OfferingsController.cs"
@@ -1431,7 +1501,7 @@
       "publicBoundary": "api",
       "operationId": "AddSchedule",
       "status": "implemented",
-      "auth": "anonymous",
+      "auth": "permission:experiences.catalogue.manage",
       "description": "Adds a new operational schedule slot with time window and capacity to an offering.",
       "usage": "Schedules departure times for coastal experiences.",
       "source": "services/experience-biodiversity/Controllers/OfferingsController.cs"
@@ -1444,7 +1514,7 @@
       "publicBoundary": "api",
       "operationId": "UpdateSchedule",
       "status": "implemented",
-      "auth": "anonymous",
+      "auth": "permission:experiences.catalogue.manage",
       "description": "Updates schedule capacity, booked seats, active flag, or time range.",
       "usage": "Manages schedule availability and operational capacity adjustments.",
       "source": "services/experience-biodiversity/Controllers/OfferingsController.cs"
@@ -1457,7 +1527,7 @@
       "publicBoundary": "api",
       "operationId": "DeleteSchedule",
       "status": "implemented",
-      "auth": "anonymous",
+      "auth": "permission:experiences.catalogue.manage",
       "description": "Cancels or removes an operational schedule slot from an offering.",
       "usage": "Removes obsolete or cancelled departure times.",
       "source": "services/experience-biodiversity/Controllers/OfferingsController.cs"
@@ -1470,7 +1540,7 @@
       "publicBoundary": "api",
       "operationId": "GetDependenciesStatus",
       "status": "implemented",
-      "auth": "anonymous",
+      "auth": "authenticated",
       "description": "Inspects connectivity, response status, and latency of peer microservice dependencies with resilience reporting.",
       "usage": "Diagnostic and status seam verifying microservices architecture fault tolerance.",
       "source": "services/experience-biodiversity/Controllers/DependenciesController.cs"

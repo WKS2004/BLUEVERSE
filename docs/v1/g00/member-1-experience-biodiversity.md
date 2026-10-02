@@ -3,15 +3,14 @@
 - **Owner:** Ushan Srinuka (`Ushan-Srinuka`)
 - **Feature branch:** `features/experience-biodiversity`
 - **Status:** Ushan's proposal for G00 review; shared-owner agreement is pending.
-- **Gate effect:** This record does not accept G00 or claim the business component is implemented.
+- **Gate effect:** This record does not accept G00 or establish component acceptance. The feature branch now contains partial implementation; that source does not record shared-owner agreement.
 
-This record captures the Member 1 decisions and proposals needed to review the
-G00 shared contracts. The four owners still need to agree the cross-component
-items in this record and the other members' inputs before G00 can be accepted.
-The user-requested service bootstrap now also provides a PostgreSQL connection
-to the same database and using the same configured login as Auth, alongside
-the host, liveness, OpenAPI and Docker/gateway wiring. It includes no domain
-tables or business behavior and does not settle the remaining shared contracts.
+This record captures the Member 1 decisions and proposals for review at G00.
+The four owners still need to agree the cross-component items in this record
+and the other members' inputs before G00 can be accepted. The feature branch
+now contains component source, including an EF Core model/migration and public
+gateway routes. That implementation is evidence of branch work only; it does
+not settle or approve shared G00 contracts.
 
 ## 1. Ownership and canonical identity
 
@@ -47,11 +46,11 @@ restriction references before consumers implement them.
 | Compose service/DNS identity | `experience-biodiversity` |
 | Container port | `8080`, private on the existing internal Docker network |
 | Public API route prefix | `/api/experiences`; YARP forwards this path unchanged to the private `experience-biodiversity` service |
-| PostgreSQL | Existing PostgreSQL 16 instance and the same configured database used by Auth; domain migrations remain future work |
+| PostgreSQL | Existing PostgreSQL 16 instance and the same configured database used by Auth; a branch migration creates five component tables while shared data ownership remains pending |
 | Database identity | Uses the same `POSTGRES_USER` and `POSTGRES_PASSWORD` configuration as Auth; no separate database or service login |
 | Health | `GET /api/experiences/health` through the API gateway; anonymous service/database readiness with `200` when connected and `503` when unavailable, matching Auth |
 | Swagger/OpenAPI | `/api/experiences/swagger/{documentName}/swagger.json` through the API gateway |
-| Gateway security | API validates Auth-issued JWTs and applies its default authorization policy to component paths; only health and the Swagger document are anonymous |
+| Gateway security | API and component service validate Auth-issued JWTs; management routes require catalogue-management permission claims, while published reads and health/OpenAPI routes are anonymous |
 
 The service owns all catalogue business rules and persistence. Its relational
 records use UUID primary keys, UTC instants (`timestamptz`), and
@@ -60,16 +59,18 @@ with schedules for local interpretation; evaluate requested intervals as
 half-open `[start, end)` ranges. `user_id` on favourites is an opaque Auth UUID,
 not a local user record.
 
-The bootstrap now registers an EF Core context and performs a bounded database
-connection check followed by EF Core migration startup, following Auth's
-pattern. It uses the shared database credentials and PostgreSQL default
-schema. This is connection infrastructure only: there are no domain entities,
-domain migrations or business persistence yet. Shared G00 data ownership and
-migration-history decisions remain pending.
+The service registers an EF Core context, performs a bounded database
+connection check and applies its migration at startup. Its initial migration
+creates `destinations`, `activities`, `offerings`, `schedules` and
+`favourites` in PostgreSQL's default schema, using the shared database
+credentials and a separate migration-history table. Shared G00 data ownership
+and migration-history decisions remain pending.
 
-The current gateway integration validates Auth-issued JWTs before forwarding
-component paths. The health and Swagger document routes are anonymous. This
-does not decide the still-pending G00 permissions for future business routes.
+The API gateway and private component service validate Auth-issued JWTs. The
+gateway protects management routes with the existing role-to-permission
+claims; published catalogue/map reads and health/OpenAPI routes remain
+anonymous. This records current source behavior and does not convert Member 1's
+proposed contracts below into shared-owner decisions.
 
 **For shared agreement:** settle the shared database/schema and per-service
 migration-history approach, confirm the database credential approach, internal
@@ -78,19 +79,20 @@ contract, and UTC/time-zone/interval semantics for all components.
 
 ## 3. Proposed public capability and permission contract
 
-These are G00 candidates, not implemented routes. `services/api` remains the
-only client-facing API, authenticates and authorizes with the existing
-role-to-permission model, and forwards only the approved actor/operation
-context. The component service never calls Auth.
+These remain Ushan's proposed G00 contract decisions. Matching branch routes
+are present, but route presence does not record shared agreement. `services/api`
+remains the only client-facing API and uses the existing role-to-permission
+model; the component service validates forwarded Auth-issued tokens locally
+and never calls Auth.
 
 | Method and candidate public path | Capability | Implemented / Proposed permission |
 |---|---|---|
-| `GET /api/experiences/destinations` | Browse/search published destinations with filters and pagination | `experiences.catalogue.read` |
-| `GET /api/experiences/destinations/{destinationId:guid}` | Destination detail and its published experience context | `experiences.catalogue.read` |
-| `GET /api/experiences/activities` | Read the canonical activity taxonomy | `experiences.catalogue.read` |
-| `GET /api/experiences/offerings` | Browse/search published offerings with filters and pagination | `experiences.catalogue.read` |
-| `GET /api/experiences/offerings/{offeringId:guid}` | Offering detail and current effective availability | `experiences.catalogue.read` |
-| `GET /api/experiences/nearby` | Find nearby published destinations/offerings from validated place name/keyword or coordinates | `experiences.catalogue.read` |
+| `GET /api/experiences/destinations` | Browse/search published destinations with filters and pagination | Anonymous for published records; `experiences.catalogue.read` to request other publication states |
+| `GET /api/experiences/destinations/{destinationId:guid}` | Destination detail and its published experience context | Anonymous for published records; `experiences.catalogue.read` for non-published records |
+| `GET /api/experiences/activities` | Read the canonical activity taxonomy | Anonymous for published records; `experiences.catalogue.read` to request other publication states |
+| `GET /api/experiences/offerings` | Browse/search published offerings with filters and pagination | Anonymous for published offerings with published parents; `experiences.catalogue.read` to request other publication states |
+| `GET /api/experiences/offerings/{offeringId:guid}` | Offering detail and schedule information | Anonymous for published offerings with published parents; `experiences.catalogue.read` for non-published records |
+| `GET /api/experiences/nearby` | Find nearby published destinations/offerings from validated place name/keyword or coordinates | Anonymous; results include published destinations only |
 | `POST /api/experiences/destinations` and `PUT /api/experiences/destinations/{destinationId:guid}` | Create/update a destination | `experiences.catalogue.manage` |
 | `DELETE /api/experiences/destinations/{destinationId:guid}` | Delete a destination | `experiences.catalogue.manage` |
 | `POST /api/experiences/activities` and `PUT /api/experiences/activities/{activityId:guid}` | Create/update an activity and taxonomy fields | `experiences.catalogue.manage` |
@@ -102,9 +104,9 @@ context. The component service never calls Auth.
 | `POST /api/experiences/availability/evaluations` | Evaluate current usability for a requested interval | `experiences.catalogue.read` |
 | `POST /api/experiences/offerings/{offeringId:guid}/schedules` and `PUT /api/experiences/offerings/{offeringId:guid}/schedules/{scheduleId:guid}` | Add/update a schedule | `experiences.catalogue.manage` |
 | `DELETE /api/experiences/offerings/{offeringId:guid}/schedules/{scheduleId:guid}` | Delete a schedule slot | `experiences.catalogue.manage` |
-| `GET /api/experiences/favourites` | List only the caller's saved targets | `experiences.catalogue.read` |
-| `PUT /api/experiences/favourites/{targetType}/{targetId:guid}` | Idempotently save one of the caller's targets | `experiences.catalogue.read` |
-| `DELETE /api/experiences/favourites/{targetType}/{targetId:guid}` | Remove one of the caller's targets | `experiences.catalogue.read` |
+| `GET /api/experiences/favourites` | List only the caller's saved targets | Authenticated caller; records are scoped to that caller's UUID |
+| `PUT /api/experiences/favourites/{targetType}/{targetId:guid}` | Idempotently save one of the caller's targets | Authenticated caller; records are scoped to that caller's UUID |
+| `DELETE /api/experiences/favourites/{targetType}/{targetId:guid}` | Remove one of the caller's targets | Authenticated caller; records are scoped to that caller's UUID |
 
 The availability request contains `offeringId`, `startsAt` and `endsAt` as
 offset-qualified ISO-8601 instants. The response separates publication,

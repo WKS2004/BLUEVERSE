@@ -20,7 +20,7 @@ public sealed class AvailabilityApiTests : IClassFixture<TestWebApplicationFacto
     [Trait("CaseId", "EXP-API-AVAIL-001")]
     public async Task EvaluateAvailability_Rejects_Invalid_Interval()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAuthenticatedClient(Guid.NewGuid(), "experiences.catalogue.read");
 
         var request = new AvailabilityEvaluationRequest(
             OfferingId: Guid.NewGuid(),
@@ -35,7 +35,7 @@ public sealed class AvailabilityApiTests : IClassFixture<TestWebApplicationFacto
     [Trait("CaseId", "EXP-API-AVAIL-002")]
     public async Task EvaluateAvailability_Returns_Expected_Structure_For_NonExistent_Offering()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAuthenticatedClient(Guid.NewGuid(), "experiences.catalogue.read");
 
         var request = new AvailabilityEvaluationRequest(
             OfferingId: Guid.NewGuid(),

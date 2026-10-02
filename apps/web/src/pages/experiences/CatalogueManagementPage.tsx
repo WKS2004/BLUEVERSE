@@ -47,8 +47,7 @@ export default function CatalogueManagementPage() {
   const [activeTab, setActiveTab] = useState<'destinations' | 'activities' | 'offerings' | 'diagnostics'>('destinations')
 
   const canManage =
-    hasAnyPermission(user, ['experiences.catalogue.manage', 'auth.role.system.manage']) ||
-    (user?.roles?.includes('Admin') ?? false)
+    hasAnyPermission(user, ['experiences.catalogue.manage', 'auth.role.system.manage'])
 
   useEffect(() => {
     const hash = location.hash.replace('#', '')

@@ -597,7 +597,7 @@ test('WEB-EXP-009 catalogue management renders curation workspace and microservi
     auth: makeAuthSessionValue({
       status: 'signed-in',
       user: makeAuthUser({
-        roles: ['Admin'],
+        roles: ['CatalogueManager'],
         permissions: ['experiences.catalogue.manage', 'experiences.catalogue.read'],
       }),
     }),
@@ -653,6 +653,95 @@ test('WEB-EXP-009B renders read-only catalogue view without mutation forms when 
   assert.ok(await screen.findByRole('heading', { name: /Catalogue Management Workspace/i }))
   assert.ok(await screen.findByText(/Read-only view/i))
   assert.equal(screen.queryByRole('button', { name: /Save Destination/i }), null)
+})
+
+// -------------------------------------------------------------
+// WEB-EXP-012: Role Names Do Not Grant Catalogue Permissions
+// -------------------------------------------------------------
+test('WEB-EXP-012 Admin role and auth.role.manage alone cannot enable catalogue mutations', async () => {
+  globalThis.fetch = async (input) => {
+    const url = String(input)
+    if (url.includes('/api/experiences/destinations')) {
+      return jsonResponse({ total: 1, page: 1, pageSize: 20, items: [mockDestination] })
+    }
+    if (url.includes('/api/experiences/activities') || url.includes('/api/experiences/offerings')) {
+      return jsonResponse({ total: 0, page: 1, pageSize: 20, items: [] })
+    }
+    return jsonResponse({})
+  }
+
+  renderInApp(createElement(CatalogueManagementPage), {
+    path: '/experiences/manage',
+    auth: makeAuthSessionValue({
+      status: 'signed-in',
+      user: makeAuthUser({ roles: ['Admin'], permissions: ['auth.role.manage'] }),
+    }),
+  })
+
+  assert.ok(await screen.findByRole('heading', { name: /Catalogue Management Workspace/i }))
+  assert.ok(await screen.findByText(/Read-only view/i))
+  assert.equal(screen.queryByRole('button', { name: /Save Destination/i }), null)
+})
+
+// -------------------------------------------------------------
+// WEB-EXP-013: System Role Management Permission Grants Catalogue Management
+// -------------------------------------------------------------
+test('WEB-EXP-013 system role manager permission enables the catalogue management workflow', async () => {
+  globalThis.fetch = async (input) => {
+    const url = String(input)
+    if (url.includes('/api/experiences/destinations')) {
+      return jsonResponse({ total: 1, page: 1, pageSize: 20, items: [mockDestination] })
+    }
+    if (url.includes('/api/experiences/activities') || url.includes('/api/experiences/offerings')) {
+      return jsonResponse({ total: 0, page: 1, pageSize: 20, items: [] })
+    }
+    return jsonResponse({})
+  }
+
+  renderInApp(createElement(CatalogueManagementPage), {
+    path: '/experiences/manage',
+    auth: makeAuthSessionValue({
+      status: 'signed-in',
+      user: makeAuthUser({ roles: ['SystemRoleManager'], permissions: ['auth.role.system.manage'] }),
+    }),
+  })
+
+  assert.ok(await screen.findByRole('heading', { name: /Catalogue Management Workspace/i }))
+  assert.ok(await screen.findByRole('button', { name: /Save Destination/i }))
+})
+
+// -------------------------------------------------------------
+// WEB-EXP-014: Discovery Management Links Follow Catalogue Permissions
+// -------------------------------------------------------------
+test('WEB-EXP-014 Admin role and role-editor permission do not expose catalogue management links', async () => {
+  globalThis.fetch = async (input) => {
+    const url = String(input)
+    if (url.includes('/api/experiences/destinations')) {
+      return jsonResponse({ total: 1, page: 1, pageSize: 20, items: [mockDestination] })
+    }
+    if (url.includes('/api/experiences/activities')) {
+      return jsonResponse({ total: 1, page: 1, pageSize: 20, items: [mockActivity] })
+    }
+    if (url.includes('/api/experiences/offerings')) {
+      return jsonResponse({ total: 1, page: 1, pageSize: 20, items: [mockOffering] })
+    }
+    if (url.includes('/api/experiences/favourites')) return jsonResponse([])
+    return jsonResponse({})
+  }
+
+  renderInApp(createElement(ExperiencesPage), {
+    path: '/experiences',
+    auth: makeAuthSessionValue({
+      status: 'signed-in',
+      user: makeAuthUser({ roles: ['Admin'], permissions: ['auth.role.manage'] }),
+    }),
+  })
+
+  assert.ok(await screen.findByRole('heading', { name: /Explore our coast/i }))
+  assert.ok((await screen.findAllByText('Mirissa Bay')).length >= 1)
+  assert.equal(screen.queryByRole('link', { name: /Catalogue Management/i }), null)
+  assert.equal(screen.queryByRole('link', { name: /Add Destination/i }), null)
+  assert.equal(screen.queryByRole('link', { name: /Edit Mirissa Bay/i }), null)
 })
 
 // -------------------------------------------------------------

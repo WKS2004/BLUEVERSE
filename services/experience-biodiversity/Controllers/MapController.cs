@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Blueverse.ExperienceBiodiversity.Services;
 
 namespace Blueverse.ExperienceBiodiversity.Controllers;
 
 [ApiController]
+[AllowAnonymous]
 [Route("api/experiences/map")]
 public sealed class MapController : ControllerBase
 {

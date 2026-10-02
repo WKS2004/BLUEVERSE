@@ -18,7 +18,7 @@ public sealed class DependenciesApiTests : IClassFixture<TestWebApplicationFacto
     [Trait("CaseId", "EXP-API-DEP-001")]
     public async Task GetDependenciesStatus_Returns_Ok_With_DiagnosticsSummary()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAuthenticatedClient(Guid.NewGuid());
 
         using var response = await client.GetAsync("/api/experiences/dependencies/status");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);

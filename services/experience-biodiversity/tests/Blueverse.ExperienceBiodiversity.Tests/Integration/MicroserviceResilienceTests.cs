@@ -19,7 +19,7 @@ public sealed class MicroserviceResilienceTests : IClassFixture<TestWebApplicati
     [Trait("CaseId", "EXP-RESIL-API-001")]
     public async Task MarineConditions_Returns_200_With_Safe_Fallback_When_Marine_Service_Absent()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
 
         // 1. Create a destination
         var createReq = new CreateDestinationRequest("Mirissa Bay", null, "Whale watching center", "Southern Province", 5.94, 80.45);
@@ -46,7 +46,7 @@ public sealed class MicroserviceResilienceTests : IClassFixture<TestWebApplicati
     [Trait("CaseId", "EXP-RESIL-API-002")]
     public async Task OperationalAdvisories_Returns_200_With_Safe_Fallback_When_Operations_Service_Absent()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
 
         var createReq = new CreateDestinationRequest("Hikkaduwa Sanctuary", null, "Coral reef sanctuary", "Southern Province", 6.13, 80.10);
         using var destRes = await client.PostAsJsonAsync("/api/experiences/destinations", createReq);
@@ -70,7 +70,7 @@ public sealed class MicroserviceResilienceTests : IClassFixture<TestWebApplicati
     [Trait("CaseId", "EXP-RESIL-API-003")]
     public async Task DependenciesStatus_Reports_Microservice_Resilience_Without_Crashing()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateAdminClient();
 
         using var response = await client.GetAsync("/api/experiences/dependencies/status");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
