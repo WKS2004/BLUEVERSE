@@ -6,8 +6,8 @@ namespace Blueverse.MarineSafety.Tests.Fixtures;
 /// <summary>
 /// Deterministic identity and configuration rows used by the integration
 /// tests. Permission grants register in the TestPermissionResolver double;
-/// the production IdentityPermissionResolver over the shared identity schema
-/// is exercised by Auth's own permission tests and PostgreSQL evidence.
+/// this fixture does not execute the production resolver against Auth's
+/// PostgreSQL identity schema.
 /// </summary>
 public static class MarineSafetyTestSeed
 {

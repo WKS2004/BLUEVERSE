@@ -4,6 +4,7 @@ import {
   cleanup,
   closeWebTestServer,
   createElement,
+  fireEvent,
   jsonResponse,
   loadWebModule,
   makeAuthSessionValue,
@@ -74,6 +75,25 @@ function makeSuitability(overrides = {}) {
 
 function marineUser(permissions = ['marine.profile.read']) {
   return makeAuthUser({ permissions })
+}
+
+function makeProfile(overrides = {}) {
+  return {
+    id: 'profile-1',
+    activityId: surfingActivityId,
+    activityName: 'Surfing',
+    maxWindSpeed: 35,
+    maxWaveHeight: 1.5,
+    maxSwellHeight: 1.2,
+    cautionWindSpeed: null,
+    cautionWaveHeight: null,
+    cautionSwellHeight: null,
+    isActive: true,
+    version: 2,
+    createdAt: '2026-09-27T00:00:00.000Z',
+    updatedAt: '2026-09-27T01:00:00.000Z',
+    ...overrides,
+  }
 }
 
 test('WEB-MARINE-UI-001 the conditions page exposes labeled location, UTC period and activity inputs (ui-integration: marine-conditions)', () => {
@@ -198,9 +218,14 @@ test('WEB-MARINE-UI-008 history filters serialize coordinates and the UTC window
   await waitFor(() => assert.ok(screen.getByText('0 snapshots')))
   await userEvent.setup().type(screen.getByLabelText('Latitude'), '6.025')
   await userEvent.setup().type(screen.getByLabelText('Longitude'), '80.216')
+  fireEvent.change(screen.getByLabelText(/From/), { target: { value: '2026-09-26T00:00' } })
+  fireEvent.change(screen.getByLabelText(/To/), { target: { value: '2026-09-27T08:30' } })
   await userEvent.setup().click(screen.getByRole('button', { name: 'Apply filters' }))
 
-  await waitFor(() => assert.equal(request?.input, '/api/marine/history?latitude=6.025&longitude=80.216'))
+  await waitFor(() => assert.equal(
+    request?.input,
+    '/api/marine/history?latitude=6.025&longitude=80.216&from=2026-09-26T00%3A00%3A00.000Z&to=2026-09-27T08%3A30%3A00.000Z',
+  ))
   assert.ok(screen.getByText(/No condition snapshots match these filters yet/))
 })
 
@@ -365,4 +390,208 @@ test('WEB-MARINE-UI-013 the marine routes are registered inside the shared signe
   assert.ok(document.querySelector('footer'))
   assert.ok(screen.getByRole('heading', { name: 'Safety profiles' }))
   assert.equal(screen.getByTestId('router-location').textContent, '/marine/safety-profiles')
+})
+
+test('WEB-MARINE-UI-014 a selected activity and local date-time reach both APIs as the same UTC moment (ui-integration: marine-conditions)', async () => {
+  const calls = []
+  globalThis.fetch = async (input, init = {}) => {
+    calls.push({ input, init })
+    return String(input).startsWith('/api/marine/current')
+      ? jsonResponse(makeSnapshot())
+      : jsonResponse(makeSuitability({ activityId: snorkelingActivityId, activityName: 'Snorkeling' }))
+  }
+
+  renderInApp(createElement(MarineConditionsPage), { path: '/marine/conditions', auth: makeAuthSessionValue({ user: marineUser(), status: 'signed-in' }) })
+  fireEvent.change(screen.getByLabelText(/Requested time/), { target: { value: '2026-10-03T15:45' } })
+  await userEvent.setup().selectOptions(screen.getByLabelText('Activity'), snorkelingActivityId)
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Check conditions & suitability' }))
+
+  await waitFor(() => assert.ok(screen.getByText('SERVER ASSESSMENT')))
+  assert.equal(calls.length, 2)
+  assert.equal(calls[0].input, '/api/marine/current?latitude=6.025&longitude=80.216&time=2026-10-03T15%3A45%3A00.000Z')
+  assert.deepEqual(JSON.parse(calls[1].init.body), {
+    activityId: snorkelingActivityId,
+    latitude: 6.025,
+    longitude: 80.216,
+    dateTime: '2026-10-03T15:45:00.000Z',
+  })
+  assert.equal(calls[0].init.credentials, 'include')
+  assert.equal(calls[1].init.credentials, 'include')
+})
+
+test('WEB-MARINE-UI-015 a CAUTION assessment remains a server result with its caution factors (ui-integration: marine-conditions)', async () => {
+  globalThis.fetch = async (input) => String(input).startsWith('/api/marine/current')
+    ? jsonResponse(makeSnapshot())
+    : jsonResponse(makeSuitability({ status: 'CAUTION', cautionFactors: ['waveHeight'] }))
+
+  renderInApp(createElement(MarineConditionsPage), { path: '/marine/conditions', auth: makeAuthSessionValue({ user: marineUser(), status: 'signed-in' }) })
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Check conditions & suitability' }))
+
+  await waitFor(() => assert.ok(screen.getByText('SERVER ASSESSMENT')))
+  assert.ok(screen.getByText('CAUTION'))
+  assert.ok(screen.getByText('CAUTION FACTORS'))
+  assert.ok(screen.getByText(/Wave height is within the configured caution band/))
+  assert.equal(screen.queryByText('LIMITS EXCEEDED'), null)
+})
+
+test('WEB-MARINE-UI-016 a history permission denial is shown safely without hiding the page shell (ui-integration: marine-history)', async () => {
+  globalThis.fetch = async () => jsonResponse({ status: 403, detail: 'Your current roles do not allow this action.' }, 403)
+
+  renderInApp(createElement(MarineHistoryPage), { path: '/marine/history', auth: makeAuthSessionValue({ user: marineUser(), status: 'signed-in' }) })
+
+  assert.equal((await screen.findByRole('alert')).textContent, 'Your current roles do not allow this action.')
+  assert.ok(screen.getByRole('heading', { name: 'Condition history' }))
+})
+
+test('WEB-MARINE-UI-017 a permitted manager creates a profile and sees the refreshed server record (ui-integration: marine-safety-profiles)', async () => {
+  const calls = []
+  const created = makeProfile({
+    id: 'profile-snorkeling',
+    activityId: snorkelingActivityId,
+    activityName: 'Snorkeling',
+    maxWindSpeed: 40,
+    maxWaveHeight: 2,
+    maxSwellHeight: 1.5,
+    version: 1,
+  })
+  globalThis.fetch = async (input, init = {}) => {
+    calls.push({ input, init })
+    if (init.method === 'POST') return jsonResponse(created)
+    return jsonResponse(calls.some((call) => call.init.method === 'POST') ? [created] : [])
+  }
+
+  renderInApp(createElement(MarineSafetyProfilesPage), {
+    path: '/marine/safety-profiles',
+    auth: makeAuthSessionValue({ user: marineUser(['marine.profile.read', 'marine.profile.manage']), status: 'signed-in' }),
+  })
+  await waitFor(() => assert.ok(screen.getByLabelText('Activity')))
+  await userEvent.setup().selectOptions(screen.getByLabelText('Activity'), snorkelingActivityId)
+  await userEvent.setup().type(document.getElementById('create-profile-max-wind'), '40')
+  await userEvent.setup().type(document.getElementById('create-profile-max-wave'), '2')
+  await userEvent.setup().type(document.getElementById('create-profile-max-swell'), '1.5')
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Create profile' }))
+
+  await waitFor(() => assert.match(screen.getByRole('status').textContent, /Snorkeling safety profile is now active/))
+  assert.deepEqual(calls.map((call) => [call.input, call.init.method]), [
+    ['/api/marine/safety-profiles', 'GET'],
+    ['/api/marine/safety-profiles', 'POST'],
+    ['/api/marine/safety-profiles', 'GET'],
+  ])
+  assert.deepEqual(JSON.parse(calls[1].init.body), {
+    activityId: snorkelingActivityId,
+    maxWindSpeed: 40,
+    maxWaveHeight: 2,
+    maxSwellHeight: 1.5,
+  })
+  assert.ok(calls.every((call) => call.init.credentials === 'include'))
+  assert.ok(screen.getByRole('heading', { name: 'Snorkeling' }))
+})
+
+test('WEB-MARINE-UI-018 read-only marine permission cannot expose profile management actions (ui-integration: marine-safety-profiles)', async () => {
+  globalThis.fetch = async () => jsonResponse([makeProfile()])
+
+  renderInApp(createElement(MarineSafetyProfilesPage), {
+    path: '/marine/safety-profiles',
+    auth: makeAuthSessionValue({ user: marineUser(), status: 'signed-in' }),
+  })
+
+  await waitFor(() => assert.ok(screen.getByRole('heading', { name: 'Surfing' })))
+  assert.equal(screen.queryByRole('button', { name: 'Create profile' }), null)
+  assert.equal(screen.queryByRole('button', { name: 'Deactivate profile' }), null)
+  assert.equal(screen.getByRole('button', { name: 'Save limits' }).disabled, true)
+  assert.equal(document.getElementById('edit-profile-max-wind').disabled, true)
+  assert.ok(screen.getByText(/Changing safety limits requires the marine profile manage permission/))
+})
+
+test('WEB-MARINE-UI-019 invalid profile limits do not send a mutation request (ui-integration: marine-safety-profiles)', async () => {
+  const calls = []
+  globalThis.fetch = async (input, init = {}) => {
+    calls.push({ input, init })
+    return jsonResponse([])
+  }
+
+  renderInApp(createElement(MarineSafetyProfilesPage), {
+    path: '/marine/safety-profiles',
+    auth: makeAuthSessionValue({ user: marineUser(['marine.profile.read', 'marine.profile.manage']), status: 'signed-in' }),
+  })
+  await waitFor(() => assert.ok(document.getElementById('create-profile-max-wind')))
+  fireEvent.change(document.getElementById('create-profile-max-wind'), { target: { value: '0' } })
+  fireEvent.change(document.getElementById('create-profile-max-wave'), { target: { value: '1.5' } })
+  fireEvent.change(document.getElementById('create-profile-max-swell'), { target: { value: '1.2' } })
+  fireEvent.submit(document.getElementById('create-profile-max-wind').closest('form'))
+
+  assert.equal((await screen.findByRole('alert')).textContent, 'Enter positive maximum limits: wind up to 1000 km/h, wave and swell up to 50 m.')
+  assert.equal(calls.length, 1)
+  assert.equal(calls[0].init.method, 'GET')
+  assert.equal(calls[0].input, '/api/marine/safety-profiles')
+})
+
+test('WEB-MARINE-UI-020 cancelling profile deactivation keeps the profile active and sends no delete request (ui-integration: marine-safety-profiles)', async () => {
+  const calls = []
+  let confirmation = ''
+  window.confirm = (message) => { confirmation = message; return false }
+  globalThis.fetch = async (input, init = {}) => {
+    calls.push({ input, init })
+    return jsonResponse([makeProfile()])
+  }
+
+  renderInApp(createElement(MarineSafetyProfilesPage), {
+    path: '/marine/safety-profiles',
+    auth: makeAuthSessionValue({ user: marineUser(['marine.profile.read', 'marine.profile.manage']), status: 'signed-in' }),
+  })
+  await waitFor(() => assert.ok(screen.getByRole('button', { name: 'Deactivate profile' })))
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Deactivate profile' }))
+
+  assert.match(confirmation, /Assessments keep their history/)
+  assert.equal(calls.length, 1)
+  assert.equal(calls[0].input, '/api/marine/safety-profiles')
+  assert.equal(screen.getByText('ACTIVE').textContent, 'ACTIVE')
+  assert.equal(screen.queryByRole('status'), null)
+})
+
+test('WEB-MARINE-UI-021 confirming profile deactivation sends DELETE, refreshes state and preserves the history notice (ui-integration: marine-safety-profiles)', async () => {
+  const calls = []
+  window.confirm = () => true
+  globalThis.fetch = async (input, init = {}) => {
+    calls.push({ input, init })
+    if (init.method === 'DELETE') return jsonResponse(undefined, 204)
+    return jsonResponse(calls.some((call) => call.init.method === 'DELETE') ? [] : [makeProfile()])
+  }
+
+  renderInApp(createElement(MarineSafetyProfilesPage), {
+    path: '/marine/safety-profiles',
+    auth: makeAuthSessionValue({ user: marineUser(['marine.profile.read', 'marine.profile.manage']), status: 'signed-in' }),
+  })
+  await waitFor(() => assert.ok(screen.getByRole('button', { name: 'Deactivate profile' })))
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Deactivate profile' }))
+
+  await waitFor(() => assert.match(screen.getByRole('status').textContent, /Surfing safety profile was deactivated/))
+  assert.deepEqual(calls.map((call) => [call.input, call.init.method]), [
+    ['/api/marine/safety-profiles', 'GET'],
+    ['/api/marine/safety-profiles/profile-1', 'DELETE'],
+    ['/api/marine/safety-profiles', 'GET'],
+  ])
+  assert.ok(screen.getByText(/No safety profiles are configured yet/))
+  assert.ok(screen.getByRole('status').textContent.includes('Assessments keep their history'))
+})
+
+test('WEB-MARINE-UI-022 an expired session shows safe recovery and no marine assessment data (ui-integration: marine-conditions)', async () => {
+  const calls = []
+  globalThis.fetch = async (input, init = {}) => {
+    calls.push({ input, init })
+    return new Response('Unauthorized: revoked session session-123', { status: 401 })
+  }
+
+  renderInApp(createElement(MarineConditionsPage), {
+    path: '/marine/conditions',
+    auth: makeAuthSessionValue({ user: marineUser(), status: 'signed-in' }),
+  })
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Check conditions & suitability' }))
+
+  const alert = await screen.findByRole('alert')
+  assert.equal(alert.textContent, 'We couldn’t complete that marine request. Please try again.')
+  assert.doesNotMatch(alert.textContent, /revoked session|session-123|Unauthorized/)
+  assert.equal(screen.queryByText('SERVER ASSESSMENT'), null)
+  assert.equal(calls.length, 2)
+  assert.ok(calls.every((call) => call.init.credentials === 'include'))
 })

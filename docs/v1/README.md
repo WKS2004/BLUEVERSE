@@ -64,16 +64,18 @@ status only when source and tests provide evidence. The member numbers are
 stable trace labels; the assigned people and accounts are listed in the
 [canonical owner map](../project/ai-team-members.md).
 
-## Implementation start gate
+## Implementation start gate (2026-09-26 decision)
 
-The final repository audit gives a **GO for G00** and a **conditional GO for
-member coding after G00**. The contracts and existing v0 foundation are ready
-to support the shared contract freeze; parallel feature coding must wait until
-the owners record the shared IDs, API/service and permission contracts, data
-ownership, delivery identities, client registrations and failure semantics.
-After G00, all four complete member components can proceed concurrently on
-their single feature branches. Executable Agentic AI remains gated on G07 by
-design. The repository is not yet v1 complete or ready for final assessment.
+The 2026-09-26 repository audit gave a **GO for G00** and a **conditional GO
+for member coding after G00**. Member 2's component scope was accepted at its
+own G00 review on 2026-09-27, and its backend and React implementation are now
+present on `features/marine-safety`; the shared team G00 remains in progress.
+See the [current status snapshot](requirements-coverage-and-readiness.md#current-implementation-snapshot--2026-10-03)
+and [branch tracker](member-branch-workflow.md#component-branch-status).
+After the full G00 exit criteria are satisfied, all four complete member
+components can proceed concurrently on their single feature branches.
+Executable Agentic AI remains gated on G07 by design. The repository is not
+yet v1 complete or ready for final assessment.
 See the detailed [final start-readiness decision and exit
 criteria](requirements-coverage-and-readiness.md#final-start-readiness-decision--2026-09-26).
 
@@ -117,8 +119,10 @@ typed logical inputs and outputs, candidate allowlisted tools, handoffs,
 workflow state, safety limits, recovery and evaluation.
 
 Each member contributes one internal ASP.NET Core component service with
-PostgreSQL/EF Core data, React, Flutter, tests, documentation, Git/GitHub and
-the prepared Agentic AI integration seam. Each component must contain
+PostgreSQL/EF Core data, React, Flutter, tests, documentation and Git/GitHub.
+A typed Agentic AI integration seam may be included before G07 when it is
+accepted by that component's G00 scope; Member 2's accepted G00 decision defers
+its AI workflow and typed adapter. Each component must contain
 meaningful relational data, at least four meaningful public API endpoints
 exposed through `services/api`, and a business operation beyond CRUD. This
 index and the contracts do not name unimplemented routes or declare target
@@ -137,9 +141,9 @@ plans group the full scope into work areas.
 ## Shared system behavior
 
 - [Member feature integration with Agentic AI](agentic-ai-integration-boundary.md)
-  defines the backend access seam and not-connected/unavailable behavior
-  implemented in member features, separate from the actual post-G07 AI
-  runtime and agents.
+  defines the optional pre-G07 backend access seam and not-connected/unavailable
+  behavior separately from the actual post-G07 AI runtime and agents. Follow
+  each component's accepted G00 scope; Member 2's decision defers this seam.
 - [ADR-0020](../adr/ADR-0020-member-component-service-boundaries.md) assigns
   component business logic and persistence to one private service per member;
   `services/api` is the public integration boundary and Auth remains reused.

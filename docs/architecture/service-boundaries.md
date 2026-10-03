@@ -1,9 +1,10 @@
 # Service Boundaries
 
-The following boundaries are implemented for the current foundation. The edge,
-client starter projects with the shared Auth workflow, public API gateway and
-internal Auth service are checked in; future domain services remain separate
-implementation work.
+The current checkout implements the edge, client starter projects, public API,
+internal Auth service and Member 2's private marine-safety service. The other
+three member domain services and the Agentic AI runtime remain separate
+implementation work. Current branch and evidence status is tracked in the
+[member branch workflow](../v1/member-branch-workflow.md#component-branch-status).
 
 ## edge-nginx
 
@@ -47,11 +48,11 @@ Responsibilities:
 - public route/contract documentation and integration with private services
 - common request/response and gateway-level error handling
 
-Current foundation behavior includes `GET /api/health`, OpenAPI/Swagger
-publication, CORS, forwarded headers, JWT validation, RFC 7807-style gateway
-errors and YARP forwarding for `/api/auth/*`. Domain workflow responsibilities
-are implemented by the owning v1 component service and exposed through this
-public boundary.
+Current behavior includes `GET /api/health`, OpenAPI/Swagger publication,
+CORS, forwarded headers, JWT validation, RFC 7807-style gateway errors and
+YARP forwarding for `/api/auth/*` and `/api/marine/*`. The marine domain
+workflow is implemented by its owning service and exposed through this public
+boundary; the other domain workflows remain future work.
 
 ### Stability for v1 member component branches
 
@@ -87,28 +88,33 @@ default is no Auth service change.
 
 ## v1 member component services
 
-These four separately owned internal services are v1 target architecture and
-are **not implemented in the current repository**. Each member implements one
-service on the same `features/<component>` branch as its React and Flutter
-work. The service owns its component's domain operations, domain validation,
-application/data-access code, EF Core migrations and PostgreSQL records,
-third-party adapter, tests, health/readiness contract and prepared private
-Agentic AI client seam as required by its component contract.
+Each separately owned internal service owns its component's domain operations,
+validation, data access, migrations, third-party adapters, tests and
+health/readiness contract. Member 2's service is implemented on
+`features/marine-safety`; the other three services remain v1 targets. A
+component service is developed on the same `features/<component>` branch as
+its client work.
 
-| Owner | Service-owned responsibilities |
-|---|---|
-| Ushan Srinuka (Member 1) | Coastal catalogue/discovery, availability, favourites and the backend map-provider adapter |
-| Sanuda Abeysinghe (Member 2) | Open-Meteo acquisition, normalized marine conditions, safety profiles and deterministic suitability |
-| Adithya Gunawardana (Member 3) | Planning, recommendations, itineraries and the IT3091 biodiversity inference adapter/public result contract |
-| Wanshaja Sooriyabandara (Member 4) | BLUEVERSE-managed operational assessments, decisions, restrictions, alerts, audit and controlled execution |
+| Owner | Service | Current status | Service-owned responsibilities |
+|---|---|---|---|
+| Ushan Srinuka (Member 1) | — | Not implemented | Coastal catalogue/discovery, availability, favourites and the backend map-provider adapter |
+| Sanuda Abeysinghe (Member 2) | `services/marine-safety` | Backend and React implemented on feature branch | Open-Meteo acquisition, normalized marine conditions, safety profiles and deterministic suitability |
+| Adithya Gunawardana (Member 3) | — | Not implemented | Planning, recommendations, itineraries and the IT3091 biodiversity inference adapter/public result contract |
+| Wanshaja Sooriyabandara (Member 4) | — | Not implemented | BLUEVERSE-managed operational assessments, decisions, restrictions, alerts, audit and controlled execution |
 
 The services remain private on the approved Docker network. React and Flutter
-never call them directly; the public API authenticates/authorizes and routes
-or forwards client operations. Component services never call Auth directly.
-G00 must settle service identifiers, the API-to-service transport and route
-map, actor/permission propagation, PostgreSQL/schema ownership, and
-health/readiness semantics before parallel implementation. Keep each service
-isolated so its owner does not need to edit another member's service.
+never call them directly; the public API routes or forwards client operations.
+Authentication and permission enforcement follow the owning service contract.
+Marine-safety validates Auth sessions and reads current role grants from the
+Auth-owned database with read-only queries; it does not call the Auth service
+or write identity data.
+Member 2's service identity, gateway route, permission contract, PostgreSQL
+ownership and health semantics are recorded in its [G00 decision
+record](../v1/g00/member-2-marine-safety-decisions.md). The shared team G00
+still needs to settle the corresponding choices for the remaining services.
+Keep each service isolated so its owner does not need to edit another member's
+service. No executable Agentic AI seam/runtime is claimed for marine-safety;
+its paired agent remains gated by G07.
 
 ## postgres
 

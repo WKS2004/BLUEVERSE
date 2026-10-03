@@ -17,6 +17,7 @@ public sealed class MarineSafetyWebApplicationFactory : WebApplicationFactory<Pr
     private string _databaseName = $"marine-safety-tests-{Guid.NewGuid():N}";
     private StubOpenMeteoClient? _stubClient;
     private readonly TestPermissionResolver _permissionResolver = new();
+    private readonly TestIdentityTokenValidator _identityTokenValidator = new();
 
     /// <summary>
     /// Rotates the in-memory database so each test method starts from an
@@ -26,6 +27,8 @@ public sealed class MarineSafetyWebApplicationFactory : WebApplicationFactory<Pr
     public void ResetDatabase()
     {
         _databaseName = $"marine-safety-tests-{Guid.NewGuid():N}";
+        _permissionResolver.Reset();
+        _identityTokenValidator.Reset();
         using var scope = Services.CreateScope();
         var options = scope.ServiceProvider.GetRequiredService<DbContextOptions<MarineSafetyDbContext>>();
         using var oldContext = new MarineSafetyDbContext(options);
@@ -55,6 +58,9 @@ public sealed class MarineSafetyWebApplicationFactory : WebApplicationFactory<Pr
 
     /// <summary>Permission resolver double carrying the seeded test grants.</summary>
     public TestPermissionResolver Resolver => _permissionResolver;
+
+    /// <summary>Account/session state double used by the JWT validation event.</summary>
+    public TestIdentityTokenValidator IdentityValidator => _identityTokenValidator;
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -87,6 +93,8 @@ public sealed class MarineSafetyWebApplicationFactory : WebApplicationFactory<Pr
             services.AddSingleton<IOpenMeteoClient>(new ForwardingOpenMeteoClient(this));
             services.RemoveAll<IPermissionResolver>();
             services.AddSingleton<IPermissionResolver>(_permissionResolver);
+            services.RemoveAll<IIdentityTokenValidator>();
+            services.AddSingleton<IIdentityTokenValidator>(_identityTokenValidator);
         });
     }
 
@@ -98,29 +106,43 @@ public sealed class MarineSafetyWebApplicationFactory : WebApplicationFactory<Pr
     }
 
     /// <summary>
-    /// Issues a test JWT in the same shape Auth issues production tokens. The
-    /// permission handler resolves the granted code from the seeded test user,
-    /// so tests exercise the full role-to-permission path.
+    /// Issues a test JWT in the same shape Auth issues production tokens and
+    /// registers its account/session state with the deterministic validator.
     /// </summary>
     public string CreateToken(
         Guid userId,
         IEnumerable<string>? permissionClaims = null,
-        DateTime? expires = null)
+        DateTime? expires = null,
+        int tokenVersion = 0,
+        Guid? sessionId = null,
+        int sessionVersion = 1)
     {
-        return CreateTokenCore(userId, permissionClaims, expires);
+        return CreateTokenCore(userId, permissionClaims, expires, tokenVersion, sessionId, sessionVersion);
     }
 
     private string CreateTokenCore(
         Guid userId,
         IEnumerable<string>? permissionClaims,
-        DateTime? expires)
+        DateTime? expires,
+        int tokenVersion,
+        Guid? sessionId,
+        int sessionVersion)
     {
+        var actualSessionId = sessionId ?? Guid.NewGuid();
+        var actualTokenExpiry = expires ?? DateTime.UtcNow.AddMinutes(15);
+        _identityTokenValidator.RegisterSession(
+            userId,
+            tokenVersion,
+            actualSessionId,
+            sessionVersion,
+            DateTime.UtcNow.AddDays(1));
+
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, userId.ToString()),
-            new("session_id", Guid.NewGuid().ToString()),
-            new("session_version", "1"),
-            new("token_version", "0")
+            new("session_id", actualSessionId.ToString()),
+            new("session_version", sessionVersion.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+            new("token_version", tokenVersion.ToString(System.Globalization.CultureInfo.InvariantCulture))
         };
 
         foreach (var permission in permissionClaims ?? [])
@@ -133,7 +155,7 @@ public sealed class MarineSafetyWebApplicationFactory : WebApplicationFactory<Pr
             Subject = new ClaimsIdentity(claims),
             Issuer = "Blueverse.Auth",
             Audience = "Blueverse.Client",
-            Expires = expires ?? DateTime.UtcNow.AddMinutes(15),
+            Expires = actualTokenExpiry,
             SigningCredentials = new SigningCredentials(
                 new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtSigningKey)),
                 SecurityAlgorithms.HmacSha256)
@@ -147,12 +169,21 @@ public sealed class MarineSafetyWebApplicationFactory : WebApplicationFactory<Pr
 /// <summary>
 /// Deterministic permission resolver double mirroring the seeded test
 /// identities. It verifies how endpoints authorize, not how SQL resolves; the
-/// production resolver is exercised by the repository's PostgreSQL evidence
-/// path and by Auth's own permission tests.
+/// production IdentityPermissionResolver and IdentityTokenValidator queries
+/// are not exercised by this in-memory test host.
 /// </summary>
 public sealed class TestPermissionResolver : IPermissionResolver
 {
     private readonly Dictionary<Guid, HashSet<string>> _grants = new();
+    private int _callCount;
+
+    public int CallCount => Volatile.Read(ref _callCount);
+
+    public void Reset()
+    {
+        _grants.Clear();
+        Interlocked.Exchange(ref _callCount, 0);
+    }
 
     public void Grant(Guid userId, string permissionCode)
     {
@@ -165,6 +196,10 @@ public sealed class TestPermissionResolver : IPermissionResolver
         codes.Add(permissionCode);
     }
 
-    public Task<bool> HasPermissionAsync(Guid userId, string permissionCode, CancellationToken cancellationToken) =>
-        Task.FromResult(_grants.TryGetValue(userId, out var codes) && codes.Contains(permissionCode));
+    public Task<bool> HasPermissionAsync(Guid userId, string permissionCode, CancellationToken cancellationToken)
+    {
+        Interlocked.Increment(ref _callCount);
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(_grants.TryGetValue(userId, out var codes) && codes.Contains(permissionCode));
+    }
 }

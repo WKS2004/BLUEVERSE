@@ -151,6 +151,31 @@ test('WEB-MARINE-API-007 the evaluation omits dateTime when the caller does not 
   })
 })
 
+test('WEB-MARINE-API-008 an expired browser session preserves 401 and uses a safe fallback', async () => {
+  const getRequest = captureFetch(new Response('Unauthorized: revoked session session-123', { status: 401 }))
+
+  await assert.rejects(() => getMarineConditions(6.025, 80.216), (error) => {
+    assert.ok(error instanceof MarineApiError)
+    assert.equal(error.status, 401)
+    assert.equal(error.message, 'We couldn’t complete that marine request. Please try again.')
+    assert.doesNotMatch(error.message, /revoked session|session-123|Unauthorized/)
+    return true
+  })
+  assertJsonRequest(getRequest(), { path: '/api/marine/current?latitude=6.025&longitude=80.216' })
+})
+
+test('WEB-MARINE-API-009 the server can explain a safe sign-in recovery for an expired session', async () => {
+  const recovery = 'Your session is no longer active. Sign in again to continue.'
+  const getRequest = captureFetch(jsonResponse({ status: 401, detail: recovery }, 401))
+
+  await assert.rejects(() => getMarineSafetyProfiles(), (error) => {
+    assert.ok(error instanceof MarineApiError)
+    assert.equal(error.status, 401)
+    assert.equal(error.message, recovery)
+    return true
+  })
+  assertJsonRequest(getRequest(), { path: '/api/marine/safety-profiles' })
+})
 
 test('WEB-MARINE-API-010 profile creation posts the activity reference and limits with units', async () => {
   const getRequest = captureFetch(jsonResponse(profile))

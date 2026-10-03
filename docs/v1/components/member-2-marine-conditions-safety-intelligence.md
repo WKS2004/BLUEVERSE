@@ -2,7 +2,7 @@
 contract_id: v1.component.marine-safety
 contract_type: business_component
 release: v1
-implementation_status: react_web_implemented_on_feature_branch
+implementation_status: backend_and_react_web_implemented_on_feature_branch
 owner_label: member_2
 owner_full_name: "Sanuda Abeysinghe"
 owner_github_username: "sanudaabey"
@@ -16,10 +16,15 @@ agent_contract: "../agents/member-2-marine-conditions-intelligence-agent.md"
 
 # Sanuda Abeysinghe (Member 2) — Marine Conditions & Safety Intelligence
 
-**Contract status:** backend and React Web implemented on `features/marine-safety`
-(internal service, public API integration, tests, live Open-Meteo/PostgreSQL
-evidence; React condition, history and safety-profile workflows with registry,
-catalog and test coverage). Flutter and the paired agent remain future work.
+**Implementation status (2026-10-03):** the marine backend and React Web
+workflows are implemented on `features/marine-safety`. The latest verification
+passed all 117 marine service tests and all 198 React tests, including 41
+marine cases. React lint and the shared UI-integration validator passed.
+Backend tests use an in-memory database and deterministic Auth/provider
+doubles; they do not verify the production Auth-table SQL against PostgreSQL.
+Earlier live provider/PostgreSQL evidence is recorded in the G00 history.
+Flutter and executable Agentic AI remain deferred; the component PR/merge and
+G07 integration are not recorded.
 **Assigned owner:** Sanuda Abeysinghe (`@sanudaabey`) — frozen-requirements
 trace label Member 2. Feature branch: `features/marine-safety`; paired
 Agentic AI branch: `agentic-ai/marine-conditions`.
@@ -43,17 +48,17 @@ authority or autonomous safety decision-maker.
 | Layer | Component responsibility and implementation contract |
 |---|---|
 | **Universal product idea** | Acquire weather and marine source data for an activity, location and requested period; validate and normalize it with provenance/freshness; then apply configured application rules to determine `SUITABLE`, `CAUTION`, `UNSUITABLE` or insufficient evidence. Source data, deterministic classification and optional AI explanation remain distinct. The period is an ordinary condition-query input; a planner-originated request preserves the planner's validated itinerary period. |
-| **React Web** | Implemented on this branch. `apps/web` provides the same authorized condition, suitability, profile-management and history outcomes as Flutter through the public API: `/marine/conditions`, `/marine/history` and `/marine/safety-profiles` (React 19/TypeScript/Vite/React Router, reusable pages/components, Tailwind utilities, existing request/state separation). The condition query accepts location, optional requested UTC period and activity as ordinary workflow inputs, then renders server classifications, source, units, time and gaps; the browser never recomputes them. Registered under the `marine-conditions`, `marine-condition-history` and `marine-safety-profile-management` shared workflow IDs; see the [React component contract](../../v0/components/react-web-client.md), [UI integration guide](../../development/ui-integration.md), and [React state ADR](../../adr/ADR-0005-react-state-management.md). |
+| **React Web** | Implemented on this branch. `apps/web` provides condition lookup, server suitability, profile management and history through the public API: `/marine/conditions`, `/marine/history` and `/marine/safety-profiles` (React 19/TypeScript/Vite/React Router, reusable pages/components, Tailwind utilities, existing request/state separation). The condition query accepts location, optional requested UTC period and activity as ordinary workflow inputs, then renders server classifications, source, units, time and gaps; the browser never recomputes them. Registered under the `marine-conditions`, `marine-condition-history` and `marine-safety-profile-management` shared workflow IDs; see the [React component contract](../../v0/components/react-web-client.md), [UI integration guide](../../development/ui-integration.md), and [React state ADR](../../adr/ADR-0005-react-state-management.md). Flutter routes are registered under the same workflow IDs but the mobile surface is not implemented yet. |
 | **Flutter Mobile** | Provide those same outcomes with native Dart/Material UI, using the repository's UI/logic/data layers, repository/API service and view-model pattern. The condition workflow accepts its location and period as ordinary business inputs; no distinct sensor or device feature is assigned to Sanuda Abeysinghe (Member 2). The server's condition evidence, classification, permission outcome and warnings remain equivalent to React. Do not reclassify locally or change a planner-originated period. See the [Flutter component contract](../../v0/components/flutter-client.md), [UI integration guide](../../development/ui-integration.md), and [Flutter state ADR](../../adr/ADR-0006-flutter-state-management.md). |
-| **Sanuda Abeysinghe (Member 2) .NET service and data** | A separate internal ASP.NET Core service in Sanuda Abeysinghe's own `services/<component-service>/` subfolder owns Open-Meteo acquisition, provider-response validation/normalization, deterministic suitability, condition/profile history, domain persistence and audit data. Its EF Core/PostgreSQL records are owned by this service. The existing `services/api` receives only the authentication/permission and route/forwarding integration needed to expose the service through `/api/...`; it contains none of Sanuda Abeysinghe's condition logic or provider calls. Clients never call the member service or Open-Meteo directly. Agree service identifiers, public/internal route mapping, DTOs, actor/permission propagation, data ownership and health semantics at G00. |
-| **Third-party integration** | Open-Meteo Weather and Marine APIs are Sanuda Abeysinghe's required v1 source and are called by the backend only. The integration must handle timeout, rate limits, schema/value errors, missing variables and stale data, minimize location data, and keep provider details/secrets out of both clients. Requests, fields, units, caching and freshness rules remain explicit implementation decisions; a provider response never changes the configured safety profile. |
-| **Paired Agentic AI role** | The future Marine Conditions Intelligence Agent may summarize validated, time-aware conditions and the existing deterministic suitability result through read-only allowlisted tools. Before G07, this branch prepares only the typed adapter and safe unavailable status. After G07 the agent may contextualize evidence but cannot fetch arbitrary network data, choose thresholds or change a classification. |
+| **Sanuda Abeysinghe (Member 2) .NET service and data** | The implemented internal ASP.NET Core service is `services/marine-safety` (`Blueverse.MarineSafety`, Compose service `marine-safety`, container `blueverse-marine-safety`). It owns Open-Meteo acquisition, provider-response validation/normalization, deterministic suitability, condition/profile history, domain persistence and audit data. Its EF Core migration is `InitialMarineSafetySchema`. `services/api` forwards `/api/marine/{**catch-all}` to `http://marine-safety:8080`; it contains none of the component's condition logic or provider calls. Clients never call the member service or Open-Meteo directly. These identifiers and the public/private route mapping are frozen in the [Member 2 G00 record](../g00/member-2-marine-safety-decisions.md). |
+| **Third-party integration** | Open-Meteo Weather and Marine APIs are the required source and are called by the backend only. The G00 record freezes the requested variables (`wind_speed_10m`, `precipitation`, `weather_code`, `wave_height`, `swell_wave_height`), UTC handling, nullable missing-field representation, snapshot persistence/reuse, a 60-minute default freshness limit, one transient-only retry and a 10-second per-attempt timeout. Provider responses never change the configured safety profile. Numeric threshold provenance and defensible profile criteria remain owner decisions; test fixtures do not count as live provider evidence. |
+| **Paired Agentic AI role** | The future Marine Conditions Intelligence Agent may summarize validated, time-aware conditions and the existing deterministic suitability result through read-only allowlisted tools. The accepted Member 2 G00 decision defers the AI workflow and typed adapter; neither is implemented on this branch. After G07 the agent may contextualize evidence but cannot fetch arbitrary network data, choose thresholds or change a classification. |
 | **Component relationships** | Sanuda Abeysinghe (Member 2) uses Ushan Srinuka's canonical activity identity/taxonomy and destination location, supplies sourced conditions and suitability to Adithya Gunawardana's eligibility/ranking workflow, and supplies evidence to Wanshaja Sooriyabandara's assessment. Ushan Srinuka (Member 1) owns map-provider lookups; Sanuda Abeysinghe (Member 2) consumes the canonical location data and does not call the map provider. Sanuda Abeysinghe (Member 2) does not own operational restrictions. See the [producer/consumer relationship map](../component-relationships.md#producer-consumer-and-authority-map). |
 
 All authorized actions and statuses use the server's role-to-permission
 contract and the shared public API/UI workflow IDs. The table summarizes the
 system boundary; the following sections specify detailed data semantics,
-profiles, journeys, provider failure, acceptance and choices still open.
+profiles, journeys, provider failure, acceptance and remaining open decisions.
 
 Implement this component within the [v1 shared-foundation and file-ownership
 rules](../member-branch-workflow.md#shared-foundation-and-file-ownership):
@@ -100,12 +105,13 @@ Application-owned deterministic suitability
 Optional AI explanation or recommendation
 ```
 
-On `features/marine-safety`, implement the authorized public
-workflow/status contract and typed private backend adapter through which the
-future Marine Conditions Intelligence Agent can consume only the validated,
-minimal condition and suitability evidence it needs. Before G07, report
-not connected or unavailable if the Agentic AI runtime is absent; never
-produce a placeholder report or let the adapter change suitability rules.
+The accepted Member 2 G00 decision explicitly defers the public AI
+workflow/status contract and typed private backend adapter for the future
+Marine Conditions Intelligence Agent. If a later accepted scope decision
+reintroduces that pre-G07 work, expose only validated, minimal condition and
+suitability evidence. Report not connected or unavailable if the Agentic AI
+runtime is absent; never produce a placeholder report or let the adapter
+change suitability rules.
 Keep AI dependency health separate from API liveness, database readiness and
 Open-Meteo provider health. Follow the shared
 [member integration boundary](../agentic-ai-integration-boundary.md).
@@ -117,9 +123,33 @@ An AI model cannot invent physical thresholds or override a deterministic
 
 Tourists and authorized operational users can inspect information relevant to
 their workflow. A suitably permitted manager can configure safety profiles.
-The exact role-to-permission mapping and permission codes remain server-side
-implementation decisions. Neither React nor Flutter may grant profile-edit,
-assessment or operational authority based on a hard-coded role name.
+The marine service enforces the Auth-owned `marine.profile.read` and
+`marine.profile.manage` permission codes through the role-to-permission model.
+Profile and activity changes require both grants; reads and suitability
+assessment require `marine.profile.read`. Auth seeds the grants for the Admin
+role. Neither React nor Flutter, nor the marine service, grants authority by
+checking a hard-coded role name.
+
+The service accepts an Auth-issued JWT from an `Authorization: Bearer` header
+or the Auth browser cookies, preferring an explicit bearer header when both
+are present. When `blueverse_active_account_id` is present, it selects
+`blueverse_access_token_<userIdN>`; the legacy
+`blueverse_access_token` is accepted only when its subject matches that
+selected account. A malformed selection fails closed. When no account is
+selected, the legacy cookie remains supported for single-account clients. It
+validates the shared signing key, issuer, audience, HS256 algorithm and token
+lifetime. It also checks the current Auth account and active session against
+`token_version`, `session_id`, `session_version` and session expiry. Every
+protected operation resolves its permission from the current Auth role
+assignments; JWT role and permission claims are informational snapshots and
+never grant access. Expired or revoked identity sessions receive 401, while an
+active caller without the required grant receives 403. Auth remains the sole
+owner and writer of identity data.
+
+The marine HTTP test host uses a deterministic permission resolver, so it
+does not exercise the production Auth-table SQL; a PostgreSQL-backed
+integration run is still needed for that evidence. See the [database schema
+and test boundary](../../database/schema.md).
 
 Both clients must display the same server-produced assessment and evidence to
 callers with equivalent permissions. A client may format a chart or summary
@@ -127,9 +157,11 @@ for its screen, but it may not produce a competing suitability classification.
 
 ## 4. Data and domain concepts
 
-These concepts define responsibility, not exact EF entities or table names.
-The PostgreSQL model and API schema are to be designed and documented during
-implementation.
+These concepts define responsibility. The implemented PostgreSQL entities,
+constraints and API contract are documented in [database schema](../../database/schema.md),
+the [G00 decisions](../g00/member-2-marine-safety-decisions.md) and the
+[endpoint catalog](../../api/endpoint-catalog.md). Any future schema changes
+must be made in the owning service migration and reflected in those sources.
 
 | Concept | Required meaning |
 |---|---|
@@ -204,11 +236,12 @@ invent live numeric thresholds in this target document.
 
 ## 7. Public API capability contract
 
-The component must have at least four meaningful public API endpoints and the
-suitability assessment as a business operation beyond CRUD. The capability
-list below does not prescribe URL paths. Exact routes, methods, DTOs,
-permission codes, status codes and pagination conventions belong in the
-implementation. Add implemented routes to the
+The component has more than four meaningful public API operations, including
+the suitability assessment as a business operation beyond CRUD. Exact routes,
+methods, DTOs, permissions, status codes and pagination are frozen in the
+[G00 decision record](../g00/member-2-marine-safety-decisions.md) and listed
+in the [endpoint catalog](../../api/endpoint-catalog.md). The capability list
+below states the product scope. Keep implemented routes in the
 [endpoint catalog](../../api/endpoint-catalog.md), under `/api/...` and with
 no version path segment.
 
@@ -319,15 +352,21 @@ controlled provider fixtures for error paths, and real PostgreSQL evidence
 for database-specific rules. The owner should be able to explain the
 profile criteria and demonstrate the non-CRUD suitability assessment.
 
-## 12. Decisions to finalize during implementation
+## 12. Decisions and remaining evidence
 
-Exact endpoint paths/methods, provider-client library, query/cache strategy,
-persist-versus-cache rules, coordinate precision and radius, units and
-conversion policy, time-zone handling, activity profile schema, evidence
-thresholds and defensible source, freshness limits, no-profile behavior,
-classification vocabulary, profile versioning, history retention, and
-provider retry/rate policies must be decided in implementation documentation
-and tested. Numeric safety thresholds are deliberately not specified here.
+G00 and the implementation have frozen the service identity, API and gateway
+routes, permission codes, UTC semantics, requested provider variables, units,
+freshness and snapshot-reuse rules, suitability vocabulary, profile versioning,
+error behavior, and bounded provider retry/timeout policy. See the [G00
+decision record](../g00/member-2-marine-safety-decisions.md),
+[database schema](../../database/schema.md) and [endpoint
+catalog](../../api/endpoint-catalog.md); do not describe those choices as
+open. The defensible source and approval process for numeric safety criteria
+remain to be established, and the local activity references must map to
+Member 1's canonical taxonomy when that service is integrated. Latest auth
+SQL verification against PostgreSQL, Flutter parity, cross-component
+verification on `dev`, the component PR/merge and G07 remain unrecorded gates.
+The contract intentionally does not invent numeric safety thresholds.
 
 ## 13. Traceability
 

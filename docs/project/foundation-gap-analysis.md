@@ -4,35 +4,43 @@ This review compares the checked-in repository with the implementation plan from
 
 ## Current status
 
+**Implementation snapshot — 2026-10-03:** Member 2's marine-safety backend
+and React Web surfaces are implemented on `features/marine-safety`. The
+component test suites pass 117/117 service tests and 41/41 marine React tests;
+the full React suite passes 198/198. Flutter marine workflows, the other three
+member components, executable Agentic AI and integrated G07 evidence remain
+open. The detailed [Member 2 component contract](../v1/components/member-2-marine-conditions-safety-intelligence.md)
+and [branch tracker](../v1/member-branch-workflow.md#component-branch-status)
+record the current evidence and limits.
+
 | Area | Status | Evidence / next action |
 |---|---|---|
-| React web project | Auth and account workflows present | `apps/web` provides `/signin` and `/signup`, protected-cookie session recovery and saved-account switching, profile/password/session management, account deletion, permission-aware user/role/permission administration, and the coastal overview. Future domain workflows remain v1 work. |
-| Flutter mobile project | Auth and account workflows present | `apps/mobile` provides signed-out coastal onboarding, `/signin` and `/signup`, public-gateway Auth with platform secure storage, profile/password/session management, account deletion, permission-aware user/role/permission administration, and the coastal overview. Future domain workflows remain v1 work. |
+| React web project | Auth/account foundation and Member 2 marine workflows present | `apps/web` provides `/signin` and `/signup`, protected-cookie session recovery and saved-account switching, profile/password/session management, account deletion, permission-aware user/role/permission administration, the coastal overview, and marine conditions/suitability, history and safety-profile routes. The full React suite passes 198 cases (41 marine) on 2026-10-03. Other v1 workflows remain unimplemented. |
+| Flutter mobile project | Auth/account foundation present; marine route registration only | `apps/mobile` provides signed-out coastal onboarding, `/signin` and `/signup`, public-gateway Auth with platform secure storage, profile/password/session management, account deletion, permission-aware user/role/permission administration, and the coastal overview. Marine workflow IDs/routes are registered, but marine UI is not implemented. Other v1 workflows remain unimplemented. |
 | Flutter gateway configuration | Local device path documented; deployment transport unresolved | `ApiGatewayConfig` currently accepts only HTTP on fixed port 80 and does not follow a changed `BLUEVERSE_HTTP_PORT` value. Its checked-in Android fallback differs from the standard emulator address used in the setup guides. Pass `BLUEVERSE_API_BASE_URL` explicitly for local emulator/device runs; design and verify HTTPS-capable release configuration before treating mobile deployment as ready. See `apps/mobile/lib/data/services/api_gateway_config.dart`, `apps/mobile/README.md` and `docs/deployment/local.md`. |
-| Cross-platform product scope | Equal coverage required, domain delivery pending | React Web and Flutter Mobile must support every permitted role and business workflow with the same API and permissions. The current Auth workflow is shared; no v1 domain workflow is implemented yet. See `docs/v1/cross-platform-and-permissions.md`. |
-| ASP.NET Core API | Foundation present | `services/api` provides the .NET 10 public gateway, OpenAPI/Swagger, CORS, JWT validation, health and YARP routing. Domain workflow endpoints remain future work. |
+| Cross-platform product scope | Marine workflow is implemented in React; mobile parity and other domains are pending | React and Flutter must support every permitted role and business workflow with the same API and permissions. Member 2's React routes and public API are implemented; its Flutter routes are registered but not implemented. See `docs/v1/cross-platform-and-permissions.md`. |
+| ASP.NET Core API | Foundation plus marine public routing | `services/api` provides the .NET 10 public gateway, OpenAPI/Swagger, CORS, JWT validation, health and YARP routing. It forwards `/api/marine/*` to the private `services/marine-safety` service; the service owns marine domain behavior. Other member endpoints remain future work. |
 | Auth service | Session lifecycle implemented | `services/auth` provides registration/login, server-issued installations, PBKDF2 password hashing, 15-minute JWTs, rotating hashed refresh tokens, one/30-day absolute sessions, five-account-per-device and five-session-per-account limits, scoped logout, active-session management with ended-session logs, permission policies, role/user administration, health and bootstrap seeding. |
-| PostgreSQL | Local infrastructure and Auth persistence present | Development Compose publishes DHI PostgreSQL 16 as `5432:5432` on all host interfaces for pgAdmin4. Use only on a trusted development network; promotion from `dev` to `main` changes the binding to `127.0.0.1:5432:5432`. Auth uses EF Core constraints and checked-in migrations; the live local database contains the Auth tables and EF migration history. Domain schema remains future work. |
-| Edge gateway | Present | `edge-nginx` routes frontend and `/api/*` traffic only. The API forwards `/api/auth/*` to the internal Auth service. |
-| Permission authorization | Implemented for Auth | Permission policies use role-derived claims, unknown assignments are rejected, and system roles are protected by a dedicated permission. |
+| PostgreSQL | Auth and marine persistence models/migrations present | Development Compose publishes DHI PostgreSQL 16 as `5432:5432` on all host interfaces for pgAdmin4. Use only on a trusted development network; promotion from `dev` to `main` changes the binding to `127.0.0.1:5432:5432`. Auth and `services/marine-safety` own separate EF Core models and migrations in the shared database. Marine production Auth-query behavior still needs PostgreSQL-backed verification. |
+| Edge gateway | Present | `edge-nginx` routes frontend and `/api/*` traffic only. The API forwards `/api/auth/*` to Auth and `/api/marine/*` to the private marine-safety service. |
+| Permission authorization | Implemented in Auth and marine-safety | Auth remains identity and permission-grant owner. Marine-safety validates active Auth sessions and resolves current role permissions from Auth data; its test host uses deterministic doubles, so production SQL translation remains unverified on PostgreSQL. |
 | Agentic AI | Four v1 agents specified, no executable service | Separate contracts for the Planning & Coordination, Marine Conditions Intelligence, Coastal Experience & Biodiversity, and Safety & Operations agents are under `docs/v1/agents/`. No executable agent workflow is present yet. |
 | ML biodiversity capability | v1 integration target, not implemented | The separate IT3091 workstream supplies the initial trained model. BLUEVERSE v1 must integrate genuine internal inference when available and handle temporary failure without fabricating predictions. No inference implementation is checked in. |
-| Testing | Auth/client foundation coverage present; device and domain evidence remains open | The 2026-09-25 run record is historical and reports 21 API cases, 67 default Auth cases, 157 React cases, and 86 Flutter tests across 12 then-runnable files. The current Auth source defines 77 default cases; this documentation audit did not rerun application suites. The opt-in PostgreSQL session/concurrency smoke test remains separate. The formerly failing Flutter `test/widget_test.dart` reference to removed `MyHomePage` was corrected on 2026-09-26 with `MOB-LAUNCH-001`; this audit confirmed the stale reference is absent and Dart formatting is clean, but local Flutter analysis/tests could not run because the sandbox cannot write the SDK cache lockfile under `Program Files`. The existing Auth API suite still has duplicate case IDs and requires separate approved correction. No device `integration_test` suite or v1 domain coverage is present. |
-| CI/CD | Source, client, Docker and UI-contract foundations present; main-branch trigger gap | `web-ci.yml` and `mobile-ci.yml` run the shared UI integration validator; `web-tests.yml`, `mobile-tests.yml` and `backend-tests.yml` discover and report their current suites; `ui-integration.yml` rechecks the registry when either client, backend, gateway or contract changes. The Docker stack check probes health and public API/Auth Swagger routes. Local Compose, Auth/database health and Swagger were verified on 2026-09-23; Android device/emulator and hosted CI run evidence remain to be recorded. `backend-tests.yml` has path filters, so it does not run for every push or pull request to `main` as the assignment specifies. |
+| Testing | Marine service and React evidence present; mobile/device/production integration evidence remains open | The 2026-10-03 marine backend suite passes 117/117; the complete React suite passes 198/198, including 41 marine cases. React lint and shared UI integration validation pass. The service tests use an in-memory database and deterministic Auth/provider doubles; they do not validate the production Auth-table SQL. The 2026-09-25 foundation counts (21 API, 67 Auth, 157 React and 86 Flutter tests) are historical; current Auth source defines 77 default cases. The formerly failing Flutter `test/widget_test.dart` reference to removed `MyHomePage` was corrected on 2026-09-26 with `MOB-LAUNCH-001`, but local Flutter analysis/tests could not run because the sandbox cannot write the SDK cache lockfile under `Program Files`. The existing Auth API suite still has duplicate case IDs and requires separate approved correction. No device `integration_test` suite or other member-domain coverage is present. |
+| CI/CD | Source, client, Docker and UI-contract checks present; main-branch trigger and marine health-route gaps | `web-ci.yml` and `mobile-ci.yml` run the shared UI integration validator; `web-tests.yml`, `mobile-tests.yml` and `backend-tests.yml` discover and report service/client suites; `ui-integration.yml` rechecks the registry when either client, backend, gateway or contract changes. The Docker stack-health workflow derives each health URL from its service folder name. For `services/marine-safety`, it currently probes `/api/marine-safety/health`, while the registered gateway prefix is `/api/marine`; the workflow needs an explicit public-route mapping before it can verify marine health. The current marine branch has no hosted CI evidence. `backend-tests.yml` also has path filters, so it does not run for every push or pull request to `main` as the assignment specifies. |
 | Agent resources | Finalized and validated | `.agents/` contains eight BLUEVERSE-owned workflows and fifteen pinned supplementary skills (23 validated in total), PostgreSQL/EF Core data-access guidance, registry/provenance metadata, a portable .NET overlay, routing evaluations and a dependency-free validator enforced by `repository-ci.yml`. |
 | Deployment | Configuration present, evidence pending | Render API/Auth/PostgreSQL and Vercel documentation exist; live URLs, migrations and deployment evidence must be recorded before submission. |
 | Submission package | Requirements documented, evidence pending | The group still needs the single consolidated PDF with Group and Individual Report sections, each student's own reflection and signed declaration, a runnable APK, accessible ten-minute demonstration video, evaluator links and secure test-account instructions. Submitted links and services must remain accessible through 21 October 2026. |
 | Git/GitHub | Repository present | Git metadata and branch history are present in the reviewed checkout. Continue using focused commits, pull requests and contribution evidence. |
 
-## Final v1 start-readiness decision — 2026-09-26
+## Final v1 start-readiness decision — 2026-09-26 (historical)
 
 **GO for G00; conditional GO for component coding after G00; not ready to
 claim v1 complete.** The repository contains the foundation and detailed
 member, agent, relationship, integration and branch contracts needed to begin
-the shared contract-freeze work. The source inventory still contains only
-`services/api` and `services/auth`; all four v1 component services, their
-client workflows and the executable Agentic AI runtime remain to be
-implemented.
+the shared contract-freeze work. At that decision date, the source inventory
+contained only `services/api` and `services/auth`; the marine-safety service
+and React workflows were implemented on the Member 2 branch afterward.
 
 The named owners and their feature/Agentic AI branches are now recorded in the
 [canonical owner map](ai-team-members.md). The team must still agree the
@@ -71,7 +79,10 @@ The v1 submission needs the four separately documented
 [member components](../v1/README.md). Each requires backend, database, React,
 Flutter, testing, Git/documentation and a distinct Agentic AI contribution.
 Every permitted role and business action must work in both clients. The
-current foundation does not claim these components are implemented.
+current repository has Member 2's marine backend and React workflows in
+progress on `features/marine-safety`; the Flutter surface, the other three
+member components and integrated Agentic AI remain outstanding. The branch is
+not yet a completed or integrated v1 delivery.
 
 ## Foundation acceptance checks
 
@@ -114,9 +125,11 @@ python -m unittest discover -s scripts/validation/tests -p "test_*.py"
 
 The current registry contains the shared home, Auth session and registration,
 profile, dashboard, Auth administration and recovery workflows with both
-client routes and their public endpoint references. Acceptance evidence
-includes both client surfaces, backend endpoint tests and the public
-gateway/API request boundary; a passing frontend build alone is not sufficient.
+client routes, plus the three Member 2 marine workflows. React implements the
+marine routes; corresponding Flutter routes are registered but the screens
+are not implemented. Acceptance evidence includes both client surfaces,
+backend endpoint tests and the public gateway/API request boundary; a passing
+frontend build alone is not sufficient.
 
 ## Agent-resource acceptance check
 

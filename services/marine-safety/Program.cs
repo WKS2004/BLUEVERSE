@@ -1,3 +1,5 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -36,7 +38,7 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Enter a JWT token. Swagger sends it as: Authorization: Bearer {token}"
+        Description = "Use Authorization: Bearer {token}. Signed-in browser requests may also use the Auth-selected account session cookie."
     });
     options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
     {
@@ -58,8 +60,9 @@ builder.Services.AddDbContext<MarineSafetyDbContext>(options =>
             maxRetryDelay: TimeSpan.FromSeconds(10),
             errorCodesToAdd: null)));
 
-// JWT validation uses the same issuer/audience/signing key contract as the
-// public API gateway and the Auth service.
+// JWT validation uses the shared issuer/audience/signing key contract. Auth
+// session state is checked as well so revoked or stale tokens cannot reach
+// marine operations through the private service route.
 var secretKey = builder.Configuration["JWT_SIGNING_KEY"];
 if (string.IsNullOrWhiteSpace(secretKey))
 {
@@ -96,12 +99,45 @@ builder.Services.AddAuthentication(options =>
         ClockSkew = TimeSpan.FromMinutes(1),
         ValidAlgorithms = [SecurityAlgorithms.HmacSha256]
     };
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = MarineSafetyCookieTokenReader.OnMessageReceived,
+        OnTokenValidated = async context =>
+        {
+            var tokenValidator = context.HttpContext.RequestServices.GetRequiredService<IIdentityTokenValidator>();
+
+            var principal = context.Principal;
+            var subject = principal?.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? principal?.FindFirstValue(JwtRegisteredClaimNames.Sub);
+            if (!Guid.TryParse(subject, out var userId) ||
+                !int.TryParse(principal?.FindFirstValue("token_version"), out var tokenVersion) ||
+                !Guid.TryParse(principal?.FindFirstValue("session_id"), out var sessionId) ||
+                !int.TryParse(principal?.FindFirstValue("session_version"), out var sessionVersion))
+            {
+                context.Fail("The token identity or session claims are invalid.");
+                return;
+            }
+
+            var isCurrent = await tokenValidator.IsCurrentAsync(
+                userId,
+                tokenVersion,
+                sessionId,
+                sessionVersion,
+                context.HttpContext.RequestAborted);
+            if (!isCurrent)
+            {
+                context.Fail("The account or device session is no longer active.");
+            }
+        }
+    };
 });
 
 builder.Services.AddAuthorization();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IPermissionResolver, IdentityPermissionResolver>();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
+builder.Services.AddScoped<IIdentityTokenValidator, IdentityTokenValidator>();
 
 // Provider configuration and typed HTTP clients for Open-Meteo.
 builder.Services.Configure<OpenMeteoOptions>(builder.Configuration.GetSection(OpenMeteoOptions.SectionName));

@@ -8,8 +8,10 @@ The checked-in application provides the **v0 foundation** for the SE3090
 integrated full-stack and Agentic AI project. The submission target is
 **v0 plus v1**. React and Flutter implement the shared Auth registration and session workflows,
 backed by the public API gateway, internal Auth service and PostgreSQL. The
-four v1 business components, four agents and biodiversity integration are
-documented targets, not yet implemented behavior.
+Member 2's marine-safety backend and React workflows are implemented on
+`features/marine-safety`. Its Flutter screens, the other three business
+components, four executable agents and biodiversity integration remain
+unimplemented targets.
 
 ## Project identity
 
@@ -33,18 +35,20 @@ React Web / Flutter Mobile
               │
               ▼
      Public ASP.NET Core API
-        ├──> Auth service ───────────────> PostgreSQL
-        └──> Private component services owned by the four assigned members ─> PostgreSQL
+        ├──> Auth service ──────────────────────────────> PostgreSQL
+        ├──> Marine-safety service (Member 2) ─────────> PostgreSQL
+        └──> Other private component services (planned) -> PostgreSQL
                       └──> Private Agentic AI runtime (after G07)
 ```
 
-The diagram combines the implemented v0 foundation and the v1 target. Today,
-the API integrates Auth, which owns its PostgreSQL-backed behavior. For v1, each
-member's private .NET service owns its component business rules, persistence
-and assigned provider adapters. The API remains the only client-facing
-boundary and receives only the authentication/permission and routing
-integration needed to expose those services. After all four member components
-pass G07, the owning service dispatches to the private Agentic AI runtime.
+The diagram combines the current partial v1 implementation and remaining
+target architecture. The API integrates Auth and routes marine operations to
+Member 2's private service, which owns its PostgreSQL-backed behavior and
+Open-Meteo adapter. The other three member services remain planned. Each
+service owns its component business rules, persistence and assigned provider
+adapters. The API remains the only client-facing boundary; each service
+enforces its accepted domain contract. After all four member components pass
+G07, the owning service may dispatch to the private Agentic AI runtime.
 React and Flutter never call member services or Agentic AI directly. See
 [ADR-0020](docs/adr/ADR-0020-member-component-service-boundaries.md), the
 [v1 documentation index](docs/v1/README.md) and the
@@ -143,16 +147,17 @@ apps/web/          # React
 apps/mobile/       # Flutter
 ```
 
-`services/api/` and `services/auth/` are the service locations referenced by
-Compose, the Dockerfiles, Render and CI. Both backend projects are checked in;
-Auth remains internal and is reachable by clients only through the public API
-gateway. Do not move the Dockerfiles into generated projects; keep them under
+`services/api/`, `services/auth/` and `services/marine-safety/` contain the
+checked-in backend projects. Compose, Dockerfiles and CI include the marine
+service; hosted deployment is not yet evidenced. Auth and marine-safety remain
+internal and are reachable by clients only through the public API gateway.
+Do not move the Dockerfiles into generated projects; keep them under
 `infrastructure/docker/`.
 
 ## Local setup and deployment
 
 The supported local deployment runs the checked-in React client, public API,
-internal Auth service and PostgreSQL with Docker Compose. Run Compose commands
+internal Auth and marine-safety services, and PostgreSQL with Docker Compose. Run Compose commands
 from the repository root (the directory containing `compose.yaml`). The public
 entry point is `edge-nginx`; clients use the gateway's `/api/...` routes and do
 not connect directly to internal services.
@@ -256,7 +261,9 @@ available. If port 80 is already in use, set `BLUEVERSE_HTTP_PORT=8080` in
 `.env` and use `http://localhost:8080` below. Both the development mapping and
 the loopback-only mapping planned for `main` use host port `5432`; changing the
 bind address does not resolve a host-port collision with a PostgreSQL process
-already listening on `5432`.The v1 marine conditions & safety service (`marine-safety`) joins the same
+already listening on `5432`.
+
+The v1 marine conditions & safety service (`marine-safety`) joins the same
 stack: the public API forwards `/api/marine/...` to it, and it owns
 its marine-safety tables in the shared PostgreSQL database and applies its
 migrations at startup. Its two permission grants
@@ -292,20 +299,22 @@ docker compose ps
 
 The first build pulls the DHI base images and may take several minutes. To
 build and run in the foreground while watching logs, use
-`docker compose up --build`. Auth waits for PostgreSQL to become healthy, applies its
-migrations and seeds the configured administrator account.
+`docker compose up --build`. Auth waits for PostgreSQL to become healthy,
+applies its migrations and seeds the configured administrator account.
+Marine-safety also waits for PostgreSQL and applies its own migration.
 
 ### Verify the local deployment
 
 Open the web app at `http://localhost` (or the port configured by
 `BLUEVERSE_HTTP_PORT`). The unified Swagger UI is at
-`http://localhost/api/swagger`. Check the frontend, public API and Auth health
-routes; each should return HTTP 200:
+`http://localhost/api/swagger`. Check the frontend, public API, Auth and
+marine-safety health routes; each should return HTTP 200:
 
 ```powershell
 curl.exe -f http://localhost/health
 curl.exe -f http://localhost/api/health
 curl.exe -f http://localhost/api/auth/health
+curl.exe -f http://localhost/api/marine/health
 ```
 
 The marine-safety document is also listed directly in the unified Swagger UI
@@ -330,12 +339,13 @@ On macOS, Linux or WSL2, run:
 curl --fail --silent --show-error http://localhost/health
 curl --fail --silent --show-error http://localhost/api/health
 curl --fail --silent --show-error http://localhost/api/auth/health
+curl --fail --silent --show-error http://localhost/api/marine/health
 ```
 
 In `docker compose ps`, PostgreSQL should report `healthy`
-and the frontend, API, Auth and gateway containers should be running. The
+and the frontend, API, Auth, marine-safety and gateway containers should be running. The
 development Compose stack exposes PostgreSQL on host port `5432` across all
-interfaces; Auth connects over the Docker network. When promoting the Compose
+interfaces; Auth and marine-safety connect over the Docker network. When promoting the Compose
 configuration from `dev` to `main`, change the host mapping to
 `127.0.0.1:5432:5432` so host access is loopback-only. Production databases
 remain privately managed and are not configured through this local binding.
@@ -343,7 +353,7 @@ remain privately managed and are not configured through this local binding.
 If a service does not start or a health URL fails, inspect its recent logs:
 
 ```text
-docker compose logs --tail=100 edge-nginx frontend api auth postgres
+docker compose logs --tail=100 edge-nginx frontend api auth marine-safety postgres
 ```
 
 Common first-run causes are Docker Desktop not running, missing DHI registry
@@ -413,13 +423,17 @@ tree for authoritative cases.
 
 - `docker-web-build.yml` synchronizes the React lockfile with the DHI Node 24 image, then builds the React web image.
 - `docker-backend-build.yml` builds the public API and discovered ASP.NET services one by one.
-- `docker-stack-health.yml` waits for both build workflows, starts the root Compose file and checks frontend/API/service health endpoints plus the public API/Auth Swagger routes.
+- `docker-stack-health.yml` waits for both build workflows, starts the root Compose file and checks frontend/API/discovered-service health endpoints plus the public API/Auth Swagger routes.
 
 The web and backend build workflows run on supported branch families when their relevant application, service, Docker infrastructure, lockfile synchronization, Compose, workflow or build-context paths change. The stack-health workflow waits for the required image builds for the same commit and runs only for pull requests targeting `main`; it synchronizes the web lockfile again on its separate runner before running the Compose health checks. Backend build failures are collected across all services so later services are still checked before the workflow fails.
 
 The Docker backend workflow builds `services/api` first and then discovers and
-builds the other ASP.NET service directories, including the internal Auth
-service. The backend test workflow fails if a service source project has no
+builds the other ASP.NET service directories, including Auth and
+marine-safety. The stack-health workflow currently derives each service's
+health URL from its folder name; for marine-safety that produces
+`/api/marine-safety/health`, while the gateway exposes `/api/marine/health`.
+The workflow needs an explicit alias mapping before its service-health check
+can verify marine-safety. The backend test workflow fails if a service source project has no
 discovered service-local test project.
 
 `github-config-sync.yml` uses GitHub Actions to copy `.github/**` changes

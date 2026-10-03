@@ -424,3 +424,103 @@ Member 2, Marine Conditions & Safety Intelligence, branch `features/marine-safet
   endpoints, 28 frontend routes) after --write-markdown regeneration;
   validate_ui_integrations.py OK; M2-DOC-001 CaseId uniqueness meta-test
   green. Nothing committed (repo rule: commit only on explicit request).
+
+## 2026-10-03 — Marine-safety authentication and authorization hardening
+
+- Date/time or time range: 2026-10-03 17:35–17:44 (Asia/Colombo)
+- GitHub Username: `sanudaabey`
+- Team Member Name (actual): Sanuda Abeysinghe
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-6
+- Summary of the user's request: Fix Authentication and Authorization issues
+  affecting the marine-safety component and update its documentation.
+- Summary of what the AI Agent did: Aligned marine JWT authentication with
+  Auth-managed bearer and selected-account cookie sessions; added current
+  account/token/session validation; retained live role-to-permission checks;
+  propagated request cancellation; and updated the marine component, G00,
+  database, phase and branch-status documentation.
+- AI output accepted/changed/rejected: Accepted component-owned, read-only
+  Auth session validation and the existing marine permission codes. Updated
+  the docs to describe current behavior. No public routes or permission codes
+  changed.
+- Verification/evidence: Endpoint catalog validator passed (53 public
+  endpoints, 28 frontend routes); UI integration validator passed;
+  `git diff --check` passed. The marine build could not restore because the
+  sandbox denied access to `C:\Users\MSI\AppData\Roaming\NuGet\NuGet.Config`;
+  tests were not run. No commit created.
+
+## 2026-10-03 — Marine-safety authentication verification recheck
+
+- Date/time or time range: 2026-10-03 17:52–18:00 (Asia/Colombo)
+- GitHub Username: `sanudaabey`
+- Team Member Name (actual): Sanuda Abeysinghe
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-6
+- Summary of the user's request: Recheck whether the marine-safety
+  authentication/authorization fixes and documentation are complete.
+- Summary of what the AI Agent did: Re-ran the marine suite and documentation
+  validators; reviewed Auth cookie/schema contracts; fixed bearer-header
+  precedence and malformed selected-account fallback; added seven focused
+  cookie regression cases; corrected the docs and test comments to state the
+  PostgreSQL verification boundary.
+- AI output accepted/changed/rejected: Accepted the existing Auth token and
+  session claim contract and marine permission codes; changed cookie selection
+  to preserve explicit bearer tokens and fail closed on malformed account
+  selection. No public routes or permission codes changed.
+- Verification/evidence: `dotnet test` passed 110/110; endpoint catalog and
+  UI integration validators passed; `git diff --check` passed. PostgreSQL
+  query verification remains outstanding: Docker is unavailable, localhost
+  port 5432 is closed, and `BLUEVERSE_AUTH_POSTGRES_TEST_CONNECTION` is unset.
+  No commit created.
+
+## 2026-10-03 — Marine-safety backend and React test updates
+
+- Date/time or time range: 2026-10-03 18:26 (Asia/Colombo)
+- GitHub Username: `sanudaabey`
+- Team Member Name (actual): Sanuda Abeysinghe
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-6
+- Summary of the user's request: Update all marine-safety tests in the backend
+  service and React Web App.
+- Summary of what the AI Agent did: Added React API and component cases for
+  expired-session 401 handling, safe recovery, profile validation and state;
+  corrected the profile-validation test to assert the initial GET rather than
+  treating the read as a mutation; synchronized the Web README and test matrix.
+- AI output accepted/changed/rejected: Kept the server-owned permission and
+  identity checks; kept the existing public API surface; changed only test
+  expectations and test documentation for this request.
+- Verification/evidence: Marine backend suite passed 117/117; full React suite
+  passed 198/198 when run with one worker; React lint and UI integration
+  validation passed; `git diff --check` passed. The default parallel Node test
+  run exhausted this host's memory, so the same full suite was rerun serially.
+  No commit created.
+
+## 2026-10-03 — Marine-safety documentation reconciliation
+
+- Date/time or time range: 2026-10-03 18:58 (Asia/Colombo)
+- GitHub Username: `sanudaabey`
+- Team Member Name (actual): Sanuda Abeysinghe
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-6
+- Summary of the user's request: Update all documentation about the
+  marine-safety component again after the implementation and test updates.
+- Summary of what the AI Agent did: Reconciled the component contract, G00
+  record, branch tracker, roadmap, foundation review, Agentic AI boundary,
+  architecture, API/UI catalogs, local setup, deployment, test documentation
+  and component READMEs with the current branch evidence. Corrected stale
+  statements about implemented domain routes, React coverage, G00-deferred AI
+  integration, and the Marine public health-route alias used by CI.
+- AI output accepted/changed/rejected: Accepted current implementation,
+  catalog, test and G00 evidence as the source for status. Changed outdated
+  documentation while retaining dated historical records and target
+  specifications. No implementation, test or CI source was changed in this
+  documentation pass.
+- Verification/evidence: Endpoint catalog validator passed (53 public
+  endpoints, 28 frontend routes); UI integration validator passed; agent
+  resource validator passed (23 skills); `git diff --check` passed. The docs
+  continue to identify production Auth SQL/PostgreSQL verification and the
+  Docker stack-health route alias as open evidence. No commit created.

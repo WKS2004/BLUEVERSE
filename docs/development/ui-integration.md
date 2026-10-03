@@ -81,9 +81,12 @@ Endpoint paths use the gateway's `/api/...` namespace. Prefer relative
 `/api/...` URLs. An absolute URL is valid only when its host is explicitly
 listed in `publicApi.allowedAbsoluteHosts`; the foundation allowlist contains
 loopback hosts for local smoke tests, not Docker service names. Do not add
-`/api/v1` or call a service's Docker hostname. The public API remains
-responsible for authentication, permission checks, validation, business rules
-and forwarding to internal services.
+`/api/v1` or call a service's Docker hostname. The public API remains the only
+client-facing boundary and forwards requests to internal services.
+Authentication, current permission resolution, domain validation and business
+rules are enforced at the owning service boundary under the accepted contract;
+marine-safety performs the current Auth-session and role-permission checks
+itself.
 
 ## Implementation sequence
 
@@ -114,20 +117,23 @@ internal target, versioned API path or missing shared surface must be fixed in
 the change that introduced it. A client may not hide its API host or path in
 an unresolved variable and rely on CI to infer the intended service.
 
-The current clients register the shared `foundation-home` entry and implement
+Both clients register the shared `foundation-home` entry and implement
 the `auth-session-management`, `auth-registration`, `auth-profile-management`,
 `coastal-overview-dashboard`, `auth-admin-entry`,
 `auth-permission-administration`, `auth-role-administration`,
 `auth-user-administration`, `not-found-recovery` and
-`server-error-recovery` workflows in both React and Flutter. Profile
+`server-error-recovery` workflows in both React and Flutter. React also
+implements `marine-conditions`, `marine-condition-history` and
+`marine-safety-profile-management`. The corresponding Flutter routes are
+registered but the mobile marine screens are not implemented. Profile
 management includes profile editing, password changes, session review and
 revocation, and account deletion. Administration routes expose permission-
 checked user, role and permission actions. The dashboard uses current-account
-information and clearly marks coastal service areas as future work because
-those services are not available yet. Registration uses the same public
-`POST /api/auth/register` endpoint in both clients; the clients preserve their
-platform-specific cookie and secure-storage session handling. Each public Auth
-endpoint used by an implemented workflow is listed in the same manifest.
+information and marks service areas other than marine-safety as future work.
+Registration uses the same public `POST /api/auth/register` endpoint in both
+clients; the clients preserve their platform-specific cookie and secure-storage
+session handling. Public Auth and marine endpoints used by implemented
+workflows are listed in the manifest.
 
 Run locally from the repository root:
 

@@ -20,10 +20,13 @@ deployment.
 
 React and Flutter are peer client applications and communicate with the
 ASP.NET Core API. Neither is a backend microservice. The public API and Auth
-sources are checked in at `services/api` and `services/auth`; the four v1
-member-owned component services, Agentic AI and ML-inference implementations
-are not yet checked in. The [v1 guide](../v1/README.md) defines the target
-service/component and four-agent boundaries without claiming they are live.
+sources are checked in at `services/api` and `services/auth`. Member 2's
+marine-safety service is implemented at `services/marine-safety` and included
+in local Compose. The other three member-owned services, Agentic AI runtime
+and ML-inference implementation are not checked in. The [v1 guide](../v1/README.md)
+defines the full target service/component and four-agent boundaries; the
+[branch tracker](../v1/member-branch-workflow.md#component-branch-status)
+records current implementation status.
 The [v0 guide](../v0/README.md) maps the implemented client, API, Auth,
 PostgreSQL and infrastructure foundation.
 
@@ -42,43 +45,46 @@ Client
   |
   +--> frontend :80
   |
-  +--> api :8080 ------> auth :8080
-                            |
-                            v
-                        postgres :5432
+  +--> api :8080 ------┬--> auth :8080 --------┐
+                       └--> marine-safety :8080 ├--> postgres :5432
+                                |
+                                └--> Open-Meteo APIs (outbound)
 ```
 
 Docker networks:
 
 - `blueverse_edge`
-- `blueverse_internal` — API and Auth only; Docker marks it internal
-- `blueverse_database` — Auth and PostgreSQL
+- `blueverse_internal` — API, Auth and marine-safety; Docker marks it internal
+- `blueverse_database` — Auth, marine-safety and PostgreSQL
 
 The edge gateway is the only application entry point. Development Compose
-publishes PostgreSQL as `5432:5432` on all host interfaces; Auth uses the
-private database network rather than the host-published port. The API has no
-database credential or database-network attachment in the v0 stack.
+publishes PostgreSQL as `5432:5432` on all host interfaces; Auth and
+marine-safety use the private database network rather than the host-published
+port. The API has no database credential or database-network attachment.
 Promotion from `dev` to `main` changes the host mapping to
 `127.0.0.1:5432:5432`; both mappings still require host port `5432`.
 
-### v1 member-service target (not implemented in the current Compose stack)
+### Current and planned v1 private services
 
 ```text
 React / Flutter
       |
       v
-edge-nginx -> public services/api ──┬-> internal Auth ─────────────> PostgreSQL
-                                   ├-> private Ushan Srinuka (Member 1) service ─┐
-                                   ├-> private Sanuda Abeysinghe (Member 2) service ─┤
-                                   ├-> private Adithya Gunawardana (Member 3) service ─┼-> PostgreSQL
-                                   └-> private Wanshaja Sooriyabandara (Member 4) service ─┘
+edge-nginx -> public services/api ──┬-> internal Auth ───────────────┐
+                                   ├-> marine-safety (implemented) ─┼-> PostgreSQL
+                                   ├-> Member 1 service (planned) ──┤
+                                   ├-> Member 3 service (planned) ──┤
+                                   └-> Member 4 service (planned) ──┘
+                                                    marine-safety ─────> Open-Meteo
 ```
 
-The API remains the only client entry point and changes only to integrate the
-four private services. Each service owns its component's domain behavior and
-data. Actual service IDs, route mapping, network/service credentials and data
-schema ownership must be agreed at G00; this target does not describe deployed
-containers. See [ADR-0020](../adr/ADR-0020-member-component-service-boundaries.md).
+The API remains the only client entry point. The local stack implements the
+marine-safety route, service, database connection and Open-Meteo adapter; the
+other three private member services remain target architecture. Each service
+owns its component's domain behavior and data. Member 2's identifiers and
+route are recorded in its [G00 decision record](../v1/g00/member-2-marine-safety-decisions.md);
+the shared choices for remaining services are still part of team G00. See
+[ADR-0020](../adr/ADR-0020-member-component-service-boundaries.md).
 
 ## Intended public application boundary
 

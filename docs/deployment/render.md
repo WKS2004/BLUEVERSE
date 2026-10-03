@@ -1,14 +1,19 @@
 # Render Deployment
 
 `render.yaml` is the initial Render Blueprint. It is deployment configuration,
-not deployment evidence; the public API and Auth projects referenced by its
-Dockerfiles are committed.
+not deployment evidence. It includes the public API and Auth services. The
+marine-safety service is present in local Compose but is not defined in this
+Render Blueprint; do not treat its local implementation as a hosted deployment.
 
 It defines:
 
 - Dockerized API
 - Dockerized Auth service
 - managed PostgreSQL
+
+The Member 2 marine-safety backend still needs a private hosted-service
+definition and deployment configuration before the marine workflow is
+available from a hosted stack.
 
 The React Web frontend and Flutter Mobile client are intentionally outside this
 backend Blueprint. React is planned for Vercel, while Flutter is distributed

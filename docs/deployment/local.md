@@ -1,7 +1,10 @@
 # Local Deployment
 
-The local Compose topology is defined. The public API and internal Auth source
-are checked in at `services/api` and `services/auth`.
+The local Compose topology is defined. The public API, internal Auth and
+marine-safety sources are checked in at `services/api`, `services/auth` and
+`services/marine-safety`. Compose routes marine operations through the public
+API to the private service, which shares PostgreSQL and calls Open-Meteo
+server-side.
 
 ## Prerequisites
 
@@ -72,13 +75,17 @@ Health:
 http://localhost/health
 http://localhost/api/health
 http://localhost/api/auth/health
+http://localhost/api/marine/health
 ```
 
-Additional ASP.NET services are checked through the API gateway at:
+Other ASP.NET services are checked through the API gateway at:
 
 ```text
 http://localhost/api/<service-name>/health
 ```
+
+Marine-safety has a shorter public prefix than its service folder name; use
+`http://localhost/api/marine/health` for that service.
 
 Swagger UI:
 

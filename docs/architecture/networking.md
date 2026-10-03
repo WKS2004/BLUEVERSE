@@ -10,33 +10,37 @@ blueverse_edge
 blueverse_internal (internal=true)
   api
   auth
+  marine-safety
 
 blueverse_database
   auth
+  marine-safety
   postgres
 ```
 
 The edge gateway is connected to the edge and internal networks so it can
-receive host traffic and proxy to internal services. Auth and PostgreSQL use
-the separate database network. The API reaches Auth through
-`blueverse_internal` and has no PostgreSQL credential in v0.
+receive host traffic and proxy to internal services. Auth and marine-safety
+also use the separate database network with PostgreSQL. The API reaches both
+through `blueverse_internal` and has no PostgreSQL credential.
 
 ## Routing
 
 - `/api/*` → API, which forwards service-specific routes internally
 - `/api/auth/*` → API → Auth service
+- `/api/marine/*` → API → marine-safety service
 - everything else → frontend
 
 Auth is not connected to the edge network and has no public gateway route. Clients cannot call it directly.
 
-## v1 private service target (not configured in the current stack)
+## Remaining private service targets
 
-The public API will route member-owned operations to one private .NET service
-per component. Component services own domain behavior and data access; clients
-never address their hostnames or internal routes. Service IDs, network
-membership, transport, actor/permission propagation and data/schema ownership
-are agreed at G00. The current Compose networks above describe the implemented
-v0 stack only. See [ADR-0020](../adr/ADR-0020-member-component-service-boundaries.md)
+The public API routes marine-safety operations to the implemented Member 2
+service. Member 1, Member 3 and Member 4 services remain planned; clients never
+address service hostnames or internal routes. Member 2's service ID, network,
+transport, Auth-backed permission behavior and data ownership are recorded in
+its [G00 decisions](../v1/g00/member-2-marine-safety-decisions.md). The
+remaining identities and cross-component transport/data choices are still
+part of team G00. See [ADR-0020](../adr/ADR-0020-member-component-service-boundaries.md)
 and the [member service boundaries](service-boundaries.md).
 
 The selected map API is an outbound dependency of Ushan Srinuka's private service,
@@ -44,6 +48,10 @@ not of `services/api`, a host route or a client network target. Its provider
 and egress policy are not configured in the current stack; see
 [ADR-0017](../adr/ADR-0017-map-provider-integration-boundary.md). React and
 Flutter must not call the map provider directly.
+
+Open-Meteo Weather and Marine APIs are outbound dependencies of the private
+`marine-safety` service. The API and clients do not call those providers; the
+marine service validates and normalizes their responses.
 
 No `/api/v1` style path versioning is planned.
 

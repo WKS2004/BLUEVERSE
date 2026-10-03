@@ -15,9 +15,9 @@ Each v1 component has a separate [member document](../v1/README.md) and a
 distinct Agentic AI contribution. Ushan Srinuka (Member 1) owns Coastal Experience &
 Biodiversity Discovery; Sanuda Abeysinghe (Member 2) owns Marine Conditions & Safety
 Intelligence; Adithya Gunawardana (Member 3) owns Smart Coastal Planner & Itinerary Management;
-Wanshaja Sooriyabandara (Member 4) owns Coastal Operations, Advisories & Alerts. These labels are not
-an assertion about which named team member owns each component; record the
-person-to-component mapping explicitly before attributing contributions.
+Wanshaja Sooriyabandara (Member 4) owns Coastal Operations, Advisories & Alerts.
+The [canonical owner map](../project/ai-team-members.md) records the confirmed
+person-to-component and GitHub-account mapping for contribution attribution.
 
 Every participating role and permitted component workflow must be available
 in both React Web and Flutter Mobile through the same public API and

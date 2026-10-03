@@ -170,7 +170,7 @@ turn-taking order.
 |---|---|---|---|---|---|
 | G00 — Shared contract freeze | All four assigned owners | — | In progress — Member 2 scope accepted ([marine-safety decision record](g00/member-2-marine-safety-decisions.md)); other members pending | `dev` | — |
 | Ushan Srinuka (Member 1) — Experience and Biodiversity | Ushan Srinuka | `Ushan-Srinuka` | Planned | `features/experience-biodiversity` | — |
-| Sanuda Abeysinghe (Member 2) — Marine Conditions and Safety | Sanuda Abeysinghe | `sanudaabey` | Backend in progress on the feature branch (service, API integration, migration, tests, catalog entries, live Open-Meteo/PostgreSQL verification) | `features/marine-safety` | — |
+| Sanuda Abeysinghe (Member 2) — Marine Conditions and Safety | Sanuda Abeysinghe | `sanudaabey` | Backend and React surfaces implemented on the feature branch. Latest evidence: 117/117 marine service tests and 198/198 full React tests, including 41 marine cases; React lint and UI contract validation pass. Marine auth accepts Auth bearer/cookie sessions, rejects revoked/stale sessions and resolves current permissions. Tests use deterministic Auth/provider doubles and an in-memory database; production Auth SQL/PostgreSQL verification remains open. Flutter and paired Agentic AI remain deferred; component PR/merge and G07 integration are not recorded. | `features/marine-safety` | — |
 | Adithya Gunawardana (Member 3) — Planner and Itineraries | Adithya Gunawardana | `AdithyaGunawardana` | Planned | `features/coastal-planner` | — |
 | Wanshaja Sooriyabandara (Member 4) — Coastal Operations | Wanshaja Sooriyabandara | `WKS2004` | Planned | `features/coastal-operations` | — |
 | G07 — Integrated component acceptance | All four assigned owners | — | Planned | `dev` | — |
@@ -181,11 +181,13 @@ it does not make the member work serial.
 
 ## Agentic AI work after G07
 
-The member feature branches implement public workflow routes/status,
-authorization, business request persistence, typed private adapters and
-bounded not-connected/unavailable behavior. They do not implement executable
-agents. Preserve `GET /api/health` as API liveness and keep database readiness
-separate from AI dependency availability. See the
+Member feature branches implement business workflows and the public
+authentication/authorization integration recorded in their accepted G00
+scope. A pre-G07 Agentic AI seam is implemented only where that scope includes
+it; Member 2's accepted decision defers its AI workflow contract and typed
+private adapter. No feature branch implements executable agents. Preserve
+`GET /api/health` as API liveness and keep database readiness separate from AI
+dependency availability. See the
 [Agentic AI integration boundary](agentic-ai-integration-boundary.md).
 
 Only after all four component PRs are merged, compatibility is resolved and

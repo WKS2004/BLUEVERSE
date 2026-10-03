@@ -75,12 +75,22 @@ first v1 domain tables in the shared `blueverse` database:
 | `ConditionSnapshots` | `Id` PK, `Latitude numeric(8,5)`/`Longitude numeric(9,5)`, `ForecastTime`/`RetrievedAt` timestamptz, nullable environmental values (`WindSpeed`, `WaveHeight`, `SwellHeight`, `Rain`, `WeatherCode` — null means unavailable, never zero), `Source`, `FreshnessStatus`, `MissingFields text[]`; location/forecast and retrieval indexes. Provider-derived and immutable through the public API. |
 | `SuitabilityAssessments` | `Id` PK, `ActivityId` FK (restrict), `ProfileVersion`, request coordinates/time, `Result` (`SUITABLE`/`CAUTION`/`UNSUITABLE`/`UNKNOWN`), `Violations`/`CautionFactors`/`MissingFields` arrays, `Source`, `FreshnessStatus`, evidence references; activity/request-time and evaluation-time indexes. History intentionally has no FK to snapshots or profiles so it survives retention pruning and profile deletion. |
 
-The marine service resolves caller permissions with a read-only query over the
-Auth-owned identity tables; it does not map or write identity entities. Its two
-marine permission grants (`marine.profile.read`, `marine.profile.manage`) are
-seeded for the Admin role by the Auth seeder, so the marine service itself
-never writes identity data.
+The marine service validates Auth-issued tokens against the current Auth-owned
+`Users` and `ActiveSessions` rows, including account activity, token version,
+session ID/version and session expiry. It then resolves each required marine
+permission with a separate parameterized, read-only query over `Users`,
+`ActiveSessions`, `UserRoles`, `RolePermissions` and `Permissions`. It does not
+map or write identity entities and does not authorize from JWT role or
+permission claims. Its two marine permission grants (`marine.profile.read`,
+`marine.profile.manage`) are seeded for the Admin role by the Auth seeder, so
+the marine service itself never writes identity data. Account, session and
+role-grant changes take effect on the next protected request.
+The marine service's in-memory HTTP test host substitutes a deterministic
+permission resolver and does not execute these Auth-schema SQL queries. A
+PostgreSQL-backed integration run is still required to verify those production
+queries against the provider.
 
-See the [v1 component and agent index](../v1/README.md). Business-domain
-schema should be introduced with the implementation rather than prematurely
-in the v0 foundation.
+See the [v1 component and agent index](../v1/README.md). Marine-safety is the
+first implemented v1 business schema. Introduce schemas for the other member
+components with their service implementations rather than prematurely in the
+v0 foundation.

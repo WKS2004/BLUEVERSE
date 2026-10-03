@@ -4,6 +4,15 @@
 `features/marine-safety`; Agentic AI branch after G07:
 `agentic-ai/marine-conditions`.
 
+**Implementation status — 2026-10-03:** work areas 1 and 2 are implemented
+in `services/marine-safety`; the React portion of work area 3 is implemented
+and the Flutter portion remains open. The service suite passes 117 tests and
+the full React suite passes 198, including 41 marine cases. The Auth SQL path
+has not been verified against PostgreSQL. By the accepted Member 2 G00
+decision, work area 4's public AI workflow and typed adapter are deferred; no
+executable Agentic AI work is included. The component PR/merge, cross-component
+verification and G07 are not recorded.
+
 This plan divides the [Sanuda Abeysinghe (Member 2) component contract](../components/member-2-marine-conditions-safety-intelligence.md)
 into work areas for one complete component branch. The
 [component relationship map](../component-relationships.md) describes its
@@ -32,6 +41,12 @@ application's deterministic result.
 | 2 | Safety profiles and deterministic suitability |
 | 3 | Condition, profile and suitability surfaces in both clients |
 | 4 | Agentic backend boundary, consumer verification and component closeout |
+
+Current completion evidence and remaining limits are recorded in the
+[G00 decision record](../g00/member-2-marine-safety-decisions.md) and
+[test matrix](../../testing/test-matrix.md). The phase descriptions below are
+the component's work-area requirements; the status snapshot above governs
+what is already implemented.
 
 Use the single branch `features/marine-safety` for all four work
 areas and submit one complete feature PR to `dev`. Agree the activity,
@@ -125,6 +140,9 @@ their integrated behavior before the complete component PR is ready.
   factors; and
 - allow authorized profile management and condition/assessment history with
   clear validation, empty, denied and failure states.
+- accept the Auth-issued bearer token or selected browser session cookie, and
+  enforce the active Auth session plus current role-to-permission grants in
+  the service; client route visibility is not an authorization check.
 
 React and Flutter may arrange the views differently. Values, classification,
 permission behavior, evidence and uncertainty must have the same meaning.
@@ -137,13 +155,21 @@ both clients, and the route/API registry metadata agrees with the screens.
 
 ## Phase 4 — Agentic backend boundary, consumer verification and closeout
 
-**Shared integration relationship:** prepare this component's typed future-AI
-access boundary and verify consumer-facing contracts against the schemas
-agreed at G00. Adithya Gunawardana (Member 3) and Wanshaja Sooriyabandara (Member 4) develop their consumers on their own
-branches; prove live provider-consumer integration on `dev` after the feature
-PRs merge. Their completion is not a prerequisite for this branch.
+**Current Member 2 decision:** the G00 record defers the marine public AI
+workflow and typed adapter. No such workflow or adapter is implemented here.
+Executable AI remains behind G07. Revisit this work only through an explicit
+contract update consistent with the shared integration boundary; do not treat
+the target checklist below as implementation evidence.
 
-**Implement and verify the Agentic AI integration boundary:**
+**Shared integration relationship:** the accepted Member 2 G00 decision
+defers this component's typed future-AI access boundary. Consumer-facing
+contracts can be verified against the schemas agreed at G00. Adithya
+Gunawardana (Member 3) and Wanshaja Sooriyabandara (Member 4) develop their
+consumers on their own branches; prove live provider-consumer integration on
+`dev` after the feature PRs merge. Their completion is not a prerequisite for
+this branch.
+
+**Future checklist if the component decision is explicitly changed:**
 
 - a public Sanuda Abeysinghe (Member 2) workflow initiation/status contract with permission,
   validation, business request identity and references to normalized

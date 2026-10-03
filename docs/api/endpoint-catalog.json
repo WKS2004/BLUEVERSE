@@ -611,11 +611,11 @@
       "operationId": "Evaluate",
       "status": "implemented",
       "auth": "permission:marine.profile.read",
-      "description": "Runs the deterministic activity/location/time suitability assessment.",
+      "description": "Runs the deterministic activity/location/time suitability assessment and returns SUITABLE, CAUTION, UNSUITABLE or UNKNOWN.",
       "uiWorkflowIds": [
         "marine-conditions"
       ],
-      "usage": "The Member 2 non-CRUD operation: validates the activity and its safety profile, gathers fresh condition evidence, applies the profile's deterministic limits, and returns SUITABLE, UNSUITABLE or UNKNOWN with violations, evidence, source and freshness. Missing profiles or activities are rejected; missing or stale evidence yields UNKNOWN rather than a fabricated result.",
+      "usage": "The Member 2 non-CRUD operation: validates the activity and its safety profile, gathers fresh condition evidence, applies the profile's deterministic limits, and returns SUITABLE, CAUTION, UNSUITABLE or UNKNOWN with violations, caution factors, evidence, source and freshness. CAUTION is returned only when an explicit caution band is configured and crossed; strict profiles can return three-state outcomes. Missing profiles or activities are rejected; missing or stale evidence yields UNKNOWN rather than a fabricated result.",
       "source": "services/marine-safety/Controllers/MarineConditionsController.cs"
     },
     {

@@ -34,12 +34,16 @@ apps/mobile
 ```
 
 Both clients provide the shared home, `/signin`, `/signup`, `/profile`,
-`/dashboard` and permission-aware `/admin` workflows. The Auth experience uses
+`/dashboard` and permission-aware `/admin` workflows. React Web also provides
+Member 2's marine conditions, history and safety-profile screens; the paired
+Flutter routes are registered but the mobile marine screens are not implemented.
+The Auth experience uses
 the public gateway for registration, sign-in, refresh, profile and session
 management, account deletion, and user/role/permission administration. Browser
 state uses protected cookies and mobile state uses platform secure storage.
-The ASP.NET projects are available under `services/api` and `services/auth`;
-do not add business rules to the clients that contradict the API contract. For
+The ASP.NET projects are available under `services/api`, `services/auth` and
+`services/marine-safety`; marine API requests go through the public API
+gateway. Do not add business rules to the clients that contradict the API contract. For
 every UI change, also update and validate the shared [UI integration
 contract](ui-integration.md) so React and Flutter use the same workflow ID and
 public `/api/...` endpoint references.
@@ -93,12 +97,13 @@ The repository uses:
 
 as defined by `global.json`.
 
-Restore the repository-pinned EF Core tool before creating or inspecting Auth
-migrations:
+Restore the repository-pinned EF Core tool before creating or inspecting
+service migrations:
 
 ```bash
 dotnet tool restore
 dotnet tool run dotnet-ef migrations list --project services/auth/Blueverse.Auth.csproj
+dotnet tool run dotnet-ef migrations list --project services/marine-safety/Blueverse.MarineSafety.csproj
 ```
 
 ## Docker
@@ -189,12 +194,14 @@ After execution completes, restore the restricted policy:
 Set-ExecutionPolicy Restricted
 ```
 
-With the checked-in API and Auth projects running in the stack, verify:
+With the checked-in API, Auth and marine-safety projects running in the stack,
+verify:
 
 ```text
 GET http://localhost/health
 GET http://localhost/api/health
 GET http://localhost/api/auth/health
+GET http://localhost/api/marine/health
 GET http://localhost/api/swagger/v1.json
 GET http://localhost/api/auth/swagger/v1/swagger.json
 ```
@@ -207,8 +214,13 @@ http://localhost/api/swagger
 
 There is no public `/auth/...` or `/health` backend route. Auth requests must use `/api/auth/...` and are forwarded by the API service.
 
-Additional ASP.NET services follow the public gateway convention:
+The marine-safety OpenAPI document is listed in the unified Swagger UI and
+exposed under `/api/marine/swagger`. Other ASP.NET services follow the public
+gateway health convention:
 
 ```text
 GET http://localhost/api/<service-name>/health
 ```
+
+Marine-safety uses the shorter public route
+`GET http://localhost/api/marine/health` rather than a folder-name-derived path.

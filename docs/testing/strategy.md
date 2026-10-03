@@ -42,10 +42,11 @@ evidence.
   role/user administration, protected and recovery routes, navigation,
   loading feedback, route scrolling, app notices and the shared footer. DOM
   tests use JSDOM and React Testing Library; request tests stub the registered
-  public API. The current baseline passes 157 cases (2026-09-25). Lint,
-  production build and shared UI integration validation are separate gates.
-  Real-browser and deployed-gateway workflows remain separate integration
-  evidence.
+  public API. The historical foundation baseline was 157 cases (2026-09-25).
+  The full suite now passes 198 cases (2026-10-03), including 41 marine-safety
+  API-boundary and page/workflow tests. React lint and shared UI integration
+  validation pass; real-browser and deployed-gateway workflows remain
+  separate integration evidence.
 - Flutter: historical local evidence from 2026-09-25 records 86 package tests
   passing across 12 then-runnable files and `flutter analyze --no-pub lib`
   passing. The previously excluded `apps/mobile/test/widget_test.dart` was
@@ -75,6 +76,12 @@ evidence.
   JWT claims/configuration boundaries, opaque-secret properties and
   persistence-model constraints. The PostgreSQL session/concurrency smoke test
   is opt-in.
+- Marine backend: `services/marine-safety` passes 117 service tests
+  (2026-10-03), covering provider behavior, conditions, deterministic
+  suitability, profile and history workflows, and Auth identity/permission
+  boundaries. The HTTP test host uses an in-memory database and deterministic
+  Auth/provider doubles; it does not verify production Auth SQL or PostgreSQL
+  behavior.
 - Docker: web/backend image and Compose health workflows are configured. Full
   runtime evidence still depends on Docker Desktop/DHI access and PostgreSQL.
 

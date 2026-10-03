@@ -11,12 +11,13 @@ header and footer. Tailwind is integrated with the Vite plugin.
 
 The web client is a React 19 + TypeScript application built with Vite. It is
 an equal product surface for every authorized role and workflow. Its
-implemented workflows provide cookie-based account registration and sign-in,
+  implemented workflows provide cookie-based account registration and sign-in,
 refresh recovery, saved-account switching, current-device and all-device
 logout, profile editing, password changes, session review/revocation and
-account deletion. Permission-aware administration covers user, role and
-permission management. The coastal overview dashboard shows current account
-information and labels unavailable service areas as future work. The [v0
+  account deletion. Permission-aware administration covers user, role and
+  permission management. The React client also implements the marine
+  conditions, history and safety-profile workflows. The coastal overview
+  labels service areas other than marine-safety as future work. The [v0
 component guide](../../docs/v0/components/react-web-client.md) records the
 source boundaries and extension contract. Added domain workflows must
 preserve the same business capabilities as Flutter; layout and input methods
@@ -27,8 +28,8 @@ may adapt to browser use without assigning a stakeholder group to this client.
 - `src/app/` owns application setup, the React Router route table and route
   scroll behavior. `BrowserRouter` wraps the app and `routes.tsx` declares the
   `/`, `/signin`, `/signup`, `/profile`, `/dashboard`, `/admin`,
-  `/admin/permissions`, `/admin/roles`, `/admin/users`, `/404` and `/500`
-  routes.
+  `/admin/permissions`, `/admin/roles`, `/admin/users`, `/marine/conditions`,
+  `/marine/history`, `/marine/safety-profiles`, `/404` and `/500` routes.
 - `src/components/feedback/BackendLoadingScreen.tsx` shows the shared loading
   screen for backend work, with contextual account transitions and a wave
   reveal after loads exceed two seconds. Successful account transitions carry
@@ -79,7 +80,7 @@ with Nginx and exposes `GET /health`.
 ## API boundary
 
 The client calls the public ASP.NET Core gateway through the registered
-`/api/...` endpoints in the [shared UI integration contract](../../docs/contracts/ui-integration.json). Workflows use the public Auth routes for account registration, sign-in, refresh, profile and account security, session management, and permission-aware user/role/permission administration. They must not call the internal Auth, Agentic AI, PostgreSQL or other service hostnames directly. Browser authentication uses protected HttpOnly
+`/api/...` endpoints in the [shared UI integration contract](../../docs/contracts/ui-integration.json). Workflows use the public Auth routes for account registration, sign-in, refresh, profile and account security, session management, and permission-aware user/role/permission administration. Marine workflows use the public `/api/marine/...` routes; the service checks Auth-backed identity and current role permissions. The client must not call internal Auth, marine-safety, Agentic AI, PostgreSQL or other service hostnames directly. Browser authentication uses protected HttpOnly
 cookies; raw access and refresh tokens are not exposed to the browser UI. Prefer
 literal relative `/api/...` paths; absolute hosts must be allowlisted by the
 contract and dynamic request targets fail the validator. A screen's route must
@@ -97,7 +98,8 @@ uses Node 24's built-in test runner; request contracts mock `fetch`, while DOM
 tests use JSDOM, React Testing Library and `user-event` with Vite SSR module
 loading. The tests cover the implemented Auth, profile, administration,
 navigation, recovery and shared-shell behaviors without a live API or browser.
-The current suite passes 187 cases (2026-09-28). These tests are not a
+The current suite passes 198 cases (2026-10-03), including 41 marine-safety
+API-boundary and component cases. These tests are not a
 substitute for deployed-gateway or real-browser end-to-end checks. The
 registry contains the shared home, Auth registration and session-management,
 profile management, coastal overview and marine conditions/safety workflows.

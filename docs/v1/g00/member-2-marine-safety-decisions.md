@@ -17,6 +17,17 @@ responsibility, and cross-member contracts here describe only the
 marine-safety side of each handoff. Decisions follow the eight G00 exit
 criteria.
 
+## Latest implementation verification — 2026-10-03
+
+The marine service test suite passes **117/117**. The full React Web suite
+passes **198/198**, including **41 marine-safety cases**; React lint and the
+shared UI-integration validator pass. The service tests use an in-memory
+database and deterministic Auth/provider doubles, so this run does not verify
+the production Auth-table SQL against PostgreSQL. Flutter and executable
+Agentic AI remain unimplemented, and component PR/merge plus G07 evidence are
+not recorded. The historical revision notes below retain their original
+counts and dates.
+
 ## 1. Owner and branch assignment (exit criterion 1)
 
 | Item | Decision |
@@ -44,8 +55,9 @@ criteria.
 | Public operation set | `GET /api/marine/health`, `GET /api/marine/current`, `GET /api/marine/snapshots/{id}`, `GET /api/marine/history`, `POST /api/marine/evaluate`, `GET /api/marine/assessments`, `GET /api/marine/assessments/{id}`, `GET|POST /api/marine/activities`, `GET|PUT|DELETE /api/marine/activities/{id}`, `GET|POST /api/marine/safety-profiles`, `GET|PUT|DELETE /api/marine/safety-profiles/{id}`, `GET /api/marine/safety-profiles/by-activity/{activityId}` — registered in `docs/api/endpoint-catalog.json`. Revision (7) added the activity reference-table CRUD and the read-only assessment-history surface; every other operation is unchanged. |
 | Route/transport | `services/api` forwards `/api/marine/{**catch-all}` over YARP to `http://marine-safety:8080` on the private network; clients never address the component service. No `/api/v1`-style segments. |
 | Permission codes | `marine.profile.read` (condition reads, history, evaluate, assessment reads, activity reads), `marine.profile.manage` in addition to read (profile and activity create/update/deactivate). Codes are defined in Auth's `PermissionCodes`, seeded for the Admin role by the Auth seeder (approved additive change), and resolved from current role assignments (never JWT claims). Enforced in the component service via the `PERMISSION:<code>` policy convention. The marine-safety service mirrors the constants locally for enforcement; provisioning belongs to Auth. |
+| Authentication and session validity | The service accepts the Auth-issued signed JWT as a bearer token or through Auth browser cookies, preferring an explicit bearer header when both are present. `blueverse_active_account_id` selects `blueverse_access_token_<userIdN>`; a legacy token is accepted only if its subject matches that selection. A malformed selection fails closed; without a selection, the legacy single-account cookie remains supported. The service validates signature, issuer, audience, HS256 algorithm and lifetime, then checks the current Auth user (`IsActive`, `TokenVersion`) and exact unexpired `ActiveSessions` row (`session_id`, `session_version`). A revoked, expired or stale session is rejected with 401; a valid session without the current required permission receives 403. The component performs read-only checks; Auth remains the only identity/session writer. |
 | Swagger | The component serves its OpenAPI document under `/api/marine/swagger` (anonymous, gateway-forwarded). The public API Swagger UI at `/api/swagger` lists it beside the public API and Auth documents; the gateway forwards document requests over the existing `/api/marine` route. The component service is not modified for aggregation. |
-| Error/status behavior | RFC 7807 ProblemDetails. 400 invalid input (coordinates, ranges, missing fields), 401 unauthenticated, 403 lacking permission grant, 404 unknown activity/snapshot/profile/assessment, 409 no active profile for an activity or a duplicate activity name, 503 with `Retry-After` when Open-Meteo is unavailable. Profile and activity delete semantics: delete deactivates, never hard-deletes. |
+| Error/status behavior | RFC 7807 ProblemDetails. 400 invalid input (coordinates, ranges, missing fields), 401 unauthenticated or expired/revoked/stale Auth session, 403 an active caller lacking a required permission grant, 404 unknown activity/snapshot/profile/assessment, 409 no active profile for an activity or a duplicate activity name, 503 with `Retry-After` when Open-Meteo is unavailable. Profile and activity delete semantics: delete deactivates, never hard-deletes. |
 | DTO ownership | Request/response DTOs live in the component service (`Blueverse.MarineSafety.Dtos`); EF entities are never exposed. Response bodies always carry source, forecast/retrieval times, freshness and missing fields where applicable. |
 | Provider seam | `IOpenMeteoClient` is the only provider boundary. Result `MarineConditionsResult` carries nullable values plus `MissingFields`; failure is the typed `OpenMeteoUnavailableException`. Bounded retry (1, transient-only) and 10 s per-attempt timeout. |
 
@@ -79,7 +91,7 @@ criteria.
 | Decision | Record |
 |---|---|
 | Registry edits | Endpoint catalog gains only the marine-safety entries; `backendSources` gains `services/marine-safety`. React Web registration (revision 6) adds the three marine workflow IDs, six React/Flutter route rows and seven workflow-linked endpoints to the same shared registries; no Auth or public API operation changed. |
-| Client routes (future) | React and Flutter route ownership for the marine workflow will be registered under shared workflow IDs when the client work is implemented; backend contract names above are frozen so both clients bind to the same operations. |
+| Client routes (before revision 6; superseded) | React and Flutter routes were to be registered under shared workflow IDs when client work was implemented. Revision 6 records the React implementation; the Flutter routes remain registered for the paired mobile implementation, which is not implemented yet. |
 | Client routes (React, revision 6) | React owns `/marine/conditions`, `/marine/history` and `/marine/safety-profiles` under the shared workflow IDs `marine-conditions`, `marine-condition-history` and `marine-safety-profile-management`, permission-gated by `marine.profile.read` (+ `marine.profile.manage` for profile writes) resolved from current role assignments. Flutter routes are registered under the same workflow IDs for the paired mobile implementation; the mobile surface is not implemented yet. The browser submits `latitude`/`longitude`/`time` and evaluate `dateTime` in UTC and renders — never recomputes — the server classification, source, timestamps, freshness and missing fields. |
 | Shared files | Edits limited to: endpoint catalog JSON+MD, `services/api/appsettings.json` (YARP route), `services/api/Program.cs` (one SwaggerUI endpoint entry listing the marine document), `compose.yaml`, `.env` documentation, Auth permission codes/seeder and seeder test counts (approved additive change), README and database docs. No reformatting of unrelated shared content. |
 
@@ -104,7 +116,8 @@ criteria.
 ## Compliance checks
 
 - Endpoint catalog and UI-integration validators pass after these decisions
-  were implemented (45 public endpoints; AI endpoints: none implemented).
+  were implemented (53 public endpoints, 28 frontend routes; AI endpoints:
+  none implemented).
 - Revision 2026-09-27 (2): base route shortened to `/api/marine`; marine
   OpenAPI document listed in the public API Swagger UI. Marine permission
   codes are seeded by the Auth seeder (owner decision restored after the
@@ -181,3 +194,25 @@ criteria.
   contract test enumerates the expanded operation set. Final state: marine
   suite 103/103, api/auth/marine builds clean, endpoint-catalog and UI
   validators OK (53 public endpoints).
+- Revision 2026-10-03 (8): marine authentication was aligned with the Auth
+  session contract without changing Auth or gateway flows. The service now
+  accepts bearer tokens and Auth-selected account cookies, validates current
+  active-user/token-version/session-version state, and resolves permissions
+  from live role assignments rather than JWT permission claims. Permission
+  checks now honor request cancellation. No public route, permission code or
+  response contract changed.
+- Revision 2026-10-03 (9): recheck fixed bearer-header precedence over browser
+  cookies and made malformed account selections fail closed. Seven focused
+  cookie-selection cases were added; the marine suite passes 110/110 and the
+  endpoint/UI validators pass. The in-memory suite still does not execute the
+  production Auth-table SQL; PostgreSQL-backed query verification remains
+  outstanding because this environment has no Docker CLI, local PostgreSQL
+  listener, or configured Auth PostgreSQL test connection.
+- Revision 2026-10-03 (10): expanded and reconciled the marine backend and
+  React test suites. The backend now passes 117/117 tests; the complete React
+  suite passes 198/198, including 41 marine-safety cases. React lint and the
+  endpoint/UI contract validators pass. The Auth identity/permission tests
+  still substitute deterministic resolvers and do not prove the production
+  Auth-table SQL against PostgreSQL. Documentation was reconciled with the
+  frozen G00 decisions and current implementation; Flutter, executable AI,
+  cross-component integration, PR/merge and G07 remain open.

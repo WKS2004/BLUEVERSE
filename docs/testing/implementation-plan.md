@@ -6,26 +6,30 @@ This document is the implementation plan for adding traceable automated test
 cases across the complete BLUEVERSE repository. It complements
 [`strategy.md`](strategy.md) and [`test-matrix.md`](test-matrix.md).
 
-The plan is intentionally staged because the current checkout is a v0
-foundation:
+The plan remains staged because the checkout contains the v0 foundation plus
+Member 2's partial v1 marine-safety implementation:
 
 - `apps/web` is a Vite React client with an implemented cookie-based Auth
-  session workflow, lint/build scripts and a Node 24 native test runner. Its
-  tests include mocked public-API contracts plus JSDOM/React Testing Library
-  coverage for pages, navigation, routing and shared shell components.
+  session workflow and Member 2's marine condition, suitability, history and
+  safety-profile pages, plus lint/build scripts and a Node 24 native test
+  runner. Its tests include mocked public-API contracts and JSDOM/React Testing
+  Library coverage for pages, navigation, routing and shared shell components.
 - `apps/mobile` is a Flutter client with public-API and in-memory
   credential-store tests, Auth/session view-model and widget coverage, and
   dashboard, profile/security, onboarding and permission-aware administration
-  workflows. Device-dependent behavior still requires live device evidence.
-- `services/api` and `services/auth` are checked-in ASP.NET services with
-  package-local test projects under their owning service directories.
+  workflows. Marine workflow IDs are registered, but marine screens are not
+  implemented. Device-dependent behavior still requires live device evidence.
+- `services/api`, `services/auth` and `services/marine-safety` are checked-in
+  ASP.NET services with package-local test projects under their owning
+  service directories.
 - No executable Agentic AI service is present yet; the AI documentation defines
   the target boundary and safety contract only.
 - Test workflows use each framework’s normal package/service test locations;
   no repository-root `test/` directory is used for authoritative cases.
 
-The remaining phases describe future client/domain/Agentic AI coverage; the
-current API/Auth foundation evidence is recorded in `test-matrix.md`. Every
+The remaining phases describe future Flutter marine parity, other domain
+components and Agentic AI coverage; current suite evidence is recorded in
+`test-matrix.md`. Every
 authorized role and business action in a v1 domain workflow must be exercised
 through React Web and Flutter Mobile, with equivalent outcomes and permission
 semantics. Layout and device interactions may have additional cases.
@@ -411,10 +415,12 @@ case ID, and can run each available suite locally.
 ### Phase 1 — React test harness and foundation cases
 
 The React harness now combines Node 24's built-in test runner, request stubs,
-JSDOM and React Testing Library. Its current baseline passes 157 cases
-(2026-09-25). CI runs the package's lint, build and test commands and publishes
-JUnit output with case IDs. Coverage instrumentation is not configured yet and
-must be added before line-coverage thresholds are enforced.
+JSDOM and React Testing Library. The 157-case run on 2026-09-25 is the
+historical foundation baseline; the latest full suite passes 198 cases
+(2026-10-03), including 41 marine-safety cases. CI runs the package's lint,
+build and test commands and publishes JUnit output with case IDs. Coverage
+instrumentation is not configured yet and must be added before line-coverage
+thresholds are enforced.
 
 Exit criteria met: package tests run locally and in CI with readable case IDs;
 lint/build remain separate web gates. Live-browser coverage is still needed
@@ -424,21 +430,28 @@ for behavior that depends on a real rendering engine or deployed gateway.
 
 Use the default Flutter test locations. The package now has 86 passing selected
 unit/widget/API-contract tests and a clean production-source analysis run.
-Keep `flutter analyze` and the complete `flutter test` suite mandatory as the
-existing legacy widget test is approved and migrated; add device integration
-cases only when platform behavior requires them.
+Keep `flutter analyze` and the complete `flutter test` suite mandatory. The
+previously stale launch-widget reference has been corrected, but it still
+needs green CI evidence. Marine workflow routes are registered, while the
+marine Flutter UI and its tests remain unimplemented. Add device integration
+cases when platform behavior requires them.
 
 Exit criteria: analyzer, unit/widget tests and any selected integration tests
 run in CI on a supported Flutter channel.
 
 ### Phase 3 — API and Auth services
 
-The API and Auth test projects are now present. Maintain HTTP, authorization,
-validation, persistence, migration, security and health cases as the service
-contracts grow.
+The API and Auth test projects are present; their current test sources define
+21 and 77 default cases. The marine service project passes 117 tests
+(2026-10-03). Maintain HTTP, authorization, validation, persistence,
+migration, security and health cases as the service contracts grow. Marine
+tests use deterministic Auth/provider doubles and do not verify the production
+Auth SQL against PostgreSQL.
 
-Exit criteria: API and Auth tests run against the same contracts used by React
-and Flutter, and every protected route has allow/deny evidence.
+Exit criteria: API, Auth and member-service tests run against the same
+contracts used by React and Flutter, every protected route has allow/deny
+evidence, and provider-specific persistence/Auth-query behavior has
+PostgreSQL-backed verification.
 
 ### Phase 4 — Repeatable backend-service template
 

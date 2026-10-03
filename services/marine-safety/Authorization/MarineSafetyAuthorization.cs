@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;
 
@@ -68,7 +69,9 @@ public sealed class PermissionPolicyProvider : IAuthorizationPolicyProvider
 /// snapshot; this database resolution is authoritative, exactly as the Auth
 /// service resolves permissions for its own endpoints.
 /// </summary>
-public sealed class PermissionHandler(IPermissionResolver resolver) : AuthorizationHandler<PermissionRequirement>
+public sealed class PermissionHandler(
+    IPermissionResolver resolver,
+    IHttpContextAccessor httpContextAccessor) : AuthorizationHandler<PermissionRequirement>
 {
     protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, PermissionRequirement requirement)
     {
@@ -79,7 +82,11 @@ public sealed class PermissionHandler(IPermissionResolver resolver) : Authorizat
             return;
         }
 
-        if (await resolver.HasPermissionAsync(userId, requirement.Permission, CancellationToken.None))
+        var cancellationToken = httpContextAccessor.HttpContext?.RequestAborted
+            ?? (context.Resource as HttpContext)?.RequestAborted
+            ?? CancellationToken.None;
+
+        if (await resolver.HasPermissionAsync(userId, requirement.Permission, cancellationToken))
         {
             context.Succeed(requirement);
         }

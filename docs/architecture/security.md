@@ -1,11 +1,18 @@
 # Architecture Security Baseline
 
-This is the current security baseline. The public API gateway and internal Auth
-service are implemented at `services/api` and `services/auth`. The Auth service
-issues signed JWTs, the gateway validates the same issuer/audience/signing key,
-permission policies use role-derived permission claims, and Auth revalidates
-active users, account token versions and device sessions against PostgreSQL on
-protected requests.
+This is the current security baseline. The public API gateway, internal Auth
+service and Member 2's marine-safety service are implemented at
+`services/api`, `services/auth` and `services/marine-safety`. Auth issues
+signed JWTs and owns identity/session data; the gateway validates issuer,
+audience and signing key. Auth-protected operations use role-derived permission
+policies and revalidate active accounts, token versions and device sessions
+against PostgreSQL. Marine-safety accepts bearer or selected-account browser
+cookie tokens, checks the current active Auth user/session, and resolves
+`marine.profile.read` / `marine.profile.manage` against current role grants
+rather than trusting JWT permission claims. These marine SQL reads are
+parameterized and read-only. The marine test host uses deterministic
+identity/permission doubles, so PostgreSQL-backed verification of those
+queries remains open.
 
 - TLS terminates at the appropriate deployed edge/platform boundary.
 - JWT authentication protects secured API endpoints and rejects algorithms

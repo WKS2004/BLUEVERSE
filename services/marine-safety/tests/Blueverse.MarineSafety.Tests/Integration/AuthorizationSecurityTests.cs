@@ -37,6 +37,32 @@ public sealed class AuthorizationSecurityTests : IClassFixture<MarineSafetyWebAp
         return request;
     }
 
+    private static HttpRequestMessage CookieAuthorized(string cookie)
+    {
+        var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            "/api/marine/current?latitude=6.025&longitude=80.216");
+        request.Headers.TryAddWithoutValidation("Cookie", cookie);
+        return request;
+    }
+
+    private static string CreateSignedToken(IEnumerable<Claim> claims)
+    {
+        var descriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(claims),
+            Issuer = "Blueverse.Auth",
+            Audience = "Blueverse.Client",
+            Expires = DateTime.UtcNow.AddMinutes(15),
+            SigningCredentials = new SigningCredentials(
+                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(MarineSafetyWebApplicationFactory.JwtSigningKey)),
+                SecurityAlgorithms.HmacSha256)
+        };
+
+        var handler = new JwtSecurityTokenHandler();
+        return handler.WriteToken(handler.CreateToken(descriptor));
+    }
+
     [Fact]
     [Trait("CaseId", "M2-AUTH-001")]
     public async Task M2_AUTH_001_expired_tokens_are_rejected_unauthorized()
@@ -175,7 +201,7 @@ public sealed class AuthorizationSecurityTests : IClassFixture<MarineSafetyWebAp
 
     [Fact]
     [Trait("CaseId", "M2-AUTH-005")]
-    public async Task M2_AUTH_005_tokens_without_a_subject_are_rejected_before_permission_resolution()
+    public async Task M2_AUTH_005_tokens_without_a_subject_are_rejected_unauthorized_before_permission_resolution()
     {
         using var client = await CreateClientAsync();
 
@@ -198,6 +224,256 @@ public sealed class AuthorizationSecurityTests : IClassFixture<MarineSafetyWebAp
             token);
         using var response = await client.SendAsync(request);
 
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal(0, _factory.Resolver.CallCount);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-AUTH-006")]
+    public async Task M2_AUTH_006_selected_account_cookie_takes_precedence_over_a_stale_legacy_cookie()
+    {
+        using var client = await CreateClientAsync();
+        var selectedToken = _factory.CreateToken(MarineSafetyTestSeed.ReaderUserId);
+        var staleLegacyToken = _factory.CreateToken(MarineSafetyTestSeed.UnauthorizedUserId);
+
+        using var request = CookieAuthorized(
+            $"blueverse_active_account_id={MarineSafetyTestSeed.ReaderUserId:D}; " +
+            $"blueverse_access_token_{MarineSafetyTestSeed.ReaderUserId:N}={selectedToken}; " +
+            $"blueverse_access_token={staleLegacyToken}");
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-AUTH-007")]
+    public async Task M2_AUTH_007_selected_account_accepts_a_matching_legacy_cookie_when_its_account_cookie_is_absent()
+    {
+        using var client = await CreateClientAsync();
+        var selectedToken = _factory.CreateToken(MarineSafetyTestSeed.ReaderUserId);
+
+        using var request = CookieAuthorized(
+            $"blueverse_active_account_id={MarineSafetyTestSeed.ReaderUserId:D}; " +
+            $"blueverse_access_token={selectedToken}");
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-AUTH-008")]
+    public async Task M2_AUTH_008_selected_account_rejects_a_legacy_cookie_for_another_account()
+    {
+        using var client = await CreateClientAsync();
+        var staleLegacyToken = _factory.CreateToken(MarineSafetyTestSeed.UnauthorizedUserId);
+
+        using var request = CookieAuthorized(
+            $"blueverse_active_account_id={MarineSafetyTestSeed.ReaderUserId:D}; " +
+            $"blueverse_access_token={staleLegacyToken}");
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-AUTH-009")]
+    public async Task M2_AUTH_009_malformed_account_selection_does_not_fall_back_to_the_legacy_cookie()
+    {
+        using var client = await CreateClientAsync();
+        var legacyToken = _factory.CreateToken(MarineSafetyTestSeed.ReaderUserId);
+
+        using var request = CookieAuthorized(
+            $"blueverse_active_account_id=not-a-guid; blueverse_access_token={legacyToken}");
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-AUTH-010")]
+    public async Task M2_AUTH_010_legacy_cookie_remains_supported_when_no_account_is_selected()
+    {
+        using var client = await CreateClientAsync();
+        var legacyToken = _factory.CreateToken(MarineSafetyTestSeed.ReaderUserId);
+
+        using var request = CookieAuthorized($"blueverse_access_token={legacyToken}");
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-AUTH-011")]
+    public async Task M2_AUTH_011_bearer_header_takes_precedence_over_account_cookies()
+    {
+        using var client = await CreateClientAsync();
+        var selectedCookieToken = _factory.CreateToken(MarineSafetyTestSeed.ReaderUserId);
+        var deniedBearerToken = _factory.CreateToken(MarineSafetyTestSeed.UnauthorizedUserId);
+        using var request = Authorized(
+            HttpMethod.Get,
+            "/api/marine/current?latitude=6.025&longitude=80.216",
+            deniedBearerToken);
+        request.Headers.TryAddWithoutValidation(
+            "Cookie",
+            $"blueverse_active_account_id={MarineSafetyTestSeed.ReaderUserId:D}; " +
+            $"blueverse_access_token_{MarineSafetyTestSeed.ReaderUserId:N}={selectedCookieToken}");
+
+        using var response = await client.SendAsync(request);
+
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-AUTH-012")]
+    public async Task M2_AUTH_012_invalid_bearer_header_does_not_fall_back_to_a_valid_cookie()
+    {
+        using var client = await CreateClientAsync();
+        var selectedCookieToken = _factory.CreateToken(MarineSafetyTestSeed.ReaderUserId);
+        using var request = Authorized(
+            HttpMethod.Get,
+            "/api/marine/current?latitude=6.025&longitude=80.216",
+            "not-a-valid-token");
+        request.Headers.TryAddWithoutValidation(
+            "Cookie",
+            $"blueverse_active_account_id={MarineSafetyTestSeed.ReaderUserId:D}; " +
+            $"blueverse_access_token_{MarineSafetyTestSeed.ReaderUserId:N}={selectedCookieToken}");
+
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-AUTH-013")]
+    public async Task M2_AUTH_013_missing_or_malformed_identity_session_claims_are_unauthorized()
+    {
+        using var client = await CreateClientAsync();
+        var userId = MarineSafetyTestSeed.ReaderUserId;
+        var sessionId = Guid.NewGuid();
+        var complete = new[]
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
+            new Claim("token_version", "0"),
+            new Claim("session_id", sessionId.ToString()),
+            new Claim("session_version", "1")
+        };
+        var cases = new (string Name, Claim[] Claims)[]
+        {
+            ("missing token_version", complete.Where(claim => claim.Type != "token_version").ToArray()),
+            ("malformed token_version", complete.Select(claim => claim.Type == "token_version" ? new Claim(claim.Type, "invalid") : claim).ToArray()),
+            ("missing session_id", complete.Where(claim => claim.Type != "session_id").ToArray()),
+            ("malformed session_id", complete.Select(claim => claim.Type == "session_id" ? new Claim(claim.Type, "invalid") : claim).ToArray()),
+            ("missing session_version", complete.Where(claim => claim.Type != "session_version").ToArray()),
+            ("malformed session_version", complete.Select(claim => claim.Type == "session_version" ? new Claim(claim.Type, "invalid") : claim).ToArray())
+        };
+
+        foreach (var (name, claims) in cases)
+        {
+            using var request = Authorized(
+                HttpMethod.Get,
+                "/api/marine/current?latitude=6.025&longitude=80.216",
+                CreateSignedToken(claims));
+            using var response = await client.SendAsync(request);
+
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+        Assert.Equal(0, _factory.Resolver.CallCount);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-AUTH-014")]
+    public async Task M2_AUTH_014_inactive_accounts_are_rejected_before_permission_resolution()
+    {
+        using var client = await CreateClientAsync();
+        var userId = MarineSafetyTestSeed.ReaderUserId;
+        var token = _factory.CreateToken(userId);
+        _factory.IdentityValidator.SetUserActive(userId, false);
+
+        using var request = Authorized(HttpMethod.Get, "/api/marine/current?latitude=6.025&longitude=80.216", token);
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal(0, _factory.Resolver.CallCount);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-AUTH-015")]
+    public async Task M2_AUTH_015_tokens_with_a_stale_user_token_version_are_rejected()
+    {
+        using var client = await CreateClientAsync();
+        var userId = MarineSafetyTestSeed.ReaderUserId;
+        var token = _factory.CreateToken(userId, tokenVersion: 0);
+        _factory.IdentityValidator.SetTokenVersion(userId, 1);
+
+        using var request = Authorized(HttpMethod.Get, "/api/marine/current?latitude=6.025&longitude=80.216", token);
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal(0, _factory.Resolver.CallCount);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-AUTH-016")]
+    public async Task M2_AUTH_016_revoked_sessions_are_rejected()
+    {
+        using var client = await CreateClientAsync();
+        var sessionId = Guid.NewGuid();
+        var token = _factory.CreateToken(MarineSafetyTestSeed.ReaderUserId, sessionId: sessionId);
+        _factory.IdentityValidator.RevokeSession(sessionId);
+
+        using var request = Authorized(HttpMethod.Get, "/api/marine/current?latitude=6.025&longitude=80.216", token);
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal(0, _factory.Resolver.CallCount);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-AUTH-017")]
+    public async Task M2_AUTH_017_tokens_with_a_stale_session_version_are_rejected()
+    {
+        using var client = await CreateClientAsync();
+        var sessionId = Guid.NewGuid();
+        var token = _factory.CreateToken(MarineSafetyTestSeed.ReaderUserId, sessionId: sessionId, sessionVersion: 1);
+        _factory.IdentityValidator.SetSessionVersion(sessionId, 2);
+
+        using var request = Authorized(HttpMethod.Get, "/api/marine/current?latitude=6.025&longitude=80.216", token);
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal(0, _factory.Resolver.CallCount);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-AUTH-018")]
+    public async Task M2_AUTH_018_expired_server_sessions_are_rejected_even_when_the_jwt_is_current()
+    {
+        using var client = await CreateClientAsync();
+        var sessionId = Guid.NewGuid();
+        var token = _factory.CreateToken(MarineSafetyTestSeed.ReaderUserId, sessionId: sessionId);
+        _factory.IdentityValidator.SetSessionExpiry(sessionId, DateTime.UtcNow.AddMinutes(-1));
+
+        using var request = Authorized(HttpMethod.Get, "/api/marine/current?latitude=6.025&longitude=80.216", token);
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal(0, _factory.Resolver.CallCount);
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-AUTH-019")]
+    public async Task M2_AUTH_019_a_session_bound_to_another_user_cannot_authenticate_the_token_subject()
+    {
+        using var client = await CreateClientAsync();
+        var sessionId = Guid.NewGuid();
+        var token = _factory.CreateToken(MarineSafetyTestSeed.ReaderUserId, sessionId: sessionId);
+        _factory.IdentityValidator.SetSessionOwner(sessionId, MarineSafetyTestSeed.ManagerUserId);
+
+        using var request = Authorized(HttpMethod.Get, "/api/marine/current?latitude=6.025&longitude=80.216", token);
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal(0, _factory.Resolver.CallCount);
     }
 }

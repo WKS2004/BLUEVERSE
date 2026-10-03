@@ -193,7 +193,7 @@
     {
       "id": "marine-conditions",
       "status": "starter",
-      "description": "Shared marine conditions and suitability workflow. React Web implements the condition lookup with source, forecast/retrieval timestamps, freshness and missing-field evidence, plus the server's deterministic suitability assessment for a coastal activity, location and requested period; classifications are never recalculated in the client. The Flutter route is registered under the same shared workflow ID and must deliver the same authorized outcomes; the mobile surface is not implemented yet.",
+      "description": "Shared marine conditions and suitability workflow. React Web implements the condition lookup with source, forecast/retrieval timestamps, freshness and missing-field evidence, plus the server's deterministic suitability assessment returning SUITABLE, CAUTION, UNSUITABLE or UNKNOWN for a coastal activity, location and requested period; classifications are never recalculated in the client. The Flutter route is registered under the same shared workflow ID and must deliver the same authorized outcomes; the mobile surface is not implemented yet.",
       "web": {
         "route": "/marine/conditions",
         "source": "apps/web/src/app/routes.tsx"
