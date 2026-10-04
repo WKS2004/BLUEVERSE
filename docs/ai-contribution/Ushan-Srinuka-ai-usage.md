@@ -1,5 +1,50 @@
 # Ushan Srinuka — AI Usage Contributions
 
+## 2026-10-04 — Experience & Biodiversity Flutter Mobile implementation and comprehensive test suite validation
+
+- Date/time or time range: 2026-10-04 19:35 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Antigravity
+- Tool/App: Google Antigravity
+- AI Model: Gemini 2.5 Pro
+- Summary of the user's request:
+  1. Recheck the entire Flutter Mobile App for the `experience-biodiversity` component to ensure all required components and workflows have been implemented successfully according to canonical requirements and contract specifications.
+  2. Implement all unit and widget test cases for the Flutter Mobile App of the `experience-biodiversity` component across all 23 public API endpoints and interactive screens.
+- Summary of what the AI Agent did:
+  - Verified and confirmed that the 5 core mobile screens are fully implemented and compliant with `docs/contracts/ui-integration.json`:
+    - `ExperiencesDiscoveryScreen` (`/experiences`): multi-filter search, region chips, category chips, interactive map tab with OSM vector preview and nearby hotspots.
+    - `DestinationDetailScreen` (`/experiences/destinations/:id`): live marine sensor conditions, focal species biodiversity telemetry, operational advisories, and child offerings list.
+    - `OfferingDetailScreen` (`/experiences/offerings/:id`): live deterministic availability evaluation seam, guest party size selector, date picker, schedule windows.
+    - `FavouritesScreen` (`/experiences/favourites`): wishlist management with filtering by target type (`ALL`, `DESTINATION`, `OFFERING`) and item deletion.
+    - `CatalogueManagementScreen` (`/experiences/manage`): role-permission gating (`experiences.catalogue.manage`), tabbed management for Destinations, Activities, Offerings, and Diagnostics Seam (health checks and pre-G07 read-only context).
+  - Expanded unit test coverage in `apps/mobile/test/experience_api_service_test.dart`:
+    - Added tests covering destination CRUD mutations (`createDestination`, `updateDestination`, `deleteDestination`, `updateDestinationPublication`).
+    - Added tests covering telemetry parsing (`getDestinationOperationalAdvisories`, `getDestinationBiodiversity`).
+    - Added tests covering activities full lifecycle (`getActivities` with filters, `getActivityById`, `createActivity`, `updateActivity`, `evaluateActivityPublication`, `updateActivityPublication`, `deleteActivity`).
+    - Added tests covering offerings and schedules lifecycle (`getOfferings`, `getOfferingById`, `createOffering`, `updateOffering`, `evaluateOfferingPublication`, `updateOfferingPublication`, `deleteOffering`, `getOfferingSchedules`, `addOfferingSchedule`, `updateOfferingSchedule`, `deleteOfferingSchedule`).
+    - Added structured error handling tests asserting `ExperienceApiException` throws on HTTP 400, 401, 403, 404, and 500 status codes.
+  - Expanded widget test coverage in `apps/mobile/test/experience_workflow_widget_test.dart` (`MOB-EXP-001` through `MOB-EXP-013`):
+    - `MOB-EXP-001`: discovery catalog cards rendering for destinations and offerings.
+    - `MOB-EXP-002`: coastal map tab layout, search field, and nearby hotspots.
+    - `MOB-EXP-003`: destination detail conditions and biodiversity telemetry.
+    - `MOB-EXP-004`: offering detail availability evaluation.
+    - `MOB-EXP-005`: favourites wishlist rendering.
+    - `MOB-EXP-006`: catalogue management tabs rendering for authorized managers.
+    - `MOB-EXP-007`: discovery search text and region/category filter chips interactions.
+    - `MOB-EXP-008`: coastal map place search and "Near Me" trigger interactions.
+    - `MOB-EXP-009`: destination detail resilient handling for missing/errored marine sensor conditions.
+    - `MOB-EXP-010`: offering detail unavailable slot result rendering with operational restrictions.
+    - `MOB-EXP-011`: favourites screen filter chips and item removal.
+    - `MOB-EXP-012`: catalogue management access-denied state for unprivileged users lacking manage permissions.
+    - `MOB-EXP-013`: catalogue management destination creation modal dialog form interactions.
+- AI output accepted/changed/rejected: Accepted full unit and widget test suite expansions, verified strict UI contract compliance, and maintained zero regressions across all 114 mobile tests.
+- Verification/evidence:
+  - `python scripts/validation/validate_ui_integrations.py`: UI integration contract: OK (exit code 0).
+  - `flutter test --no-pub test/experience_api_service_test.dart test/experience_workflow_widget_test.dart`: 27 experience tests passed cleanly.
+  - `flutter test --no-pub`: all 114 mobile tests passed cleanly across the application.
+
+
 ## 2026-10-02 — Experiences discovery UI consolidation: removal of inline CRUD and Nearby tab, unified catalogue search, and deep-link routing
 
 - Date/time or time range: 2026-10-02 01:25 +05:30 (Asia/Colombo)
@@ -667,3 +712,45 @@
   passed serially (177/177). Experience API contract tests passed (5/5), UI
   integration and endpoint catalog validation passed (72 public endpoints,
   32 frontend routes), and `git diff --check` passed.
+
+## 2026-10-03 — Complete Flutter Mobile Experience & Biodiversity component implementation and test suite
+
+- Date/time or time range: 2026-10-03 02:35 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Antigravity
+- Tool/App: Google Antigravity
+- AI Model: Gemini 2.5 Pro
+- Summary of the user's request: Implement the whole Flutter Mobile App for the
+  Experience & Biodiversity component and update/implement all test cases for
+  the Flutter App.
+- Summary of what the AI Agent did:
+  - Created complete Dart models in `apps/mobile/lib/data/models/experience_models.dart`
+    for Destinations, Activities, Offerings, Schedules, Availability Evaluations,
+    Marine Conditions, Operational Advisories, Biodiversity telemetry/predictions,
+    Wishlist Favourites, OpenStreetMap Tile Config, Map Search Places, Nearby Proximity,
+    Dependencies status, and Agent Context Seam.
+  - Implemented `ExperienceApiService` in `apps/mobile/lib/data/services/experience_api_service.dart`
+    covering all 23 backend public API routes via the ASP.NET Core gateway, formatting
+    query parameters cleanly to pass `scripts/validation/validate_ui_integrations.py`.
+  - Implemented `ExperienceRepository` and `ExperienceViewModel` (`apps/mobile/lib/ui/experiences/experience_view_model.dart`)
+    managing reactive state for catalog exploration, interactive map searches, live telemetry,
+    availability evaluation, and CRUD operations.
+  - Implemented all 5 Flutter mobile workflow screens:
+    1. `ExperiencesDiscoveryScreen` (`/experiences`) featuring catalog filtering, chips, and OpenStreetMap corridor view.
+    2. `DestinationDetailScreen` (`/experiences/destinations/:id`) presenting live marine conditions, operational advisories, biodiversity predictions, and destination offerings.
+    3. `OfferingDetailScreen` (`/experiences/offerings/:id`) with schedule slots and interactive real-time availability evaluation.
+    4. `FavouritesScreen` (`/experiences/favourites`) for saved wishlist management.
+    5. `CatalogueManagementScreen` (`/experiences/manage`) providing authorized CRUD management and pre-G07 diagnostic seams.
+  - Integrated routes and parameterized route handling into `main.dart` and added quick
+    navigation links in `AuthDashboardScreen`.
+  - Authored complete unit and widget test suites:
+    1. `apps/mobile/test/experience_api_service_test.dart` (9/9 unit tests covering endpoint contracts and MockClient responses).
+    2. `apps/mobile/test/experience_workflow_widget_test.dart` (6/6 widget tests covering MOB-EXP-001 through MOB-EXP-006 workflows).
+- AI output accepted/changed/rejected: Accepted full Flutter mobile implementation,
+  clean UI styling aligned with `BlueversePalette`, and test coverage. No Git commits
+  or branch pushes were performed.
+- Verification/evidence:
+  - `python scripts/validation/validate_ui_integrations.py` passed with exit code 0.
+  - `flutter test --no-pub` passed all 102 tests (87 existing + 15 new tests) in 16 seconds.
+

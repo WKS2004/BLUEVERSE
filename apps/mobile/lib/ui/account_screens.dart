@@ -930,9 +930,14 @@ class _ProfileMessage extends StatelessWidget {
 }
 
 class AuthDashboardScreen extends StatefulWidget {
-  const AuthDashboardScreen({required this.viewModel, super.key});
+  const AuthDashboardScreen({
+    required this.viewModel,
+    this.experienceViewModel,
+    super.key,
+  });
 
   final AuthViewModel viewModel;
+  final Object? experienceViewModel;
 
   @override
   State<AuthDashboardScreen> createState() => _AuthDashboardScreenState();
@@ -1027,10 +1032,36 @@ class _AuthDashboardScreenState extends State<AuthDashboardScreen> {
                       style: TextStyle(color: Colors.white70, height: 1.5),
                     ),
                     const SizedBox(height: 18),
-                    FilledButton.tonalIcon(
-                      onPressed: () => Navigator.pushNamed(context, '/profile'),
-                      icon: const Icon(Icons.edit_outlined),
-                      label: const Text('Edit your profile'),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        FilledButton.tonalIcon(
+                          key: const Key('btn-explore-experiences'),
+                          onPressed: () => Navigator.pushNamed(context, '/experiences'),
+                          icon: const Icon(Icons.explore),
+                          label: const Text('Explore Experiences'),
+                        ),
+                        FilledButton.tonalIcon(
+                          key: const Key('btn-dashboard-favourites'),
+                          onPressed: () => Navigator.pushNamed(context, '/experiences/favourites'),
+                          icon: const Icon(Icons.bookmark_outline),
+                          label: const Text('Saved Wishlist'),
+                        ),
+                        if (user.permissions.contains('experiences.catalogue.manage') ||
+                            user.permissions.contains('auth.role.system.manage'))
+                          FilledButton.tonalIcon(
+                            key: const Key('btn-dashboard-catalogue-manage'),
+                            onPressed: () => Navigator.pushNamed(context, '/experiences/manage'),
+                            icon: const Icon(Icons.tune),
+                            label: const Text('Catalogue Manage'),
+                          ),
+                        FilledButton.tonalIcon(
+                          onPressed: () => Navigator.pushNamed(context, '/profile'),
+                          icon: const Icon(Icons.edit_outlined),
+                          label: const Text('Edit your profile'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
