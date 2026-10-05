@@ -11,7 +11,7 @@ function fieldValue(value: string | null, field: string) {
   if (['TargetType', 'WorkflowStatus', 'Lifecycle', 'Severity', 'Visibility', 'InspectionStatus', 'Decision', 'AppliedOperationalState', 'WorkflowStatusAfterDecision'].includes(field)) return value.toLowerCase().replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
   return value
 }
-export default function OperationsActivity({ kind, id, revision }: { kind: 'assessment' | 'alert'; id: string; revision: number }) {
+export default function OperationsActivity({ kind, id, revision, showReference = false }: { kind: 'assessment' | 'alert'; id: string; revision: number; showReference?: boolean }) {
   const [items, setItems] = useState<OperationsAudit[]>([])
   const [cursor, setCursor] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -41,11 +41,11 @@ export default function OperationsActivity({ kind, id, revision }: { kind: 'asse
     {!loading && !error && items.length === 0 && <p className="mt-3 text-sm text-coast-muted">No activity recorded yet.</p>}
     <ol className="mt-3 grid gap-3">{items.map((item) => <li className="border-l-2 border-coast-teal pl-3" key={item.auditId}>
       <p className="text-sm font-bold">{item.summary || actionNames[item.action] || item.action.toLowerCase().replaceAll('_', ' ')}</p>
-      <p className="mt-1 text-sm">{item.actorName || (item.actorId === '00000000-0000-0000-0000-000000000000' ? 'System' : 'Team member (name not recorded)')} · {item.actorRoles?.length ? item.actorRoles.join(', ') : 'Role not recorded'}</p>
+      {!showReference && <p className="mt-1 text-sm">{item.actorName || (item.actorId === '00000000-0000-0000-0000-000000000000' ? 'System' : 'Team member (name not recorded)')} · {item.actorRoles?.length ? item.actorRoles.join(', ') : 'Role not recorded'}</p>}
       {item.recordTitle && <p className="mt-1 text-xs text-coast-muted">{item.recordTitle}</p>}
       <time className="text-xs text-coast-muted" dateTime={item.createdAt}>{new Date(item.createdAt).toLocaleString()}</time>
       {item.changes?.length ? <dl className="mt-3 grid gap-2 rounded-xl bg-coast-sand/50 p-3">{item.changes.map((change, index) => <div key={`${change.field}:${index}`}><dt className="text-xs font-bold">{fieldName(change.field)}</dt><dd className="mt-1 whitespace-pre-wrap break-words text-xs leading-5 text-coast-muted"><span className="font-semibold">Before:</span> {fieldValue(change.before, change.field)}<br /><span className="font-semibold">After:</span> {fieldValue(change.after, change.field)}</dd></div>)}</dl> : <p className="mt-2 text-xs text-coast-muted">Field details were not recorded for this event.</p>}
-      <details className="mt-1 text-xs text-coast-muted"><summary className="cursor-pointer">Who and reference</summary><p className="break-all">Actor: {item.actorId}<br />Reference: {item.correlationId}</p></details>
+      {showReference && <details className="mt-3 rounded-xl border border-coast-line bg-coast-pearl px-3 py-2 text-xs text-coast-muted"><summary className="cursor-pointer font-semibold text-coast-deep">Reference details</summary><p className="mt-2">Correlation reference</p><code className="mt-1 block break-all rounded-lg bg-coast-sand px-2 py-1">{item.correlationId}</code></details>}
     </li>)}</ol>
     {loading && <p aria-live="polite" className="mt-3 text-sm">Loading activity…</p>}
     {cursor && <button className="mt-3 min-h-11 rounded-full border border-coast-line px-4 text-sm font-bold" disabled={loading} onClick={() => void more()} type="button">Load earlier activity</button>}

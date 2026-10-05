@@ -115,20 +115,6 @@ class _MyAppState extends State<MyApp> {
         '/signup': (_) => AuthRegistrationScreen(viewModel: _authViewModel),
         '/profile': (_) => AuthProfileScreen(viewModel: _authViewModel),
         '/dashboard': (_) => AuthDashboardScreen(viewModel: _authViewModel),
-        '/operations/assessments': (_) => CoastalOperationsScreen(
-          section: CoastalOperationsSection.assessments,
-          viewModel: _authViewModel,
-          apiService: _coastalOperationsApiService,
-        ),
-        '/operations/logs': (_) => CoastalOperationsLogsScreen(
-          viewModel: _authViewModel,
-          apiService: _coastalOperationsApiService,
-        ),
-        '/operations/alerts': (_) => CoastalOperationsScreen(
-          section: CoastalOperationsSection.alerts,
-          viewModel: _authViewModel,
-          apiService: _coastalOperationsApiService,
-        ),
         '/admin': (_) => AuthAdminLandingScreen(viewModel: _authViewModel),
         '/admin/permissions': (_) => AuthAdminScreen(
           viewModel: _authViewModel,
@@ -149,18 +135,49 @@ class _MyAppState extends State<MyApp> {
         final uri = Uri.tryParse(settings.name ?? '');
         if (uri != null &&
             (uri.path == '/operations/assessments' ||
-                uri.path == '/operations/alerts')) {
-          return MaterialPageRoute<void>(
+                uri.path == '/operations/alerts' ||
+                uri.path == '/operations/logs')) {
+          final alerts =
+              uri.path == '/operations/alerts' ||
+              (uri.path == '/operations/logs' &&
+                  uri.queryParameters['kind'] == 'alerts');
+          final page = uri.path == '/operations/logs'
+              ? CoastalOperationsLogsScreen(
+                  viewModel: _authViewModel,
+                  apiService: _coastalOperationsApiService,
+                  initialAlerts: alerts,
+                )
+              : CoastalOperationsScreen(
+                  section: alerts
+                      ? CoastalOperationsSection.alerts
+                      : CoastalOperationsSection.assessments,
+                  viewModel: _authViewModel,
+                  apiService: _coastalOperationsApiService,
+                  initialView: uri.queryParameters['view'],
+                  initialRecordId: uri.queryParameters['id'],
+                  fromLogs: uri.queryParameters['origin'] == 'logs',
+                );
+          final direction = alerts ? 1.0 : -1.0;
+          return PageRouteBuilder<void>(
             settings: settings,
-            builder: (_) => CoastalOperationsScreen(
-              section: uri.path == '/operations/alerts'
-                  ? CoastalOperationsSection.alerts
-                  : CoastalOperationsSection.assessments,
-              viewModel: _authViewModel,
-              apiService: _coastalOperationsApiService,
-              initialView: uri.queryParameters['view'],
-              initialRecordId: uri.queryParameters['id'],
-              fromLogs: uri.queryParameters['origin'] == 'logs',
+            transitionDuration: const Duration(milliseconds: 260),
+            reverseTransitionDuration: const Duration(milliseconds: 180),
+            pageBuilder: (_, _, _) => page,
+            transitionsBuilder: (_, animation, _, child) => FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position:
+                    Tween<Offset>(
+                      begin: Offset(direction * .035, 0),
+                      end: Offset.zero,
+                    ).animate(
+                      CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOutCubic,
+                      ),
+                    ),
+                child: child,
+              ),
             ),
           );
         }

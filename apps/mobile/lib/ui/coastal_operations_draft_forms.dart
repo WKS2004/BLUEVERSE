@@ -116,9 +116,7 @@ class _CoastalDraftDialogState extends State<CoastalDraftDialog> {
       : DateTime.parse(value).toUtc().toIso8601String().substring(0, 16);
   Future<void> _load() async {
     try {
-      final data = await blueverseLoadingScreenController.track(
-        widget.apiService.getFormOptions,
-      );
+      final data = await widget.apiService.getFormOptions();
       if (mounted) {
         setState(() {
           _options = data;

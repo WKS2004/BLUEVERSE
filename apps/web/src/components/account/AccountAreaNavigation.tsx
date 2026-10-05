@@ -58,7 +58,7 @@ function Disclosure({ group, expanded, onToggle, desktop = false, showChildren =
   </>
 }
 
-export default function AccountAreaNavigation({ active }: { active: Area }) {
+export default function AccountAreaNavigation({ active, className = '' }: { active: Area; className?: string }) {
   const { user } = useAuthSession()
   const groups = groupsFor(user?.permissions ?? [])
   const [expanded, setExpanded] = useState<Area | null>(active)
@@ -67,7 +67,7 @@ export default function AccountAreaNavigation({ active }: { active: Area }) {
     setExpanded((current) => current === area ? null : area)
   }
 
-  return <aside aria-label="Account navigation" className="lg:sticky lg:top-[76px] lg:z-10 lg:h-[calc(100dvh-76px)] lg:max-h-[calc(100dvh-76px)] lg:w-full lg:self-start lg:overflow-y-auto lg:border-r lg:border-coast-line lg:bg-coast-paper/95 lg:px-4 lg:pb-6 lg:pt-6">
+  return <aside aria-label="Account navigation" className={`lg:sticky lg:top-[76px] lg:z-10 lg:h-[calc(100dvh-76px)] lg:max-h-[calc(100dvh-76px)] lg:w-full lg:self-start lg:overflow-y-auto lg:border-r lg:border-coast-line lg:bg-coast-paper/95 lg:px-4 lg:pb-6 lg:pt-6 ${className}`}>
     <nav aria-label="Profile, dashboard and administration">
       <div className="rounded-3xl border border-coast-line bg-white/80 p-2 shadow-sm lg:hidden">
         <div className="flex min-w-0 gap-1 overflow-x-auto">

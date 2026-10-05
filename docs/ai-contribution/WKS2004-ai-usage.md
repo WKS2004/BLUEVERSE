@@ -2164,3 +2164,162 @@ runtime lacks PyYAML.
   full web, mobile, Coastal Operations and API suites also passed with six
   opt-in PostgreSQL tests skipped. `git diff --check` passed. Exact temporary
   files and previews are absent; requested source/assets remain in the worktree.
+
+## 2026-10-04 — Coastal Operations navigation and Logs UX fixes
+
+- Date/time or time range: 2026-10-04 20:01 (Asia/Colombo; completion record)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Node.js/Vite, Flutter/Dart and Python
+- AI Model: GPT-6
+- Summary of the user's request: Fix the Assessment/Alert and Logs tab position,
+  reduce refresh-like page flicker, animate category changes directionally,
+  preserve Alert Logs after refresh, keep saved details read-only until explicit
+  editing, and make activity/reference UI appropriate to Logs.
+- Summary of what the AI Agent did: Aligned sticky tabs to the shared 76 px
+  header; scoped directional motion to Coastal Operations panels; made Logs
+  category derive from its URL and persist across refresh; retained local search
+  results/progress; added read-only detail intros and hid Logs mutations and its
+  separate actor/“Who” line while keeping correlation references in Logs. Kept
+  activity out of edit forms in both clients. Restored the shared loading helper
+  import required by API writes and made the mobile Logs route test resolve the
+  same query route as the app. Updated the UX contract and test matrix.
+- AI output accepted/changed/rejected: Applied the requested UX and read-only
+  behavior. Replaced whole-browser snapshot motion with a directional animation
+  limited to the changing content panel, so the header/footer stay still. With
+  prior approval for affected test changes, replaced the stale Logs-edit
+  expectation with assertions for read-only detail and Back to Logs. No
+  unrelated test assertions or earlier contribution entries were changed.
+- Verification/evidence: Full web suite **197 passed, 0 failed**; after the
+  final Logs URL-state change, **19 focused web tests passed**. Changed-source
+  ESLint, TypeScript/Vite production build, and UI integration validation
+  passed. Full Flutter suite **123 passed** and `flutter analyze` reported no
+  issues. `git diff --check` and the changed-path inventory are recorded with
+  the final workspace verification. No commit or push was made.
+
+## 2026-10-04 — Coastal Operations tab placement refinement
+
+- Date/time or time range: 2026-10-04 20:13 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Node.js/Vite and Python
+- AI Model: GPT-6
+- Summary of the user's request: Remove the visual gap between the shared
+  header and Coastal Operations tabs on Assessment, Alert and Logs pages.
+- Summary of what the AI Agent did: Put the single tab row directly after the
+  header and before the account rail on narrow layouts; placed it in the
+  content column on desktop. Updated the regression assertions, UX contract,
+  and test matrix without changing the shared workflow or API routes.
+- AI output accepted/changed/rejected: Kept the original sticky behavior and
+  directional panel transitions while moving tabs outside the animated
+  workspace panel. Rejected a visual claim based on the already-running local
+  page because it served the older build; the source layout is covered by
+  browser-component assertions instead.
+- Verification/evidence: Full web suite **197 passed, 0 failed**; focused
+  Coastal Operations tests **19 passed**; changed-source ESLint, TypeScript/Vite
+  production build, UI integration validator, and `git diff --check` passed.
+  No commit or push was made.
+
+## 2026-10-04 — Coastal Operations sticky account rail correction
+
+- Date/time or time range: 2026-10-04 20:47 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Node.js/Vite, Python and in-app browser
+- AI Model: GPT-6
+- Summary of the user's request: Fix the left navigation rail so it remains
+  locked correctly while using the Assessment, Alert and Logs pages.
+- Summary of what the AI Agent did: Measured the current sticky sidebar at the
+  bottom of the Assessment page, found its forced viewport height exceeded its
+  grid boundary, and added an option for Coastal Operations to use natural
+  height capped by the available viewport. Added sizing assertions, updated the
+  UX contract and test matrix, and kept other account-page layouts unchanged.
+- AI output accepted/changed/rejected: Applied the content-height fix to all
+  three Coastal Operations routes. Kept the shared fixed-height behavior for
+  Profile, Dashboard and Administration pages.
+- Verification/evidence: **26 focused web tests passed**; changed-source ESLint,
+  TypeScript/Vite production build, UI integration validator and
+  `git diff --check` passed. The full 197-test web suite passed before this
+  sizing-only correction. No commit or push was made.
+
+## 2026-10-04 — Coastal Operations sticky rail runtime follow-up
+
+- Date/time or time range: 2026-10-04 21:13 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Node.js/Vite, Docker Compose and in-app browser
+- AI Model: GPT-6
+- Summary of the user's request: Correct the left navigation rail in the running
+  React app after the earlier source change had not fixed the issue.
+- Summary of what the AI Agent did: Inspected live scroll geometry, found the
+  desktop grid slot was not stretching and the localhost frontend still served
+  an older image, then stretched the slot, measured the available rail height
+  between the header and footer, and enabled internal scrolling when needed.
+  Rebuilt and replaced only the frontend container; updated the UX and test
+  evidence documents.
+- AI output accepted/changed/rejected: Replaced the earlier assumption that a
+  natural-height sticky rail alone was sufficient after browser measurements
+  showed footer-boundary clipping. Kept non-Coastal account navigation layouts
+  unchanged.
+- Verification/evidence: **11 focused React tests passed**; changed-source
+  ESLint, TypeScript/Vite build, Compose configuration validation, frontend
+  image build, UI integration validator, and `git diff --check` passed. The live
+  browser served `index-DH08Otbu.js`; at the bottom of Assessments, Alerts and
+  Logs the rail stayed at 76 px and ended above the footer. No commit or push
+  was made.
+
+## 2026-10-04 — Match Coastal Operations navigation to account pages
+
+- Date/time or time range: 2026-10-04 21:32 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Node.js/Vite, Docker Compose and in-app browser
+- AI Model: GPT-6
+- Summary of the user's request: Inspect the working Profile/Dashboard sidebar
+  and use that same implementation on Coastal Operations pages.
+- Summary of what the AI Agent did: Removed Coastal-only sidebar sizing logic,
+  restored the shared sticky viewport-height classes, and made the shared
+  AccountAreaNavigation the direct grid item on Assessments, Alerts and Logs.
+  Kept Coastal's tab/workspace grid positions and mobile tab-first order.
+- AI output accepted/changed/rejected: Followed the existing Profile/Dashboard
+  implementation after the user corrected the prior Coastal-specific approach.
+  No changes were made to Profile or Dashboard navigation behavior.
+- Verification/evidence: **11 focused React tests passed**; changed-source
+  ESLint, production build, UI integration validation and `git diff --check`
+  passed. Rebuilt and restarted only the local frontend container. Browser
+  inspection confirmed the same base sticky classes and direct main-grid item
+placement on Profile, Dashboard, Assessments, Alerts and Logs. No commit or
+push was made.
+
+## 2026-10-04 — Coastal Operations Logs hero
+
+- Date/time or time range: 2026-10-04 22:42 (Asia/Colombo; completion record)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, built-in image generation, PowerShell, React/Vite,
+  Docker Compose and in-app browser
+- AI Model: GPT-6
+- Summary of the user's request: Add a Logs hero with an image suited to the
+  coastal project, the existing UI and audit-history content.
+- Summary of what the AI Agent did: Generated a wide editorial photograph of
+  coastal stewards comparing shoreline notes; optimized it to WebP at
+  `apps/web/src/assets/coastal/operations-logs-hero.webp`; added an accessible
+  hero above the Logs search and records; documented the design and prompt;
+  added regression coverage and refreshed the local frontend container.
+- AI output accepted/changed/rejected: Accepted the generated coastal field-
+  notes scene and composed it with the existing deep-ocean gradient. Converted
+  the original PNG to WebP to reduce the bundled image to 169 KB. No API or
+  route change was needed.
+- Verification/evidence: Focused Logs component tests **8 passed, 0 failed**;
+  React production build and changed-file ESLint passed; UI integration
+  validation and `git diff --check` passed. Rebuilt/restarted only the local
+  frontend container, and the browser showed the new hero above search and
+  results. Asset, intent and prompt: `apps/web/src/assets/coastal/operations-logs-hero.webp`
+  and `docs/v1/coastal-operations-record-navigation-and-audit.md`. No commit or
+  push was made.

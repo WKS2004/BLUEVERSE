@@ -221,7 +221,7 @@
     {
       "id": "coastal-operations-assessment",
       "status": "implemented",
-      "description": "Separate searchable Assessment page with draft CRUD, Publish using submit, durable typed delivery, scoped activity, evidence and review. Agent delivery remains disconnected before G07. Distinct hero imagery, compact 500ms live search with local loading, and exclusive create/edit/detail workspace views retain shared chrome. Evidence changes are DRAFT-only, including removal. Shared white record cards, pinned section tabs, Assessments/Alerts per-page cursor controls and refresh-safe query view intent; captured actor/role/field-change activity snapshots with honest legacy gaps.",
+      "description": "Separate searchable Assessment page with draft CRUD, Publish using submit, durable typed delivery, scoped activity, evidence and review. Agent delivery remains disconnected before G07. Distinct hero imagery, compact 500ms live search with local loading, read-only detail summaries and explicit Edit draft forms retain shared chrome. Evidence changes are DRAFT-only, including removal. Shared white record cards, header-aligned sticky section tabs with directional transitions, per-page cursor controls and refresh-safe query view intent; Logs-origin details suppress mutations and show correlation references only in Logs.",
       "web": {
         "route": "/operations/assessments",
         "source": "apps/web/src/app/routes.tsx"
@@ -249,7 +249,7 @@
     {
       "id": "coastal-operations-alerts",
       "status": "implemented",
-      "description": "Separate Alert page with draft CRUD, publish/resolve, searchable lifecycle and audience filters, pagination and scoped activity; no agent dispatch. Distinct hero imagery, compact 500ms live search with local loading, and exclusive create/edit/detail workspace views retain shared chrome. Shared white record cards, pinned section tabs, Assessments/Alerts per-page cursor controls and refresh-safe query view intent; captured actor/role/field-change activity snapshots with honest legacy gaps.",
+      "description": "Separate Alert page with draft CRUD, publish/resolve, searchable lifecycle and audience filters, pagination and scoped activity; no agent dispatch. Distinct hero imagery, compact 500ms live search with local loading, read-only detail summaries and explicit Edit draft forms retain shared chrome. Shared white record cards, header-aligned sticky section tabs with directional transitions, per-page cursor controls and refresh-safe query view intent; Logs-origin details suppress mutations and show correlation references only in Logs.",
       "web": {
         "route": "/operations/alerts",
         "source": "apps/web/src/app/routes.tsx"
@@ -271,7 +271,7 @@
     {
       "id": "coastal-operations-logs",
       "status": "implemented",
-      "description": "Audit-granted retained Assessment/Alert records with compact 500ms title search, per-record activity and 5/10/25/50/100-record cursor paging. Owner/reviewer/manager scopes remain server-enforced. Shared white record cards, pinned section tabs, Assessments/Alerts per-page cursor controls and refresh-safe query view intent; captured actor/role/field-change activity snapshots with honest legacy gaps.",
+      "description": "Audit-granted retained Assessment/Alert records with compact 500ms title search, per-record activity and 5/10/25/50/100-record cursor paging. Owner/reviewer/manager scopes remain server-enforced. Header-aligned sticky category tabs animate directionally and persist kind=assessments|alerts across refresh. Opened record details are read-only, hide lifecycle/evidence mutations, and provide styled correlation references without actor UUIDs.",
       "web": {
         "route": "/operations/logs",
         "source": "apps/web/src/app/routes.tsx"

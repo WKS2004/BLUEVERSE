@@ -85,6 +85,19 @@ test('WEB-OPS-LOGS-003 pending search keeps cards and local spinner, ignores sta
   fail = false; await userEvent.click(screen.getByRole('button', { name: 'Retry logs' })); await waitFor(() => assert.equal(screen.queryByRole('alert'), null))
 })
 
+test('WEB-OPS-LOGS-004 shows a coastal record-history hero above Logs search and results (ui-integration: coastal-operations-logs)', async () => {
+  globalThis.fetch = async () => jsonResponse({ items: [assessment], nextCursor: null })
+  renderInApp(createElement(Logs), { auth: auth(['operations.audit.read', 'operations.assessment.read']) })
+  const title = await screen.findByRole('heading', { name: 'Every coastal decision, accounted for.' })
+  const hero = title.closest('section')
+  const image = within(hero).getByRole('img')
+  const search = screen.getByRole('searchbox')
+  assert.equal(image.getAttribute('alt'), 'Coastal stewards comparing shoreline maps and field notes at a table')
+  assert.ok(image.getAttribute('src').includes('operations-logs-hero.webp'))
+  assert.equal(hero.compareDocumentPosition(search) & 4, 4)
+  await screen.findByText('Coastal review')
+})
+
 test('WEB-OPS-EVIDENCE-001 focused draft removal confirms red action with current version; publication hides all authored edits (ui-integration: coastal-operations-assessment)', async () => {
   let image = true; let version = 2; let deletion
   const grants = ['operations.assessment.read', 'operations.assessment.update', 'operations.assessment.delete', 'operations.evidence.upload', 'operations.evidence.read']

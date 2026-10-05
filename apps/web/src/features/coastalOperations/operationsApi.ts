@@ -1,4 +1,4 @@
-import { withLoadingScreen } from '../loading/backendLoading'
+import { withLoadingScreen } from '../loading/backendLoading.ts'
 
 export type CoastalTargetType = 'DESTINATION' | 'ACTIVITY' | 'OFFERING' | 'SESSION'
 
@@ -240,8 +240,8 @@ export function submitAssessmentDraft(assessmentId: string, expectedVersion: num
   return request<Assessment>(() => fetch('/api/operations/assessments/{assessmentId:guid}/submit'.replace('{assessmentId:guid}', encodeURIComponent(assessmentId)), publicApiOptions(jsonOptions('POST', { expectedVersion }, idempotencyKey()))))
 }
 
-export function getAssessmentDetail(assessmentId: string) {
-  return request<AssessmentDetail>(() => fetch('/api/operations/assessments/{assessmentId:guid}'.replace('{assessmentId:guid}', encodeURIComponent(assessmentId)), publicApiOptions()))
+export function getAssessmentDetail(assessmentId: string, options: { quiet?: boolean; signal?: AbortSignal } = {}) {
+  return request<AssessmentDetail>(() => fetch('/api/operations/assessments/{assessmentId:guid}'.replace('{assessmentId:guid}', encodeURIComponent(assessmentId)), publicApiOptions({ signal: options.signal })), options.quiet)
 }
 
 export function uploadAssessmentEvidence(assessmentId: string, image: File) {
@@ -253,25 +253,23 @@ export function uploadAssessmentEvidence(assessmentId: string, image: File) {
 }
 
 export async function getEvidenceImage(assessmentId: string, evidenceId: string): Promise<Blob> {
-  return withLoadingScreen(async () => {
-    let response: Response
-    try {
-      response = await fetch('/api/operations/assessments/{assessmentId:guid}/evidence/{evidenceId:guid}'
-        .replace('{assessmentId:guid}', encodeURIComponent(assessmentId))
-        .replace('{evidenceId:guid}', encodeURIComponent(evidenceId)), {
-        credentials: 'include', headers: { Accept: 'image/png' },
-      })
-    } catch {
-      throw new CoastalOperationsApiError(0, 'We could not reach coastal operations. Check your connection and retry.')
-    }
-    if (!response.ok) {
-      throw new CoastalOperationsApiError(response.status, friendlyMessage(response.status))
-    }
-    if (!response.headers.get('content-type')?.toLowerCase().startsWith('image/png')) {
-      throw new CoastalOperationsApiError(response.status, 'The evidence image could not be displayed safely.')
-    }
-    return response.blob()
-  })
+  let response: Response
+  try {
+    response = await fetch('/api/operations/assessments/{assessmentId:guid}/evidence/{evidenceId:guid}'
+      .replace('{assessmentId:guid}', encodeURIComponent(assessmentId))
+      .replace('{evidenceId:guid}', encodeURIComponent(evidenceId)), {
+      credentials: 'include', headers: { Accept: 'image/png' },
+    })
+  } catch {
+    throw new CoastalOperationsApiError(0, 'We could not reach coastal operations. Check your connection and retry.')
+  }
+  if (!response.ok) {
+    throw new CoastalOperationsApiError(response.status, friendlyMessage(response.status))
+  }
+  if (!response.headers.get('content-type')?.toLowerCase().startsWith('image/png')) {
+    throw new CoastalOperationsApiError(response.status, 'The evidence image could not be displayed safely.')
+  }
+  return response.blob()
 }
 
 export function listAlerts(query: RecordQuery = {}, options: { quiet?: boolean; signal?: AbortSignal } = {}) {
@@ -334,16 +332,16 @@ export function decideAlert(alertId: string, decision: 'PUBLISH' | 'RESOLVE', ex
   }, idempotencyKey()))))
 }
 
-export function getTargetStatus(targetType: CoastalTargetType, targetId: string) {
+export function getTargetStatus(targetType: CoastalTargetType, targetId: string, options: { quiet?: boolean; signal?: AbortSignal } = {}) {
   return request<OperationalStatus>(() => fetch('/api/operations/targets/{targetType}/{targetId:guid}/status'
     .replace('{targetType}', encodeURIComponent(targetType))
-    .replace('{targetId:guid}', encodeURIComponent(targetId)), publicApiOptions()))
+    .replace('{targetId:guid}', encodeURIComponent(targetId)), publicApiOptions({ signal: options.signal })), options.quiet)
 }
 
-export function getTargetHistory(targetType: CoastalTargetType, targetId: string) {
+export function getTargetHistory(targetType: CoastalTargetType, targetId: string, options: { quiet?: boolean; signal?: AbortSignal } = {}) {
   return request<CoastalPage<OperationalHistoryItem>>(() => fetch('/api/operations/targets/{targetType}/{targetId:guid}/history?pageSize=25'
     .replace('{targetType}', encodeURIComponent(targetType))
-    .replace('{targetId:guid}', encodeURIComponent(targetId)), publicApiOptions()))
+    .replace('{targetId:guid}', encodeURIComponent(targetId)), publicApiOptions({ signal: options.signal })), options.quiet)
 }
 
 export type NamedReference = { id: string; title: string; targetType?: CoastalTargetType; targetId?: string }
@@ -353,8 +351,8 @@ export type FormOptions = {
   plans: { status: string; items: NamedReference[] }
   assessments: NamedReference[]
 }
-export async function getOperationsFormOptions() {
-  const data = await request<FormOptions>(() => fetch('/api/operations/form-options', publicApiOptions()))
+export async function getOperationsFormOptions(options: { quiet?: boolean; signal?: AbortSignal } = {}) {
+  const data = await request<FormOptions>(() => fetch('/api/operations/form-options', publicApiOptions({ signal: options.signal })), options.quiet)
   if (!Array.isArray(data.timeZones) || !data.timeZones.some((zone) => zone.id === 'Etc/UTC') ||
       data.timeZones.some((zone) => typeof zone.id !== 'string' || typeof zone.country !== 'string' || typeof zone.location !== 'string' || typeof zone.rulesAvailable !== 'boolean') ||
       !data.targets || !Array.isArray(data.targets.items) || !data.plans || !Array.isArray(data.plans.items) || !Array.isArray(data.assessments)) {

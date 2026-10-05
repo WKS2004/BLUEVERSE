@@ -13,6 +13,7 @@ import CoastalOperationsPage from './CoastalOperationsPage'
 import OperationsRecordCard from './OperationsRecordCard'
 import OperationsPagination from './OperationsPagination'
 import OperationsActivity from './OperationsActivity'
+import logsHero from '../../assets/coastal/operations-logs-hero.webp'
 
 function LogsWorkspace({ user }: { user: AuthUser | null }) {
   const [view, setView] = useSearchParams()
@@ -20,7 +21,9 @@ function LogsWorkspace({ user }: { user: AuthUser | null }) {
   const audit = grants.has(permissions.auditRead)
   const assessmentsAllowed = audit && (grants.has(permissions.assessmentRead) || grants.has(permissions.assessmentQueueRead))
   const alertsAllowed = audit && Object.values(permissions).some((grant) => grant.startsWith('operations.alert.') && grants.has(grant))
-  const [kind, setKind] = useState<'assessments' | 'alerts'>(assessmentsAllowed ? 'assessments' : 'alerts')
+  const requestedKind = view.get('kind')
+  const kind = requestedKind === 'alerts' && alertsAllowed || !assessmentsAllowed ? 'alerts' : 'assessments'
+  const [categoryDirection, setCategoryDirection] = useState<'forward' | 'back' | null>(null)
   const [query, setQuery] = useState<RecordQuery>({})
   const [size, setSize] = useState(25)
   const [cursors, setCursors] = useState<Array<string | undefined>>([undefined])
@@ -34,6 +37,9 @@ function LogsWorkspace({ user }: { user: AuthUser | null }) {
   const allowed = kind === 'assessments' ? assessmentsAllowed : alertsAllowed
   const cursor = cursors[page]
   useEffect(() => {
+    if (requestedKind !== kind) setView({ kind }, { replace: true })
+  }, [requestedKind, setView, kind])
+  useEffect(() => {
     if (!allowed) return
     const controller = new AbortController()
     let current = true
@@ -46,21 +52,35 @@ function LogsWorkspace({ user }: { user: AuthUser | null }) {
   }, [allowed, kind, query, size, cursor, retry])
   function beginRead() { setLoading(true); setError(null) }
   function resetPage() { beginRead(); setPage(0); setCursors([undefined]); setNext(null); setExpanded(null) }
-  function switchKind(value: 'assessments' | 'alerts') { setKind(value); setQuery({}); setRecords([]); resetPage() }
+  function switchKind(value: 'assessments' | 'alerts') {
+    if (value === kind) return
+    setCategoryDirection(value === 'alerts' ? 'forward' : 'back')
+    setView({ kind: value })
+    setQuery({})
+    setRecords([])
+    resetPage()
+  }
   if (['create', 'edit', 'detail'].includes(view.get('view') || '')) return <CoastalOperationsPage section={view.get('kind') === 'alerts' ? 'alerts' : 'assessments'} origin="logs" />
   return <div className="flex min-h-screen flex-col bg-coast-paper font-sans text-coast-ink">
     <SiteHeader active="operations" />
-    <main className="mx-auto grid w-full max-w-[90rem] flex-1 grid-cols-1 content-start gap-6 px-4 py-6 sm:px-8 sm:py-10 lg:grid-cols-[15rem_minmax(0,1fr)] lg:items-start lg:gap-8 lg:px-6 lg:py-0">
-      <AccountAreaNavigation active="operations" />
-      <div className="min-w-0 lg:py-10">
-        {!allowed ? <p role="alert">Your permissions do not allow access to Coastal Operations logs.</p> : <>
-          <div aria-label="Log record category" className="sticky top-20 z-20 flex flex-wrap gap-3 border-b border-coast-line bg-coast-paper/95 py-3 backdrop-blur">
+    <main className="mx-auto grid w-full max-w-[90rem] flex-1 grid-cols-1 content-start gap-y-5 px-0 pt-0 pb-6 lg:grid-cols-[15rem_minmax(0,1fr)] lg:items-start lg:gap-x-8 lg:gap-y-0 lg:px-6 lg:pb-0">
+      {allowed && <div aria-label="Log record category" className="sticky top-[76px] z-20 flex flex-wrap gap-3 border-b border-coast-line bg-coast-paper px-4 py-3 backdrop-blur sm:px-8 lg:col-start-2 lg:row-start-1 lg:px-0">
             {assessmentsAllowed && <button aria-pressed={kind === 'assessments'} className={`min-h-11 rounded-full px-5 font-bold ${kind === 'assessments' ? 'bg-coast-deep text-white' : 'border border-coast-line'}`} onClick={() => switchKind('assessments')} type="button">Assessment logs</button>}
             {alertsAllowed && <button aria-pressed={kind === 'alerts'} className={`min-h-11 rounded-full px-5 font-bold ${kind === 'alerts' ? 'bg-coast-deep text-white' : 'border border-coast-line'}`} onClick={() => switchKind('alerts')} type="button">Alert logs</button>}
-          </div>
-          <section aria-label="Coastal Operations logs" className="mt-6 rounded-3xl border border-coast-line bg-coast-pearl p-5 sm:p-8">
-            <h1 className="mb-2 font-display text-3xl">Coastal Operations logs</h1>
-            <p className="mb-6 text-sm text-coast-muted">Follow retained drafts, published records and inactive records through their recorded activity.</p>
+          </div>}
+      <AccountAreaNavigation active="operations" className={`order-2 px-4 sm:px-8 lg:order-none lg:col-start-1 lg:row-start-1 ${allowed ? 'lg:row-span-2' : 'lg:row-span-1'}`} />
+      <div className={`order-3 min-w-0 px-4 sm:px-8 lg:order-none lg:px-0 lg:col-start-2 ${allowed ? 'lg:row-start-2' : 'lg:row-start-1'}`}>
+        {!allowed ? <p role="alert">Your permissions do not allow access to Coastal Operations logs.</p> : <>
+          <section aria-labelledby="operations-logs-title" className="relative isolate mb-5 mt-6 overflow-hidden rounded-[2rem] bg-coast-deep text-white shadow-sm">
+            <img alt="Coastal stewards comparing shoreline maps and field notes at a table" className="absolute inset-0 -z-20 h-full w-full object-cover opacity-60" src={logsHero} />
+            <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-r from-coast-deep via-coast-deep/90 to-coast-deep/35" />
+            <div className="max-w-3xl px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+              <p className="text-[11px] font-extrabold tracking-[0.18em] text-coast-glass">COASTAL OPERATIONS · ACTIVITY</p>
+              <h1 className="mt-3 font-display text-4xl leading-tight tracking-[-0.05em] sm:text-5xl" id="operations-logs-title">Every coastal decision, accounted for.</h1>
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-white/85 sm:text-base sm:leading-7">Follow the history of assessment drafts, published reviews and advisories—who changed them and when.</p>
+            </div>
+          </section>
+          <section key={kind} aria-label="Coastal Operations logs" data-coastal-direction={categoryDirection} className="coastal-category-panel rounded-3xl border border-coast-line bg-coast-pearl p-5 sm:p-8">
             <OperationsSearch key={kind} kind={kind} canManage loading={loading} onChange={(value) => { setQuery(value); resetPage() }} />
             {error && <p className="mb-4 text-sm text-red-900" role="alert">{error} <button className="underline" onClick={() => { beginRead(); setRetry((value) => value + 1) }} type="button">Retry logs</button></p>}
             {!loading && !error && records.length === 0 && <div className="py-8"><h2 className="font-display text-xl">{kind === 'assessments' ? 'No assessments to show yet' : 'No advisories to show'}</h2><p className="mt-2 text-sm text-coast-muted">{kind === 'assessments' ? 'Saved drafts and submitted reviews will appear here.' : 'Active public updates and your proposed drafts will appear here.'}</p></div>}
@@ -70,7 +90,7 @@ function LogsWorkspace({ user }: { user: AuthUser | null }) {
                 const id = isAssessment ? (record as Assessment).assessmentId : (record as CoastalAlert).alertId
                 return <OperationsRecordCard key={id} record={record} onOpen={() => setView({ view: 'detail', kind, id })} activity={<>
                   <button aria-expanded={expanded === id} className="mt-3 min-h-11 rounded-full border border-coast-line px-4 text-sm font-bold" onClick={() => setExpanded(expanded === id ? null : id)} type="button">{expanded === id ? 'Hide activity' : 'View activity'}</button>
-                  {expanded === id && <OperationsActivity key={id} kind={isAssessment ? 'assessment' : 'alert'} id={id} revision={record.version} />}
+                  {expanded === id && <OperationsActivity key={id} kind={isAssessment ? 'assessment' : 'alert'} id={id} revision={record.version} showReference />}
                 </>} />
               })}
             </div>

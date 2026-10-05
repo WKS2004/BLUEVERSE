@@ -9,11 +9,13 @@ class CoastalOperationsActivity extends StatefulWidget {
     required this.apiService,
     required this.id,
     required this.assessment,
+    this.showReference = false,
     super.key,
   });
   final CoastalOperationsApiService apiService;
   final String id;
   final bool assessment;
+  final bool showReference;
   @override
   State<CoastalOperationsActivity> createState() =>
       _CoastalOperationsActivityState();
@@ -108,7 +110,14 @@ class _CoastalOperationsActivityState extends State<CoastalOperationsActivity> {
                           item.action.toLowerCase().replaceAll('_', ' '),
                     ),
                     subtitle: Text(
-                      '${item.actorName ?? (item.actorId == '00000000-0000-0000-0000-000000000000' ? 'System' : 'Team member (name not recorded)')} · ${item.actorRoles.isEmpty ? 'Role not recorded' : item.actorRoles.join(', ')}\n${DateTime.tryParse(item.createdAt)?.toLocal().toString() ?? item.createdAt}',
+                      [
+                        if (!widget.showReference)
+                          '${item.actorName ?? (item.actorId == '00000000-0000-0000-0000-000000000000' ? 'System' : 'Team member (name not recorded)')} · ${item.actorRoles.isEmpty ? 'Role not recorded' : item.actorRoles.join(', ')}',
+                        DateTime.tryParse(item.createdAt)
+                                ?.toLocal()
+                                .toString() ??
+                            item.createdAt,
+                      ].join('\n'),
                     ),
                     children: [
                       if (item.recordTitle != null) Text(item.recordTitle!),
@@ -126,12 +135,30 @@ class _CoastalOperationsActivityState extends State<CoastalOperationsActivity> {
                             'Before: ${_value(change.before, change.field)}\nAfter: ${_value(change.after, change.field)}',
                           ),
                         ),
-                      Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: SelectableText(
-                          'Actor: ${item.actorId}\nReference: ${item.correlationId}',
+                      if (widget.showReference)
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Reference details'),
+                                  const SizedBox(height: 4),
+                                  const Text('Correlation reference'),
+                                  SelectableText(item.correlationId),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 if (_cursor != null)

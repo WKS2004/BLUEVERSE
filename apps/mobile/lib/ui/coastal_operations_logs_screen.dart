@@ -13,10 +13,12 @@ class CoastalOperationsLogsScreen extends StatefulWidget {
   const CoastalOperationsLogsScreen({
     required this.viewModel,
     required this.apiService,
+    this.initialAlerts = false,
     super.key,
   });
   final AuthViewModel viewModel;
   final CoastalOperationsApiService apiService;
+  final bool initialAlerts;
   @override
   State<CoastalOperationsLogsScreen> createState() => _LogsState();
 }
@@ -61,7 +63,7 @@ class _LogsState extends State<CoastalOperationsLogsScreen> {
     final scope = '${widget.viewModel.user?.id}:${sorted.join(',')}';
     if (_scope == scope) return;
     _scope = scope;
-    _assessments = _assessmentAccess;
+    _assessments = !(widget.initialAlerts && _alertAccess) && _assessmentAccess;
     _records = const [];
     _query = const {};
     _resetPage();
@@ -130,14 +132,12 @@ class _LogsState extends State<CoastalOperationsLogsScreen> {
   }
 
   void _switch(bool assessments) {
+    if (_assessments == assessments) return;
     if (_scroll.hasClients) _scroll.jumpTo(0);
-    setState(() {
-      _assessments = assessments;
-      _query = const {};
-      _records = const [];
-      _resetPage();
-    });
-    _load();
+    Navigator.pushReplacementNamed(
+      context,
+      '/operations/logs?kind=${assessments ? 'assessments' : 'alerts'}',
+    );
   }
 
   void _activity(String id) {
@@ -150,6 +150,7 @@ class _LogsState extends State<CoastalOperationsLogsScreen> {
           apiService: widget.apiService,
           id: id,
           assessment: _assessments,
+          showReference: true,
         ),
       ),
     );

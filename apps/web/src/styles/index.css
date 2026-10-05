@@ -28,6 +28,23 @@
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+@keyframes coastal-tab-enter-forward {
+  from { opacity: 0; transform: translateX(1.25rem); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes coastal-tab-enter-back {
+  from { opacity: 0; transform: translateX(-1.25rem); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .coastal-section-panel[data-coastal-direction='forward'] { animation: coastal-tab-enter-forward 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  .coastal-section-panel[data-coastal-direction='back'] { animation: coastal-tab-enter-back 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  .coastal-category-panel[data-coastal-direction='forward'] { animation: coastal-tab-enter-forward 240ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  .coastal-category-panel[data-coastal-direction='back'] { animation: coastal-tab-enter-back 240ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+}
+
 @keyframes blueverse-loader-ring {
   to { transform: rotate(1turn); }
 }
@@ -122,4 +139,6 @@
   }
 
   .blueverse-loader-content[data-exiting='true'] { animation: none; }
+  .coastal-section-panel { animation: none; }
+  .coastal-category-panel { animation: none; }
 }

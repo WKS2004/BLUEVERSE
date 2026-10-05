@@ -90,3 +90,72 @@ provider tests and live migration/concurrency execution remain unverified.
 No deployment, physical device, live producer or executable agent acceptance
 is claimed. Legacy snapshots cannot be backfilled from current data; refresh
 restores a workspace and saved record, not unsaved typing. G00/G07 Pending.
+
+## UX follow-up contract — 2026-10-04
+
+Keep the Assessment/Alert and Assessment Logs/Alert Logs tabs flush with the
+shared 76 px header and opaque while sticky. At narrow widths, put this tab row
+first in the main content directly after the header, before the account rail;
+on desktop, align it over the Coastal Operations content column. The account
+rail stays sticky below the header, sized to its content and capped at the
+available viewport height so a short page section cannot push it out of view.
+Use a short directional transition on the changing workspace panel only; the
+shared header and footer remain still. Honor reduced-motion preferences.
+Retain existing result cards while searches and detail lookups are in flight;
+show request progress in the local controls instead of replacing the page with
+the global loading screen. This applies to assessment/alert details, related
+status/history, form-option reads and evidence previews.
+
+Assessment and advisory details are readable, introductory summaries with
+non-editable field values. The explicit Edit draft action opens the full form.
+Draft forms do not render the activity timeline. Logs retain the existing
+detail view and activity, but a record opened from Logs has no Edit, Withdraw,
+Publish, Resolve, evidence-add or evidence-remove controls. Correlation
+references are disclosed only in Logs, in a compact reference detail. Hide the
+separate actor/“Who” line in Logs while retaining names and roles in the normal
+Assessment/Alert activity views. Preserve the selected Logs category through
+`kind=assessments|alerts` in the route query and browser refresh. React and
+Flutter keep equivalent access and read-only outcomes.
+
+## UX follow-up implementation and verification — 2026-10-04
+
+Implemented header-aligned sticky tabs that precede the account rail on narrow
+screens and align over the content column on desktop, directional section
+transitions, quiet/local collection reads, read-only detail introductions and
+no-mutation Logs detail behavior. Coastal Operations, Profile and Dashboard use
+the shared account-navigation component directly in the main grid. The Coastal
+pages use the same sticky position, viewport height, max-height and internal
+overflow behavior as Profile and Dashboard. The Coastal tabs and workspace keep
+their dedicated grid positions beside it. Logs category changes now update the route query;
+Flutter uses the same query when replacing the active Logs screen. Correlation
+references use a styled, Logs-only disclosure, with the separate actor/“Who”
+line suppressed in Logs. Added `WEB-OPS-UX-001`–`004` and
+`MOB-OPS-UX-001`–`002` regression coverage. The former Logs edit test expected
+mutation controls in a read-only view and was updated, with approved test
+changes, to check that edit/publish/cancel are unavailable and Back to Logs
+works. The mobile Logs test fixture now resolves the category query route like
+the app, so its persistence assertion exercises the route replacement flow.
+The Logs category is now derived directly from the route query instead of being
+mirrored into React state by an effect, avoiding a redundant render during tab
+switches. Restored the shared loading helper import used by Coastal Operations
+write requests after the full suite exposed its omission. Full package results
+are recorded in the test matrix below.
+
+### Coastal Operations Logs hero — 2026-10-04
+
+Added a Logs-specific editorial hero above the Logs search and results. It uses
+the same rounded coastal treatment, deep-ocean gradient and overlaid heading as
+the Assessment/Alert workspaces, while introducing audit history as its own
+context. Assessment Logs and Alert Logs share the same hero; switching category
+only transitions the records panel.
+
+The project asset is
+[`operations-logs-hero.webp`](../../apps/web/src/assets/coastal/operations-logs-hero.webp).
+It was generated with the built-in image tool from this prompt: “A small coastal
+stewardship team reviewing field notes and printed shoreline records together
+at an airy coastal field station, shoreline and dune grasses visible, candid
+documentary editorial photography, muted ocean/sea-glass and warm paper palette,
+wide panoramic framing with open space on the left for copy; no interface,
+logos, legible writing or watermark.” The generated PNG was converted to WebP
+for the app asset. `WEB-OPS-LOGS-004` checks the contextual image, accessible
+description and placement above search/results.

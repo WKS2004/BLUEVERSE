@@ -134,13 +134,18 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
       final navigator = Navigator.of(context);
       var found = false;
       navigator.popUntil((route) {
-        if (route.settings.name == '/operations/logs') {
+        if (Uri.tryParse(route.settings.name ?? '')?.path ==
+            '/operations/logs') {
           found = true;
           return true;
         }
         return route.isFirst;
       });
-      if (!found) navigator.pushNamed('/operations/logs');
+      if (!found) {
+        navigator.pushNamed(
+          '/operations/logs?kind=${_showAlerts && !_showAssessments ? 'alerts' : 'assessments'}',
+        );
+      }
       return;
     }
     if (name != null && name.contains('?view=')) {
@@ -150,7 +155,7 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
         Navigator.pushReplacementNamed(
           context,
           widget.fromLogs
-              ? '/operations/logs'
+              ? '/operations/logs?kind=${_showAlerts && !_showAssessments ? 'alerts' : 'assessments'}'
               : _showAlerts && !_showAssessments
               ? '/operations/alerts'
               : '/operations/assessments',
@@ -523,6 +528,7 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
           apiService: widget.apiService,
           id: id,
           assessment: assessment,
+          showReference: widget.fromLogs,
         ),
       ),
     );
@@ -582,8 +588,8 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
     if (_details.containsKey(assessment.assessmentId)) return;
     setState(() => _detailErrors.remove(assessment.assessmentId));
     try {
-      final detail = await blueverseLoadingScreenController.track(
-        () => widget.apiService.getAssessmentDetail(assessment.assessmentId),
+      final detail = await widget.apiService.getAssessmentDetail(
+        assessment.assessmentId,
       );
       CoastalOperationalStatus? status;
       List<CoastalHistoryItem> history = const [];
@@ -1067,11 +1073,9 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
     CoastalEvidence evidence,
   ) async {
     try {
-      final bytes = await blueverseLoadingScreenController.track(
-        () => widget.apiService.getEvidenceImage(
-          assessmentId: assessmentId,
-          evidenceId: evidence.evidenceId,
-        ),
+      final bytes = await widget.apiService.getEvidenceImage(
+        assessmentId: assessmentId,
+        evidenceId: evidence.evidenceId,
       );
       if (!mounted) return;
       await showDialog<void>(
@@ -1135,6 +1139,29 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                 child: LinearProgressIndicator(),
               )
             else ...[
+              _InfoSurface(
+                title: 'Review this saved assessment',
+                child: Text(
+                  widget.fromLogs
+                      ? 'This is a read-only view of the retained assessment and its coastal context.'
+                      : 'This is a read-only view. Choose Edit draft before changing an unpublished assessment.',
+                ),
+              ),
+              const SizedBox(height: 12),
+              _InfoSurface(
+                title: 'Related coastal record',
+                child: SelectableText(
+                  '${_humanize(detail.assessment.targetType)} · ${detail.assessment.targetId}',
+                ),
+              ),
+              const SizedBox(height: 12),
+              _InfoSurface(
+                title: 'Related coastal plan',
+                child: SelectableText(
+                  detail.assessment.sourceWorkflowId ?? 'No plan linked',
+                ),
+              ),
+              const SizedBox(height: 12),
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
@@ -1150,9 +1177,10 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                     'Coastal context is checked after you submit this draft.',
                   ),
                 ),
-                if (_canUpdateAssessment ||
-                    _canSubmitAssessment ||
-                    _canDeleteAssessment) ...[
+                if (!widget.fromLogs &&
+                    (_canUpdateAssessment ||
+                        _canSubmitAssessment ||
+                        _canDeleteAssessment)) ...[
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 8,
@@ -1286,7 +1314,8 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                         style: Theme.of(context).textTheme.titleSmall,
                       ),
                     ),
-                    if (_canUploadEvidence &&
+                    if (!widget.fromLogs &&
+                        _canUploadEvidence &&
                         detail.assessment.workflowStatus == 'DRAFT' &&
                         detail.evidence.length < 5)
                       TextButton.icon(
@@ -1332,7 +1361,8 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                                   ),
                             icon: const Icon(Icons.visibility_outlined),
                           ),
-                          if (_canUploadEvidence &&
+                          if (!widget.fromLogs &&
+                              _canUploadEvidence &&
                               detail.assessment.workflowStatus == 'DRAFT')
                             IconButton(
                               tooltip: 'Remove evidence image',
@@ -1448,40 +1478,50 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
         onActivity: _canReadAudit
             ? () => _openActivity(alert.alertId, false)
             : null,
-        actions: Wrap(
-          spacing: 8,
-          children: [
-            if (_canUpdateAlerts && alert.lifecycle == 'PROPOSED')
-              TextButton(
-                onPressed: () => _openAlertForm(existing: alert),
-                child: const Text('Edit draft'),
-              ),
-            if (_canDeleteAlerts && alert.lifecycle == 'PROPOSED')
-              TextButton(
-                style: TextButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.error,
-                ),
-                onPressed: _busy ? null : () => _withdrawAlertDraft(alert),
-                child: const Text('Withdraw draft'),
-              ),
-            if (_canPublishAlerts && alert.lifecycle == 'PROPOSED')
-              FilledButton.tonal(
-                onPressed: _busy ? null : () => _decideAlert(alert, 'PUBLISH'),
-                child: const Text('Publish advisory'),
-              ),
-            if (_canResolveAlerts && alert.lifecycle == 'ACTIVE')
-              OutlinedButton(
-                onPressed: _busy ? null : () => _decideAlert(alert, 'RESOLVE'),
-                child: const Text('Resolve advisory'),
-              ),
-          ],
-        ),
+        actions: !widget.fromLogs
+            ? Wrap(
+                spacing: 8,
+                children: [
+                  if (_canUpdateAlerts && alert.lifecycle == 'PROPOSED')
+                    TextButton(
+                      onPressed: () => _openAlertForm(existing: alert),
+                      child: const Text('Edit draft'),
+                    ),
+                  if (_canDeleteAlerts && alert.lifecycle == 'PROPOSED')
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        foregroundColor: Theme.of(context).colorScheme.error,
+                      ),
+                      onPressed: _busy
+                          ? null
+                          : () => _withdrawAlertDraft(alert),
+                      child: const Text('Withdraw draft'),
+                    ),
+                  if (_canPublishAlerts && alert.lifecycle == 'PROPOSED')
+                    FilledButton.tonal(
+                      onPressed: _busy
+                          ? null
+                          : () => _decideAlert(alert, 'PUBLISH'),
+                      child: const Text('Publish advisory'),
+                    ),
+                  if (_canResolveAlerts && alert.lifecycle == 'ACTIVE')
+                    OutlinedButton(
+                      onPressed: () => _decideAlert(alert, 'RESOLVE'),
+                      child: const Text('Resolve advisory'),
+                    ),
+                ],
+              )
+            : null,
       );
     }
-    final canEdit = _canUpdateAlerts && alert.lifecycle == 'PROPOSED';
-    final canWithdraw = _canDeleteAlerts && alert.lifecycle == 'PROPOSED';
-    final canPublish = _canPublishAlerts && alert.lifecycle == 'PROPOSED';
-    final canResolve = _canResolveAlerts && alert.lifecycle == 'ACTIVE';
+    final canEdit =
+        !widget.fromLogs && _canUpdateAlerts && alert.lifecycle == 'PROPOSED';
+    final canWithdraw =
+        !widget.fromLogs && _canDeleteAlerts && alert.lifecycle == 'PROPOSED';
+    final canPublish =
+        !widget.fromLogs && _canPublishAlerts && alert.lifecycle == 'PROPOSED';
+    final canResolve =
+        !widget.fromLogs && _canResolveAlerts && alert.lifecycle == 'ACTIVE';
     return Card(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
@@ -1526,6 +1566,10 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
             ),
             Text(
               'Created ${_formatDate(alert.createdAt)}',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            Text(
+              'Updated ${_formatDate(alert.updatedAt)}',
               style: Theme.of(context).textTheme.bodySmall,
             ),
             Text(alert.description, style: const TextStyle(height: 1.45)),
@@ -1720,14 +1764,29 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
             onCancel: _backToList,
           )
         else if (_selectedAssessment != null) ...[
+          Text(
+            widget.fromLogs
+                ? 'Review this retained assessment and its coastal context. Its fields are read-only in this view.'
+                : 'Review the saved purpose and coastal context here. Choose Edit draft when you are ready to change an unpublished assessment.',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 12),
           Text(_selectedAssessment!.objective),
           _assessmentDetails(_selectedAssessment!),
         ] else if (_alertDetailError != null)
           _NoticeBox(text: _alertDetailError!, error: true)
         else if (_alertDetailLoading)
           const LinearProgressIndicator()
-        else if (_selectedAlert != null)
+        else if (_selectedAlert != null) ...[
+          Text(
+            widget.fromLogs
+                ? 'Review this retained advisory as saved; records opened from Logs are read-only.'
+                : 'Review the audience, dates and coastal link here. Choose Edit draft before changing an unpublished advisory.',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 12),
           _alertCard(_selectedAlert!, focused: true),
+        ],
       ],
     );
   }

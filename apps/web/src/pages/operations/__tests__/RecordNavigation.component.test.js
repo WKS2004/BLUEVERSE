@@ -71,16 +71,15 @@ test('WEB-OPS-AUDIT-DETAIL-001 activity explains exact values actor roles time a
   assert.ok(screen.getByText('Field details were not recorded for this event.')); assert.equal(document.querySelector('time').getAttribute('dateTime'), record.updatedAt)
 })
 
-test('WEB-OPS-NAV-005 editing a draft opened from Logs retains the full form and returns to Logs (ui-integration: coastal-operations-logs)', async () => {
+test('WEB-OPS-NAV-005 Logs assessment details stay read-only and return to Logs (ui-integration: coastal-operations-logs)', async () => {
   globalThis.fetch = async (input) => fixture(input)
   renderInApp(createElement(Logs), { path: '/operations/logs', auth: auth(['operations.audit.read', 'operations.assessment.read', 'operations.assessment.update']) })
   await screen.findByText(record.title)
   await userEvent.click(screen.getByRole('button', { name: /Review beach access/ }))
   await screen.findByText('ASSESSMENT DETAILS')
-  await userEvent.click(screen.getByRole('button', { name: 'Edit draft', exact: true }))
-  await screen.findByRole('button', { name: 'Update draft' })
-  assert.equal(screen.getByLabelText('Assessment title').value, record.title)
-  assert.equal(screen.queryByRole('searchbox'), null)
+  assert.ok(screen.getByText(/retained assessment is shown read-only/))
+  for (const name of ['Edit draft', 'Publish assessment', 'Cancel draft']) assert.equal(screen.queryByRole('button', { name, exact: true }), null)
+  assert.equal(screen.queryByLabelText('Assessment title'), null)
   assert.ok(document.querySelector('header')); assert.ok(document.querySelector('footer'))
   await userEvent.click(screen.getByRole('button', { name: 'Back to Logs' }))
   await screen.findByRole('searchbox')

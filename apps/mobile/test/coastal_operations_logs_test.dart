@@ -75,7 +75,8 @@ void main() {
     addTearDown(client.close);
     addTearDown(authClient.close);
     await tester.pumpWidget(
-      mobileTestApp(
+      MaterialApp(
+        theme: ThemeData(useMaterial3: true),
         home: logs
             ? CoastalOperationsLogsScreen(viewModel: model, apiService: api)
             : CoastalOperationsScreen(
@@ -83,6 +84,20 @@ void main() {
                 apiService: api,
                 section: CoastalOperationsSection.assessments,
               ),
+        onGenerateRoute: (settings) {
+          final uri = Uri.tryParse(settings.name ?? '');
+          if (logs && uri?.path == '/operations/logs') {
+            return MaterialPageRoute<void>(
+              settings: settings,
+              builder: (_) => CoastalOperationsLogsScreen(
+                viewModel: model,
+                apiService: api,
+                initialAlerts: uri?.queryParameters['kind'] == 'alerts',
+              ),
+            );
+          }
+          return null;
+        },
       ),
     );
     await tester.pumpAndSettle();

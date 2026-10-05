@@ -16,6 +16,38 @@ dedicated provider connection; it was skipped, not passed. Migration SQL/model
 checks and synthetic browser checks do not establish live provider acceptance.
 See [verification details](../v1/coastal-operations-record-navigation-and-audit.md).
 
+## Coastal Operations workspace UX polish — 2026-10-04
+
+Full web suite: **197 passed, 0 failed**. After the final Logs URL-state
+simplification, **19 focused web operations tests passed**; changed-source ESLint
+and the TypeScript/Vite production build passed. Full Flutter suite:
+**123 passed**, `flutter analyze` reported no issues. The shared UI integration
+validator and final `git diff --check` passed.
+
+New `WEB-OPS-UX-001`–`004` and `MOB-OPS-UX-001`–`002` cover responsive
+header-aligned tabs (including their first-row position before mobile account
+navigation), directional navigation, alert fields remaining
+read-only until Edit draft, route-restored Alert Logs, mutation-free Logs
+details, Logs-only correlation references without a separate actor/“Who” line,
+and activity absence in edit forms. The previous `WEB-OPS-NAV-005` expectation
+to edit a Logs record was stale against the read-only Logs contract; it now
+checks read-only detail and return navigation. The Flutter Logs route test
+fixture was updated to resolve the selected-category URL as the app does.
+Focused and complete package results are recorded in the
+[UX follow-up contract](../v1/coastal-operations-record-navigation-and-audit.md).
+
+### Sticky account rail correction — 2026-10-04
+
+The Coastal pages now use `AccountAreaNavigation` directly as a main-grid item,
+with the same sticky position, viewport height, max-height and internal
+overflow classes as Profile and Dashboard. Regression checks assert direct
+grid placement and the shared sizing classes. The full-suite result above
+predates this correction. After it, **11 focused React tests passed**; targeted
+ESLint, the production build, UI integration validation and `git diff --check`
+passed. The live app served `index-DkmV4bV_`; browser inspection confirmed the
+same base rail classes and direct main-grid placement on Assessments, Alerts
+and Logs, matching Profile and Dashboard.
+
 ## Coastal Operations focused workspace follow-up — 2026-10-01
 
 The [focused workspace contract](../v1/coastal-operations-focused-workspaces.md)
@@ -103,3 +135,14 @@ browser checks completed; live PostgreSQL, Docker, deployed gateway and real
 mobile device acceptance remain unavailable or unexecuted. No test was skipped
 or relaxed to fix a failing assertion; PostgreSQL skips use the existing opt-in
 connection gate. See the current contract for commands and limitations.
+
+## Coastal Operations Logs hero — 2026-10-04
+
+`WEB-OPS-LOGS-004` checks the Logs-specific coastal image, accessible image
+description, and that the hero precedes search and results. The corresponding
+asset prompt and design intent are recorded in the
+[Logs hero contract](../v1/coastal-operations-record-navigation-and-audit.md).
+The focused `OperationsLogs.component.test.js` run passed **8/8**. The React
+production build, changed-file ESLint and UI integration validator passed. The
+frontend container was rebuilt/restarted, and the browser confirmed the hero
+above the live Logs search and list.

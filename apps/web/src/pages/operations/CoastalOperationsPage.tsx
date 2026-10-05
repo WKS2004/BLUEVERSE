@@ -177,7 +177,8 @@ function CoastalOperationsWorkspace({ user, section, origin }: { user: AuthUser 
   useEffect(() => {
     if (!selectedAssessmentId || !canReadAssessments) return
     let current = true
-    void getAssessmentDetail(selectedAssessmentId).then(async (result) => {
+    const controller = new AbortController()
+    void getAssessmentDetail(selectedAssessmentId, { quiet: true, signal: controller.signal }).then(async (result) => {
       if (!current) return
       setDetail(result)
       setDetailError(null)
@@ -186,8 +187,8 @@ function CoastalOperationsWorkspace({ user, section, origin }: { user: AuthUser 
       setTargetError(null)
       const { targetType, targetId } = result.assessment
       const lookups = await Promise.allSettled([
-        canReadStatus && targetId !== '00000000-0000-0000-0000-000000000000' ? getTargetStatus(targetType, targetId) : Promise.resolve(null),
-        canReadHistory && targetId !== '00000000-0000-0000-0000-000000000000' ? getTargetHistory(targetType, targetId) : Promise.resolve(null),
+        canReadStatus && targetId !== '00000000-0000-0000-0000-000000000000' ? getTargetStatus(targetType, targetId, { quiet: true, signal: controller.signal }) : Promise.resolve(null),
+        canReadHistory && targetId !== '00000000-0000-0000-0000-000000000000' ? getTargetHistory(targetType, targetId, { quiet: true, signal: controller.signal }) : Promise.resolve(null),
       ])
       if (!current) return
       if (lookups[0].status === 'fulfilled') setTargetStatus(lookups[0].value)
@@ -199,7 +200,7 @@ function CoastalOperationsWorkspace({ user, section, origin }: { user: AuthUser 
         message: error instanceof CoastalOperationsApiError ? error.message : 'We could not open this assessment. Try again.',
       })
     })
-    return () => { current = false }
+    return () => { current = false; controller.abort() }
   }, [selectedAssessmentId, canReadAssessments, canReadStatus, canReadHistory, refreshKey])
 
   useEffect(() => {
@@ -214,7 +215,7 @@ function CoastalOperationsWorkspace({ user, section, origin }: { user: AuthUser 
         if (!draft || draft.lifecycle !== 'PROPOSED') throw new Error('This advisory is no longer an editable draft. Return to Alerts for its current details.')
         if (current && !cancelRestoration.current) setEditingAlert(draft)
       } else {
-        const result = await getAssessmentDetail(intent.id!)
+        const result = await getAssessmentDetail(intent.id!, { quiet: true })
         if (result.assessment.workflowStatus !== 'DRAFT') throw new Error('This assessment is no longer an editable draft. Return to Assessments for its current details.')
         if (current && !cancelRestoration.current) setEditingAssessment(result.assessment)
       }
@@ -225,7 +226,7 @@ function CoastalOperationsWorkspace({ user, section, origin }: { user: AuthUser 
 
   async function refreshDetail() {
     if (!selectedAssessmentId) return
-    try { setDetail(await getAssessmentDetail(selectedAssessmentId)); setDetailError(null) }
+    try { setDetail(await getAssessmentDetail(selectedAssessmentId, { quiet: true })); setDetailError(null) }
     catch (error) { setDetailError({ assessmentId: selectedAssessmentId, message: error instanceof CoastalOperationsApiError ? error.message : 'We could not refresh this assessment.' }) }
   }
 
@@ -361,7 +362,7 @@ function CoastalOperationsWorkspace({ user, section, origin }: { user: AuthUser 
   }
   function backToList() {
     cancelRestoration.current = true
-    if (origin === 'logs') { navigate('/operations/logs'); return }
+    if (origin === 'logs') { navigate(`/operations/logs?kind=${section === 'alerts' ? 'alerts' : 'assessments'}`); return }
     setRestoreError(null); setRestoring(false)
     setShowAssessmentForm(false); setEditingAssessment(null); setShowAlertForm(false); setEditingAlert(null)
     setSelectedAssessmentId(null); setSelectedAlertId(null); setSelectedAlert(null); setActiveAlertActivity(null)
@@ -392,7 +393,7 @@ function CoastalOperationsWorkspace({ user, section, origin }: { user: AuthUser 
                       {detail?.assessment.assessmentId !== selectedAssessmentId && detailError?.assessmentId !== selectedAssessmentId && <p aria-live="polite" className="text-sm text-coast-muted">Opening the assessment…</p>}
                       {detail?.assessment.assessmentId === selectedAssessmentId && <div className="grid gap-7">
                         <div className="flex flex-wrap items-start justify-between gap-4">
-                          <div><p className="text-xs font-extrabold tracking-[0.13em] text-coast-blue">ASSESSMENT DETAILS</p></div>
+                          <div><p className="text-xs font-extrabold tracking-[0.13em] text-coast-blue">ASSESSMENT DETAILS</p><p className="mt-2 max-w-2xl text-sm leading-6 text-coast-muted">{origin === 'logs' ? 'This retained assessment is shown read-only alongside its coastal context.' : 'Review the saved purpose, coastal connection, and assessment period here. Draft fields stay read-only until you choose Edit draft.'}</p></div>
                           <StatusPill value={detail.assessment.workflowStatus} />
                         </div>
                         {detail.assessment.workflowStatus === 'DRAFT' && <div className="grid gap-3 rounded-2xl bg-coast-sand p-4 sm:p-5">
@@ -403,6 +404,7 @@ function CoastalOperationsWorkspace({ user, section, origin }: { user: AuthUser 
                           <div><p className="text-xs font-bold text-coast-muted">Coastal context</p><p className="mt-1 text-sm font-bold">{label(detail.assessment.aiDependencyStatus)}</p></div>
                           <div><p className="text-xs font-bold text-coast-muted">Assessment period</p><p className="mt-1 text-sm font-bold">{formatDate(detail.assessment.periodStartsAt)} – {formatDate(detail.assessment.periodEndsAt)}</p></div>
                         </div>}
+                        <dl className="grid gap-3 rounded-2xl border border-coast-line bg-coast-pearl p-4 sm:grid-cols-2 sm:p-5"><div><dt className="text-xs font-bold text-coast-muted">Related coastal record</dt><dd className="mt-1 break-all text-sm font-semibold">{label(detail.assessment.targetType)} · {detail.assessment.targetId}</dd></div><div><dt className="text-xs font-bold text-coast-muted">Related coastal plan</dt><dd className="mt-1 break-all text-sm font-semibold">{detail.assessment.sourceWorkflowId || 'No plan linked'}</dd></div></dl>
                         {detail.assessment.workflowStatus !== 'DRAFT' && detail.assessment.aiDependencyStatus === 'NOT_CONNECTED' && <Notice>Coastal context was recorded, but automated proposals are not available yet. No operational change has been suggested or applied.</Notice>}
                         {detail.assessment.workflowStatus !== 'DRAFT' && detail.assessment.aiDependencyStatus === 'UNAVAILABLE' && <Notice>Coastal context could not be fully checked right now. The assessment remains submitted; refresh later to see the latest information.</Notice>}
                         {detail.assessment.componentDependencies.length > 0 && <div>
@@ -414,26 +416,26 @@ function CoastalOperationsWorkspace({ user, section, origin }: { user: AuthUser 
                           </li>)}</ul>
                         </div>}
                         {canDecideAssessment && detail.assessment.workflowStatus !== 'DRAFT' && <Notice>There is no validated proposal to approve or apply for this assessment yet.</Notice>}
-                        {detail.assessment.workflowStatus === 'DRAFT' && <div className="flex flex-wrap gap-3 border-t border-coast-line pt-5">
+                        {origin !== 'logs' && detail.assessment.workflowStatus === 'DRAFT' && <div className="flex flex-wrap gap-3 border-t border-coast-line pt-5">
                           {canUpdateAssessment && <button className="min-h-11 rounded-full border border-coast-line px-5 text-sm font-bold text-coast-deep hover:bg-coast-sage focus-visible:outline-2 focus-visible:outline-coast-blue" onClick={() => { setEditingAssessment(detail.assessment); setShowAssessmentForm(false); setShowAlertForm(false); setEditingAlert(null) }} type="button">Edit draft</button>}
                           {canSubmitAssessment && <button className="min-h-11 rounded-full bg-coast-deep px-5 text-sm font-extrabold text-white hover:bg-coast-blue focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coast-blue" onClick={() => setAssessmentConfirmation({ assessment: detail.assessment, action: 'submit' })} type="button">{section === 'all' ? 'Submit for review' : 'Publish assessment'}</button>}
                           {canDeleteAssessment && <button className="min-h-11 rounded-full border border-red-200 px-5 text-sm font-bold text-red-800 hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-red-700" onClick={() => setAssessmentConfirmation({ assessment: detail.assessment, action: 'cancel' })} type="button">Cancel draft</button>}
                         </div>}
-                        {canReadAudit && <OperationsActivity key={`${detail.assessment.assessmentId}:${refreshKey}`} id={detail.assessment.assessmentId} kind="assessment" revision={refreshKey} />}
+                        {canReadAudit && <OperationsActivity key={`${detail.assessment.assessmentId}:${refreshKey}`} id={detail.assessment.assessmentId} kind="assessment" revision={refreshKey} showReference={origin === 'logs'} />}
                         {detail.decisions.length > 0 && <div><h4 className="font-bold">Recorded decisions</h4><ul className="mt-2 grid gap-2">{detail.decisions.map((decision) => <li className="rounded-2xl bg-coast-sand p-3 text-sm" key={decision.decisionId}><span className="font-bold">{label(decision.decision)}</span><span className="ml-2 text-coast-muted">{formatDate(decision.decidedAt)}</span>{decision.explanation && <p className="mt-1 text-coast-muted">{decision.explanation}</p>}</li>)}</ul></div>}
                         <div className="grid gap-4 lg:grid-cols-2">
-                          <div><div className="flex flex-wrap items-center justify-between gap-2"><h4 className="font-bold">Evidence</h4>{canUploadEvidence && detail.assessment.workflowStatus === 'DRAFT' && detail.evidence.length < 5 && <label className="inline-flex min-h-10 cursor-pointer items-center rounded-full border border-coast-line px-4 text-xs font-bold text-coast-deep hover:bg-coast-sage">Add PNG evidence<input accept="image/png,.png" className="sr-only" disabled={busy} onChange={(event) => { const file = event.target.files?.[0]; if (file) void handleEvidence(file, detail.assessment); event.currentTarget.value = '' }} type="file" /></label>}</div>
+                          <div><div className="flex flex-wrap items-center justify-between gap-2"><h4 className="font-bold">Evidence</h4>{origin !== 'logs' && canUploadEvidence && detail.assessment.workflowStatus === 'DRAFT' && detail.evidence.length < 5 && <label className="inline-flex min-h-10 cursor-pointer items-center rounded-full border border-coast-line px-4 text-xs font-bold text-coast-deep hover:bg-coast-sage">Add PNG evidence<input accept="image/png,.png" className="sr-only" disabled={busy} onChange={(event) => { const file = event.target.files?.[0]; if (file) void handleEvidence(file, detail.assessment); event.currentTarget.value = '' }} type="file" /></label>}</div>
                             {!canReadEvidence && <p className="mt-2 text-sm leading-6 text-coast-muted">Evidence details are restricted by your current permissions.</p>}
                             {canReadEvidence && detail.evidence.length === 0 && <p className="mt-2 text-sm text-coast-muted">No evidence images have been added.</p>}
-                            {canReadEvidence && <ul className="mt-3 grid gap-2">{detail.evidence.map((evidence) => <li className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-coast-line p-3" key={evidence.evidenceId}><span className="text-xs leading-5 text-coast-muted">PNG · {(evidence.byteLength / 1024).toFixed(0)} KiB · {label(evidence.inspectionStatus)}</span><button className="min-h-9 rounded-full px-3 text-xs font-bold text-coast-deep hover:bg-coast-sage focus-visible:outline-2 focus-visible:outline-coast-blue" disabled={busy} onClick={() => void viewEvidence(detail.assessment.assessmentId, evidence)} type="button">View image</button>{canUploadEvidence && detail.assessment.workflowStatus === 'DRAFT' && <button className="min-h-9 rounded-full border border-red-200 px-3 text-xs font-bold text-red-800 hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-red-700" disabled={busy} onClick={() => setEvidenceRemoval({ assessment: detail.assessment, evidence })} type="button">Remove image</button>}</li>)}</ul>}
+                            {canReadEvidence && <ul className="mt-3 grid gap-2">{detail.evidence.map((evidence) => <li className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-coast-line p-3" key={evidence.evidenceId}><span className="text-xs leading-5 text-coast-muted">PNG · {(evidence.byteLength / 1024).toFixed(0)} KiB · {label(evidence.inspectionStatus)}</span><button className="min-h-9 rounded-full px-3 text-xs font-bold text-coast-deep hover:bg-coast-sage focus-visible:outline-2 focus-visible:outline-coast-blue" disabled={busy} onClick={() => void viewEvidence(detail.assessment.assessmentId, evidence)} type="button">View image</button>{origin !== 'logs' && canUploadEvidence && detail.assessment.workflowStatus === 'DRAFT' && <button className="min-h-9 rounded-full border border-red-200 px-3 text-xs font-bold text-red-800 hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-red-700" disabled={busy} onClick={() => setEvidenceRemoval({ assessment: detail.assessment, evidence })} type="button">Remove image</button>}</li>)}</ul>}
                             {evidencePreview && <figure className="mt-3 rounded-2xl bg-coast-sand p-3"><img alt="Uploaded assessment evidence" className="max-h-80 w-full rounded-xl object-contain" src={evidencePreview.url} /><figcaption className="mt-2 text-xs text-coast-muted">Evidence is served through your authorized BLUEVERSE session.</figcaption></figure>}
                           </div>
                           {(canReadStatus || canReadHistory) && <div><h4 className="font-bold">Operational status and history</h4>{targetError && <p className="mt-2 text-xs leading-5 text-coast-muted">{targetError}</p>}{canReadStatus && targetStatus && <div className="mt-3 flex flex-wrap items-center gap-3 rounded-2xl bg-coast-sage p-4"><StatusPill value={targetStatus.operationalState} /><span className="text-xs text-coast-muted">Updated {formatDate(targetStatus.updatedAt)}</span></div>}{canReadHistory && <ul className="mt-3 grid gap-2">{targetHistory.length === 0 ? <li className="text-sm text-coast-muted">No operational state changes have been recorded.</li> : targetHistory.map((item) => <li className="rounded-2xl border border-coast-line p-3 text-sm" key={item.historyId}><span className="font-bold">{label(item.previousState)} → {label(item.newState)}</span><span className="ml-2 text-xs text-coast-muted">{formatDate(item.createdAt)}</span></li>)}</ul>}</div>}
                         </div>
                       </div>}
                     </div> }
-  function renderAlertCard(alert: CoastalAlert) { return <OperationsRecordCard key={alert.alertId} record={alert} onOpen={selectedAlertId === alert.alertId ? undefined : () => { rememberOrigin(); setSelectedAlert(null); setAlertDetailError(null); setSelectedAlertId(alert.alertId) }} activity={canReadAudit && <><button className="mt-4 min-h-11 rounded-full border border-coast-line px-4 text-sm font-bold" onClick={() => setActiveAlertActivity((value) => value === alert.alertId ? null : alert.alertId)} type="button">{activeAlertActivity === alert.alertId ? 'Hide activity' : 'View activity'}</button>{activeAlertActivity === alert.alertId && <OperationsActivity key={`${alert.alertId}:${refreshKey}`} id={alert.alertId} kind="alert" revision={refreshKey} />}</>}>
-                    {(canUpdateAlerts && alert.lifecycle === 'PROPOSED' || canDeleteAlerts && alert.lifecycle === 'PROPOSED' || canPublishAlerts && alert.lifecycle === 'PROPOSED' || canResolveAlerts && alert.lifecycle === 'ACTIVE') && <div className="mt-4 flex flex-wrap gap-2">
+  function renderAlertCard(alert: CoastalAlert) { return <OperationsRecordCard key={alert.alertId} record={alert} onOpen={selectedAlertId === alert.alertId ? undefined : () => { rememberOrigin(); setSelectedAlert(null); setAlertDetailError(null); setSelectedAlertId(alert.alertId) }} activity={canReadAudit && <><button className="mt-4 min-h-11 rounded-full border border-coast-line px-4 text-sm font-bold" onClick={() => setActiveAlertActivity((value) => value === alert.alertId ? null : alert.alertId)} type="button">{activeAlertActivity === alert.alertId ? 'Hide activity' : 'View activity'}</button>{activeAlertActivity === alert.alertId && <OperationsActivity key={`${alert.alertId}:${refreshKey}`} id={alert.alertId} kind="alert" revision={refreshKey} showReference={origin === 'logs'} />}</>}>
+                    {origin !== 'logs' && (canUpdateAlerts && alert.lifecycle === 'PROPOSED' || canDeleteAlerts && alert.lifecycle === 'PROPOSED' || canPublishAlerts && alert.lifecycle === 'PROPOSED' || canResolveAlerts && alert.lifecycle === 'ACTIVE') && <div className="mt-4 flex flex-wrap gap-2">
                       {canUpdateAlerts && alert.lifecycle === 'PROPOSED' && <button className="min-h-10 rounded-full border border-coast-line px-4 text-xs font-bold text-coast-deep hover:bg-coast-sage focus-visible:outline-2 focus-visible:outline-coast-blue" onClick={() => { setShowAlertForm(false); setEditingAlert(alert); setShowAssessmentForm(false); setEditingAssessment(null) }} type="button">Edit draft</button>}
                       {canDeleteAlerts && alert.lifecycle === 'PROPOSED' && <button className="min-h-10 rounded-full border border-red-200 px-4 text-xs font-bold text-red-800 hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-red-700" onClick={() => setWithdrawalConfirmation(alert)} type="button">Withdraw draft</button>}
                       {canPublishAlerts && alert.lifecycle === 'PROPOSED' && <button className="min-h-10 rounded-full bg-coast-deep px-4 text-xs font-bold text-white hover:bg-coast-blue focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coast-blue" onClick={() => setDecisionConfirmation({ alert, decision: 'PUBLISH' })} type="button">Publish advisory</button>}
@@ -443,12 +445,12 @@ function CoastalOperationsWorkspace({ user, section, origin }: { user: AuthUser 
 
   const page = <div className="flex min-h-screen flex-col bg-coast-paper font-sans text-coast-ink" id="top">
     <SiteHeader active="operations" />
-    <main className="mx-auto grid w-full max-w-[90rem] flex-1 grid-cols-1 content-start gap-6 px-4 py-6 sm:px-8 sm:py-10 lg:grid-cols-[15rem_minmax(0,1fr)] lg:items-start lg:gap-8 lg:px-6 lg:py-0">
-      <AccountAreaNavigation active="operations" />
-      <div className="min-w-0 scroll-mt-24 lg:py-10" ref={workspaceRef}>
-        {!focused && <nav aria-label="Coastal record sections" className="sticky top-20 z-20 mb-5 flex gap-3 border-b border-coast-line bg-coast-paper/95 py-3 backdrop-blur">
-          {coastalNavigationLinks(user).filter((item) => item.label !== 'Logs').map((item) => <Link key={item.href} aria-current={(section === 'alerts' ? item.label === 'Alerts' : item.label === 'Assessments') ? 'page' : undefined} className={`min-h-11 rounded-full px-5 py-3 font-bold ${(section === 'alerts' ? item.label === 'Alerts' : item.label === 'Assessments') ? 'bg-coast-deep text-white' : 'border border-coast-line'}`} to={item.href}>{item.label}</Link>)}
+    <main className="mx-auto grid w-full max-w-[90rem] flex-1 grid-cols-1 content-start gap-y-5 px-0 pt-0 pb-6 lg:grid-cols-[15rem_minmax(0,1fr)] lg:items-start lg:gap-x-8 lg:gap-y-0 lg:px-6 lg:pb-0">
+      {!focused && <nav aria-label="Coastal record sections" className="sticky top-[76px] z-20 flex gap-3 border-b border-coast-line bg-coast-paper px-4 py-3 backdrop-blur sm:px-8 lg:col-start-2 lg:row-start-1 lg:px-0">
+          {coastalNavigationLinks(user).filter((item) => item.label !== 'Logs').map((item) => <Link key={item.href} onClick={(event) => { if (event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) document.documentElement.dataset.coastalDirection = item.label === 'Alerts' ? 'forward' : 'back' }} aria-current={(section === 'alerts' ? item.label === 'Alerts' : item.label === 'Assessments') ? 'page' : undefined} className={`min-h-11 rounded-full px-5 py-3 font-bold ${(section === 'alerts' ? item.label === 'Alerts' : item.label === 'Assessments') ? 'bg-coast-deep text-white' : 'border border-coast-line'}`} to={item.href}>{item.label}</Link>)}
         </nav>}
+      <AccountAreaNavigation active="operations" className={`order-2 px-4 sm:px-8 lg:order-none lg:col-start-1 lg:row-start-1 ${focused ? 'lg:row-span-1' : 'lg:row-span-2'}`} />
+      <div className={`coastal-section-panel order-3 min-w-0 scroll-mt-24 px-4 sm:px-8 lg:order-none lg:col-start-2 lg:px-0 ${focused ? 'lg:row-start-1' : 'lg:row-start-2 lg:pt-5'}`} data-coastal-direction={document.documentElement.dataset.coastalDirection} onAnimationEnd={(event) => { if (event.target === event.currentTarget) delete document.documentElement.dataset.coastalDirection }} ref={workspaceRef}>
         {!focused && <>
         <div className="grid gap-5"><section aria-labelledby="operations-title" className="relative isolate overflow-hidden rounded-[2rem] bg-coast-deep text-white shadow-sm">
           <img alt={section === 'alerts' ? 'A coastal steward guiding visitors toward a beach access path' : 'Coastal field workers inspecting a beach access path and dune vegetation'} className="absolute inset-0 -z-20 h-full w-full object-cover opacity-60" src={section === 'alerts' ? alertsHero : assessmentHero} />
@@ -519,6 +521,7 @@ function CoastalOperationsWorkspace({ user, section, origin }: { user: AuthUser 
           {!formOpen && selectedAlertId && <section aria-label="Advisory details">
             {alertDetailError && <Notice tone="error">{alertDetailError} <button className="underline" onClick={() => { setRecordsLoading(true); setRefreshKey((key) => key + 1) }} type="button">Retry advisory</button></Notice>}
             {!selectedAlert && !alertDetailError && <p role="status">Opening the advisory…</p>}
+            {selectedAlert?.alertId === selectedAlertId && <p className="mb-4 text-sm leading-6 text-coast-muted">{origin === 'logs' ? 'This retained advisory is shown read-only alongside its activity history.' : 'Review the audience, dates and coastal link here. Choose Edit draft to change an unpublished advisory; published advisories stay read-only.'}</p>}
             {selectedAlert?.alertId === selectedAlertId && renderAlertCard(selectedAlert)}
           </section>}
 

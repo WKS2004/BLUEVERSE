@@ -40,7 +40,7 @@ function DraftForm({ assessment, alert, kind, onCancel, onSaved }: { assessment?
   const [retry, setRetry] = useState(0)
   useEffect(() => {
     let active = true
-    void getOperationsFormOptions().then((data) => { if (active) { setOptions(data); setError(null) } }).catch(() => { if (active) setError('The selection lists could not be loaded. Retry before saving.') })
+    void getOperationsFormOptions({ quiet: true }).then((data) => { if (active) { setOptions(data); setError(null) } }).catch(() => { if (active) setError('The selection lists could not be loaded. Retry before saving.') })
     return () => { active = false }
   }, [retry])
   async function save(event: FormEvent) {
