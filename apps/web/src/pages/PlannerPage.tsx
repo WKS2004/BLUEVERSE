@@ -163,9 +163,8 @@ function CandidateCard({ candidate }: { candidate: RecommendationCandidate }) {
           ) : (
             <ul className="mt-3 space-y-2">
               {prediction.predictedSpecies.map((species) => (
-                <li key={species.speciesId} className="text-sm">
-                  <span className="font-bold text-coast-deep">{species.commonName || species.scientificName}</span>
-                  <span className="text-coast-muted"> — {species.scientificName}, habitat suitability {Math.round(species.habitatSuitability * 100)}%, {species.confidenceLevel} confidence</span>
+                <li key={species.speciesId} className="text-sm text-coast-muted">
+                  {`${species.commonName || species.scientificName} — ${species.scientificName}, habitat suitability ${Math.round(species.habitatSuitability * 100)}%, ${species.confidenceLevel} confidence`}
                 </li>
               ))}
             </ul>
@@ -262,7 +261,10 @@ export default function PlannerPage() {
             <>
               <section aria-labelledby="planner-constraints-title" className="mt-5 rounded-3xl border border-coast-line bg-coast-pearl p-6 shadow-sm sm:p-7">
                 <h2 className="font-display text-2xl tracking-[-0.035em]" id="planner-constraints-title">Trip constraints</h2>
-                <form className="mt-5 grid gap-4" onSubmit={submit}>
+                <form className="mt-5 grid gap-4" onSubmit={submit} noValidate>
+                  {/* noValidate: the planner reports constraint problems in its own
+                      polite live region; native min/step bubbles would block
+                      submission instead of showing the documented messages. */}
                   <div>
                     <label className="text-xs font-extrabold tracking-[0.15em] text-coast-blue" htmlFor="planner-destination">TARGET DESTINATION ID</label>
                     <input
