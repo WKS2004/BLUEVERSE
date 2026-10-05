@@ -21,6 +21,7 @@ public class Itinerary
 
     public DateTime StartsAtUtc { get; set; }
     public DateTime EndsAtUtc { get; set; }
+    [MaxLength(100)] public string TimeZone { get; set; } = "Asia/Colombo";
 
     public int ConcurrencyVersion { get; set; } = 1;
 

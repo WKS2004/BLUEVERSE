@@ -24,6 +24,7 @@ function groupsFor(permissions: string[]): NavigationGroup[] {
     {
       id: 'planner', label: 'Coastal planner', href: '/planner', children: [
         { label: 'Plan a trip', href: '/planner' },
+        ...(permissions.includes('planner.itineraries.manage') ? [{ label: 'Saved trips', href: '/planner/saved' }] : []),
       ],
     },
   ]

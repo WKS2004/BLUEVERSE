@@ -45,6 +45,15 @@ cross-service foreign keys to Auth or other components.
 | `itineraries` | Owner ID, title, optional description, UTC window, optimistic `ConcurrencyVersion`, and created/updated timestamps; check enforces end after start; indexed by owner and creation time. |
 | `itinerary_items` | Ordered destination/activity/offering reference, UTC schedule, last known availability/suitability/operations states, and advisory; cascades from its itinerary; unique `(ItineraryId, OrderIndex)` and checks enforce a non-negative order and positive schedule interval. New items begin as `UNKNOWN`. |
 | `biodiversity_predictions_cache` | Destination/activity, validated model/version, prediction timestamp, expiration, prediction snapshot and limitations; indexed by destination/activity and expiration. Only valid `AVAILABLE` inference responses are cached. |
+| `itinerary_evaluations` | Evaluation ID, owning itinerary ID, UTC review time and structured result snapshot with previous/current evidence; indexed by itinerary/time; cascades from its itinerary. |
+
+`20261005163837_ItineraryReviewHistory` adds itinerary/item `TimeZone`
+columns, recommendation `Outcome` and the review table. Legacy rows retain
+their IDs, ownership, versions and UTC times; their display zone defaults to
+`Asia/Colombo` and legacy recommendation outcomes remain `LEGACY_RESULT`.
+New search outcomes distinguish matches, no matches and unavailable evidence.
+Itinerary edits and reviews increment the optimistic version. Reorder updates
+use unused temporary orders in a transaction before applying final orders.
 
 The workflow owns at most one recommendation result. Itinerary reads and
 mutations are scoped by `OwnerUserId`; recommendation and workflow reads are
@@ -56,6 +65,7 @@ is unavailable.
 erDiagram
     planning_workflows ||--o| recommendations : produces
     itineraries ||--o{ itinerary_items : contains
+    itineraries ||--o{ itinerary_evaluations : records
 ```
 
 The eventual schema documentation must include:

@@ -24,6 +24,7 @@ ADRs capture significant architectural decisions and their rationale.
 18. `ADR-0018-assessment-evidence-storage-boundary.md`
 19. `ADR-0019-biodiversity-inference-integration-ownership.md`
 20. `ADR-0020-member-component-service-boundaries.md`
+21. `ADR-0021-planner-access-and-review-history.md`
 
 Some decisions remain **Proposed / Pending implementation choice** because the foundation does not invent decisions that have not yet been made.
 

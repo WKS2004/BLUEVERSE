@@ -195,7 +195,7 @@ test('WEB-PLANNER-API-011 planner requests run under the shared coastal backend 
   assert.deepEqual(getLoadingScreenContextSnapshot(), COASTAL_LOADING_CONTEXT)
 
   // withLoadingScreen defers the operation through a microtask, so the
-  // fetch (and therefore the release handle) is not wired up synchronously.
+  // The request and its release handle are not wired up synchronously.
   await new Promise((resolve) => setTimeout(resolve, 10))
   assert.equal(typeof releaseFetch, 'function')
   releaseFetch()

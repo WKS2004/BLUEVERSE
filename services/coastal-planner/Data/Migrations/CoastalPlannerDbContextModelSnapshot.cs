@@ -92,6 +92,13 @@ namespace Blueverse.CoastalPlanner.Data.Migrations
                     b.Property<DateTime>("StartsAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("TimeZone")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasDefaultValue("Asia/Colombo");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(150)
@@ -110,6 +117,29 @@ namespace Blueverse.CoastalPlanner.Data.Migrations
                         {
                             t.HasCheckConstraint("CK_itineraries_date_range", "\"EndsAtUtc\" > \"StartsAtUtc\"");
                         });
+                });
+
+            modelBuilder.Entity("Blueverse.CoastalPlanner.Data.Entities.ItineraryEvaluation", b =>
+                {
+                    b.Property<Guid>("EvaluationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("EvaluatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ItineraryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ResultJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("EvaluationId");
+
+                    b.HasIndex("ItineraryId", "EvaluatedAtUtc");
+
+                    b.ToTable("itinerary_evaluations", "coastal_planner");
                 });
 
             modelBuilder.Entity("Blueverse.CoastalPlanner.Data.Entities.ItineraryItem", b =>
@@ -157,6 +187,13 @@ namespace Blueverse.CoastalPlanner.Data.Migrations
 
                     b.Property<DateTime>("ScheduledStartUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TimeZone")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasDefaultValue("Asia/Colombo");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -254,6 +291,13 @@ namespace Blueverse.CoastalPlanner.Data.Migrations
                     b.Property<bool>("IncludeBiodiversityContext")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasDefaultValue("LEGACY_RESULT");
+
                     b.Property<DateTime>("StartsAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -282,6 +326,15 @@ namespace Blueverse.CoastalPlanner.Data.Migrations
 
                             t.HasCheckConstraint("CK_recommendations_duration_positive", "\"DurationHours\" > 0");
                         });
+                });
+
+            modelBuilder.Entity("Blueverse.CoastalPlanner.Data.Entities.ItineraryEvaluation", b =>
+                {
+                    b.HasOne("Blueverse.CoastalPlanner.Data.Entities.Itinerary", null)
+                        .WithMany()
+                        .HasForeignKey("ItineraryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Blueverse.CoastalPlanner.Data.Entities.ItineraryItem", b =>

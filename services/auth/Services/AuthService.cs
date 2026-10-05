@@ -60,6 +60,13 @@ public class AuthService : IAuthService
         };
 
         _dbContext.Users.Add(user);
+        if (_sessionOptions.SelfServicePlannerAccess)
+        {
+            var travellerRole = await _dbContext.Roles.SingleOrDefaultAsync(r =>
+                r.Name == PlannerPermissionsSeeder.TravellerRole && !r.IsSystemRole);
+            if (travellerRole is null) throw new InvalidOperationException("Personal planning is temporarily unavailable.");
+            user.UserRoles.Add(new UserRole { UserId = user.Id, RoleId = travellerRole.Id, AssignedAt = DateTime.UtcNow });
+        }
         var session = await CreateOrReactivateSessionAsync(
             user.Id,
             dto.DeviceId,

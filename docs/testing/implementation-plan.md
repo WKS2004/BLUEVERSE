@@ -557,3 +557,11 @@ The recommended order for the repository is:
 7. add shared cross-platform and Docker acceptance tests;
 8. enforce coverage, safety and missing-suite gates in CI;
 9. publish test and evaluation evidence with each release/assessment milestone.
+
+The Member 3 feature branch now includes planner application/HTTP tests,
+named catalogue and non-executing AI adapter tests, saved-trip React workflows,
+and an explicit isolated PostgreSQL migration/concurrency suite. See the
+[dated test matrix](test-matrix.md) and
+[planner verification commands](../development/coastal-planner.md).
+Real peer integration, Flutter planner parity and post-G07 execution remain
+separate acceptance work.

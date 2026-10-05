@@ -7,20 +7,23 @@ using Blueverse.CoastalPlanner.Models.Dtos;
 
 namespace Blueverse.CoastalPlanner.Services;
 
-public class CoastalPlannerService : ICoastalPlannerService
+public partial class CoastalPlannerService : ICoastalPlannerService
 {
     private readonly CoastalPlannerDbContext _db;
     private readonly IPeerServicesClient _peerClient;
     private readonly ILogger<CoastalPlannerService> _logger;
+    private readonly IPlanningCoordinationClient? _coordinationClient;
 
     public CoastalPlannerService(
         CoastalPlannerDbContext db, 
         IPeerServicesClient peerClient,
-        ILogger<CoastalPlannerService> logger)
+        ILogger<CoastalPlannerService> logger,
+        IPlanningCoordinationClient? coordinationClient = null)
     {
         _db = db;
         _peerClient = peerClient;
         _logger = logger;
+        _coordinationClient = coordinationClient;
     }
 
     public async Task<RecommendationResultDto> GenerateRecommendationsAsync(
@@ -29,6 +32,10 @@ public class CoastalPlannerService : ICoastalPlannerService
         CancellationToken ct = default)
     {
         ValidateRecommendationRequest(request, userId);
+        var callerCancellation = ct;
+        using var budget = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        budget.CancelAfter(TimeSpan.FromSeconds(40));
+        ct = budget.Token;
 
         var workflow = new PlanningWorkflow
         {
@@ -43,9 +50,13 @@ public class CoastalPlannerService : ICoastalPlannerService
         _db.PlanningWorkflows.Add(workflow);
         await _db.SaveChangesAsync(ct);
 
+        try
+        {
+
         var recommendationId = Guid.NewGuid();
         var candidates = new List<RecommendationCandidateDto>();
         var uncertaintyNotes = new List<string>();
+        var verificationUnavailable = false;
 
         // These are independent peers: both calls are bounded and convert peer
         // failures into an unavailable result, so the planning workflow can still
@@ -59,6 +70,7 @@ public class CoastalPlannerService : ICoastalPlannerService
         var (opStatus, opResponded, opNote) = await operationsTask;
         AddNote(uncertaintyNotes, catalogueNote);
         AddNote(uncertaintyNotes, opNote);
+        verificationUnavailable = !catalogueResponded || !opResponded;
 
         var eligibleOfferings = catalogueResponded
             ? catalogueItems.Where(item => item.DestinationId == request.TargetDestinationId &&
@@ -90,8 +102,24 @@ public class CoastalPlannerService : ICoastalPlannerService
                 continue;
             }
 
-            var start = request.StartsAt;
+            if (item.AvailableFrom is not { Kind: DateTimeKind.Utc } availableFrom ||
+                item.AvailableUntil is not { Kind: DateTimeKind.Utc } availableUntil || availableUntil <= availableFrom ||
+                item.CheckedAt is not { Kind: DateTimeKind.Utc } checkedAt || checkedAt < DateTime.UtcNow.AddMinutes(-15) ||
+                checkedAt > DateTime.UtcNow.AddMinutes(1) || !ValidTimeZone(item.TimeZone))
+            {
+                AddNote(uncertaintyNotes, "Some experiences were left out because their schedule or availability could not be verified.");
+                verificationUnavailable = true;
+                continue;
+            }
+            if (item.ExperienceLevels is not { Count: > 0 } ||
+                !item.ExperienceLevels.Contains(request.ExperienceLevel ?? "INTERMEDIATE", StringComparer.OrdinalIgnoreCase))
+            {
+                AddNote(uncertaintyNotes, "Some experiences do not support your selected experience level.");
+                continue;
+            }
+            var start = request.StartsAt > availableFrom ? request.StartsAt : availableFrom;
             var end = start.AddHours(request.DurationHours);
+            if (end > request.EndsAt || end > availableUntil) continue;
             var (suitability, suitResponded, suitNote) = await _peerClient.GetMarineSuitabilityAsync(
                 item.DestinationId, item.ActivityId, start, end, ct);
             AddNote(uncertaintyNotes, suitNote);
@@ -102,8 +130,9 @@ public class CoastalPlannerService : ICoastalPlannerService
                 suitability.SafetyProfileId.GetValueOrDefault() == Guid.Empty ||
                 suitability.ConditionTimestamp == default ||
                 suitability.ConditionTimestamp.Kind != DateTimeKind.Utc ||
-                suitability.ConditionTimestamp > DateTime.UtcNow.AddMinutes(1))
+                !suitability.IsFresh || suitability.ConditionTimestamp > end)
             {
+                verificationUnavailable |= !suitResponded || suitability?.Status is not ("UNSUITABLE");
                 if (suitResponded && suitability?.Status == "UNSUITABLE")
                 {
                     AddNote(uncertaintyNotes, $"Offering {item.ActivityId} was omitted because marine suitability is UNSUITABLE.");
@@ -119,10 +148,10 @@ public class CoastalPlannerService : ICoastalPlannerService
             BiodiversityContextDto? bioContext = null;
             if (request.IncludeBiodiversityContext)
             {
-                var (bioResult, bioResponded, bioNote) = await _peerClient.GetBiodiversityInferenceAsync(
-                    item.DestinationId, item.ActivityId, ct);
-                AddNote(uncertaintyNotes, bioNote);
-                if (bioResponded && bioResult?.Species?.FirstOrDefault() is { } topSpecies && bioResult.Timestamp is { } timestamp)
+                var bioResult = await GetBiodiversityPredictionsAsync(item.DestinationId, item.ActivityId, ct);
+                if (bioResult.Status != "AVAILABLE") AddNote(uncertaintyNotes, bioResult.Limitations);
+                if (bioResult.Status == "AVAILABLE" && bioResult.PredictedSpecies.FirstOrDefault() is { } topSpecies &&
+                    bioResult.ModelMetadata?.InferenceTimestamp is { } timestamp)
                 {
                     bioContext = new BiodiversityContextDto(
                         SpeciesName: $"{topSpecies.ScientificName} ({topSpecies.CommonName})",
@@ -162,7 +191,8 @@ public class CoastalPlannerService : ICoastalPlannerService
                 OperationalStatus: opStatus.OperationalStatus,
                 BiodiversityContext: bioContext,
                 FitScore: suitability.Status == "SUITABLE" && opStatus.OperationalStatus == "OPEN" ? 0.95 : 0.70,
-                Reasons: reasons));
+                Reasons: reasons,
+                TimeZone: item.TimeZone!));
         }
 
         if (eligibleOfferings.Count > 0 && !opResponded)
@@ -175,11 +205,14 @@ public class CoastalPlannerService : ICoastalPlannerService
             AddNote(uncertaintyNotes, "No recommendation candidates passed the available operations and marine safety checks.");
         }
 
+        candidates = candidates.OrderByDescending(c => c.FitScore).ThenBy(c => c.ScheduledStart)
+            .ThenBy(c => c.Title, StringComparer.Ordinal).ThenBy(c => c.OfferingId).ToList();
         var candidatesJson = JsonSerializer.Serialize(candidates);
 
         var session = new RecommendationSession
         {
             RecommendationId = recommendationId,
+            Outcome = candidates.Count > 0 ? "MATCHES_FOUND" : verificationUnavailable ? "DEPENDENCIES_UNAVAILABLE" : "NO_MATCHES",
             WorkflowId = workflow.WorkflowId,
             UserId = userId,
             TargetDestinationId = request.TargetDestinationId,
@@ -209,8 +242,31 @@ public class CoastalPlannerService : ICoastalPlannerService
             GeneratedAt: session.CreatedAtUtc,
             Candidates: candidates,
             ExcludedCandidatesCount: session.ExcludedCandidatesCount,
-            UncertaintyNotes: uncertaintyNotes
+            UncertaintyNotes: uncertaintyNotes,
+            Outcome: session.Outcome
         );
+        }
+        catch (Exception ex)
+        {
+            // A caller disconnect must not leave a durable business workflow processing forever.
+            _db.ChangeTracker.Clear();
+            using var recovery = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            try
+            {
+                var failed = await _db.PlanningWorkflows.FindAsync([workflow.WorkflowId], recovery.Token);
+                if (failed is not null)
+                {
+                    failed.Status = "FAILED";
+                    failed.CompletedAtUtc = DateTime.UtcNow;
+                    failed.FailureReason = ex is OperationCanceledException ? callerCancellation.IsCancellationRequested
+                        ? "The request was cancelled. Please start a new search." : "The search timed out. Please try again."
+                        : "The search could not be completed. Please try again.";
+                    await _db.SaveChangesAsync(recovery.Token);
+                }
+            }
+            catch (Exception recoveryError) { _logger.LogError(recoveryError, "Could not record failed planning workflow {WorkflowId}", workflow.WorkflowId); }
+            throw;
+        }
     }
 
     public async Task<RecommendationResultDto?> GetRecommendationAsync(Guid recommendationId, Guid ownerUserId, CancellationToken ct = default)
@@ -230,7 +286,8 @@ public class CoastalPlannerService : ICoastalPlannerService
             GeneratedAt: session.CreatedAtUtc,
             Candidates: candidates,
             ExcludedCandidatesCount: session.ExcludedCandidatesCount,
-            UncertaintyNotes: DeserializeNotes(session.UncertaintyNotesJson)
+            UncertaintyNotes: DeserializeNotes(session.UncertaintyNotesJson),
+            Outcome: session.Outcome
         );
     }
 
@@ -240,6 +297,8 @@ public class CoastalPlannerService : ICoastalPlannerService
             w => w.WorkflowId == workflowId && w.InitiatorUserId == ownerUserId, ct);
         if (workflow == null) return null;
 
+        var ai = _coordinationClient is null ? new PlanningCoordinationAvailability("NOT_CONNECTED", false) :
+            await _coordinationClient.CheckAvailabilityAsync(ct);
         return new WorkflowStatusDto(
             WorkflowId: workflow.WorkflowId,
             WorkflowType: workflow.WorkflowType,
@@ -249,7 +308,8 @@ public class CoastalPlannerService : ICoastalPlannerService
             CreatedAt: workflow.CreatedAtUtc,
             CompletedAt: workflow.CompletedAtUtc,
             ResultSummary: workflow.ResultSummary,
-            FailureReason: workflow.FailureReason
+            FailureReason: workflow.FailureReason,
+            AiDependencyStatus: ai.Status
         );
     }
 
@@ -257,15 +317,19 @@ public class CoastalPlannerService : ICoastalPlannerService
     {
         ArgumentNullException.ThrowIfNull(request);
         ValidateItinerary(ownerUserId, request.Title, request.Description, request.StartsAt, request.EndsAt, request.Items);
+        await ValidateRecommendationSelectionAsync(request.RecommendationId, request.Items, ownerUserId, ct);
+        if (!ValidTimeZone(request.TimeZone) || request.Items.Any(i => !ValidTimeZone(i.TimeZone)))
+            throw new ArgumentException("Choose a supported destination time zone.");
 
         var itinerary = new Itinerary
         {
             ItineraryId = Guid.NewGuid(),
             OwnerUserId = ownerUserId,
-            Title = request.Title,
-            Description = request.Description,
+            Title = request.Title.Trim(),
+            Description = request.Description?.Trim(),
             StartsAtUtc = request.StartsAt,
             EndsAtUtc = request.EndsAt,
+            TimeZone = request.TimeZone,
             ConcurrencyVersion = 1,
             CreatedAtUtc = DateTime.UtcNow,
             UpdatedAtUtc = DateTime.UtcNow,
@@ -275,6 +339,7 @@ public class CoastalPlannerService : ICoastalPlannerService
                 DestinationId = item.DestinationId,
                 ActivityId = item.ActivityId,
                 OfferingId = item.OfferingId,
+                TimeZone = item.TimeZone,
                 Title = item.Title,
                 OrderIndex = item.OrderIndex,
                 ScheduledStartUtc = item.ScheduledStart,
@@ -294,11 +359,12 @@ public class CoastalPlannerService : ICoastalPlannerService
     public async Task<List<ItineraryDto>> ListItinerariesAsync(Guid ownerUserId, int page, int pageSize, CancellationToken ct = default)
     {
         var itineraries = await _db.Itineraries
+            .AsNoTracking()
             .Include(i => i.Items)
             .Where(i => i.OwnerUserId == ownerUserId)
             .OrderByDescending(i => i.CreatedAtUtc)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+            .Skip((Math.Clamp(page, 1, 10000) - 1) * Math.Clamp(pageSize, 1, 100))
+            .Take(Math.Clamp(pageSize, 1, 100))
             .ToListAsync(ct);
 
         return itineraries.Select(MapItineraryToDto).ToList();
@@ -328,34 +394,72 @@ public class CoastalPlannerService : ICoastalPlannerService
             throw new DbUpdateConcurrencyException("Itinerary was modified concurrently.");
         }
 
-        itinerary.Title = request.Title;
-        itinerary.Description = request.Description;
-        itinerary.StartsAtUtc = request.StartsAt;
-        itinerary.EndsAtUtc = request.EndsAt;
-        itinerary.ConcurrencyVersion++;
-        itinerary.UpdatedAtUtc = DateTime.UtcNow;
+        if (request.Items.Any(i => i.ItemId.HasValue && !itinerary.Items.Any(old => old.ItemId == i.ItemId &&
+            old.DestinationId == i.DestinationId && old.ActivityId == i.ActivityId && old.OfferingId == i.OfferingId)))
+            throw new ArgumentException("A stop reference must belong to this trip and experience.");
+        var additions = request.Items.Where(i => !i.ItemId.HasValue && !itinerary.Items.Any(old =>
+            old.DestinationId == i.DestinationId && old.ActivityId == i.ActivityId && old.OfferingId == i.OfferingId)).ToList();
+        await ValidateRecommendationSelectionAsync(request.RecommendationId, additions, ownerUserId, ct);
+        if (!ValidTimeZone(request.TimeZone) || request.Items.Any(i => !ValidTimeZone(i.TimeZone)))
+            throw new ArgumentException("Choose a supported destination time zone.");
 
-        _db.ItineraryItems.RemoveRange(itinerary.Items);
-        var newItems = request.Items.Select(item => new ItineraryItem
+        var strategy = _db.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
         {
-            ItemId = Guid.NewGuid(),
-            ItineraryId = itinerary.ItineraryId,
-            DestinationId = item.DestinationId,
-            ActivityId = item.ActivityId,
-            OfferingId = item.OfferingId,
-            Title = item.Title,
-            OrderIndex = item.OrderIndex,
-            ScheduledStartUtc = item.ScheduledStart,
-            ScheduledEndUtc = item.ScheduledEnd,
-            LastSuitabilityStatus = "UNKNOWN",
-            LastAvailabilityStatus = "UNKNOWN",
-            LastOperationalStatus = "UNKNOWN"
-        }).ToList();
-        itinerary.Items = newItems;
-        _db.ItineraryItems.AddRange(newItems);
-
-        await _db.SaveChangesAsync(ct);
-        return MapItineraryToDto(itinerary);
+            _db.ChangeTracker.Clear();
+            itinerary = await _db.Itineraries.Include(i => i.Items).SingleAsync(i => i.ItineraryId == itineraryId && i.OwnerUserId == ownerUserId, ct);
+            if (itinerary.ConcurrencyVersion != request.ConcurrencyVersion) throw new DbUpdateConcurrencyException("Trip changed.");
+            await using var transaction = _db.Database.IsRelational() ? await _db.Database.BeginTransactionAsync(ct) : null;
+            itinerary.Title = request.Title.Trim();
+            itinerary.Description = request.Description?.Trim();
+            itinerary.StartsAtUtc = request.StartsAt;
+            itinerary.EndsAtUtc = request.EndsAt;
+            itinerary.TimeZone = request.TimeZone;
+            itinerary.ConcurrencyVersion++;
+            itinerary.UpdatedAtUtc = DateTime.UtcNow;
+            // Move existing orders out of the final range before reordering: PostgreSQL's
+            // unique itinerary/order index is checked after each UPDATE, not at commit.
+            var occupiedOrders = itinerary.Items.Select(i => i.OrderIndex)
+                .Concat(request.Items.Select(i => i.OrderIndex)).ToHashSet();
+            var temporaryOrder = 0;
+            foreach (var old in itinerary.Items)
+            {
+                while (occupiedOrders.Contains(temporaryOrder)) temporaryOrder++;
+                old.OrderIndex = temporaryOrder;
+                occupiedOrders.Add(temporaryOrder++);
+            }
+            await _db.SaveChangesAsync(ct);
+            var existing = itinerary.Items.ToList();
+            var replacement = new List<ItineraryItem>();
+            foreach (var item in request.Items)
+            {
+                var stop = item.ItemId.HasValue ? existing.Single(i => i.ItemId == item.ItemId) :
+                    existing.FirstOrDefault(i => !replacement.Contains(i) && i.DestinationId == item.DestinationId &&
+                        i.ActivityId == item.ActivityId && i.OfferingId == item.OfferingId);
+                if (stop is null)
+                {
+                    stop = new ItineraryItem { ItemId = Guid.NewGuid(), ItineraryId = itinerary.ItineraryId,
+                        DestinationId = item.DestinationId, ActivityId = item.ActivityId, OfferingId = item.OfferingId };
+                    _db.ItineraryItems.Add(stop);
+                }
+                if (stop.ScheduledStartUtc != item.ScheduledStart || stop.ScheduledEndUtc != item.ScheduledEnd)
+                {
+                    stop.LastSuitabilityStatus = stop.LastAvailabilityStatus = stop.LastOperationalStatus = "UNKNOWN";
+                    stop.AdvisoryNote = null;
+                }
+                stop.Title = item.Title.Trim();
+                stop.TimeZone = item.TimeZone;
+                stop.OrderIndex = item.OrderIndex;
+                stop.ScheduledStartUtc = item.ScheduledStart;
+                stop.ScheduledEndUtc = item.ScheduledEnd;
+                replacement.Add(stop);
+            }
+            _db.ItineraryItems.RemoveRange(existing.Except(replacement));
+            itinerary.Items = replacement;
+            await _db.SaveChangesAsync(ct);
+            if (transaction is not null) await transaction.CommitAsync(ct);
+            return MapItineraryToDto(itinerary);
+        });
     }
 
     public async Task<bool> DeleteItineraryAsync(Guid itineraryId, Guid ownerUserId, CancellationToken ct = default)
@@ -376,6 +480,11 @@ public class CoastalPlannerService : ICoastalPlannerService
         ItineraryReEvaluationRequestDto request, 
         CancellationToken ct = default)
     {
+        ArgumentNullException.ThrowIfNull(request);
+        if (request.ReEvaluationMode != "FULL_ASSESSMENT") throw new ArgumentException("Only full condition review is supported.");
+        using var budget = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        budget.CancelAfter(TimeSpan.FromSeconds(40));
+        ct = budget.Token;
         var itinerary = await _db.Itineraries
             .Include(i => i.Items)
             .FirstOrDefaultAsync(i => i.ItineraryId == itineraryId && i.OwnerUserId == ownerUserId, ct);
@@ -384,6 +493,7 @@ public class CoastalPlannerService : ICoastalPlannerService
 
         var itemsResult = new List<ItineraryReEvaluationItemDto>();
         var hasChanges = false;
+        var requiresReview = false;
         var summaryNotes = new List<string>();
         var destinationEvidence = new Dictionary<Guid, (
             PeerOperationStatusResponse? Operations,
@@ -422,11 +532,14 @@ public class CoastalPlannerService : ICoastalPlannerService
 
             var (operations, operationsResponded, catalogue, catalogueResponded) = destinationEvidence[item.DestinationId];
             var catalogueItem = catalogue.FirstOrDefault(candidate => candidate.DestinationId == item.DestinationId &&
+                candidate.ActivityId == item.ActivityId &&
                 (item.OfferingId.HasValue ? candidate.OfferingId == item.OfferingId : candidate.ActivityId == item.ActivityId));
             var currentSuit = suitResponded && suitability is not null &&
                 suitability.DestinationId == item.DestinationId && suitability.ActivityId == item.ActivityId &&
                 suitability.Status is ("SUITABLE" or "CAUTION" or "UNSUITABLE" or "UNKNOWN") &&
                 suitability.ConditionTimestamp != default && suitability.ConditionTimestamp.Kind == DateTimeKind.Utc &&
+                suitability.ConditionTimestamp <= item.ScheduledEndUtc &&
+                (suitability.Status is "UNSUITABLE" or "UNKNOWN" || suitability.IsFresh) &&
                 (suitability.Status is "UNSUITABLE" or "UNKNOWN" || suitability.SafetyProfileId.GetValueOrDefault() != Guid.Empty)
                 ? suitability.Status
                 : "UNKNOWN";
@@ -441,6 +554,16 @@ public class CoastalPlannerService : ICoastalPlannerService
                         : "UNKNOWN"
                     : "NOT_PUBLISHED"
                 : "UNKNOWN";
+            if (currentAvail == "AVAILABLE")
+            {
+                if (catalogueItem?.CheckedAt is not { Kind: DateTimeKind.Utc } checkedAt ||
+                    checkedAt < DateTime.UtcNow.AddMinutes(-15) || checkedAt > DateTime.UtcNow.AddMinutes(1) ||
+                    catalogueItem.AvailableFrom is not { Kind: DateTimeKind.Utc } availableFrom ||
+                    catalogueItem.AvailableUntil is not { Kind: DateTimeKind.Utc } availableUntil)
+                    currentAvail = "UNKNOWN";
+                else if (item.ScheduledStartUtc < availableFrom || item.ScheduledEndUtc > availableUntil)
+                    currentAvail = "UNAVAILABLE";
+            }
 
             if (!catalogueResponded)
             {
@@ -454,26 +577,30 @@ public class CoastalPlannerService : ICoastalPlannerService
             string? advisory = currentSuit == "UNKNOWN" ? null : suitability?.Advisory;
             string action = "KEEP";
 
-            if (currentSuit == "UNSUITABLE" || currentOp is "TEMPORARILY_SUSPENDED" or "CANCELLED" ||
+            if (currentSuit == "UNSUITABLE" || currentOp is "TEMPORARILY_SUSPENDED" or "CANCELLED" or "COMPLETED" ||
                 currentAvail is not ("AVAILABLE" or "UNKNOWN"))
             {
                 action = "CANCEL_OR_RESCHEDULE";
                 advisory ??= "The activity is unsuitable, unavailable, unpublished, or restricted by current operations.";
-                hasChanges = true;
+                requiresReview = true;
             }
             else if (currentSuit == "UNKNOWN" || currentOp == "UNKNOWN" || currentAvail == "UNKNOWN")
             {
                 action = "REVIEW_CONDITIONS";
                 advisory ??= "Current safety, availability, or operational information is unavailable. Review conditions before proceeding.";
-                hasChanges = true;
+                requiresReview = true;
             }
             else if (currentSuit == "CAUTION" || currentOp == "CAUTION")
             {
                 action = "REVIEW_CONDITIONS";
                 advisory ??= "Elevated risk caution present for the planned activity window.";
-                hasChanges = true;
+                requiresReview = true;
             }
 
+            var previousAvailability = item.LastAvailabilityStatus;
+            var previousSuitability = item.LastSuitabilityStatus;
+            var previousOperations = item.LastOperationalStatus;
+            hasChanges |= previousAvailability != currentAvail || previousSuitability != currentSuit || previousOperations != currentOp;
             item.LastSuitabilityStatus = currentSuit;
             item.LastOperationalStatus = currentOp;
             item.LastAvailabilityStatus = currentAvail;
@@ -486,17 +613,16 @@ public class CoastalPlannerService : ICoastalPlannerService
                 CurrentSuitability: currentSuit,
                 CurrentOperationalStatus: currentOp,
                 AdvisoryMessage: advisory,
-                SuggestedAction: action
+                SuggestedAction: action,
+                PreviousAvailability: previousAvailability,
+                PreviousSuitability: previousSuitability,
+                PreviousOperationalStatus: previousOperations,
+                MarineConditionTime: currentSuit == "UNKNOWN" ? null : suitability?.ConditionTimestamp,
+                SafetyProfileId: currentSuit == "UNKNOWN" ? null : suitability?.SafetyProfileId
             ));
         }
 
-        if (itinerary.Items.Count > 0)
-        {
-            itinerary.UpdatedAtUtc = DateTime.UtcNow;
-            await _db.SaveChangesAsync(ct);
-        }
-
-        var summary = hasChanges 
+        var summary = itinerary.Items.Count == 0 ? "There are no experiences in this trip to review." : requiresReview
             ? "Re-evaluation identified advisories or condition changes requiring review." 
             : "All planned items remain suitable based on the available evidence.";
 
@@ -505,13 +631,22 @@ public class CoastalPlannerService : ICoastalPlannerService
             summary += $" (Warnings: {string.Join("; ", summaryNotes)})";
         }
 
-        return new ItineraryReEvaluationResultDto(
+        itinerary.UpdatedAtUtc = DateTime.UtcNow;
+        itinerary.ConcurrencyVersion++;
+        var result = new ItineraryReEvaluationResultDto(
             ItineraryId: itinerary.ItineraryId,
             EvaluatedAt: DateTime.UtcNow,
             HasChanges: hasChanges,
             Summary: summary,
-            Items: itemsResult
+            Items: itemsResult,
+            EvaluationId: Guid.NewGuid(),
+            RequiresReview: requiresReview,
+            ConcurrencyVersion: itinerary.ConcurrencyVersion
         );
+        _db.ItineraryEvaluations.Add(new ItineraryEvaluation { EvaluationId = result.EvaluationId,
+            ItineraryId = itinerary.ItineraryId, EvaluatedAtUtc = result.EvaluatedAt, ResultJson = JsonSerializer.Serialize(result) });
+        await _db.SaveChangesAsync(ct);
+        return result;
     }
 
     public async Task<BiodiversityPredictionDto> GetBiodiversityPredictionsAsync(
@@ -520,12 +655,20 @@ public class CoastalPlannerService : ICoastalPlannerService
         CancellationToken ct = default)
     {
         var cache = await _db.BiodiversityPredictions
+            .OrderByDescending(p => p.InferenceTimestampUtc)
             .FirstOrDefaultAsync(p => p.DestinationId == destinationId && p.ActivityId == activityId && p.ExpiresAtUtc > DateTime.UtcNow, ct);
 
         if (cache != null && !string.IsNullOrWhiteSpace(cache.SpeciesDataJson))
         {
-            var species = JsonSerializer.Deserialize<List<PredictedSpeciesDto>>(cache.SpeciesDataJson) ?? new List<PredictedSpeciesDto>();
-            return new BiodiversityPredictionDto(
+            try
+            {
+            var species = JsonSerializer.Deserialize<List<PredictedSpeciesDto>>(cache.SpeciesDataJson);
+            if (cache.Status == "AVAILABLE" && cache.InferenceTimestampUtc >= DateTime.UtcNow.AddHours(-6) &&
+                cache.InferenceTimestampUtc <= DateTime.UtcNow.AddMinutes(1) && !string.IsNullOrWhiteSpace(cache.ModelVersion) &&
+                species is not null && species.All(s => s is not null && s.SpeciesId != Guid.Empty &&
+                    !string.IsNullOrWhiteSpace(s.ScientificName) && !string.IsNullOrWhiteSpace(s.CommonName) &&
+                    double.IsFinite(s.HabitatSuitability) && s.HabitatSuitability is >= 0 and <= 1 &&
+                    !string.IsNullOrWhiteSpace(s.ConfidenceLevel))) return new BiodiversityPredictionDto(
                 DestinationId: cache.DestinationId,
                 ActivityId: cache.ActivityId,
                 Status: cache.Status,
@@ -533,19 +676,23 @@ public class CoastalPlannerService : ICoastalPlannerService
                 ModelMetadata: new ModelMetadataDto(cache.ModelVersion, cache.InferenceTimestampUtc),
                 Limitations: cache.Limitations ?? "Contextual prediction only."
             );
+            }
+            catch (JsonException) { _logger.LogWarning("A cached biodiversity prediction was unreadable."); }
+            _db.BiodiversityPredictions.Remove(cache);
+            await _db.SaveChangesAsync(ct);
         }
 
         // Call IT3091 ML inference via peer client
         var (peerBio, bioResponded, bioNote) = await _peerClient.GetBiodiversityInferenceAsync(destinationId, activityId, ct);
 
         var now = DateTime.UtcNow;
-        if (!bioResponded || peerBio is null || peerBio.Timestamp is null ||
+        if (!bioResponded || peerBio is null || peerBio.Timestamp is null || peerBio.DestinationId != destinationId || peerBio.ActivityId != activityId ||
             string.IsNullOrWhiteSpace(peerBio.ModelVersion) || peerBio.ModelVersion.Length > 64 || peerBio.Status != "AVAILABLE" ||
             peerBio.Species is null || peerBio.Species.Any(species =>
                 species is null || species.SpeciesId == Guid.Empty || string.IsNullOrWhiteSpace(species.ScientificName) ||
                 species.ScientificName.Length > 200 || string.IsNullOrWhiteSpace(species.CommonName) || species.CommonName.Length > 200 ||
                 !double.IsFinite(species.HabitatSuitability) ||
-                species.HabitatSuitability is < 0 or > 1 || string.IsNullOrWhiteSpace(species.ConfidenceLevel)) ||
+                species.HabitatSuitability is < 0 or > 1 || string.IsNullOrWhiteSpace(species.ConfidenceLevel) || species.ConfidenceLevel.Length > 64) ||
             peerBio.Timestamp.Value.Kind != DateTimeKind.Utc || peerBio.Timestamp.Value < now.AddHours(-6) ||
             peerBio.Timestamp.Value > now.AddMinutes(1))
         {
@@ -619,8 +766,10 @@ public class CoastalPlannerService : ICoastalPlannerService
                 LastSuitabilityStatus: item.LastSuitabilityStatus,
                 LastAvailabilityStatus: item.LastAvailabilityStatus,
                 LastOperationalStatus: item.LastOperationalStatus,
-                AdvisoryNote: item.AdvisoryNote
-            )).ToList()
+                AdvisoryNote: item.AdvisoryNote,
+                TimeZone: item.TimeZone
+            )).ToList(),
+            TimeZone: i.TimeZone
         );
     }
 
@@ -662,6 +811,10 @@ public class CoastalPlannerService : ICoastalPlannerService
         {
             throw new ArgumentException("PreferredActivityIds cannot contain an empty GUID.");
         }
+        if (request.ExperienceLevel is not (null or "BEGINNER" or "INTERMEDIATE" or "ADVANCED") ||
+            request.PreferredActivityIds is { Count: > 100 } ||
+            request.PreferredActivityIds?.Distinct().Count() != request.PreferredActivityIds?.Count)
+            throw new ArgumentException("Choose a supported experience level and at most 100 distinct activities.");
     }
 
     private static void ValidateItinerary(
@@ -711,6 +864,12 @@ public class CoastalPlannerService : ICoastalPlannerService
         {
             throw new ArgumentException("Itinerary item order values must be unique.");
         }
+        if (items.Count > 50 || items.Where(i => i.ItemId.HasValue).Select(i => i.ItemId).Distinct().Count() != items.Count(i => i.ItemId.HasValue) ||
+            items.Select(i => (i.DestinationId, i.ActivityId, i.OfferingId, i.ScheduledStart)).Distinct().Count() != items.Count)
+            throw new ArgumentException("A trip supports at most 50 stops. Duplicate stops and item references are not allowed.");
+        var scheduled = items.OrderBy(i => i.ScheduledStart).ToList();
+        if (scheduled.Zip(scheduled.Skip(1)).Any(pair => pair.First.ScheduledEnd > pair.Second.ScheduledStart))
+            throw new ArgumentException("Stops cannot overlap. Choose separate times for each experience.");
     }
 
     private static void AddNote(List<string> notes, string? note)
@@ -720,6 +879,8 @@ public class CoastalPlannerService : ICoastalPlannerService
             notes.Add(note);
         }
     }
+    private static bool ValidTimeZone(string? zone) => !string.IsNullOrWhiteSpace(zone) && zone.Length <= 100 &&
+        TimeZoneInfo.TryFindSystemTimeZoneById(zone, out _);
 
     private static List<string> DeserializeNotes(string? notesJson)
     {

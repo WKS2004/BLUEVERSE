@@ -21,6 +21,7 @@ public class ItineraryItem
     public Guid ActivityId { get; set; }
 
     public Guid? OfferingId { get; set; }
+    [MaxLength(100)] public string TimeZone { get; set; } = "Asia/Colombo";
 
     [Required]
     [MaxLength(150)]

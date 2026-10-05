@@ -217,3 +217,13 @@ GET http://localhost/api/<service-route>/health
 
 The Coastal Planner uses the public `/api/planner/health` and
 `/api/planner/swagger/v1/swagger.json` paths.
+
+Planner setup now includes an exec-form .NET readiness probe and its own
+migrations; the API waits for planner database readiness. New local
+registrations receive the non-system Coastal traveller role when
+`AUTH_SELF_SERVICE_PLANNER_ACCESS=true` (Compose default). Set it to false
+to require administrator assignment. Existing accounts need explicit role
+assignment and a refreshed session to receive new permission claims.
+The private catalogue/marine/operations/ML URL variables are in `.env.example`;
+their services are not supplied by this branch. See
+[planner operations and pending contracts](coastal-planner.md).

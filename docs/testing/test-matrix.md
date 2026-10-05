@@ -1,5 +1,19 @@
 # Test Matrix
 
+## Coastal Planner branch evidence — 2026-10-05
+
+| Check | Evidence and limits |
+|---|---|
+| Planner backend | 106 default cases passed, covering named catalogue projection, schedule intersection, source freshness, experience matching, ownership, authorization, snapshot expiry, stable stop identity, duplicate/overlap validation, bounded dependency failure, failed workflow persistence, review history and the non-executing AI seam. The new catalogue/history HTTP cases assert permissions, schemas, headers and persisted ownership. |
+| Auth/API regression | 80 Auth cases and 21 API cases passed. New Auth cases verify idempotent planner seeding and enabled/disabled traveller assignment with issued permission claims and persisted sessions. |
+| React | Full 201-case suite passed with two test workers after an unconstrained parallel run exhausted local memory during Docker builds. New coverage includes saved-trip append, stable IDs/current version, conflict draft retention, tab-close protection, review evidence, undo, deletion confirmation, time-zone boundaries and malformed response guards. Lint and production build passed. |
+| PostgreSQL | Explicit `PLANNER-POSTGRES-001` uses a unique disposable database for migration upgrade, real unique/check constraints, reorder, stale writes and history cascade. It is enabled separately; no provider evidence is inferred from in-memory tests. Commands are in the planner guide. |
+| Integration limits | Missing owner services prevent live catalogue/conditions happy-path checks. Flutter planner screens and post-G07 AI execution remain pending. Component tests use deterministic peer replies; they do not prove live peer compatibility. |
+
+See [planner operations and verification](../development/coastal-planner.md).
+The baseline descriptions below preserve earlier scope; the dated evidence
+above records this feature branch's additional coverage.
+
 The implementation plan and test-directory convention are documented in
 [`implementation-plan.md`](implementation-plan.md). The entries below describe
 the minimum evidence expected as each component is introduced.

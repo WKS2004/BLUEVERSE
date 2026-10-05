@@ -8,6 +8,7 @@ public class RecommendationSession
 {
     [Key]
     public Guid RecommendationId { get; set; }
+    [MaxLength(64)] public string Outcome { get; set; } = "MATCHES_FOUND";
 
     [Required]
     public Guid WorkflowId { get; set; }

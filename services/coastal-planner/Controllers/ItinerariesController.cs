@@ -151,7 +151,11 @@ public class ItinerariesController : ControllerBase
     {
         if (!TryGetUserId(out var userId)) return Unauthorized();
 
-        var result = await _plannerService.ReEvaluateItineraryAsync(itineraryId, userId, request, ct);
+        ItineraryReEvaluationResultDto? result;
+        try { result = await _plannerService.ReEvaluateItineraryAsync(itineraryId, userId, request, ct); }
+        catch (ArgumentException ex) { return BadRequest(new ProblemDetails { Title = "Invalid condition review", Status = 400, Detail = ex.Message }); }
+        catch (DbUpdateConcurrencyException) { return Conflict(new ProblemDetails { Title = "Trip changed", Status = 409, Detail = "Reload the trip before reviewing conditions again." }); }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { return StatusCode(503, new ProblemDetails { Title = "Review timed out", Status = 503, Detail = "Conditions could not be checked in time. Your trip has been kept. Please try again." }); }
         if (result == null)
         {
             return NotFound(new ProblemDetails
@@ -164,5 +168,14 @@ public class ItinerariesController : ControllerBase
         }
 
         return Ok(result);
+    }
+
+    [HttpGet("{itineraryId:guid}/re-evaluations")]
+    [HasPermission("planner.itineraries.manage")]
+    public async Task<ActionResult<List<ItineraryReEvaluationResultDto>>> GetEvaluationHistory(Guid itineraryId, CancellationToken ct)
+    {
+        if (!TryGetUserId(out var userId)) return Unauthorized();
+        var results = await _plannerService.GetEvaluationHistoryAsync(itineraryId, userId, ct);
+        return results is null ? NotFound(new ProblemDetails { Title = "Trip not found", Status = 404 }) : Ok(results);
     }
 }

@@ -22,7 +22,8 @@ public record RecommendationCandidateDto(
     string OperationalStatus,
     BiodiversityContextDto? BiodiversityContext,
     double FitScore,
-    List<string> Reasons
+    List<string> Reasons,
+    string TimeZone = "Asia/Colombo"
 );
 
 public record SuitabilitySummaryDto(
@@ -45,7 +46,8 @@ public record RecommendationResultDto(
     DateTime GeneratedAt,
     List<RecommendationCandidateDto> Candidates,
     int ExcludedCandidatesCount,
-    List<string> UncertaintyNotes
+    List<string> UncertaintyNotes,
+    string Outcome = "MATCHES_FOUND"
 );
 
 public record WorkflowStatusDto(
@@ -57,7 +59,9 @@ public record WorkflowStatusDto(
     DateTime CreatedAt,
     DateTime? CompletedAt,
     string? ResultSummary,
-    string? FailureReason
+    string? FailureReason,
+    string AiDependencyStatus = "NOT_CONNECTED",
+    string AiExecutionStatus = "NOT_STARTED"
 );
 
 public record ItineraryDto(
@@ -70,7 +74,8 @@ public record ItineraryDto(
     int ConcurrencyVersion,
     DateTime CreatedAt,
     DateTime UpdatedAt,
-    List<ItineraryItemDto> Items
+    List<ItineraryItemDto> Items,
+    string TimeZone = "Asia/Colombo"
 );
 
 public record ItineraryItemDto(
@@ -86,7 +91,8 @@ public record ItineraryItemDto(
     string LastSuitabilityStatus,
     string LastAvailabilityStatus,
     string LastOperationalStatus,
-    string? AdvisoryNote
+    string? AdvisoryNote,
+    string TimeZone = "Asia/Colombo"
 );
 
 public record CreateItineraryRequestDto(
@@ -94,7 +100,9 @@ public record CreateItineraryRequestDto(
     string? Description,
     DateTime StartsAt,
     DateTime EndsAt,
-    List<CreateItineraryItemRequestDto> Items
+    List<CreateItineraryItemRequestDto> Items,
+    Guid? RecommendationId = null,
+    string TimeZone = "Asia/Colombo"
 );
 
 public record CreateItineraryItemRequestDto(
@@ -104,7 +112,9 @@ public record CreateItineraryItemRequestDto(
     string Title,
     int OrderIndex,
     DateTime ScheduledStart,
-    DateTime ScheduledEnd
+    DateTime ScheduledEnd,
+    Guid? ItemId = null,
+    string TimeZone = "Asia/Colombo"
 );
 
 public record UpdateItineraryRequestDto(
@@ -113,7 +123,9 @@ public record UpdateItineraryRequestDto(
     DateTime StartsAt,
     DateTime EndsAt,
     int ConcurrencyVersion,
-    List<CreateItineraryItemRequestDto> Items
+    List<CreateItineraryItemRequestDto> Items,
+    Guid? RecommendationId = null,
+    string TimeZone = "Asia/Colombo"
 );
 
 public record ItineraryReEvaluationRequestDto(
@@ -125,7 +137,10 @@ public record ItineraryReEvaluationResultDto(
     DateTime EvaluatedAt,
     bool HasChanges,
     string Summary,
-    List<ItineraryReEvaluationItemDto> Items
+    List<ItineraryReEvaluationItemDto> Items,
+    Guid EvaluationId = default,
+    bool RequiresReview = false,
+    int ConcurrencyVersion = 0
 );
 
 public record ItineraryReEvaluationItemDto(
@@ -135,7 +150,12 @@ public record ItineraryReEvaluationItemDto(
     string CurrentSuitability,
     string CurrentOperationalStatus,
     string? AdvisoryMessage,
-    string SuggestedAction
+    string SuggestedAction,
+    string PreviousAvailability = "UNKNOWN",
+    string PreviousSuitability = "UNKNOWN",
+    string PreviousOperationalStatus = "UNKNOWN",
+    DateTime? MarineConditionTime = null,
+    Guid? SafetyProfileId = null
 );
 
 public record BiodiversityPredictionDto(

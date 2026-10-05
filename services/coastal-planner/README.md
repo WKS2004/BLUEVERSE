@@ -14,6 +14,7 @@ are being implemented:
 
 | Peer | Request path | Use |
 |---|---|---|
+| Experience Catalogue | `GET /api/experiences/destinations` | Canonical destination/activity names and time zones for selection |
 | Experience Catalogue | `GET /api/experiences/catalogue?destinationId={guid}&activityIds={comma-separated-guids}` | Published and available offering facts |
 | Marine Conditions | `GET /api/marine/suitability?destinationId={guid}&activityId={guid}&start={utc}&end={utc}` | Sourced, time-bound suitability |
 | Coastal Operations | `GET /api/operations/status?destinationId={guid}` | Current operating restrictions |
@@ -78,6 +79,12 @@ Run the package-local suite with:
 ```powershell
 dotnet test services/coastal-planner/tests/Blueverse.CoastalPlanner.Tests/Blueverse.CoastalPlanner.Tests.csproj
 ```
+
+See [the implementation and operations guide](../../docs/development/coastal-planner.md)
+for current routes, schedule/freshness requirements, permissions, durable review
+history, Docker setup, explicit PostgreSQL checks and pending owner contracts.
+Catalogue/marine/operations/ML services and Flutter planner screens are absent
+from this branch. Pre-G07 AI remains a non-executing private access seam.
 
 The suite uses deterministic in-memory persistence for provider-independent
 application behavior and an HTTP test server for JWT permissions, owner

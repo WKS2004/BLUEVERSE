@@ -103,3 +103,22 @@ registry contains the shared home, Auth registration and session-management,
 profile management and coastal overview workflows. New workflows must
 continue to register both client surfaces and their public API references
 together.
+
+## Coastal Planner feature branch
+
+React now provides `/planner`, persistent recommendation details,
+`/planner/saved` and owner itinerary management. Destination/activity choices
+come from the public catalogue projection by name. Saved trips support notes,
+schedule edits, stable stop reordering/removal with undo, condition reviews
+and durable history. Permissions use Auth-issued claims; private service hosts
+never appear in client requests. See
+[planner setup and integration limits](../../docs/development/coastal-planner.md).
+Peer services and Flutter planner parity remain pending.
+
+2026-10-05 verification: lint and production build passed; all 201 React tests
+passed with `node --experimental-strip-types --test --test-concurrency=2`.
+The bounded worker count was needed during concurrent Docker builds after an
+unconstrained run exhausted local memory. No tests were skipped. Browser checks
+of the local Docker gateway verified the missing-catalogue recovery and saved
+trip empty state at desktop and phone widths; live recommendations still need
+compatible owner services.

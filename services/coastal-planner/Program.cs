@@ -7,6 +7,17 @@ using Blueverse.CoastalPlanner.Data;
 using Blueverse.CoastalPlanner.Integration;
 using Blueverse.CoastalPlanner.Services;
 
+// A shell-free Docker readiness probe for the selected minimal DHI runtime.
+if (args.Contains("--healthcheck", StringComparer.Ordinal))
+{
+    using var probe = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
+    var port = Environment.GetEnvironmentVariable("ASPNETCORE_HTTP_PORTS") ?? "8080";
+    try { using var response = await probe.GetAsync($"http://127.0.0.1:{port}/api/planner/health"); Environment.Exit(response.IsSuccessStatusCode ? 0 : 1); }
+    catch (HttpRequestException) { Environment.Exit(1); }
+    catch (OperationCanceledException) { Environment.Exit(1); }
+    return;
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 // The Windows EventLog provider can throw when the application source has not
@@ -55,7 +66,11 @@ builder.Services.AddDbContext<CoastalPlannerDbContext>(options =>
             maxRetryDelay: TimeSpan.FromSeconds(10),
             errorCodesToAdd: null)));
 
-builder.Services.AddHttpClient<IPeerServicesClient, PeerServicesClient>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddTransient<PeerRequestContextHandler>();
+builder.Services.AddHttpClient<IPeerServicesClient, PeerServicesClient>().AddHttpMessageHandler<PeerRequestContextHandler>();
+builder.Services.AddHttpClient<IPlannerCatalogueClient, PlannerCatalogueClient>().AddHttpMessageHandler<PeerRequestContextHandler>();
+builder.Services.AddHttpClient<IPlanningCoordinationClient, PlanningCoordinationClient>();
 builder.Services.AddScoped<ICoastalPlannerService, CoastalPlannerService>();
 
 // Security & JWT Authentication

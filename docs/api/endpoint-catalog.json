@@ -1,13 +1,14 @@
 {
   "schema": 1,
   "status": "active",
-  "auditedAt": "2026-09-25",
+  "auditedAt": "2026-10-05",
   "purpose": "Fast, repository-local inventory of implemented frontend routes, gateway routes, public API endpoints, test-only routes, and Agentic AI endpoint status.",
   "authority": {
     "uiWorkflowRegistry": "docs/contracts/ui-integration.json",
     "backendSources": [
       "services/api",
-      "services/auth"
+      "services/auth",
+      "services/coastal-planner"
     ],
     "gatewaySources": [
       "infrastructure/docker/edge-nginx/nginx.conf",
@@ -267,9 +268,69 @@
       "route": "/planner",
       "source": "apps/mobile/lib/main.dart",
       "workflowId": "planner-recommendations",
+      "status": "planned",
+      "description": "Reserved parity route. The Flutter API client exists; the planner screen is not implemented.",
+      "usage": "Implement and verify this screen before cross-platform acceptance."
+    },
+    {
+      "id": "react-planner-result",
+      "client": "react",
+      "route": "/planner/recommendations/:recommendationId",
+      "source": "apps/web/src/app/routes.tsx",
+      "workflowId": "planner-recommendation-result",
       "status": "implemented",
-      "description": "Smart Coastal Planner recommendation workflow: trip constraints form with native date and time pickers, ranked candidate days, per-candidate suitability, operations and biodiversity inspection, and planning workflow status.",
-      "usage": "Renders the shared planner workflow for signed-in accounts on the mobile client."
+      "description": "Revisit a caller-owned search and save or append a suggested experience.",
+      "usage": "Revisit a caller-owned search and save or append a suggested experience."
+    },
+    {
+      "id": "react-planner-saved",
+      "client": "react",
+      "route": "/planner/saved",
+      "source": "apps/web/src/app/routes.tsx",
+      "workflowId": "planner-saved-trips",
+      "status": "implemented",
+      "description": "Paginated personal saved trips and recovery states.",
+      "usage": "Paginated personal saved trips and recovery states."
+    },
+    {
+      "id": "react-planner-trip",
+      "client": "react",
+      "route": "/planner/itineraries/:itineraryId",
+      "source": "apps/web/src/app/routes.tsx",
+      "workflowId": "planner-trip-management",
+      "status": "implemented",
+      "description": "Edit, reorder, remove and reschedule stops; delete a trip; review conditions and read its history.",
+      "usage": "Edit, reorder, remove and reschedule stops; delete a trip; review conditions and read its history."
+    },
+    {
+      "id": "flutter-planner-result",
+      "client": "flutter",
+      "route": "/planner/recommendations/:recommendationId",
+      "source": "apps/mobile/lib/main.dart",
+      "workflowId": "planner-recommendation-result",
+      "status": "planned",
+      "description": "Reserved parity route; Flutter screen is not implemented.",
+      "usage": "Implement and verify Flutter parity before component acceptance."
+    },
+    {
+      "id": "flutter-planner-saved",
+      "client": "flutter",
+      "route": "/planner/saved",
+      "source": "apps/mobile/lib/main.dart",
+      "workflowId": "planner-saved-trips",
+      "status": "planned",
+      "description": "Reserved parity route; Flutter screen is not implemented.",
+      "usage": "Implement and verify Flutter parity before component acceptance."
+    },
+    {
+      "id": "flutter-planner-trip",
+      "client": "flutter",
+      "route": "/planner/itineraries/:itineraryId",
+      "source": "apps/mobile/lib/main.dart",
+      "workflowId": "planner-trip-management",
+      "status": "planned",
+      "description": "Reserved parity route; Flutter screen is not implemented.",
+      "usage": "Implement and verify Flutter parity before component acceptance."
     }
   ],
   "gatewayRoutes": [
@@ -811,8 +872,8 @@
       "operationId": "AssignPermissions",
       "status": "implemented",
       "auth": "permission:all(auth.role.read,auth.role.update,auth.permission.read)",
-      "description": "Replaces a non-system role’s permission set. Requires role read, role update and permission catalogue read together; system-role grants remain protected.",
-      "usage": "Role editors can grant or remove permissions from eligible non-system roles. The Auth service checks the caller’s current role assignments and invalidates affected user sessions.",
+      "description": "Replaces a non-system roleâ€™s permission set. Requires role read, role update and permission catalogue read together; system-role grants remain protected.",
+      "usage": "Role editors can grant or remove permissions from eligible non-system roles. The Auth service checks the callerâ€™s current role assignments and invalidates affected user sessions.",
       "source": "services/auth/Controllers/RolesController.cs"
     },
     {
@@ -889,7 +950,7 @@
       "operationId": "AssignRoles",
       "status": "implemented",
       "auth": "permission:all(auth.user.read,auth.user.update,auth.role.read)",
-      "description": "Replaces an account’s roles with user read, user update and role read grants together; system-role changes require the dedicated grant.",
+      "description": "Replaces an accountâ€™s roles with user read, user update and role read grants together; system-role changes require the dedicated grant.",
       "usage": "Authorized user editors can add or remove user roles; the service checks current caller grants, system-role constraints and invalidates the affected account sessions.",
       "source": "services/auth/Controllers/UsersController.cs"
     },
@@ -903,7 +964,7 @@
       "status": "implemented",
       "auth": "anonymous",
       "description": "Reports Coastal Planner service and database readiness.",
-      "usage": "Used by the API gateway and Docker-stack health diagnostics.",
+      "usage": "Used by the exec-form .NET Docker readiness probe, API startup dependency and gateway diagnostics; missing peers do not prevent readiness.",
       "source": "services/coastal-planner/Controllers/HealthController.cs"
     },
     {
@@ -929,7 +990,7 @@
       "status": "implemented",
       "auth": "permission:planner.recommendations.create",
       "description": "Submit coastal preferences and generate candidates from validated catalogue, marine, and operations evidence.",
-      "usage": "Completes with explicit uncertainty notes and no candidates when required peer services do not respond.",
+      "usage": "Fits verified offering intervals and experience levels; records MATCHES_FOUND, NO_MATCHES or DEPENDENCIES_UNAVAILABLE within a 40-second budget.",
       "source": "services/coastal-planner/Controllers/RecommendationsController.cs",
       "uiWorkflowIds": [
         "planner-recommendations"
@@ -948,7 +1009,8 @@
       "usage": "Retrieves the candidates and peer status notes for a recommendation session.",
       "source": "services/coastal-planner/Controllers/RecommendationsController.cs",
       "uiWorkflowIds": [
-        "planner-recommendations"
+        "planner-recommendations",
+        "planner-recommendation-result"
       ]
     },
     {
@@ -961,10 +1023,11 @@
       "status": "implemented",
       "auth": "permission:planner.workflows.read",
       "description": "Get status and lifecycle of a planning workflow.",
-      "usage": "Tracks asynchronous or completed planning workflow status and audit records.",
+      "usage": "Reads owner-scoped business lifecycle separately from private AI dependency availability and NOT_STARTED execution before accepted G07.",
       "source": "services/coastal-planner/Controllers/WorkflowsController.cs",
       "uiWorkflowIds": [
-        "planner-recommendations"
+        "planner-recommendations",
+        "planner-recommendation-result"
       ]
     },
     {
@@ -977,8 +1040,11 @@
       "status": "implemented",
       "auth": "permission:planner.itineraries.manage",
       "description": "Create a user-owned saved itinerary.",
-      "usage": "Saves an itinerary with ordered items for the authenticated user.",
-      "source": "services/coastal-planner/Controllers/ItinerariesController.cs"
+      "usage": "Saves an owner itinerary with time zones; an optional recommendationId validates new selections against the owner snapshot and 15-minute lifetime.",
+      "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
+      "uiWorkflowIds": [
+        "planner-recommendation-result"
+      ]
     },
     {
       "id": "planner-itineraries-list",
@@ -991,7 +1057,11 @@
       "auth": "permission:planner.itineraries.manage",
       "description": "List the caller's saved itineraries.",
       "usage": "Returns paginated itineraries owned by the calling user.",
-      "source": "services/coastal-planner/Controllers/ItinerariesController.cs"
+      "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
+      "uiWorkflowIds": [
+        "planner-recommendation-result",
+        "planner-saved-trips"
+      ]
     },
     {
       "id": "planner-itineraries-get",
@@ -1004,7 +1074,11 @@
       "auth": "permission:planner.itineraries.manage",
       "description": "Retrieve a specific itinerary with ordered items.",
       "usage": "Gets details of an itinerary owned by the authenticated caller.",
-      "source": "services/coastal-planner/Controllers/ItinerariesController.cs"
+      "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
+      "uiWorkflowIds": [
+        "planner-recommendation-result",
+        "planner-trip-management"
+      ]
     },
     {
       "id": "planner-itineraries-update",
@@ -1016,8 +1090,12 @@
       "status": "implemented",
       "auth": "permission:planner.itineraries.manage",
       "description": "Update itinerary details, reorder items, or adjust dates.",
-      "usage": "Updates an itinerary with optimistic concurrency control.",
-      "source": "services/coastal-planner/Controllers/ItinerariesController.cs"
+      "usage": "Preserves stop identity while editing and reordering; checks concurrencyVersion, rejects overlapping/duplicate stops and resets stale evidence after schedule changes.",
+      "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
+      "uiWorkflowIds": [
+        "planner-recommendation-result",
+        "planner-trip-management"
+      ]
     },
     {
       "id": "planner-itineraries-delete",
@@ -1030,7 +1108,10 @@
       "auth": "permission:planner.itineraries.manage",
       "description": "Delete a caller-owned itinerary.",
       "usage": "Removes an itinerary owned by the authenticated caller.",
-      "source": "services/coastal-planner/Controllers/ItinerariesController.cs"
+      "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
+      "uiWorkflowIds": [
+        "planner-trip-management"
+      ]
     },
     {
       "id": "planner-itineraries-reevaluate",
@@ -1042,8 +1123,11 @@
       "status": "implemented",
       "auth": "permission:planner.itineraries.manage",
       "description": "Evaluate existing itinerary against current marine suitability, availability, and operational restrictions.",
-      "usage": "Non-CRUD operation re-evaluating itinerary items against peer service facts.",
-      "source": "services/coastal-planner/Controllers/ItinerariesController.cs"
+      "usage": "Atomically records previous/current evidence, review snapshot and a new optimistic version; HasChanges and RequiresReview have separate meanings.",
+      "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
+      "uiWorkflowIds": [
+        "planner-trip-management"
+      ]
     },
     {
       "id": "planner-biodiversity-predictions",
@@ -1058,7 +1142,40 @@
       "usage": "Returns validated ML prediction context consumed by Experience Catalogue (Member 1).",
       "source": "services/coastal-planner/Controllers/BiodiversityController.cs",
       "uiWorkflowIds": [
+        "planner-recommendations",
+        "planner-recommendation-result"
+      ]
+    },
+    {
+      "id": "planner-catalogue",
+      "method": "GET",
+      "path": "/api/planner/catalogue",
+      "operationId": "GetCatalogue",
+      "auth": "permission:planner.recommendations.create",
+      "description": "Returns named destination and activity choices from the canonical experience catalogue.",
+      "usage": "Clients select names; canonical IDs remain inside requests. An absent or invalid source returns UNAVAILABLE without invented destinations.",
+      "source": "services/coastal-planner/Controllers/CatalogueController.cs",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "status": "implemented",
+      "uiWorkflowIds": [
         "planner-recommendations"
+      ]
+    },
+    {
+      "id": "planner-itineraries-history",
+      "method": "GET",
+      "path": "/api/planner/itineraries/{itineraryId:guid}/re-evaluations",
+      "operationId": "GetEvaluationHistory",
+      "auth": "permission:planner.itineraries.manage",
+      "description": "Returns the latest 20 persisted condition review snapshots for a caller-owned trip.",
+      "usage": "Shows previous/current evidence, review actions and timestamps without changing selected experiences.",
+      "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "status": "implemented",
+      "uiWorkflowIds": [
+        "planner-trip-management"
       ]
     }
   ],

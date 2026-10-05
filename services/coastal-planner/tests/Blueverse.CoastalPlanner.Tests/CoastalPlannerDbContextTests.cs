@@ -191,7 +191,7 @@ public sealed class CoastalPlannerDbContextTests
 
         var bioEntity = model.FindEntityType(typeof(BiodiversityPredictionCache));
         Assert.NotNull(bioEntity);
-        Assert.Equal("BiodiversityPredictionCache", bioEntity.GetTableName());
+        Assert.Equal("biodiversity_predictions_cache", bioEntity.GetTableName()); // Preserve the existing PostgreSQL migration/table name.
     }
 
     private static CoastalPlannerDbContext CreateDatabase() => new(

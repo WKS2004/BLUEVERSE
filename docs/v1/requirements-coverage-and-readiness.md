@@ -1,5 +1,12 @@
 # v1 requirements coverage and development readiness
 
+**Member 3 branch update, 2026-10-05:** Coastal Planner and its React workflows
+now have the implementation and verification described in
+[the planner guide](../development/coastal-planner.md). Other owner services,
+live provider compatibility, Flutter planner parity, shared G00 acceptance
+and G07 remain outstanding. This dated branch evidence does not mark v1
+complete or replace the baseline readiness decision below.
+
 This is the handoff checklist for the four member components and their four
 distinct Agentic AI roles. It tracks the 25 September 2026 baseline audit and
 the 26 September map, device-capability and biodiversity-integration

@@ -6,7 +6,12 @@ public record PeerCatalogueItem(
     Guid? OfferingId,
     string Title,
     string AvailabilityStatus,
-    string PublicationState
+    string PublicationState,
+    DateTime? AvailableFrom = null,
+    DateTime? AvailableUntil = null,
+    List<string>? ExperienceLevels = null,
+    DateTime? CheckedAt = null,
+    string? TimeZone = null
 );
 
 public record PeerSuitabilityResponse(
@@ -15,7 +20,8 @@ public record PeerSuitabilityResponse(
     string Status, // SUITABLE, CAUTION, UNSUITABLE, UNKNOWN
     DateTime ConditionTimestamp,
     Guid? SafetyProfileId,
-    string? Advisory
+    string? Advisory,
+    bool IsFresh = false
 );
 
 public record PeerOperationStatusResponse(

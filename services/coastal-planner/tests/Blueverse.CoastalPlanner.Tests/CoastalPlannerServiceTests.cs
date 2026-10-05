@@ -259,7 +259,8 @@ public sealed class CoastalPlannerServiceTests
         var result = await planner.ReEvaluateItineraryAsync(itinerary.ItineraryId, ownerId, new ItineraryReEvaluationRequestDto());
 
         var item = Assert.Single(Assert.IsType<ItineraryReEvaluationResultDto>(result).Items);
-        Assert.True(result!.HasChanges);
+        Assert.False(result!.HasChanges); // Unavailable -> unavailable is not a new condition change.
+        Assert.True(result.RequiresReview);
         Assert.Equal("UNKNOWN", item.CurrentAvailability);
         Assert.Equal("UNKNOWN", item.CurrentSuitability);
         Assert.Equal("UNKNOWN", item.CurrentOperationalStatus);
@@ -291,10 +292,10 @@ public sealed class CoastalPlannerServiceTests
     }
 
     private static PeerCatalogueItem Offering(Guid destinationId, Guid activityId, string availability, string publication) =>
-        new(destinationId, activityId, Guid.NewGuid(), $"Activity {activityId:N}", availability, publication);
+        new(destinationId, activityId, Guid.NewGuid(), $"Activity {activityId:N}", availability, publication, DateTime.UtcNow.AddHours(12), DateTime.UtcNow.AddDays(29), ["BEGINNER", "INTERMEDIATE", "ADVANCED"], DateTime.UtcNow, "Asia/Colombo");
 
     private static PeerSuitabilityResponse Suitable(Guid destinationId, Guid activityId) =>
-        new(destinationId, activityId, "SUITABLE", DateTime.UtcNow, Guid.NewGuid(), null);
+        new(destinationId, activityId, "SUITABLE", DateTime.UtcNow.AddDays(1), Guid.NewGuid(), null, IsFresh: true);
 
     private static CreateItineraryItemRequestDto CreateItineraryItem(
         Guid destinationId, Guid activityId, DateTime startsAt, DateTime endsAt, int order) =>

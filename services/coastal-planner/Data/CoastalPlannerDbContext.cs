@@ -13,6 +13,7 @@ public class CoastalPlannerDbContext : DbContext
     public DbSet<Itinerary> Itineraries => Set<Itinerary>();
     public DbSet<ItineraryItem> ItineraryItems => Set<ItineraryItem>();
     public DbSet<RecommendationSession> Recommendations => Set<RecommendationSession>();
+    public DbSet<ItineraryEvaluation> ItineraryEvaluations => Set<ItineraryEvaluation>();
     public DbSet<BiodiversityPredictionCache> BiodiversityPredictions => Set<BiodiversityPredictionCache>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -20,6 +21,12 @@ public class CoastalPlannerDbContext : DbContext
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.HasDefaultSchema("coastal_planner");
+        modelBuilder.Entity<ItineraryEvaluation>(entity =>
+        {
+            entity.ToTable("itinerary_evaluations");
+            entity.HasIndex(e => new { e.ItineraryId, e.EvaluatedAtUtc });
+            entity.HasOne<Itinerary>().WithMany().HasForeignKey(e => e.ItineraryId).OnDelete(DeleteBehavior.Cascade);
+        });
 
         modelBuilder.Entity<PlanningWorkflow>(entity =>
         {
@@ -33,6 +40,7 @@ public class CoastalPlannerDbContext : DbContext
 
         modelBuilder.Entity<Itinerary>(entity =>
         {
+            entity.Property(e => e.TimeZone).HasDefaultValue("Asia/Colombo");
             entity.ToTable("itineraries", "coastal_planner", table =>
                 table.HasCheckConstraint("CK_itineraries_date_range", "\"EndsAtUtc\" > \"StartsAtUtc\""));
             entity.HasIndex(e => e.OwnerUserId);
@@ -47,6 +55,7 @@ public class CoastalPlannerDbContext : DbContext
 
         modelBuilder.Entity<ItineraryItem>(entity =>
         {
+            entity.Property(e => e.TimeZone).HasDefaultValue("Asia/Colombo");
             entity.ToTable("itinerary_items", "coastal_planner", table =>
             {
                 table.HasCheckConstraint("CK_itinerary_items_order_non_negative", "\"OrderIndex\" >= 0");
@@ -57,6 +66,7 @@ public class CoastalPlannerDbContext : DbContext
 
         modelBuilder.Entity<RecommendationSession>(entity =>
         {
+            entity.Property(e => e.Outcome).HasDefaultValue("LEGACY_RESULT");
             entity.ToTable("recommendations", "coastal_planner", table =>
             {
                 table.HasCheckConstraint("CK_recommendations_date_range", "\"EndsAtUtc\" > \"StartsAtUtc\"");
@@ -72,6 +82,7 @@ public class CoastalPlannerDbContext : DbContext
 
         modelBuilder.Entity<BiodiversityPredictionCache>(entity =>
         {
+            entity.ToTable("biodiversity_predictions_cache");
             entity.HasIndex(e => new { e.DestinationId, e.ActivityId });
             entity.HasIndex(e => e.ExpiresAtUtc);
         });

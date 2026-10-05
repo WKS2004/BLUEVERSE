@@ -70,7 +70,7 @@ services:
       auth:
         condition: service_started
       coastal-planner:
-        condition: service_started
+        condition: service_healthy
     networks:
       - blueverse_internal
 
@@ -91,6 +91,7 @@ services:
       Jwt__AccessTokenMinutes: ${AUTH_ACCESS_TOKEN_MINUTES:-15}
       AuthSession__DefaultLifetimeDays: ${AUTH_DEFAULT_SESSION_DAYS:-1}
       AuthSession__RememberMeLifetimeDays: ${AUTH_REMEMBER_ME_SESSION_DAYS:-30}
+      AuthSession__SelfServicePlannerAccess: ${AUTH_SELF_SERVICE_PLANNER_ACCESS:-true}
       ADMIN_EMAIL: ${ADMIN_EMAIL:?Set ADMIN_EMAIL in .env}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-blueverse};Username=${POSTGRES_USER:-blueverse};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
@@ -114,8 +115,18 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_HTTP_PORTS: ${COASTAL_PLANNER_HTTP_PORT:-8080}
+      PeerServices__ExperienceCatalogueUrl: ${EXPERIENCE_CATALOGUE_URL:-http://experience-catalogue:8080}
+      PeerServices__MarineConditionsUrl: ${MARINE_CONDITIONS_URL:-http://marine-conditions:8080}
+      PeerServices__CoastalOperationsUrl: ${COASTAL_OPERATIONS_URL:-http://coastal-operations:8080}
+      PeerServices__BiodiversityMlUrl: ${BIODIVERSITY_ML_URL:-http://it3091:8080}
       JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY in .env}
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-blueverse};Username=${POSTGRES_USER:-blueverse};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    healthcheck:
+      test: ["CMD", "dotnet", "Blueverse.CoastalPlanner.dll", "--healthcheck"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy

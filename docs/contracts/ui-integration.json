@@ -118,21 +118,23 @@
     },
     {
       "id": "planner-recommendations",
-      "status": "implemented",
-      "description": "Shared Smart Coastal Planner workflow at /planner. Signed-in users enter trip constraints (target destination, start and end dates, planned hours, experience level and optional preferred activities) and receive ranked candidate days. Each candidate shows marine suitability, availability and operational status with reasons, and can be inspected for biodiversity prediction context. The planning workflow status and its uncertainty notes are surfaced honestly, including when peer services are quiet.",
+      "status": "in_progress",
+      "description": "React uses named catalogue choices, local destination time, optional activities and safe recommendation evidence. Flutter screen parity and live member-service contracts remain pending.",
       "web": {
         "route": "/planner",
         "source": "apps/web/src/app/routes.tsx"
       },
       "mobile": {
         "route": "/planner",
-        "source": "apps/mobile/lib/main.dart"
+        "source": "apps/mobile/lib/main.dart",
+        "status": "planned"
       },
       "apiRefs": [
         "planner-recommendations-create",
         "planner-recommendations-get",
         "planner-workflows-get",
-        "planner-biodiversity-predictions"
+        "planner-biodiversity-predictions",
+        "planner-catalogue"
       ]
     },
     {
@@ -236,6 +238,70 @@
         "source": "apps/mobile/lib/main.dart"
       },
       "apiRefs": []
+    },
+    {
+      "id": "planner-recommendation-result",
+      "status": "in_progress",
+      "description": "Revisit a caller-owned search and save or append a suggested experience. React implemented; Flutter parity is pending.",
+      "web": {
+        "route": "/planner/recommendations/:recommendationId",
+        "source": "apps/web/src/app/routes.tsx",
+        "status": "implemented"
+      },
+      "mobile": {
+        "route": "/planner/recommendations/:recommendationId",
+        "source": "apps/mobile/lib/main.dart",
+        "status": "planned"
+      },
+      "apiRefs": [
+        "planner-recommendations-get",
+        "planner-workflows-get",
+        "planner-biodiversity-predictions",
+        "planner-itineraries-create",
+        "planner-itineraries-list",
+        "planner-itineraries-get",
+        "planner-itineraries-update"
+      ]
+    },
+    {
+      "id": "planner-saved-trips",
+      "status": "in_progress",
+      "description": "Paginated personal saved trips and recovery states. React implemented; Flutter parity is pending.",
+      "web": {
+        "route": "/planner/saved",
+        "source": "apps/web/src/app/routes.tsx",
+        "status": "implemented"
+      },
+      "mobile": {
+        "route": "/planner/saved",
+        "source": "apps/mobile/lib/main.dart",
+        "status": "planned"
+      },
+      "apiRefs": [
+        "planner-itineraries-list"
+      ]
+    },
+    {
+      "id": "planner-trip-management",
+      "status": "in_progress",
+      "description": "Edit, reorder, remove and reschedule stops; delete a trip; review conditions and read its history. React implemented; Flutter parity is pending.",
+      "web": {
+        "route": "/planner/itineraries/:itineraryId",
+        "source": "apps/web/src/app/routes.tsx",
+        "status": "implemented"
+      },
+      "mobile": {
+        "route": "/planner/itineraries/:itineraryId",
+        "source": "apps/mobile/lib/main.dart",
+        "status": "planned"
+      },
+      "apiRefs": [
+        "planner-itineraries-get",
+        "planner-itineraries-update",
+        "planner-itineraries-delete",
+        "planner-itineraries-reevaluate",
+        "planner-itineraries-history"
+      ]
     }
   ],
   "endpoints": [
@@ -454,6 +520,70 @@
       "publicBoundary": "api",
       "ownerService": "coastal-planner",
       "operationId": "GetPredictions"
+    },
+    {
+      "id": "planner-itineraries-create",
+      "method": "POST",
+      "path": "/api/planner/itineraries",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "CreateItinerary"
+    },
+    {
+      "id": "planner-itineraries-list",
+      "method": "GET",
+      "path": "/api/planner/itineraries",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "ListItineraries"
+    },
+    {
+      "id": "planner-itineraries-get",
+      "method": "GET",
+      "path": "/api/planner/itineraries/{itineraryId:guid}",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "GetItinerary"
+    },
+    {
+      "id": "planner-itineraries-update",
+      "method": "PUT",
+      "path": "/api/planner/itineraries/{itineraryId:guid}",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "UpdateItinerary"
+    },
+    {
+      "id": "planner-itineraries-delete",
+      "method": "DELETE",
+      "path": "/api/planner/itineraries/{itineraryId:guid}",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "DeleteItinerary"
+    },
+    {
+      "id": "planner-itineraries-reevaluate",
+      "method": "POST",
+      "path": "/api/planner/itineraries/{itineraryId:guid}/re-evaluations",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "ReEvaluateItinerary"
+    },
+    {
+      "id": "planner-catalogue",
+      "method": "GET",
+      "path": "/api/planner/catalogue",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "GetCatalogue"
+    },
+    {
+      "id": "planner-itineraries-history",
+      "method": "GET",
+      "path": "/api/planner/itineraries/{itineraryId:guid}/re-evaluations",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "GetEvaluationHistory"
     }
   ]
 }

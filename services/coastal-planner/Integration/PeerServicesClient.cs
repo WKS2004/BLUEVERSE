@@ -56,7 +56,7 @@ public sealed class PeerServicesClient : IPeerServicesClient
             var matchingItems = data
                 .Where(item => item is not null && item.DestinationId == destinationId &&
                     item.ActivityId != Guid.Empty && item.OfferingId is { } offeringId && offeringId != Guid.Empty &&
-                    !string.IsNullOrWhiteSpace(item.Title) &&
+                    !string.IsNullOrWhiteSpace(item.Title) && item.Title.Length <= 150 &&
                     item.AvailabilityStatus is ("AVAILABLE" or "UNAVAILABLE" or "UNKNOWN") &&
                     item.PublicationState is ("DRAFT" or "PUBLISHED" or "ARCHIVED"))
                 .ToList();

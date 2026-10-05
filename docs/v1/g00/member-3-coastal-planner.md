@@ -11,6 +11,16 @@ Shared Contract Freeze. It is not team-accepted until all four owners agree.
 - **Owner component contract:** [`docs/v1/components/member-3-smart-coastal-planner-itinerary-management.md`](../components/member-3-smart-coastal-planner-itinerary-management.md)
 - **Paired Agentic contract:** [`docs/v1/agents/member-3-planning-coordination-agent.md`](../agents/member-3-planning-coordination-agent.md)
 
+**2026-10-05 consumer implementation note:** The Member 3 branch now implements
+the planner catalogue projection and durable review-history reads, destination
+time zones, explicit search outcomes, snapshot-validated saves and a bounded,
+non-executing private AI availability seam. The exact source payload additions
+and routes are documented in [the planner guide](../../development/coastal-planner.md)
+and the endpoint catalogue. They require owner confirmation; this note does
+not change the pending team acceptance status or authorize post-G07 execution.
+React planner screens are implemented; Flutter routes remain planned in the
+shared UI registry.
+
 ---
 
 ## 1. Scope and G00 objectives

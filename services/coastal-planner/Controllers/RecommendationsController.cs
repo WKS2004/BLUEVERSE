@@ -44,6 +44,11 @@ public class RecommendationsController : ControllerBase
                 Detail = ex.Message
             });
         }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            return StatusCode(503, new ProblemDetails { Title = "Search timed out", Status = 503,
+                Detail = "We couldn’t verify your experiences in time. Please try again." });
+        }
     }
 
     [HttpGet("{recommendationId:guid}")]

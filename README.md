@@ -8,8 +8,11 @@ The checked-in application provides the **v0 foundation** for the SE3090
 integrated full-stack and Agentic AI project. The submission target is
 **v0 plus v1**. React and Flutter implement the shared Auth registration and session workflows,
 backed by the public API gateway, internal Auth service and PostgreSQL. The
-four v1 business components, four agents and biodiversity integration are
-documented targets, not yet implemented behavior.
+Coastal Planner private service and React planning workflows are implemented
+on this feature branch. The other three member services, live biodiversity
+provider, Flutter planner screens and executable agents remain integration
+targets. See [planner implementation status](docs/development/coastal-planner.md)
+for the precise scope and remaining dependencies.
 
 ## Project identity
 
@@ -39,7 +42,8 @@ React Web / Flutter Mobile
 ```
 
 The diagram combines the implemented v0 foundation and the v1 target. Today,
-the API integrates Auth, which owns its PostgreSQL-backed behavior. For v1, each
+the API integrates Auth and this branch's Coastal Planner, each owning its
+PostgreSQL-backed behavior. For v1, each
 member's private .NET service owns its component business rules, persistence
 and assigned provider adapters. The API remains the only client-facing
 boundary and receives only the authentication/permission and routing
@@ -50,11 +54,11 @@ React and Flutter never call member services or Agentic AI directly. See
 [v1 documentation index](docs/v1/README.md) and the
 [Agentic AI integration boundary](docs/v1/agentic-ai-integration-boundary.md).
 
-React Web and Flutter Mobile are equally complete product surfaces. Every
-participating role can perform every permitted business workflow in either
-client. Both use the same workflow intent, role → permission model, data and
-public API contract. Screen layout or device input may differ without
-restricting a role, action or result.
+React Web and Flutter Mobile must provide equal business capability at release.
+Auth workflows are present in both clients; planner workflows currently have
+React implementations and reserved Flutter routes. The shared registry marks
+that gap explicitly. Both use the same workflow intent, role → permission
+model, data and public API contract.
 Both clients follow the shared visual system in [`DESIGN.md`](DESIGN.md): React
 maps it to Tailwind styles in `apps/web`, and Flutter maps it to native theme
 and widgets in `apps/mobile`.
@@ -91,7 +95,8 @@ BLUEVERSE/
 │       └── auth/
 ├── services/                # ASP.NET Core services
 │   ├── api/                  # checked-in public API foundation
-│   └── auth/                 # internal Auth service
+│   ├── auth/                 # internal Auth service
+│   └── coastal-planner/      # private planning service
 ├── AGENTS.md
 ├── compose.yaml
 ├── global.json
@@ -142,7 +147,7 @@ gateway. Do not move the Dockerfiles into generated projects; keep them under
 ## Local setup and deployment
 
 The supported local deployment runs the checked-in React client, public API,
-internal Auth service and PostgreSQL with Docker Compose. Run Compose commands
+internal Auth and Coastal Planner services and PostgreSQL with Docker Compose. Run Compose commands
 from the repository root (the directory containing `compose.yaml`). The public
 entry point is `edge-nginx`; clients use the gateway's `/api/...` routes and do
 not connect directly to internal services.
@@ -237,6 +242,23 @@ never commit `.env`. Keep `AUTH_SERVICE_URL=http://auth:8080` because it is the
 Docker-internal API-to-Auth address. `ADMIN_EMAIL` and `ADMIN_PASSWORD` are
 used for the local administrator account.
 
+Compose defaults `AUTH_SELF_SERVICE_PLANNER_ACCESS=true`: new registrations
+receive the non-administrative **Coastal traveller** role with five planner
+permissions. Set it to `false` to require administrator assignment. Existing
+accounts retain their roles; an administrator can assign Coastal traveller
+through the existing role administration screen. The configured Admin role
+also receives planner grants at startup. Sign in again or refresh the session
+after grants change to obtain updated permission claims.
+
+The optional `EXPERIENCE_CATALOGUE_URL`, `MARINE_CONDITIONS_URL`,
+`COASTAL_OPERATIONS_URL` and `BIODIVERSITY_ML_URL` settings identify private
+peer services. Defaults use Docker service names, but those peer services are
+not supplied by this branch. Without them, `/planner` shows that destinations
+are unavailable and provides retry and saved-trip navigation. Recommendations
+require verifiable offering schedules, marine suitability and operations
+evidence. Connect compatible owner services to enable genuine suggestions;
+see [the peer contract](docs/development/coastal-planner.md).
+
 The gateway is published on host port `80` by default. On the development
 branch, PostgreSQL is published as `5432:5432`, which binds the host port on
 all network interfaces for the team's current development configuration.
@@ -271,10 +293,18 @@ docker compose up -d
 docker compose ps
 ```
 
-The first build pulls the DHI base images and may take several minutes. To
-build and run in the foreground while watching logs, use
+The first build pulls the DHI base images and may take several minutes.
+Auth and planner Dockerfiles reuse NuGet packages across builds with
+BuildKit cache mounts and restore project dependencies before copying source.
+Source-only edits retain the restore layer; package changes still run restore.
+To build and run in the foreground while watching logs, use
 `docker compose up --build`. Auth waits for PostgreSQL to become healthy, applies its
 migrations and seeds the configured administrator account.
+Coastal Planner applies its own migrations and uses an exec-form .NET
+healthcheck, compatible with the minimal DHI runtime. The API waits for
+planner database/migration readiness; missing peer services do not prevent
+startup. Existing itineraries receive the Sri Lankan `Asia/Colombo` time zone
+when the new migration is applied, preserving their UTC schedules and IDs.
 
 ### Verify the local deployment
 
@@ -318,7 +348,7 @@ remain privately managed and are not configured through this local binding.
 If a service does not start or a health URL fails, inspect its recent logs:
 
 ```text
-docker compose logs --tail=100 edge-nginx frontend api auth postgres
+docker compose logs --tail=100 edge-nginx frontend api auth coastal-planner postgres
 ```
 
 Common first-run causes are Docker Desktop not running, missing DHI registry

@@ -361,7 +361,7 @@ public sealed class CoastalPlannerServiceDomainTests
         {
             CatalogueResult = ([Offering(destinationId, activityId, "AVAILABLE", "PUBLISHED")], true, null),
             OperationsResult = (new PeerOperationStatusResponse(destinationId, "CAUTION", []), true, null),
-            MarineResult = (new PeerSuitabilityResponse(destinationId, activityId, "CAUTION", DateTime.UtcNow, Guid.NewGuid(), "High wind caution"), true, null)
+            MarineResult = (new PeerSuitabilityResponse(destinationId, activityId, "CAUTION", DateTime.UtcNow.AddDays(1), Guid.NewGuid(), "High wind caution", IsFresh: true), true, null)
         };
         var service = CreateService(db, peer);
         var startsAt = DateTime.UtcNow.AddDays(1);
@@ -447,9 +447,10 @@ public sealed class CoastalPlannerServiceDomainTests
 
         var peer = new TestPeerServicesClient
         {
-            CatalogueResult = ([new PeerCatalogueItem(destinationId, activityId, offeringId, "Snorkel", "AVAILABLE", "PUBLISHED")], true, null),
+            CatalogueResult = ([new PeerCatalogueItem(destinationId, activityId, offeringId, "Snorkel", "AVAILABLE", "PUBLISHED",
+                startsAt, startsAt.AddHours(3), ["INTERMEDIATE"], DateTime.UtcNow, "Asia/Colombo")], true, null),
             OperationsResult = (new PeerOperationStatusResponse(destinationId, "OPEN", []), true, null),
-            MarineResult = (new PeerSuitabilityResponse(destinationId, activityId, "SUITABLE", startsAt, Guid.NewGuid(), "Clear waters"), true, null)
+            MarineResult = (new PeerSuitabilityResponse(destinationId, activityId, "SUITABLE", startsAt, Guid.NewGuid(), "Clear waters", IsFresh: true), true, null)
         };
         var service = CreateService(db, peer);
 
@@ -459,7 +460,8 @@ public sealed class CoastalPlannerServiceDomainTests
         var reeval = await service.ReEvaluateItineraryAsync(itinerary.ItineraryId, ownerId, new ItineraryReEvaluationRequestDto());
 
         Assert.NotNull(reeval);
-        Assert.False(reeval.HasChanges);
+        Assert.True(reeval.HasChanges); // First review changes UNKNOWN evidence into verified states.
+        Assert.False(reeval.RequiresReview);
         Assert.Contains("All planned items remain suitable", reeval.Summary, StringComparison.Ordinal);
         var resultItem = Assert.Single(reeval.Items);
         Assert.Equal("KEEP", resultItem.SuggestedAction);
@@ -590,10 +592,10 @@ public sealed class CoastalPlannerServiceDomainTests
         new(db, peer, NullLogger<CoastalPlannerService>.Instance);
 
     private static PeerCatalogueItem Offering(Guid destinationId, Guid activityId, string availability, string publication) =>
-        new(destinationId, activityId, Guid.NewGuid(), $"Activity {activityId:N}", availability, publication);
+        new(destinationId, activityId, Guid.NewGuid(), $"Activity {activityId:N}", availability, publication, DateTime.UtcNow.AddHours(12), DateTime.UtcNow.AddDays(29), ["BEGINNER", "INTERMEDIATE", "ADVANCED"], DateTime.UtcNow, "Asia/Colombo");
 
     private static PeerSuitabilityResponse Suitable(Guid destinationId, Guid activityId) =>
-        new(destinationId, activityId, "SUITABLE", DateTime.UtcNow, Guid.NewGuid(), null);
+        new(destinationId, activityId, "SUITABLE", DateTime.UtcNow.AddDays(1), Guid.NewGuid(), null, IsFresh: true);
 
     private static CreateItineraryItemRequestDto CreateItineraryItem(
         Guid destinationId, Guid activityId, DateTime startsAt, DateTime endsAt, int order) =>

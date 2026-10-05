@@ -15,6 +15,8 @@ public interface ICoastalPlannerService
     Task<bool> DeleteItineraryAsync(Guid itineraryId, Guid userId, CancellationToken ct = default);
 
     Task<ItineraryReEvaluationResultDto?> ReEvaluateItineraryAsync(Guid itineraryId, Guid userId, ItineraryReEvaluationRequestDto request, CancellationToken ct = default);
+    Task<List<ItineraryReEvaluationResultDto>?> GetEvaluationHistoryAsync(Guid itineraryId, Guid userId, CancellationToken ct = default) =>
+        Task.FromResult<List<ItineraryReEvaluationResultDto>?>(null);
 
     Task<BiodiversityPredictionDto> GetBiodiversityPredictionsAsync(Guid destinationId, Guid? activityId, CancellationToken ct = default);
 }

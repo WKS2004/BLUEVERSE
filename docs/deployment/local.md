@@ -108,3 +108,11 @@ not follow a changed `BLUEVERSE_HTTP_PORT` value. Keep the host gateway on
 port 80 for Flutter until the resolver is updated. The local address is for
 development and is not a deployment URL; HTTPS support for a production
 mobile build remains unresolved.
+
+Coastal Planner uses an exec-form .NET healthcheck and applies its own EF Core
+migrations. The API waits for its database readiness. Compose seeds planner
+permissions and enables traveller access for new registrations by default;
+configure `AUTH_SELF_SERVICE_PLANNER_ACCESS=false` for administrator assignment.
+Peer URLs use the private environment settings in `.env.example`. Missing
+catalogue/marine/operations/ML services do not block startup, but cannot produce
+verified suggestions. See [planner deployment details](../development/coastal-planner.md).
