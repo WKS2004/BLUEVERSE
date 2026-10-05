@@ -43,7 +43,7 @@ evidence.
   loading feedback, route scrolling, app notices and the shared footer. DOM
   tests use JSDOM and React Testing Library; request tests stub the registered
   public API. The historical foundation baseline was 157 cases (2026-09-25).
-  The full suite now passes 198 cases (2026-10-03), including 41 marine-safety
+  The full suite now passes 201 cases (2026-10-06), including 44 marine-safety
   API-boundary and page/workflow tests. React lint and shared UI integration
   validation pass; real-browser and deployed-gateway workflows remain
   separate integration evidence.
@@ -76,12 +76,13 @@ evidence.
   JWT claims/configuration boundaries, opaque-secret properties and
   persistence-model constraints. The PostgreSQL session/concurrency smoke test
   is opt-in.
-- Marine backend: `services/marine-safety` passes 117 service tests
-  (2026-10-03), covering provider behavior, conditions, deterministic
-  suitability, profile and history workflows, and Auth identity/permission
-  boundaries. The HTTP test host uses an in-memory database and deterministic
-  Auth/provider doubles; it does not verify production Auth SQL or PostgreSQL
-  behavior.
+- Marine backend: `services/marine-safety` contains 118 authored tests. The
+  last completed run passed 117 service tests (2026-10-03); the latest VSTest
+  attempt timed out during testhost startup. The cases cover provider behavior,
+  conditions, deterministic suitability, profile and history workflows, and
+  Auth identity/permission boundaries. The HTTP test host uses an in-memory
+  database and deterministic Auth/provider doubles; it does not verify
+  production Auth SQL or PostgreSQL behavior.
 - Docker: web/backend image and Compose health workflows are configured. Full
   runtime evidence still depends on Docker Desktop/DHI access and PostgreSQL.
 

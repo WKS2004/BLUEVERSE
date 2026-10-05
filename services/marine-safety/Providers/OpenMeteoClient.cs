@@ -198,22 +198,26 @@ public sealed class OpenMeteoClient : IOpenMeteoClient
                 OpenMeteoHourlyBlock? hourly;
                 try
                 {
-                    var document = await JsonSerializer.DeserializeAsync<JsonDocument>(
+                    using var document = await JsonDocument.ParseAsync(
                         stream,
-                        JsonOptions,
-                        timeoutCts.Token);
-                    if (document is null)
-                    {
-                        throw new OpenMeteoUnavailableException("provider returned an empty body");
-                    }
+                        cancellationToken: timeoutCts.Token);
 
-                    hourly = document.RootElement.TryGetProperty("hourly", out var hourlyElement)
+                    var root = document.RootElement;
+                    hourly = root.ValueKind == JsonValueKind.Object &&
+                             root.TryGetProperty("hourly", out var hourlyElement)
                         ? hourlyElement.Deserialize<OpenMeteoHourlyBlock>(JsonOptions)
                         : null;
                 }
                 catch (JsonException)
                 {
                     throw new OpenMeteoUnavailableException("provider returned malformed JSON");
+                }
+                catch (InvalidOperationException)
+                {
+                    // Valid JSON can still have the wrong root or nested
+                    // shape. Treat that as unavailable provider data instead
+                    // of leaking a 500 from JsonElement access.
+                    throw new OpenMeteoUnavailableException("provider returned an invalid response shape");
                 }
 
                 if (hourly?.Time is null || hourly.Time.Count == 0)

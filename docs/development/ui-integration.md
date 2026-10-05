@@ -124,8 +124,9 @@ the `auth-session-management`, `auth-registration`, `auth-profile-management`,
 `auth-user-administration`, `not-found-recovery` and
 `server-error-recovery` workflows in both React and Flutter. React also
 implements `marine-conditions`, `marine-condition-history` and
-`marine-safety-profile-management`. The corresponding Flutter routes are
-registered but the mobile marine screens are not implemented. Profile
+`marine-safety-profile-management`. Flutter implements the corresponding
+marine conditions, history and safety-profile screens through the same public
+API and permission grants. Profile
 management includes profile editing, password changes, session review and
 revocation, and account deletion. Administration routes expose permission-
 checked user, role and permission actions. The dashboard uses current-account

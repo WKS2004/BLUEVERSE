@@ -524,3 +524,128 @@ Member 2, Marine Conditions & Safety Intelligence, branch `features/marine-safet
   resource validator passed (23 skills); `git diff --check` passed. The docs
   continue to identify production Auth SQL/PostgreSQL verification and the
   Docker stack-health route alias as open evidence. No commit created.
+
+## 2026-10-06 — Marine-safety continuation, verification and status update
+
+- Date/time or time range: 2026-10-06 (Asia/Colombo)
+- GitHub Username: `sanudaabey`
+- Team Member Name (actual): Sanuda Abeysinghe
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-5
+- Summary of the user's request: Continue the halted marine-safety backend
+  and React Web repair task and update the AI-usage record as Sanuda.
+- Summary of what the AI Agent did: Repaired the remaining React marine test
+  expectations for the single server evaluation response and explicit legacy
+  evidence state; verified the full React suite and Web production build;
+  reran the marine API-contract tests; validated the endpoint catalog and UI
+  integration registry; built the marine backend test project; reconciled the
+  current marine component, testing, setup and branch-status documentation
+  with the implemented React, Flutter and backend state.
+- AI output accepted/changed/rejected: Accepted the server-owned provenance
+  and independent-review behavior, including blocking evaluation until every
+  wind, wave and swell criterion has a cited source and rationale. Changed
+  outdated test expectations and documentation counts/statuses. No commit or
+  push was created.
+- Verification/evidence: `npm run build` passed; serial `npm run test:ci --
+  --test-concurrency=1` passed 201/201, including 44 marine cases; the marine
+  API request-contract file passed 21/21; endpoint catalog validation passed
+  with 54 public endpoints and 28 frontend routes; UI integration validation
+  passed; the backend test project built with 0 warnings and 0 errors and has
+  118 authored cases. A backend `dotnet test` attempt timed out after the
+  VSTest testhost failed to connect within 90 seconds, so no new backend test
+  pass count is claimed. Flutter analysis/formatting did not complete because
+  the local SDK/dependency setup did not start. `git diff --check` passed.
+
+## 2026-10-06 — Marine hook lint and mobile client correction
+
+- Date/time or time range: 2026-10-06 (Asia/Colombo)
+- GitHub Username: `sanudaabey`
+- Team Member Name (actual): Sanuda Abeysinghe
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-6
+- Summary of the user's request: Continue the halted marine-safety repair,
+  complete verification and update the AI-usage record as Sanuda.
+- Summary of what the AI Agent did: Removed a React effect that synchronised
+  derived profile editor state and replaced it with event-driven state
+  updates; corrected the Flutter HTTP response extension to use
+  `this.statusCode`; removed an unused marine model import; formatted the
+  affected mobile sources and reran the full Web verification.
+- AI output accepted/changed/rejected: Accepted the hook-lint correction and
+  the mobile client fix after source review. Kept the documented dependency
+  limitation for Flutter runtime analysis; no tests were weakened or skipped.
+- Verification/evidence: React serial suite passed 201/201 after the refactor;
+  marine API and UI focused suites passed 44/44; `npm run lint` and
+  `npm run build` passed; endpoint catalog validation passed with 54 public
+  endpoints and 28 frontend routes; UI integration validation passed; direct
+  Dart formatting completed with only the expected missing `flutter_lints`
+  package-resolution warning. Full Flutter analysis remains blocked by the
+  absent `.dart_tool/package_config.json` and cached packages. `git diff
+  --check` passed. No commit or push was created.
+
+## 2026-10-06 — Marine backend test-fixture correction
+
+- Date/time or time range: 2026-10-06 (Asia/Colombo)
+- GitHub Username: `sanudaabey`
+- Team Member Name (actual): Sanuda Abeysinghe
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-6
+- Summary of the user's request: Finish the resumed marine-safety repair and
+  correct remaining backend or test issues found during review.
+- Summary of what the AI Agent did: Corrected the marine integration-test
+  seed so the unprofiled activity is inserted independently of the
+  model-seeded activity. This keeps the missing-profile evaluation case from
+  accidentally testing an unknown activity.
+- AI output accepted/changed/rejected: Accepted the fixture correction after
+  source review; no production behavior or expected test result was weakened.
+- Verification/evidence: The marine test project rebuilt successfully with 0
+  warnings and 0 errors after the fixture change. VSTest still reaches test
+  startup but does not return within the host timeout, so no new backend test
+  pass count is claimed. No commit or push was created.
+
+## 2026-10-06 — Marine mobile not-found handling
+
+- Date/time or time range: 2026-10-06 (Asia/Colombo)
+- GitHub Username: `sanudaabey`
+- Team Member Name (actual): Sanuda Abeysinghe
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-6
+- Summary of the user's request: Continue the marine-safety repair and fix
+  remaining client errors found during the resumed review.
+- Summary of what the AI Agent did: Fixed the Flutter marine API client so
+  profile lookup returns `null` for a public 404 and profile deactivation
+  reports a stable not-found exception, despite the shared request helper
+  throwing for non-success responses.
+- AI output accepted/changed/rejected: Accepted the correction after tracing
+  the helper control flow; no error handling was removed or hidden.
+- Verification/evidence: Dart formatting completed for all ten changed marine
+  sources with zero formatting changes after the final pass; package-resolution
+  warnings remain because Flutter dependencies are not installed locally.
+  Full Flutter analysis and tests remain unavailable for that same environment
+  reason. No commit or push was created.
+
+## 2026-10-06 — Marine mobile gateway fallback correction
+
+- Date/time or time range: 2026-10-06 (Asia/Colombo)
+- GitHub Username: `sanudaabey`
+- Team Member Name (actual): Sanuda Abeysinghe
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-6
+- Summary of the user's request: Continue fixing the marine-safety component
+  across its backend and clients after the task was interrupted.
+- Summary of what the AI Agent did: Corrected the Flutter marine client’s host
+  fallback loop so connectivity failures try the ordered gateway candidates,
+  successful hosts are preferred on later requests, and every request has a
+  three-second timeout before the next candidate is attempted.
+- AI output accepted/changed/rejected: Accepted the correction after comparing
+  the marine client with the existing Auth client’s gateway behavior; HTTP
+  error responses still stop without unsafe fallback.
+- Verification/evidence: All ten changed Dart marine sources were formatted;
+  the final backend service and test-project builds passed with 0 warnings and
+  0 errors; endpoint catalog, UI integration and diff checks passed. Flutter
+  analysis/tests remain blocked by the missing package cache. No commit or push
+  was created.

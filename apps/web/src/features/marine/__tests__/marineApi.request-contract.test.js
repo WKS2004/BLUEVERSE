@@ -5,9 +5,11 @@ import {
   createMarineSafetyProfile,
   deactivateMarineSafetyProfile,
   evaluateMarineSuitability,
+  getMarineAssessments,
   getMarineConditions,
   getMarineHistory,
   getMarineSafetyProfiles,
+  reviewMarineSafetyProfile,
   updateMarineSafetyProfile,
 } from '../marineApi.ts'
 import { closeWebTestServer, jsonResponse } from '../../../testSupport/reactTestHarness.js'
@@ -50,10 +52,21 @@ const profile = {
   cautionWindSpeed: 25,
   cautionWaveHeight: 1,
   cautionSwellHeight: 0.8,
+  windCriteriaSource: 'Coastal manual, section 4',
+  windCriteriaRationale: 'Applies to supervised coastal activities.',
+  waveCriteriaSource: 'Coastal manual, section 5',
+  waveCriteriaRationale: 'Applies to supervised coastal activities.',
+  swellCriteriaSource: 'Coastal manual, section 6',
+  swellCriteriaRationale: 'Applies to supervised coastal activities.',
   isActive: true,
   version: 2,
   createdAt: '2026-09-27T00:00:00.000Z',
   updatedAt: '2026-09-27T01:00:00.000Z',
+  createdByUserId: 'profile-author',
+  reviewedByUserId: 'profile-reviewer',
+  reviewedAt: '2026-09-27T01:00:00.000Z',
+  effectiveFrom: '2026-09-27T01:00:00.000Z',
+  effectiveTo: null,
 }
 
 const snapshot = {
@@ -78,6 +91,7 @@ const suitability = {
   activityName: 'Surfing',
   location: { latitude: 6.025, longitude: 80.216 },
   requestedTime: '2026-09-27T08:00:00Z',
+  forecastTime: '2026-09-27T08:00:00Z',
   evaluatedAt: '2026-09-27T07:56:00Z',
   conditions: { windSpeed: 18.4, waveHeight: 2.4, swellHeight: 1.6, rain: 0.2, weatherCode: 3 },
   source: 'Open-Meteo',
@@ -151,6 +165,14 @@ test('WEB-MARINE-API-007 the evaluation omits dateTime when the caller does not 
   })
 })
 
+test('WEB-MARINE-API-004a assessment history serializes activity, result and UTC window filters', async () => {
+  const getRequest = captureFetch(jsonResponse([]))
+  await getMarineAssessments({ activityId: profile.activityId, result: 'CAUTION', from: '2026-09-26T00:00:00.000Z', to: '2026-09-27T00:00:00.000Z' })
+  assertJsonRequest(getRequest(), {
+    path: `/api/marine/assessments?activityId=${profile.activityId}&result=CAUTION&from=2026-09-26T00%3A00%3A00.000Z&to=2026-09-27T00%3A00%3A00.000Z`,
+  })
+})
+
 test('WEB-MARINE-API-008 an expired browser session preserves 401 and uses a safe fallback', async () => {
   const getRequest = captureFetch(new Response('Unauthorized: revoked session session-123', { status: 401 }))
 
@@ -177,7 +199,7 @@ test('WEB-MARINE-API-009 the server can explain a safe sign-in recovery for an e
   assertJsonRequest(getRequest(), { path: '/api/marine/safety-profiles' })
 })
 
-test('WEB-MARINE-API-010 profile creation posts the activity reference and limits with units', async () => {
+test('WEB-MARINE-API-010 profile creation posts activity, limits and per-factor source and rationale', async () => {
   const getRequest = captureFetch(jsonResponse(profile))
   const input = {
     activityId: profile.activityId,
@@ -187,18 +209,40 @@ test('WEB-MARINE-API-010 profile creation posts the activity reference and limit
     cautionWindSpeed: 25,
     cautionWaveHeight: 1,
     cautionSwellHeight: 0.8,
+    windCriteriaSource: 'Coastal manual, section 4',
+    windCriteriaRationale: 'Applies to supervised coastal activities.',
+    waveCriteriaSource: 'Coastal manual, section 5',
+    waveCriteriaRationale: 'Applies to supervised coastal activities.',
+    swellCriteriaSource: 'Coastal manual, section 6',
+    swellCriteriaRationale: 'Applies to supervised coastal activities.',
   }
 
   await createMarineSafetyProfile(input)
   assertJsonRequest(getRequest(), { path: '/api/marine/safety-profiles', method: 'POST', body: input })
 })
 
-test('WEB-MARINE-API-011 profile update sends limits, optional caution bands and active state', async () => {
+test('WEB-MARINE-API-011 profile update sends an evidence-backed immutable draft payload', async () => {
   const getRequest = captureFetch(jsonResponse(profile))
-  const input = { maxWindSpeed: 30, maxWaveHeight: 2, maxSwellHeight: 1.6, isActive: true }
+  const input = {
+    maxWindSpeed: 30,
+    maxWaveHeight: 2,
+    maxSwellHeight: 1.6,
+    windCriteriaSource: 'Coastal manual, section 4',
+    windCriteriaRationale: 'Applies to supervised coastal activities.',
+    waveCriteriaSource: 'Coastal manual, section 5',
+    waveCriteriaRationale: 'Applies to supervised coastal activities.',
+    swellCriteriaSource: 'Coastal manual, section 6',
+    swellCriteriaRationale: 'Applies to supervised coastal activities.',
+  }
 
   await updateMarineSafetyProfile('profile-1', input)
   assertJsonRequest(getRequest(), { path: '/api/marine/safety-profiles/profile-1', method: 'PUT', body: input })
+})
+
+test('WEB-MARINE-API-011a reviewing a profile version posts to its public review route', async () => {
+  const getRequest = captureFetch(jsonResponse(profile))
+  await reviewMarineSafetyProfile('profile-1')
+  assertJsonRequest(getRequest(), { path: '/api/marine/safety-profiles/profile-1/review', method: 'POST' })
 })
 
 test('WEB-MARINE-API-012 profile deactivation accepts only the API’s empty 204 success', async () => {

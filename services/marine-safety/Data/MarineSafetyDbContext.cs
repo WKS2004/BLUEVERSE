@@ -43,6 +43,7 @@ public class MarineSafetyDbContext : DbContext
             entity.HasIndex(p => new { p.ActivityId, p.IsActive })
                 .HasFilter("\"IsActive\"")
                 .IsUnique();
+            entity.HasIndex(p => new { p.ActivityId, p.Version }).IsUnique();
             entity.Property(p => p.ActivityId).IsRequired();
             entity.Property(p => p.MaxWindSpeed).HasPrecision(6, 2);
             entity.Property(p => p.MaxWaveHeight).HasPrecision(5, 2);
@@ -50,6 +51,12 @@ public class MarineSafetyDbContext : DbContext
             entity.Property(p => p.CautionWindSpeed).HasPrecision(6, 2);
             entity.Property(p => p.CautionWaveHeight).HasPrecision(5, 2);
             entity.Property(p => p.CautionSwellHeight).HasPrecision(5, 2);
+            entity.Property(p => p.WindCriteriaSource).HasMaxLength(512);
+            entity.Property(p => p.WindCriteriaRationale).HasMaxLength(2000);
+            entity.Property(p => p.WaveCriteriaSource).HasMaxLength(512);
+            entity.Property(p => p.WaveCriteriaRationale).HasMaxLength(2000);
+            entity.Property(p => p.SwellCriteriaSource).HasMaxLength(512);
+            entity.Property(p => p.SwellCriteriaRationale).HasMaxLength(2000);
             entity.Property(p => p.IsActive).IsRequired();
             entity.Property(p => p.Version).IsRequired();
             entity.Property(p => p.CreatedAt).IsRequired();
@@ -108,6 +115,7 @@ public class MarineSafetyDbContext : DbContext
             entity.HasIndex(r => new { r.ActivityId, r.RequestedTime });
             entity.HasIndex(r => r.EvaluatedAt);
             entity.Property(r => r.ActivityId).IsRequired();
+            entity.Property(r => r.ActivityName).HasMaxLength(128);
             entity.Property(r => r.ProfileVersion).IsRequired();
             entity.Property(r => r.Latitude).HasPrecision(8, 5);
             entity.Property(r => r.Longitude).HasPrecision(9, 5);
@@ -116,6 +124,25 @@ public class MarineSafetyDbContext : DbContext
             entity.Property(r => r.Result).IsRequired().HasMaxLength(16);
             entity.Property(r => r.Source).IsRequired().HasMaxLength(64);
             entity.Property(r => r.FreshnessStatus).IsRequired().HasMaxLength(16);
+            entity.Property(r => r.ConditionRetrievedAt);
+            entity.Property(r => r.WindSpeed).HasPrecision(6, 2);
+            entity.Property(r => r.WaveHeight).HasPrecision(5, 2);
+            entity.Property(r => r.SwellHeight).HasPrecision(5, 2);
+            entity.Property(r => r.Rain).HasPrecision(6, 2);
+            entity.Property(r => r.ConditionMissingFields).IsRequired();
+            entity.Property(r => r.EvidenceCompleteness).IsRequired().HasMaxLength(24).HasDefaultValue("LEGACY_INCOMPLETE");
+            entity.Property(r => r.MaxWindSpeed).HasPrecision(6, 2);
+            entity.Property(r => r.MaxWaveHeight).HasPrecision(5, 2);
+            entity.Property(r => r.MaxSwellHeight).HasPrecision(5, 2);
+            entity.Property(r => r.CautionWindSpeed).HasPrecision(6, 2);
+            entity.Property(r => r.CautionWaveHeight).HasPrecision(5, 2);
+            entity.Property(r => r.CautionSwellHeight).HasPrecision(5, 2);
+            entity.Property(r => r.WindCriteriaSource).HasMaxLength(512);
+            entity.Property(r => r.WindCriteriaRationale).HasMaxLength(2000);
+            entity.Property(r => r.WaveCriteriaSource).HasMaxLength(512);
+            entity.Property(r => r.WaveCriteriaRationale).HasMaxLength(2000);
+            entity.Property(r => r.SwellCriteriaSource).HasMaxLength(512);
+            entity.Property(r => r.SwellCriteriaRationale).HasMaxLength(2000);
             entity.Property(r => r.SafetyProfileId).IsRequired();
             entity.Property(r => r.ConditionSnapshotId).IsRequired();
             entity.Property(r => r.CreatedAt).IsRequired();

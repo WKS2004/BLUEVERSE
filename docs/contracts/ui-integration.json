@@ -192,8 +192,8 @@
     },
     {
       "id": "marine-conditions",
-      "status": "starter",
-      "description": "Shared marine conditions and suitability workflow. React Web implements the condition lookup with source, forecast/retrieval timestamps, freshness and missing-field evidence, plus the server's deterministic suitability assessment returning SUITABLE, CAUTION, UNSUITABLE or UNKNOWN for a coastal activity, location and requested period; classifications are never recalculated in the client. The Flutter route is registered under the same shared workflow ID and must deliver the same authorized outcomes; the mobile surface is not implemented yet.",
+      "status": "implemented",
+      "description": "Shared React and Flutter marine lookup workflow with matching condition evidence and server-owned suitability outcomes; neither client reclassifies conditions.",
       "web": {
         "route": "/marine/conditions",
         "source": "apps/web/src/app/routes.tsx"
@@ -209,8 +209,8 @@
     },
     {
       "id": "marine-condition-history",
-      "status": "starter",
-      "description": "Shared stored-condition history workflow. React Web lists past condition snapshots with optional location and UTC time-window filters, showing each snapshot's source, forecast/retrieval times, freshness and unavailable fields so history stays distinct from current evidence. The paired Flutter surface is registered but not implemented yet.",
+      "status": "implemented",
+      "description": "Shared React and Flutter history of stored marine conditions and suitability assessments, including immutable values, per-factor cited criteria and clear disclosure of incomplete legacy evidence.",
       "web": {
         "route": "/marine/history",
         "source": "apps/web/src/app/routes.tsx"
@@ -220,13 +220,14 @@
         "source": "apps/mobile/lib/main.dart"
       },
       "apiRefs": [
-        "marine-history"
+        "marine-history",
+        "marine-assessments"
       ]
     },
     {
       "id": "marine-safety-profile-management",
-      "status": "starter",
-      "description": "Shared activity safety-profile workflow. React Web reads the configured deterministic limits per activity and, for accounts holding the marine manage grant in addition to read, creates superseding profile versions, updates limits and deactivates profiles; the server owns all validation and versioning. Callers without the manage grant keep read-only access. The paired Flutter surface is registered but not implemented yet.",
+      "status": "implemented",
+      "description": "Shared React and Flutter profile workflow for evidence-backed immutable drafts, per-factor source and rationale, independent review and approval, effective-version history, and permission-matched deactivation.",
       "web": {
         "route": "/marine/safety-profiles",
         "source": "apps/web/src/app/routes.tsx"
@@ -239,7 +240,8 @@
         "marine-safety-profiles",
         "marine-safety-profile-create",
         "marine-safety-profile-update",
-        "marine-safety-profile-deactivate"
+        "marine-safety-profile-deactivate",
+        "marine-safety-profile-review"
       ]
     },
     {
@@ -511,6 +513,22 @@
       "publicBoundary": "api",
       "ownerService": "marine-safety",
       "operationId": "DeactivateProfile"
+    },
+    {
+      "id": "marine-safety-profile-review",
+      "method": "POST",
+      "path": "/api/marine/safety-profiles/{id:guid}/review",
+      "publicBoundary": "api",
+      "ownerService": "marine-safety",
+      "operationId": "ReviewProfile"
+    },
+    {
+      "id": "marine-assessments",
+      "method": "GET",
+      "path": "/api/marine/assessments",
+      "publicBoundary": "api",
+      "ownerService": "marine-safety",
+      "operationId": "GetAssessments"
     }
   ]
 }

@@ -457,15 +457,17 @@ public sealed class SuitabilityEndpointTests : IClassFixture<MarineSafetyWebAppl
             return db.SaveChangesAsync();
         });
 
-        using var create = AuthorizedJson(HttpMethod.Post, "/api/marine/safety-profiles", token, new
-        {
-            activityId = strictActivityId,
-            maxWindSpeed = 25m,
-            maxWaveHeight = 1.5m,
-            maxSwellHeight = 1.2m
-        });
+        using var create = AuthorizedJson(HttpMethod.Post, "/api/marine/safety-profiles", token,
+            MarineSafetyTestSeed.ValidProfilePayload(strictActivityId, 25m, 1.5m, 1.2m));
         using var createResponse = await client.SendAsync(create);
         Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+        using var createDocument = JsonDocument.Parse(await createResponse.Content.ReadAsStringAsync());
+        var draftId = createDocument.RootElement.GetProperty("id").GetGuid();
+        using var review = new HttpRequestMessage(HttpMethod.Post, $"/api/marine/safety-profiles/{draftId}/review");
+        review.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
+            "Bearer", _factory.CreateToken(MarineSafetyTestSeed.ReviewerUserId));
+        using var reviewResponse = await client.SendAsync(review);
+        Assert.Equal(HttpStatusCode.OK, reviewResponse.StatusCode);
 
         _factory.Provider = new StubOpenMeteoClient(() => new MarineConditionsResult(
             DateTime.UtcNow,
@@ -562,5 +564,28 @@ public sealed class SuitabilityEndpointTests : IClassFixture<MarineSafetyWebAppl
         using var document = JsonDocument.Parse(body);
         Assert.Equal("Activity Not Found", document.RootElement.GetProperty("title").GetString());
         Assert.Equal(0, _factory.Provider.CallCount); // rejected before any provider call
+    }
+
+    [Fact]
+    [Trait("CaseId", "M2-SUIT-019")]
+    public async Task M2_SUIT_019_evaluation_is_blocked_until_a_draft_has_been_reviewed()
+    {
+        using var client = await CreateClientAsync();
+        var managerToken = _factory.CreateToken(MarineSafetyTestSeed.ManagerUserId);
+        using var create = AuthorizedJson(HttpMethod.Post, "/api/marine/safety-profiles", managerToken,
+            MarineSafetyTestSeed.ValidProfilePayload(MarineSafetyTestSeed.ActivityId, 24m, 1.4m, 1.1m));
+        using var createResponse = await client.SendAsync(create);
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+
+        _factory.Provider = new StubOpenMeteoClient(() => new MarineConditionsResult(
+            DateTime.UtcNow, DateTime.UtcNow, 10m, 0.8m, 0.7m, 0m, 0,
+            ConditionSources.OpenMeteo, []));
+        using var response = await EvaluateAsync(client, ReaderToken(), windSpeed: 10m);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal("Safety Profile Review Required", body.RootElement.GetProperty("title").GetString());
+        Assert.Contains("review", body.RootElement.GetProperty("detail").GetString(), StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(0, _factory.Provider.CallCount);
     }
 }

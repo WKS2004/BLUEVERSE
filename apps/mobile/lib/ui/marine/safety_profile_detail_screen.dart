@@ -12,7 +12,8 @@ class SafetyProfileDetailScreen extends StatefulWidget {
   final MarineService service;
 
   @override
-  State<SafetyProfileDetailScreen> createState() => _SafetyProfileDetailScreenState();
+  State<SafetyProfileDetailScreen> createState() =>
+      _SafetyProfileDetailScreenState();
 }
 
 class _SafetyProfileDetailScreenState extends State<SafetyProfileDetailScreen> {
@@ -46,15 +47,17 @@ class _SafetyProfileDetailScreenState extends State<SafetyProfileDetailScreen> {
         });
       }
     } on MarineApiException catch (error) {
-      if (mounted) setState(() {
-        _error = error.message;
-        _loading = false;
-      });
+      if (mounted)
+        setState(() {
+          _error = error.message;
+          _loading = false;
+        });
     } catch (error) {
-      if (mounted) setState(() {
-        _error = 'The marine service could not be reached. Check the gateway address and try again.';
-        _loading = false;
-      });
+      if (mounted)
+        setState(() {
+          _error = 'The marine service could not be reached. Check the gateway address and try again.';
+          _loading = false;
+        });
     }
   }
 
@@ -70,15 +73,19 @@ class _SafetyProfileDetailScreenState extends State<SafetyProfileDetailScreen> {
 
     if (maxWind == null || maxWave == null || maxSwell == null) return;
     if (cautionWind != null && (cautionWind <= 0 || cautionWind > maxWind)) {
-      _error = 'Caution wind must be positive and below the maximum wind speed.';
+      _error =
+          'Caution wind must be positive and below the maximum wind speed.';
       return;
     }
     if (cautionWave != null && (cautionWave <= 0 || cautionWave > maxWave)) {
-      _error = 'Caution wave must be positive and below the maximum wave height.';
+      _error =
+          'Caution wave must be positive and below the maximum wave height.';
       return;
     }
-    if (cautionSwell != null && (cautionSwell <= 0 || cautionSwell > maxSwell)) {
-      _error = 'Caution swell must be positive and below the maximum swell height.';
+    if (cautionSwell != null &&
+        (cautionSwell <= 0 || cautionSwell > maxSwell)) {
+      _error =
+          'Caution swell must be positive and below the maximum swell height.';
       return;
     }
 
@@ -94,34 +101,44 @@ class _SafetyProfileDetailScreenState extends State<SafetyProfileDetailScreen> {
         maxWindSpeed: maxWind,
         maxWaveHeight: maxWave,
         maxSwellHeight: maxSwell,
+        windCriteriaSource: _profile!.windCriteriaSource ?? '',
+        windCriteriaRationale: _profile!.windCriteriaRationale ?? '',
+        waveCriteriaSource: _profile!.waveCriteriaSource ?? '',
+        waveCriteriaRationale: _profile!.waveCriteriaRationale ?? '',
+        swellCriteriaSource: _profile!.swellCriteriaSource ?? '',
+        swellCriteriaRationale: _profile!.swellCriteriaRationale ?? '',
         cautionWindSpeed: cautionWind,
         cautionWaveHeight: cautionWave,
         cautionSwellHeight: cautionSwell,
-        isActive: true,
       );
       if (mounted) {
         setState(() {
           _busy = false;
           _profile = updated;
-          _notice = 'The ${updated.activityName} profile was saved as version ${updated.version}.';
+          _notice =
+              'The ${updated.activityName} profile was saved as version ${updated.version}.';
         });
       }
     } on MarineApiException catch (error) {
-      if (mounted) setState(() {
-        _busy = false;
-        _error = error.message;
-      });
+      if (mounted)
+        setState(() {
+          _busy = false;
+          _error = error.message;
+        });
     } catch (error) {
-      if (mounted) setState(() {
-        _busy = false;
-        _error = 'The marine service could not be reached. Check the gateway address and try again.';
-      });
+      if (mounted)
+        setState(() {
+          _busy = false;
+          _error = 'The marine service could not be reached. Check the gateway address and try again.';
+        });
     }
   }
 
   Future<void> _deactivate() async {
     if (_profile == null || _busy) return;
-    final confirmed = await _confirm('Deactivate this safety profile? Active assessments keep their history.');
+    final confirmed = await _confirm(
+      'Deactivate this safety profile? Active assessments keep their history.',
+    );
     if (!confirmed) return;
 
     setState(() {
@@ -135,20 +152,23 @@ class _SafetyProfileDetailScreenState extends State<SafetyProfileDetailScreen> {
       if (mounted) {
         setState(() {
           _busy = false;
-          _notice = 'The ${_profile!.activityName} profile was deactivated. Assessment history keeps its reference.';
+          _notice =
+              'The ${_profile!.activityName} profile was deactivated. Assessment history keeps its reference.';
           _load();
         });
       }
     } on MarineApiException catch (error) {
-      if (mounted) setState(() {
-        _busy = false;
-        _error = error.message;
-      });
+      if (mounted)
+        setState(() {
+          _busy = false;
+          _error = error.message;
+        });
     } catch (error) {
-      if (mounted) setState(() {
-        _busy = false;
-        _error = 'The marine service could not be reached. Check the gateway address and try again.';
-      });
+      if (mounted)
+        setState(() {
+          _busy = false;
+          _error = 'The marine service could not be reached. Check the gateway address and try again.';
+        });
     }
   }
 
@@ -174,8 +194,14 @@ class _SafetyProfileDetailScreenState extends State<SafetyProfileDetailScreen> {
         title: const Text('Deactivate profile?'),
         content: Text(message),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Deactivate')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Deactivate'),
+          ),
         ],
       ),
     );
@@ -199,7 +225,10 @@ class _SafetyProfileDetailScreenState extends State<SafetyProfileDetailScreen> {
           children: [
             const Icon(Icons.error_outline, color: Colors.redAccent, size: 42),
             const SizedBox(height: 12),
-            Text(_error ?? 'No profile is configured yet.', style: const TextStyle(color: Colors.redAccent)),
+            Text(
+              _error ?? 'No profile is configured yet.',
+              style: const TextStyle(color: Colors.redAccent),
+            ),
             const SizedBox(height: 12),
             FilledButton(onPressed: _load, child: const Text('Try again')),
           ],
@@ -223,8 +252,20 @@ class _SafetyProfileDetailScreenState extends State<SafetyProfileDetailScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(_profile!.activityName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
-                      Text('Version ${_profile!.version}', style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.blueAccent)),
+                      Text(
+                        _profile!.activityName,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        'Version ${_profile!.version}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: Colors.blueAccent,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -232,8 +273,14 @@ class _SafetyProfileDetailScreenState extends State<SafetyProfileDetailScreen> {
                   _field('Maximum wave height', _profile!.maxWaveHeight),
                   _field('Maximum swell height', _profile!.maxSwellHeight),
                   _field('Caution wind speed', _profile!.cautionWindSpeed ?? 0),
-                  _field('Caution wave height', _profile!.cautionWaveHeight ?? 0),
-                  _field('Caution swell height', _profile!.cautionSwellHeight ?? 0),
+                  _field(
+                    'Caution wave height',
+                    _profile!.cautionWaveHeight ?? 0,
+                  ),
+                  _field(
+                    'Caution swell height',
+                    _profile!.cautionSwellHeight ?? 0,
+                  ),
                   const SizedBox(height: 16),
                   OutlinedButton.icon(
                     onPressed: _busy ? null : _save,
@@ -257,51 +304,62 @@ class _SafetyProfileDetailScreenState extends State<SafetyProfileDetailScreen> {
   }
 
   Widget _errorCard() => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              const Icon(Icons.error_outline, color: Colors.redAccent),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  _error!,
-                  style: const TextStyle(color: Colors.redAccent),
-                ),
-              ),
-            ],
+    child: Padding(
+      padding: const EdgeInsets.all(14),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, color: Colors.redAccent),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              _error!,
+              style: const TextStyle(color: Colors.redAccent),
+            ),
           ),
-        ),
-      );
+        ],
+      ),
+    ),
+  );
 
   Widget _noticeCard() => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              const Icon(Icons.info_outline, color: Colors.blueAccent),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  _notice!,
-                  style: const TextStyle(color: Colors.blueAccent),
-                ),
-              ),
-            ],
+    child: Padding(
+      padding: const EdgeInsets.all(14),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline, color: Colors.blueAccent),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              _notice!,
+              style: const TextStyle(color: Colors.blueAccent),
+            ),
           ),
-        ),
-      );
+        ],
+      ),
+    ),
+  );
 
   Widget _field(String label, double value) => Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: Row(
-          children: [
-            const SizedBox(width: 8),
-            Text('$label: ', style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.blueGrey)),
-            Expanded(child: Text(value.toStringAsFixed(2), style: const TextStyle(color: Colors.blueGrey))),
-          ],
+    padding: const EdgeInsets.only(bottom: 10),
+    child: Row(
+      children: [
+        const SizedBox(width: 8),
+        Text(
+          '$label: ',
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            color: Colors.blueGrey,
+          ),
         ),
-      );
+        Expanded(
+          child: Text(
+            value.toStringAsFixed(2),
+            style: const TextStyle(color: Colors.blueGrey),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _NoteCard extends StatelessWidget {
@@ -309,22 +367,25 @@ class _NoteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Server-managed limits',
-                style: TextStyle(fontWeight: FontWeight.w800, color: Colors.blueAccent),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'Edit only the server-owned safety profile. Values are saved in the backend and directly affect deterministic suitability results.',
-                style: TextStyle(height: 1.4, color: Colors.blueGrey),
-              ),
-            ],
+    child: Padding(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Server-managed limits',
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              color: Colors.blueAccent,
+            ),
           ),
-        ),
-      );
+          const SizedBox(height: 6),
+          const Text(
+            'Edit only the server-owned safety profile. Values are saved in the backend and directly affect deterministic suitability results.',
+            style: TextStyle(height: 1.4, color: Colors.blueGrey),
+          ),
+        ],
+      ),
+    ),
+  );
 }

@@ -333,13 +333,8 @@ public sealed class ActivityEndpointTests : IClassFixture<MarineSafetyWebApplica
         Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
 
         // The seeded profile remains readable but a re-create is rejected.
-        using var recreate = Authorized(HttpMethod.Post, "/api/marine/safety-profiles", token, new
-        {
-            activityId = MarineSafetyTestSeed.ActivityId,
-            maxWindSpeed = 30m,
-            maxWaveHeight = 2.0m,
-            maxSwellHeight = 1.5m
-        });
+        using var recreate = Authorized(HttpMethod.Post, "/api/marine/safety-profiles", token,
+            MarineSafetyTestSeed.ValidProfilePayload(MarineSafetyTestSeed.ActivityId, 30m, 2.0m, 1.5m));
         using var recreateResponse = await client.SendAsync(recreate);
         Assert.Equal(HttpStatusCode.Conflict, recreateResponse.StatusCode);
         var recreateBody = await recreateResponse.Content.ReadAsStringAsync();

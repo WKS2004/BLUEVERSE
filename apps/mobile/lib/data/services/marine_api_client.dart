@@ -32,6 +32,7 @@ class MarineApiClient {
 
   final http.Client _client;
   final ApiGatewayConfig _gateway;
+  Uri? _preferredBaseUri;
 
   /// Base URI for all requests, resolved by [ApiGatewayConfig].
   Uri get baseUri => _gateway.baseUris.first;
@@ -42,10 +43,7 @@ class MarineApiClient {
     required double longitude,
     DateTime? timeUtc,
   }) async {
-    final uri = _gateway.endpoint(
-      baseUri,
-      '/api/marine/current',
-    );
+    final uri = _gateway.endpoint(baseUri, '/api/marine/current');
     final query = <String, String>{
       'latitude': latitude.toStringAsFixed(5),
       'longitude': longitude.toStringAsFixed(5),
@@ -78,7 +76,41 @@ class MarineApiClient {
     }
     return decoded
         .whereType<Map>()
-        .map((item) => ConditionSnapshotDto.fromJson(Map<String, dynamic>.from(item)))
+        .map(
+          (item) =>
+              ConditionSnapshotDto.fromJson(Map<String, dynamic>.from(item)),
+        )
+        .toList(growable: false);
+  }
+
+  /// GET /api/marine/assessments
+  Future<List<MarineAssessmentHistoryDto>> getAssessments({
+    String? activityId,
+    String? result,
+    DateTime? fromUtc,
+    DateTime? toUtc,
+  }) async {
+    final uri = _gateway.endpoint(baseUri, '/api/marine/assessments');
+    final query = <String, String>{
+      if (activityId != null && activityId.isNotEmpty) 'activityId': activityId,
+      if (result != null && result.isNotEmpty) 'result': result,
+      if (fromUtc != null) 'from': fromUtc.toUtc().toIso8601String(),
+      if (toUtc != null) 'to': toUtc.toUtc().toIso8601String(),
+    };
+    final response = await _request('GET', uri, query: query);
+    final decoded = jsonDecode(response.body);
+    if (decoded is! List) {
+      throw const FormatException(
+        'The API returned an invalid assessment history body.',
+      );
+    }
+    return decoded
+        .whereType<Map>()
+        .map(
+          (item) => MarineAssessmentHistoryDto.fromJson(
+            Map<String, dynamic>.from(item),
+          ),
+        )
         .toList(growable: false);
   }
 
@@ -111,16 +143,22 @@ class MarineApiClient {
     }
     return decoded
         .whereType<Map>()
-        .map((item) => SafetyProfileDto.fromJson(Map<String, dynamic>.from(item)))
+        .map(
+          (item) => SafetyProfileDto.fromJson(Map<String, dynamic>.from(item)),
+        )
         .toList(growable: false);
   }
 
   /// GET /api/marine/safety-profiles/{id}
   Future<SafetyProfileDto?> getSafetyProfile(String id) async {
     final uri = _gateway.endpoint(baseUri, '/api/marine/safety-profiles/$id');
-    final response = await _request('GET', uri);
-    if (response.statusCode == 404) return null;
-    return SafetyProfileDto.fromJson(jsonDecode(response.body));
+    try {
+      final response = await _request('GET', uri);
+      return SafetyProfileDto.fromJson(jsonDecode(response.body));
+    } on MarineApiException catch (error) {
+      if (error.statusCode == 404) return null;
+      rethrow;
+    }
   }
 
   /// POST /api/marine/safety-profiles
@@ -129,6 +167,12 @@ class MarineApiClient {
     required double maxWindSpeed,
     required double maxWaveHeight,
     required double maxSwellHeight,
+    required String windCriteriaSource,
+    required String windCriteriaRationale,
+    required String waveCriteriaSource,
+    required String waveCriteriaRationale,
+    required String swellCriteriaSource,
+    required String swellCriteriaRationale,
     double? cautionWindSpeed,
     double? cautionWaveHeight,
     double? cautionSwellHeight,
@@ -139,6 +183,12 @@ class MarineApiClient {
       'maxWindSpeed': maxWindSpeed,
       'maxWaveHeight': maxWaveHeight,
       'maxSwellHeight': maxSwellHeight,
+      'windCriteriaSource': windCriteriaSource.trim(),
+      'windCriteriaRationale': windCriteriaRationale.trim(),
+      'waveCriteriaSource': waveCriteriaSource.trim(),
+      'waveCriteriaRationale': waveCriteriaRationale.trim(),
+      'swellCriteriaSource': swellCriteriaSource.trim(),
+      'swellCriteriaRationale': swellCriteriaRationale.trim(),
       if (cautionWindSpeed != null) 'cautionWindSpeed': cautionWindSpeed,
       if (cautionWaveHeight != null) 'cautionWaveHeight': cautionWaveHeight,
       if (cautionSwellHeight != null) 'cautionSwellHeight': cautionSwellHeight,
@@ -154,17 +204,27 @@ class MarineApiClient {
     required double maxWindSpeed,
     required double maxWaveHeight,
     required double maxSwellHeight,
+    required String windCriteriaSource,
+    required String windCriteriaRationale,
+    required String waveCriteriaSource,
+    required String waveCriteriaRationale,
+    required String swellCriteriaSource,
+    required String swellCriteriaRationale,
     double? cautionWindSpeed,
     double? cautionWaveHeight,
     double? cautionSwellHeight,
-    required bool isActive,
   }) async {
     final uri = _gateway.endpoint(baseUri, '/api/marine/safety-profiles/$id');
     final body = <String, dynamic>{
       'maxWindSpeed': maxWindSpeed,
       'maxWaveHeight': maxWaveHeight,
       'maxSwellHeight': maxSwellHeight,
-      'isActive': isActive,
+      'windCriteriaSource': windCriteriaSource.trim(),
+      'windCriteriaRationale': windCriteriaRationale.trim(),
+      'waveCriteriaSource': waveCriteriaSource.trim(),
+      'waveCriteriaRationale': waveCriteriaRationale.trim(),
+      'swellCriteriaSource': swellCriteriaSource.trim(),
+      'swellCriteriaRationale': swellCriteriaRationale.trim(),
       if (cautionWindSpeed != null) 'cautionWindSpeed': cautionWindSpeed,
       if (cautionWaveHeight != null) 'cautionWaveHeight': cautionWaveHeight,
       if (cautionSwellHeight != null) 'cautionSwellHeight': cautionSwellHeight,
@@ -174,18 +234,26 @@ class MarineApiClient {
     return SafetyProfileDto.fromJson(jsonDecode(response.body));
   }
 
+  /// POST /api/marine/safety-profiles/{id}/review
+  Future<SafetyProfileDto> reviewSafetyProfile(String id) async {
+    final uri = _gateway.endpoint(
+      baseUri,
+      '/api/marine/safety-profiles/$id/review',
+    );
+    final response = await _request('POST', uri);
+    return SafetyProfileDto.fromJson(jsonDecode(response.body));
+  }
+
   /// DELETE /api/marine/safety-profiles/{id}
   Future<void> deactivateSafetyProfile(String id) async {
     final uri = _gateway.endpoint(baseUri, '/api/marine/safety-profiles/$id');
-    final response = await _request('DELETE', uri);
-    if (response.statusCode == 404) {
-      throw const MarineApiException(404, 'Safety profile not found.');
-    }
-    if (!response.statusCodeIsSuccess()) {
-      throw MarineApiException(
-        response.statusCode,
-        _errorMessage(response),
-      );
+    try {
+      await _request('DELETE', uri);
+    } on MarineApiException catch (error) {
+      if (error.statusCode == 404) {
+        throw const MarineApiException(404, 'Safety profile not found.');
+      }
+      rethrow;
     }
   }
 
@@ -195,13 +263,20 @@ class MarineApiClient {
     Object? body,
     Map<String, String>? query,
   }) async {
-    final candidates = _gateway.baseUris;
+    final candidates = _orderedBaseUris();
     for (final baseUri in candidates) {
       final requestUri = query == null
           ? _gateway.endpoint(baseUri, uri.path)
-          : _gateway.endpoint(baseUri, uri.path).replace(queryParameters: query);
+          : _gateway
+                .endpoint(baseUri, uri.path)
+                .replace(queryParameters: query);
       try {
-        final response = await _send(requestUri, method, body);
+        final response = await _send(
+          requestUri,
+          method,
+          body,
+        ).timeout(const Duration(seconds: 3));
+        _preferredBaseUri = baseUri;
         if (response.statusCodeIsSuccess()) return response;
         throw MarineApiException(response.statusCode, _errorMessage(response));
       } on SocketException catch (error) {
@@ -211,19 +286,22 @@ class MarineApiClient {
             'Certificate issue when reaching the gateway. Use a trusted local certificate or run only on a supported LAN stack.',
           );
         }
-        rethrow;
+        continue;
       } on TimeoutException {
-        throw const MarineApiException(0, 'The marine service is taking too long to respond.');
-      } on http.ClientException catch (error) {
-        if (error.message.contains('Failed host lookup') ||
-            error.message.contains('is not reachable')) {
-          throw const MarineApiException(0, 'Cannot reach the marine service. Check the gateway address and try again.');
-        }
-        rethrow;
+        continue;
+      } on http.ClientException {
+        continue;
       }
     }
 
-    throw const MarineApiException(0, 'The marine service is unreachable. Start the stack and try again.');
+    throw MarineApiException(0, _gateway.connectionFailureMessage(candidates));
+  }
+
+  List<Uri> _orderedBaseUris() {
+    final baseUris = _gateway.baseUris;
+    final preferred = _preferredBaseUri;
+    if (preferred == null) return baseUris;
+    return [preferred, ...baseUris.where((uri) => uri != preferred)];
   }
 
   Future<http.Response> _send(Uri uri, String method, Object? body) async {
@@ -259,5 +337,5 @@ class MarineApiClient {
 }
 
 extension _StatusCode on http.Response {
-  bool statusCodeIsSuccess() => statusCode >= 200 && statusCode < 300;
+  bool statusCodeIsSuccess() => this.statusCode >= 200 && this.statusCode < 300;
 }

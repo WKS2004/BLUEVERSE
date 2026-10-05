@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using Blueverse.MarineSafety.Authorization;
 using Blueverse.MarineSafety.Dtos;
 using Blueverse.MarineSafety.Services;
@@ -57,7 +58,7 @@ public sealed class SafetyProfilesController : ControllerBase
     {
         try
         {
-            var profile = await _profiles.CreateProfileAsync(dto, cancellationToken);
+            var profile = await _profiles.CreateProfileAsync(dto, GetActorUserId(), cancellationToken);
             return CreatedAtAction(
                 nameof(GetProfile),
                 new { id = profile.Id },
@@ -66,6 +67,15 @@ public sealed class SafetyProfilesController : ControllerBase
         catch (InvalidOperationException exception)
         {
             return ToBadRequest("Profile Rejected", exception);
+        }
+        catch (SafetyProfileVersionConflictException exception)
+        {
+            return Conflict(new ProblemDetails
+            {
+                Title = "Profile version conflict",
+                Detail = exception.Message,
+                Status = StatusCodes.Status409Conflict
+            });
         }
     }
 
@@ -78,12 +88,50 @@ public sealed class SafetyProfilesController : ControllerBase
     {
         try
         {
-            var profile = await _profiles.UpdateProfileAsync(id, dto, cancellationToken);
+            var profile = await _profiles.UpdateProfileAsync(id, dto, GetActorUserId(), cancellationToken);
             return profile is null ? NotFound() : Ok(profile);
         }
         catch (InvalidOperationException exception)
         {
             return ToBadRequest("Profile Update Rejected", exception);
+        }
+        catch (SafetyProfileVersionConflictException exception)
+        {
+            return Conflict(new ProblemDetails
+            {
+                Title = "Profile version conflict",
+                Detail = exception.Message,
+                Status = StatusCodes.Status409Conflict
+            });
+        }
+    }
+
+    /// <summary>Approves a pending immutable profile version and makes it effective.</summary>
+    [HasPermission("marine.profile.manage")]
+    [HttpPost("{id:guid}/review")]
+    [ProducesResponseType(typeof(SafetyProfileDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> ReviewProfile(Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var profile = await _profiles.ReviewProfileAsync(id, GetActorUserId(), cancellationToken);
+            return profile is null ? NotFound() : Ok(profile);
+        }
+        catch (SafetyProfileReviewConflictException exception)
+        {
+            return Conflict(new ProblemDetails
+            {
+                Title = "Profile review rejected",
+                Detail = exception.Message,
+                Status = StatusCodes.Status409Conflict
+            });
+        }
+        catch (InvalidOperationException exception)
+        {
+            return ToBadRequest("Profile review rejected", exception);
         }
     }
 
@@ -113,5 +161,16 @@ public sealed class SafetyProfilesController : ControllerBase
                 Detail = exception.Message,
                 Status = conflict ? StatusCodes.Status409Conflict : StatusCodes.Status400BadRequest
             });
+    }
+
+    private Guid GetActorUserId()
+    {
+        var value = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        if (Guid.TryParse(value, out var actorId))
+        {
+            return actorId;
+        }
+
+        throw new InvalidOperationException("The authenticated caller has no valid user identifier.");
     }
 }

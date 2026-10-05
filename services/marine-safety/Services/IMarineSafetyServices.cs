@@ -67,8 +67,9 @@ public interface ISafetyProfileService
     Task<IReadOnlyList<SafetyProfileDto>> GetProfilesAsync(CancellationToken cancellationToken);
     Task<SafetyProfileDto?> GetProfileAsync(Guid id, CancellationToken cancellationToken);
     Task<SafetyProfileDto?> GetProfileForActivityAsync(Guid activityId, CancellationToken cancellationToken);
-    Task<SafetyProfileDto> CreateProfileAsync(CreateSafetyProfileDto dto, CancellationToken cancellationToken);
-    Task<SafetyProfileDto?> UpdateProfileAsync(Guid id, UpdateSafetyProfileDto dto, CancellationToken cancellationToken);
+    Task<SafetyProfileDto> CreateProfileAsync(CreateSafetyProfileDto dto, Guid actorUserId, CancellationToken cancellationToken);
+    Task<SafetyProfileDto?> UpdateProfileAsync(Guid id, UpdateSafetyProfileDto dto, Guid actorUserId, CancellationToken cancellationToken);
+    Task<SafetyProfileDto?> ReviewProfileAsync(Guid id, Guid reviewerUserId, CancellationToken cancellationToken);
     Task<bool> DeactivateProfileAsync(Guid id, CancellationToken cancellationToken);
 }
 

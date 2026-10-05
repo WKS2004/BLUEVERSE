@@ -2,189 +2,252 @@ using Microsoft.EntityFrameworkCore;
 using Blueverse.MarineSafety.Data;
 using Blueverse.MarineSafety.Dtos;
 using Blueverse.MarineSafety.Models;
+using Npgsql;
 
 namespace Blueverse.MarineSafety.Services;
 
 /// <summary>
-/// Safety profile management. Profile changes are permission-gated at the
-/// controller; this service enforces the domain rules: activity must exist and
-/// be active, limits must be positive, optional caution limits must sit below
-/// their hard limit, and an activity keeps exactly one active profile
-/// (creating a new active profile supersedes the previous one by deactivating
-/// it while preserving history).
+/// Owns immutable profile versions and their review lifecycle. A new or
+/// changed profile remains a draft until a different authorized manager
+/// approves its cited wind, wave and swell criteria.
 /// </summary>
 public sealed class SafetyProfileService : ISafetyProfileService
 {
     private readonly MarineSafetyDbContext _db;
 
-    public SafetyProfileService(MarineSafetyDbContext db)
-    {
-        _db = db;
-    }
+    public SafetyProfileService(MarineSafetyDbContext db) => _db = db;
 
     public async Task<IReadOnlyList<SafetyProfileDto>> GetProfilesAsync(CancellationToken cancellationToken)
     {
         var profiles = await _db.SafetyProfiles
             .AsNoTracking()
-            .Include(p => p.Activity)
-            .OrderBy(p => p.Activity!.Name)
-            .ThenByDescending(p => p.Version)
+            .Include(profile => profile.Activity)
+            .OrderBy(profile => profile.Activity!.Name)
+            .ThenByDescending(profile => profile.Version)
             .ToListAsync(cancellationToken);
-
         return profiles.Select(ToDto).ToList();
     }
 
     public Task<SafetyProfileDto?> GetProfileAsync(Guid id, CancellationToken cancellationToken) =>
         _db.SafetyProfiles
             .AsNoTracking()
-            .Where(p => p.Id == id)
-            .Select(p => ToDto(p, p.Activity!.Name))
+            .Where(profile => profile.Id == id)
+            .Select(profile => ToDto(profile, profile.Activity!.Name))
             .SingleOrDefaultAsync(cancellationToken);
 
     public Task<SafetyProfileDto?> GetProfileForActivityAsync(Guid activityId, CancellationToken cancellationToken) =>
         _db.SafetyProfiles
             .AsNoTracking()
-            .Where(p => p.ActivityId == activityId && p.IsActive)
-            .Select(p => ToDto(p, p.Activity!.Name))
+            .Where(profile => profile.ActivityId == activityId && profile.IsActive)
+            .Select(profile => ToDto(profile, profile.Activity!.Name))
             .SingleOrDefaultAsync(cancellationToken);
 
-    public async Task<SafetyProfileDto> CreateProfileAsync(CreateSafetyProfileDto dto, CancellationToken cancellationToken)
+    public async Task<SafetyProfileDto> CreateProfileAsync(
+        CreateSafetyProfileDto dto,
+        Guid actorUserId,
+        CancellationToken cancellationToken)
     {
         ValidateCautionBands(dto.MaxWindSpeed, dto.MaxWaveHeight, dto.MaxSwellHeight, dto);
+        ValidateCriteria(dto.WindCriteriaSource, dto.WindCriteriaRationale, "wind");
+        ValidateCriteria(dto.WaveCriteriaSource, dto.WaveCriteriaRationale, "wave");
+        ValidateCriteria(dto.SwellCriteriaSource, dto.SwellCriteriaRationale, "swell");
 
         var activity = await _db.MarineActivities
-            .SingleOrDefaultAsync(a => a.Id == dto.ActivityId!.Value, cancellationToken)
+            .SingleOrDefaultAsync(item => item.Id == dto.ActivityId!.Value, cancellationToken)
             ?? throw new InvalidOperationException($"Activity {dto.ActivityId} does not exist.");
-
         if (!activity.IsActive)
         {
             throw new InvalidOperationException($"Activity '{activity.Name}' is not active.");
         }
 
-        // Supersede the previous active profile; history rows remain. The
-        // highest version so far is taken across all of the activity's profile
-        // rows, not only active ones: reactivating a superseded profile via
-        // create must not collide with the partial unique (ActivityId, IsActive)
-        // index or reuse a version an earlier superseded profile already used.
-        var existing = await _db.SafetyProfiles
-            .Where(p => p.ActivityId == dto.ActivityId && p.IsActive)
-            .ToListAsync(cancellationToken);
-
-        foreach (var profile in existing)
-        {
-            profile.IsActive = false;
-        }
-
-        // Commit the deactivations before the new active row is inserted: the
-        // partial unique (ActivityId, IsActive) index is enforced by
-        // PostgreSQL at statement level, and the command ordering inside one
-        // SaveChanges is an implementation detail. Making the ordering
-        // explicit guarantees the batch is valid at every intermediate step.
-        await _db.SaveChangesAsync(cancellationToken);
-
         var highestVersion = await _db.SafetyProfiles
-            .Where(p => p.ActivityId == activity.Id)
-            .MaxAsync(p => (int?)p.Version, cancellationToken) ?? 0;
-        var nextVersion = highestVersion + 1;
-
-        var entity = new SafetyProfile
+            .Where(profile => profile.ActivityId == activity.Id)
+            .MaxAsync(profile => (int?)profile.Version, cancellationToken) ?? 0;
+        var now = DateTime.UtcNow;
+        var draft = new SafetyProfile
         {
             Id = Guid.NewGuid(),
             ActivityId = activity.Id,
+            Activity = activity,
             MaxWindSpeed = dto.MaxWindSpeed,
             MaxWaveHeight = dto.MaxWaveHeight,
             MaxSwellHeight = dto.MaxSwellHeight,
             CautionWindSpeed = dto.CautionWindSpeed,
             CautionWaveHeight = dto.CautionWaveHeight,
             CautionSwellHeight = dto.CautionSwellHeight,
-            IsActive = true,
-            Version = nextVersion,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            WindCriteriaSource = dto.WindCriteriaSource!.Trim(),
+            WindCriteriaRationale = dto.WindCriteriaRationale!.Trim(),
+            WaveCriteriaSource = dto.WaveCriteriaSource!.Trim(),
+            WaveCriteriaRationale = dto.WaveCriteriaRationale!.Trim(),
+            SwellCriteriaSource = dto.SwellCriteriaSource!.Trim(),
+            SwellCriteriaRationale = dto.SwellCriteriaRationale!.Trim(),
+            CreatedByUserId = actorUserId,
+            IsActive = false,
+            Version = highestVersion + 1,
+            CreatedAt = now,
+            UpdatedAt = now
         };
 
-        _db.SafetyProfiles.Add(entity);
-        await _db.SaveChangesAsync(cancellationToken);
-
-        return ToDto(entity, activity.Name);
+        _db.SafetyProfiles.Add(draft);
+        await SaveDraftAsync(cancellationToken);
+        return ToDto(draft);
     }
 
-    public async Task<SafetyProfileDto?> UpdateProfileAsync(Guid id, UpdateSafetyProfileDto dto, CancellationToken cancellationToken)
+    public async Task<SafetyProfileDto?> UpdateProfileAsync(
+        Guid id,
+        UpdateSafetyProfileDto dto,
+        Guid actorUserId,
+        CancellationToken cancellationToken)
     {
         ValidateCautionBands(dto.MaxWindSpeed, dto.MaxWaveHeight, dto.MaxSwellHeight, dto);
+        ValidateCriteria(dto.WindCriteriaSource, dto.WindCriteriaRationale, "wind");
+        ValidateCriteria(dto.WaveCriteriaSource, dto.WaveCriteriaRationale, "wave");
+        ValidateCriteria(dto.SwellCriteriaSource, dto.SwellCriteriaRationale, "swell");
 
-        var profile = await _db.SafetyProfiles
-            .Include(p => p.Activity)
-            .SingleOrDefaultAsync(p => p.Id == id, cancellationToken);
-
-        if (profile is null)
+        var source = await _db.SafetyProfiles
+            .AsNoTracking()
+            .Include(profile => profile.Activity)
+            .SingleOrDefaultAsync(profile => profile.Id == id, cancellationToken);
+        if (source is null)
         {
             return null;
         }
 
-        profile.MaxWindSpeed = dto.MaxWindSpeed;
-        profile.MaxWaveHeight = dto.MaxWaveHeight;
-        profile.MaxSwellHeight = dto.MaxSwellHeight;
-        profile.CautionWindSpeed = dto.CautionWindSpeed;
-        profile.CautionWaveHeight = dto.CautionWaveHeight;
-        profile.CautionSwellHeight = dto.CautionSwellHeight;
-        profile.Version++;
-        profile.UpdatedAt = DateTime.UtcNow;
-
-        if (!dto.IsActive)
+        var highestVersion = await _db.SafetyProfiles
+            .Where(profile => profile.ActivityId == source.ActivityId)
+            .MaxAsync(profile => (int?)profile.Version, cancellationToken) ?? source.Version;
+        var now = DateTime.UtcNow;
+        var draft = new SafetyProfile
         {
-            // Deactivating through the update surface is allowed (soft-delete
-            // parity); only the reverse direction is guarded below.
-            profile.IsActive = false;
-            await _db.SaveChangesAsync(cancellationToken);
-            return ToDto(profile);
-        }
+            Id = Guid.NewGuid(),
+            ActivityId = source.ActivityId,
+            MaxWindSpeed = dto.MaxWindSpeed,
+            MaxWaveHeight = dto.MaxWaveHeight,
+            MaxSwellHeight = dto.MaxSwellHeight,
+            CautionWindSpeed = dto.CautionWindSpeed,
+            CautionWaveHeight = dto.CautionWaveHeight,
+            CautionSwellHeight = dto.CautionSwellHeight,
+            WindCriteriaSource = dto.WindCriteriaSource!.Trim(),
+            WindCriteriaRationale = dto.WindCriteriaRationale!.Trim(),
+            WaveCriteriaSource = dto.WaveCriteriaSource!.Trim(),
+            WaveCriteriaRationale = dto.WaveCriteriaRationale!.Trim(),
+            SwellCriteriaSource = dto.SwellCriteriaSource!.Trim(),
+            SwellCriteriaRationale = dto.SwellCriteriaRationale!.Trim(),
+            CreatedByUserId = actorUserId,
+            IsActive = false,
+            Version = highestVersion + 1,
+            CreatedAt = now,
+            UpdatedAt = now
+        };
 
-        // Activating would violate the partial unique (ActivityId, IsActive)
-        // index while another active profile exists, and silently leaving the
-        // old active profile in place would make two rows claim to be the
-        // applicable configuration. Supersede explicitly, like create does,
-        // and commit the deactivations before the activation so every
-        // intermediate database state satisfies the partial unique index.
-        var otherActive = await _db.SafetyProfiles
-            .Where(p => p.ActivityId == profile.ActivityId && p.IsActive && p.Id != profile.Id)
-            .ToListAsync(cancellationToken);
-        foreach (var active in otherActive)
-        {
-            active.IsActive = false;
-            active.UpdatedAt = profile.UpdatedAt;
-        }
-
-        await _db.SaveChangesAsync(cancellationToken);
-
-        profile.IsActive = true;
-        await _db.SaveChangesAsync(cancellationToken);
-        return ToDto(profile);
+        _db.SafetyProfiles.Add(draft);
+        await SaveDraftAsync(cancellationToken);
+        return ToDto(draft, source.Activity?.Name ?? string.Empty);
     }
 
-    /// <summary>
-    /// Profiles are deactivated rather than deleted: assessments retain a
-    /// reference to the profile version that produced them.
-    /// </summary>
+    public async Task<SafetyProfileDto?> ReviewProfileAsync(
+        Guid id,
+        Guid reviewerUserId,
+        CancellationToken cancellationToken)
+    {
+        var strategy = _db.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
+        {
+            // An execution-strategy retry starts from database state, not
+            // objects mutated by a transaction whose commit failed.
+            _db.ChangeTracker.Clear();
+            await using var transaction = _db.Database.IsRelational()
+                ? await _db.Database.BeginTransactionAsync(cancellationToken)
+                : null;
+
+            var profile = await _db.SafetyProfiles
+                .Include(item => item.Activity)
+                .SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
+            if (profile is null)
+            {
+                return null;
+            }
+
+            if (profile.ReviewedAt.HasValue)
+            {
+                if (profile.IsActive && profile.ReviewedByUserId == reviewerUserId)
+                {
+                    return ToDto(profile);
+                }
+                throw new SafetyProfileReviewConflictException("This profile version has already been reviewed.");
+            }
+
+            if (profile.CreatedByUserId == reviewerUserId)
+            {
+                throw new SafetyProfileReviewConflictException("A different authorized manager must review this profile version.");
+            }
+
+            ValidateCriteria(profile.WindCriteriaSource, profile.WindCriteriaRationale, "wind");
+            ValidateCriteria(profile.WaveCriteriaSource, profile.WaveCriteriaRationale, "wave");
+            ValidateCriteria(profile.SwellCriteriaSource, profile.SwellCriteriaRationale, "swell");
+            if (profile.Activity is null || !profile.Activity.IsActive)
+            {
+                throw new SafetyProfileReviewConflictException("A profile for an inactive activity cannot be approved.");
+            }
+
+            var now = DateTime.UtcNow;
+            var activeVersions = await _db.SafetyProfiles
+                .Where(item => item.ActivityId == profile.ActivityId && item.IsActive && item.Id != profile.Id)
+                .ToListAsync(cancellationToken);
+            foreach (var active in activeVersions)
+            {
+                active.IsActive = false;
+                active.EffectiveTo = now;
+                active.UpdatedAt = now;
+            }
+
+            // PostgreSQL checks the partial unique index per statement. Save
+            // the superseded version before activating the new one, within the
+            // same transaction so an error restores the old active version.
+            if (activeVersions.Count > 0)
+            {
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+
+            profile.IsActive = true;
+            profile.ReviewedByUserId = reviewerUserId;
+            profile.ReviewedAt = now;
+            profile.EffectiveFrom = now;
+            profile.UpdatedAt = now;
+            try
+            {
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException exception) when (IsActiveProfileUniqueViolation(exception))
+            {
+                throw new SafetyProfileReviewConflictException("Another profile version was approved concurrently. Refresh and review the pending version again.");
+            }
+            if (transaction is not null)
+            {
+                await transaction.CommitAsync(cancellationToken);
+            }
+
+            return ToDto(profile);
+        });
+    }
+
     public async Task<bool> DeactivateProfileAsync(Guid id, CancellationToken cancellationToken)
     {
-        var profile = await _db.SafetyProfiles.SingleOrDefaultAsync(p => p.Id == id, cancellationToken);
+        var profile = await _db.SafetyProfiles.SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
         if (profile is null || !profile.IsActive)
         {
-            return profile is not null && !profile.IsActive;
+            return profile is not null;
         }
 
+        var now = DateTime.UtcNow;
         profile.IsActive = false;
-        profile.UpdatedAt = DateTime.UtcNow;
+        profile.EffectiveTo = now;
+        profile.UpdatedAt = now;
         await _db.SaveChangesAsync(cancellationToken);
         return true;
     }
 
-    private static void ValidateCautionBands(
-        decimal maxWind,
-        decimal maxWave,
-        decimal maxSwell,
-        object dto)
+    private static void ValidateCautionBands(decimal maxWind, decimal maxWave, decimal maxSwell, object dto)
     {
         decimal? cautionWind = dto switch
         {
@@ -206,20 +269,46 @@ public sealed class SafetyProfileService : ISafetyProfileService
         };
 
         if (cautionWind.HasValue && cautionWind.Value >= maxWind)
-        {
             throw new InvalidOperationException("Caution wind speed must be below the maximum wind speed.");
-        }
-
         if (cautionWave.HasValue && cautionWave.Value >= maxWave)
-        {
             throw new InvalidOperationException("Caution wave height must be below the maximum wave height.");
-        }
-
         if (cautionSwell.HasValue && cautionSwell.Value >= maxSwell)
-        {
             throw new InvalidOperationException("Caution swell height must be below the maximum swell height.");
+    }
+
+    private static void ValidateCriteria(string? source, string? rationale, string factor)
+    {
+        if (string.IsNullOrWhiteSpace(source) || source.Trim().Length is < 3 or > 512)
+            throw new InvalidOperationException($"A source of 3 to 512 characters is required for the {factor} limit.");
+        if (string.IsNullOrWhiteSpace(rationale) || rationale.Trim().Length is < 10 or > 2000)
+            throw new InvalidOperationException($"A rationale of 10 to 2000 characters is required for the {factor} limit.");
+    }
+
+    private async Task SaveDraftAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (IsVersionUniqueViolation(exception))
+        {
+            throw new SafetyProfileVersionConflictException("Another profile version was created concurrently. Refresh and save the draft again.");
         }
     }
+
+    private static bool IsVersionUniqueViolation(DbUpdateException exception) =>
+        exception.InnerException is PostgresException
+        {
+            SqlState: PostgresErrorCodes.UniqueViolation,
+            ConstraintName: "IX_SafetyProfiles_ActivityId_Version"
+        };
+
+    private static bool IsActiveProfileUniqueViolation(DbUpdateException exception) =>
+        exception.InnerException is PostgresException
+        {
+            SqlState: PostgresErrorCodes.UniqueViolation,
+            ConstraintName: "IX_SafetyProfiles_ActivityId_IsActive"
+        };
 
     private static SafetyProfileDto ToDto(SafetyProfile profile) =>
         ToDto(profile, profile.Activity?.Name ?? string.Empty);
@@ -234,8 +323,29 @@ public sealed class SafetyProfileService : ISafetyProfileService
         profile.CautionWindSpeed,
         profile.CautionWaveHeight,
         profile.CautionSwellHeight,
+        profile.WindCriteriaSource,
+        profile.WindCriteriaRationale,
+        profile.WaveCriteriaSource,
+        profile.WaveCriteriaRationale,
+        profile.SwellCriteriaSource,
+        profile.SwellCriteriaRationale,
         profile.IsActive,
         profile.Version,
         profile.CreatedAt,
-        profile.UpdatedAt);
+        profile.UpdatedAt,
+        profile.CreatedByUserId,
+        profile.ReviewedByUserId,
+        profile.ReviewedAt,
+        profile.EffectiveFrom,
+        profile.EffectiveTo);
+}
+
+public sealed class SafetyProfileReviewConflictException : Exception
+{
+    public SafetyProfileReviewConflictException(string message) : base(message) { }
+}
+
+public sealed class SafetyProfileVersionConflictException : Exception
+{
+    public SafetyProfileVersionConflictException(string message) : base(message) { }
 }

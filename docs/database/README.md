@@ -2,7 +2,8 @@
 
 PostgreSQL infrastructure is present in Compose. The Auth EF Core model,
 migrations and application persistence code are checked in under
-`services/auth`.
+`services/auth`. Marine safety also owns its domain model and migrations under
+`services/marine-safety`; each service applies only its own migrations.
 
 PostgreSQL is the authoritative relational database.
 The [v0 persistence component](../v0/components/postgresql-ef-core.md)

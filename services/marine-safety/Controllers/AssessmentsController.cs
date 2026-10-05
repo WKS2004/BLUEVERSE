@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Blueverse.MarineSafety.Authorization;
 using Blueverse.MarineSafety.Dtos;
+using Blueverse.MarineSafety.Models;
 using Blueverse.MarineSafety.Services;
 
 namespace Blueverse.MarineSafety.Controllers;
@@ -35,6 +36,28 @@ public sealed class AssessmentsController : ControllerBase
         [FromQuery] DateTime? to,
         CancellationToken cancellationToken)
     {
+        if (!string.IsNullOrWhiteSpace(result) &&
+            !new[] { SuitabilityResults.Suitable, SuitabilityResults.Caution, SuitabilityResults.Unsuitable, SuitabilityResults.Unknown }
+                .Contains(result.Trim().ToUpperInvariant(), StringComparer.Ordinal))
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Invalid assessment result filter",
+                Detail = "Result must be SUITABLE, CAUTION, UNSUITABLE or UNKNOWN.",
+                Status = StatusCodes.Status400BadRequest
+            });
+        }
+
+        if (from.HasValue && to.HasValue && MarineTime.ToUtc(from.Value) > MarineTime.ToUtc(to.Value))
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Invalid assessment time window",
+                Detail = "The from time must not be later than the to time.",
+                Status = StatusCodes.Status400BadRequest
+            });
+        }
+
         return Ok(await _suitability.GetAssessmentsAsync(activityId, result, from, to, cancellationToken));
     }
 

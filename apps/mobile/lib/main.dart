@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'data/models/auth_models.dart';
 import 'data/repositories/auth_repository.dart';
 import 'data/services/auth_api_service.dart';
+
 import 'package:http/http.dart' as http;
+
 import 'data/repositories/marine_repository.dart';
 import 'data/services/marine_service.dart';
 import 'data/services/marine_api_client.dart';
@@ -138,31 +140,39 @@ class _MyAppState extends State<MyApp> {
         '/dashboard': (_) => AuthDashboardScreen(viewModel: _authViewModel),
         '/admin': (_) => AuthAdminLandingScreen(viewModel: _authViewModel),
         '/admin/permissions': (_) => AuthAdminScreen(
-              viewModel: _authViewModel,
-              section: AuthAdminSection.permissions,
-            ),
+          viewModel: _authViewModel,
+          section: AuthAdminSection.permissions,
+        ),
         '/admin/roles': (_) => AuthAdminScreen(
-              viewModel: _authViewModel,
-              section: AuthAdminSection.roles,
-            ),
+          viewModel: _authViewModel,
+          section: AuthAdminSection.roles,
+        ),
         '/admin/users': (_) => AuthAdminScreen(
-              viewModel: _authViewModel,
-              section: AuthAdminSection.users,
-            ),
+          viewModel: _authViewModel,
+          section: AuthAdminSection.users,
+        ),
         '/404': (_) => const BlueverseErrorScreen.notFound(),
         '/500': (_) => const BlueverseErrorScreen.server(),
         '/marine/conditions': (_) => _marineShell(
-              route: MarineRoutes.conditions,
-              child: SuitabilityScreen(service: _buildMarineService()),
-            ),
+          route: MarineRoutes.conditions,
+          child: SuitabilityScreen(service: _buildMarineService()),
+        ),
         '/marine/history': (_) => _marineShell(
-              route: MarineRoutes.history,
-              child: MarineHistoryScreen(service: _buildMarineService()),
-            ),
+          route: MarineRoutes.history,
+          child: MarineHistoryScreen(service: _buildMarineService()),
+        ),
         '/marine/safety-profiles': (_) => _marineShell(
-              route: MarineRoutes.safetyProfiles,
-              child: SafetyProfilesScreen(service: _buildMarineService()),
-            ),
+          route: MarineRoutes.safetyProfiles,
+          child: SafetyProfilesScreen(
+            service: _buildMarineService(),
+            canManage:
+                _authViewModel.user?.permissions.contains(
+                  'marine.profile.manage',
+                ) ==
+                true,
+            currentUserId: _authViewModel.user?.id,
+          ),
+        ),
       },
       onUnknownRoute: blueverseUnknownRoute,
     );
@@ -170,18 +180,12 @@ class _MyAppState extends State<MyApp> {
 
   MarineService _buildMarineService() {
     final gateway = const ApiGatewayConfig();
-    final client = MarineApiClient(
-      client: http.Client(),
-      gateway: gateway,
-    );
+    final client = MarineApiClient(client: http.Client(), gateway: gateway);
     final repository = MarineRepository(client: client);
     return MarineService(repository: repository);
   }
 
-  Widget _marineShell({
-    required String route,
-    required Widget child,
-  }) {
+  Widget _marineShell({required String route, required Widget child}) {
     final hrefs = marineRouteHrefsFor(_authViewModel.user);
     final mayRead = hasMarineReadAccess(_authViewModel.user);
 
@@ -209,10 +213,7 @@ class _MyAppState extends State<MyApp> {
             icon: Icon(Icons.waves_outlined),
             label: 'Conditions',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history),
-            label: 'History',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
           BottomNavigationBarItem(
             icon: Icon(Icons.shield_outlined),
             label: 'Safety profiles',
@@ -256,7 +257,6 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
-
 class MobileLaunchPage extends StatelessWidget {
   const MobileLaunchPage({super.key, required this.viewModel});
 
@@ -283,10 +283,10 @@ class MobileLaunchPage extends StatelessWidget {
                   Text(
                     'BLUEVERSE',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: BlueversePalette.coastDeep,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.8,
-                        ),
+                      color: BlueversePalette.coastDeep,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.8,
+                    ),
                   ),
                 ],
               ),

@@ -416,8 +416,8 @@ case ID, and can run each available suite locally.
 
 The React harness now combines Node 24's built-in test runner, request stubs,
 JSDOM and React Testing Library. The 157-case run on 2026-09-25 is the
-historical foundation baseline; the latest full suite passes 198 cases
-(2026-10-03), including 41 marine-safety cases. CI runs the package's lint,
+historical foundation baseline; the latest full suite passes 201 cases
+(2026-10-06), including 44 marine-safety cases. CI runs the package's lint,
 build and test commands and publishes JUnit output with case IDs. Coverage
 instrumentation is not configured yet and must be added before line-coverage
 thresholds are enforced.
@@ -432,9 +432,11 @@ Use the default Flutter test locations. The package now has 86 passing selected
 unit/widget/API-contract tests and a clean production-source analysis run.
 Keep `flutter analyze` and the complete `flutter test` suite mandatory. The
 previously stale launch-widget reference has been corrected, but it still
-needs green CI evidence. Marine workflow routes are registered, while the
-marine Flutter UI and its tests remain unimplemented. Add device integration
-cases when platform behavior requires them.
+needs green CI evidence. Marine Flutter UI is implemented under the registered
+workflow routes; direct Dart formatting completed, while Flutter analysis,
+package tests and device integration evidence remain open because the local
+package configuration and cached dependencies are absent. Add device
+integration cases when platform behavior requires them.
 
 Exit criteria: analyzer, unit/widget tests and any selected integration tests
 run in CI on a supported Flutter channel.
@@ -442,8 +444,9 @@ run in CI on a supported Flutter channel.
 ### Phase 3 — API and Auth services
 
 The API and Auth test projects are present; their current test sources define
-21 and 77 default cases. The marine service project passes 117 tests
-(2026-10-03). Maintain HTTP, authorization, validation, persistence,
+21 and 77 default cases. The marine service project contains 118 authored
+tests; its last completed run passed 117 tests (2026-10-03), while the latest
+VSTest attempt timed out during testhost startup. Maintain HTTP, authorization, validation, persistence,
 migration, security and health cases as the service contracts grow. Marine
 tests use deterministic Auth/provider doubles and do not verify the production
 Auth SQL against PostgreSQL.

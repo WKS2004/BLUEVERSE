@@ -28,6 +28,7 @@ public sealed class SwaggerContractTests : IClassFixture<MarineSafetyWebApplicat
         ("post", "/api/marine/safety-profiles"),
         ("get", "/api/marine/safety-profiles/{id}"),
         ("put", "/api/marine/safety-profiles/{id}"),
+        ("post", "/api/marine/safety-profiles/{id}/review"),
         ("delete", "/api/marine/safety-profiles/{id}"),
         ("get", "/api/marine/safety-profiles/by-activity/{activityId}"),
         ("get", "/api/marine/health")

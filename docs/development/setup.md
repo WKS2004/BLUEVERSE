@@ -34,9 +34,10 @@ apps/mobile
 ```
 
 Both clients provide the shared home, `/signin`, `/signup`, `/profile`,
-`/dashboard` and permission-aware `/admin` workflows. React Web also provides
-Member 2's marine conditions, history and safety-profile screens; the paired
-Flutter routes are registered but the mobile marine screens are not implemented.
+`/dashboard` and permission-aware `/admin` workflows. React Web and Flutter
+both provide Member 2's marine conditions, history and safety-profile screens
+through the public API and shared permission model. Local Flutter runtime
+verification remains open in this environment.
 The Auth experience uses
 the public gateway for registration, sign-in, refresh, profile and session
 management, account deletion, and user/role/permission administration. Browser

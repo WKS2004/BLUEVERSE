@@ -10,6 +10,12 @@ public sealed record CreateSafetyProfileDto(
     [Required, Range(0.01, 1000)] decimal MaxWindSpeed,
     [Required, Range(0.01, 50)] decimal MaxWaveHeight,
     [Required, Range(0.01, 50)] decimal MaxSwellHeight,
+    [Required, StringLength(512, MinimumLength = 3)] string? WindCriteriaSource,
+    [Required, StringLength(2000, MinimumLength = 10)] string? WindCriteriaRationale,
+    [Required, StringLength(512, MinimumLength = 3)] string? WaveCriteriaSource,
+    [Required, StringLength(2000, MinimumLength = 10)] string? WaveCriteriaRationale,
+    [Required, StringLength(512, MinimumLength = 3)] string? SwellCriteriaSource,
+    [Required, StringLength(2000, MinimumLength = 10)] string? SwellCriteriaRationale,
     [Range(0.01, 1000)] decimal? CautionWindSpeed = null,
     [Range(0.01, 50)] decimal? CautionWaveHeight = null,
     [Range(0.01, 50)] decimal? CautionSwellHeight = null);
@@ -18,10 +24,15 @@ public sealed record UpdateSafetyProfileDto(
     [Required, Range(0.01, 1000)] decimal MaxWindSpeed,
     [Required, Range(0.01, 50)] decimal MaxWaveHeight,
     [Required, Range(0.01, 50)] decimal MaxSwellHeight,
+    [Required, StringLength(512, MinimumLength = 3)] string? WindCriteriaSource,
+    [Required, StringLength(2000, MinimumLength = 10)] string? WindCriteriaRationale,
+    [Required, StringLength(512, MinimumLength = 3)] string? WaveCriteriaSource,
+    [Required, StringLength(2000, MinimumLength = 10)] string? WaveCriteriaRationale,
+    [Required, StringLength(512, MinimumLength = 3)] string? SwellCriteriaSource,
+    [Required, StringLength(2000, MinimumLength = 10)] string? SwellCriteriaRationale,
     [Range(0.01, 1000)] decimal? CautionWindSpeed = null,
     [Range(0.01, 50)] decimal? CautionWaveHeight = null,
-    [Range(0.01, 50)] decimal? CautionSwellHeight = null,
-    bool IsActive = true);
+    [Range(0.01, 50)] decimal? CautionSwellHeight = null);
 
 public sealed record SafetyProfileDto(
     Guid Id,
@@ -33,10 +44,21 @@ public sealed record SafetyProfileDto(
     decimal? CautionWindSpeed,
     decimal? CautionWaveHeight,
     decimal? CautionSwellHeight,
+    string? WindCriteriaSource,
+    string? WindCriteriaRationale,
+    string? WaveCriteriaSource,
+    string? WaveCriteriaRationale,
+    string? SwellCriteriaSource,
+    string? SwellCriteriaRationale,
     bool IsActive,
     int Version,
     DateTime CreatedAt,
-    DateTime UpdatedAt);
+    DateTime UpdatedAt,
+    Guid? CreatedByUserId,
+    Guid? ReviewedByUserId,
+    DateTime? ReviewedAt,
+    DateTime? EffectiveFrom,
+    DateTime? EffectiveTo);
 
 public sealed record ConditionSnapshotDto(
     Guid Id,
@@ -65,6 +87,7 @@ public sealed record SuitabilityResultDto(
     string ActivityName,
     LocationDto Location,
     DateTime RequestedTime,
+    DateTime ForecastTime,
     DateTime EvaluatedAt,
     ConditionsDto? Conditions,
     string? Source,
@@ -112,21 +135,35 @@ public sealed record MarineActivityDto(
 public sealed record AssessmentHistoryDto(
     Guid Id,
     Guid ActivityId,
-    string ActivityName,
+    string? ActivityName,
     Guid ConditionSnapshotId,
     Guid SafetyProfileId,
     int ProfileVersion,
     decimal Latitude,
     decimal Longitude,
     DateTime RequestedTime,
+    DateTime? ForecastTime,
     DateTime EvaluatedAt,
     string Result,
     IReadOnlyList<string> Violations,
     IReadOnlyList<string> CautionFactors,
     IReadOnlyList<string> MissingFields,
+    IReadOnlyList<string> ConditionMissingFields,
+    ConditionsDto Conditions,
+    DateTime? ConditionRetrievedAt,
+    IReadOnlyList<SafetyCriterionSnapshotDto> Criteria,
+    string EvidenceCompleteness,
     string Source,
     string FreshnessStatus,
     DateTime CreatedAt);
+
+/// <summary>One reviewed activity limit and its cited basis captured at evaluation time.</summary>
+public sealed record SafetyCriterionSnapshotDto(
+    string Factor,
+    decimal? Maximum,
+    decimal? Caution,
+    string? Source,
+    string? Rationale);
 
 
 

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Blueverse.MarineSafety.Data;
 
 namespace Blueverse.MarineSafety.Controllers;
@@ -23,28 +24,35 @@ public sealed class HealthController : ControllerBase
     public async Task<IActionResult> Get()
     {
         var dbConnected = false;
+        var schemaCurrent = false;
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(HttpContext.RequestAborted);
         timeout.CancelAfter(TimeSpan.FromSeconds(2));
 
         try
         {
             dbConnected = await _dbContext.Database.CanConnectAsync(timeout.Token);
+            schemaCurrent = dbConnected && (!_dbContext.Database.IsRelational() ||
+                !(await _dbContext.Database.GetPendingMigrationsAsync(timeout.Token)).Any());
         }
         catch (OperationCanceledException) when (timeout.IsCancellationRequested)
         {
             dbConnected = false;
+            schemaCurrent = false;
         }
         catch (Exception)
         {
             dbConnected = false;
+            schemaCurrent = false;
         }
 
-        var statusCode = dbConnected ? StatusCodes.Status200OK : StatusCodes.Status503ServiceUnavailable;
+        var ready = dbConnected && schemaCurrent;
+        var statusCode = ready ? StatusCodes.Status200OK : StatusCodes.Status503ServiceUnavailable;
         return StatusCode(statusCode, new
         {
             service = "marine-safety",
-            status = dbConnected ? "healthy" : "unhealthy",
-            database = dbConnected ? "connected" : "unavailable"
+            status = ready ? "healthy" : "unhealthy",
+            database = dbConnected ? "connected" : "unavailable",
+            schema = !dbConnected ? "unavailable" : schemaCurrent ? "current" : "pending"
         });
     }
 }

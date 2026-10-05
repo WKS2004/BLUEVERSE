@@ -26,6 +26,9 @@ public class SuitabilityAssessmentRecord
     public Guid ActivityId { get; set; }
     public MarineActivity? Activity { get; set; }
 
+    /// <summary>Activity label captured when the assessment ran.</summary>
+    public string? ActivityName { get; set; }
+
     /// <summary>Version of the safety profile applied, for later interpretability.</summary>
     public int ProfileVersion { get; set; }
 
@@ -34,6 +37,9 @@ public class SuitabilityAssessmentRecord
 
     /// <summary>Requested assessment time (UTC) — the forecast time the evidence applies to.</summary>
     public DateTime RequestedTime { get; set; }
+
+    /// <summary>Forecast time represented by the stored condition evidence.</summary>
+    public DateTime? ForecastTime { get; set; }
 
     /// <summary>When the backend performed the evaluation (UTC).</summary>
     public DateTime EvaluatedAt { get; set; }
@@ -54,5 +60,29 @@ public class SuitabilityAssessmentRecord
     public string FreshnessStatus { get; set; } = FreshnessStatuses.Unavailable;
     public Guid ConditionSnapshotId { get; set; }
     public Guid SafetyProfileId { get; set; }
+
+    // Copy condition evidence and the exact reviewed criteria into the
+    // immutable assessment row. The source rows may later be retained or
+    // archived independently without making this decision uninterpretable.
+    public DateTime? ConditionRetrievedAt { get; set; }
+    public decimal? WindSpeed { get; set; }
+    public decimal? WaveHeight { get; set; }
+    public decimal? SwellHeight { get; set; }
+    public decimal? Rain { get; set; }
+    public int? WeatherCode { get; set; }
+    public string[] ConditionMissingFields { get; set; } = [];
+    public decimal? MaxWindSpeed { get; set; }
+    public decimal? MaxWaveHeight { get; set; }
+    public decimal? MaxSwellHeight { get; set; }
+    public decimal? CautionWindSpeed { get; set; }
+    public decimal? CautionWaveHeight { get; set; }
+    public decimal? CautionSwellHeight { get; set; }
+    public string? WindCriteriaSource { get; set; }
+    public string? WindCriteriaRationale { get; set; }
+    public string? WaveCriteriaSource { get; set; }
+    public string? WaveCriteriaRationale { get; set; }
+    public string? SwellCriteriaSource { get; set; }
+    public string? SwellCriteriaRationale { get; set; }
+    public string EvidenceCompleteness { get; set; } = "LEGACY_INCOMPLETE";
     public DateTime CreatedAt { get; set; }
 }

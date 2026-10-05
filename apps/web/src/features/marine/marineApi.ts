@@ -10,10 +10,21 @@ export type MarineSafetyProfile = {
   cautionWindSpeed: number | null
   cautionWaveHeight: number | null
   cautionSwellHeight: number | null
+  windCriteriaSource: string | null
+  windCriteriaRationale: string | null
+  waveCriteriaSource: string | null
+  waveCriteriaRationale: string | null
+  swellCriteriaSource: string | null
+  swellCriteriaRationale: string | null
   isActive: boolean
   version: number
   createdAt: string
   updatedAt: string
+  createdByUserId: string | null
+  reviewedByUserId: string | null
+  reviewedAt: string | null
+  effectiveFrom: string | null
+  effectiveTo: string | null
 }
 
 export type MarineConditionSnapshot = {
@@ -38,6 +49,7 @@ export type MarineSuitabilityResult = {
   activityName: string
   location: { latitude: number; longitude: number }
   requestedTime: string
+  forecastTime: string
   evaluatedAt: string
   conditions: {
     windSpeed: number | null
@@ -54,6 +66,32 @@ export type MarineSuitabilityResult = {
   cautionFactors: string[]
   assessmentId: string
   snapshotId: string
+}
+
+export type MarineAssessmentHistory = {
+  id: string
+  activityId: string
+  activityName: string | null
+  conditionSnapshotId: string
+  safetyProfileId: string
+  profileVersion: number
+  latitude: number
+  longitude: number
+  requestedTime: string
+  forecastTime: string | null
+  evaluatedAt: string
+  result: string
+  violations: string[]
+  cautionFactors: string[]
+  missingFields: string[]
+  conditionMissingFields: string[]
+  conditions: NonNullable<MarineSuitabilityResult['conditions']>
+  conditionRetrievedAt: string | null
+  criteria: { factor: string; maximum: number | null; caution: number | null; source: string | null; rationale: string | null }[]
+  evidenceCompleteness: 'COMPLETE' | 'LEGACY_INCOMPLETE' | (string & {})
+  source: string
+  freshnessStatus: string
+  createdAt: string
 }
 
 export class MarineApiError extends Error {
@@ -124,6 +162,16 @@ export const getMarineHistory = (filters: { latitude?: number; longitude?: numbe
     return fetch(`/api/marine/history?${query.toString()}`, requestOptions())
   })
 
+export const getMarineAssessments = (filters: { activityId?: string; result?: string; from?: string; to?: string } = {}) =>
+  request<MarineAssessmentHistory[]>(() => {
+    const query = new URLSearchParams()
+    if (filters.activityId) query.set('activityId', filters.activityId)
+    if (filters.result) query.set('result', filters.result)
+    if (filters.from) query.set('from', filters.from)
+    if (filters.to) query.set('to', filters.to)
+    return fetch(`/api/marine/assessments?${query.toString()}`, requestOptions())
+  })
+
 export const evaluateMarineSuitability = (input: {
   activityId: string
   latitude: number
@@ -145,6 +193,12 @@ export const createMarineSafetyProfile = (input: {
   maxWindSpeed: number
   maxWaveHeight: number
   maxSwellHeight: number
+  windCriteriaSource: string
+  windCriteriaRationale: string
+  waveCriteriaSource: string
+  waveCriteriaRationale: string
+  swellCriteriaSource: string
+  swellCriteriaRationale: string
   cautionWindSpeed?: number
   cautionWaveHeight?: number
   cautionSwellHeight?: number
@@ -155,12 +209,20 @@ export const updateMarineSafetyProfile = (id: string, input: {
   maxWindSpeed: number
   maxWaveHeight: number
   maxSwellHeight: number
+  windCriteriaSource: string
+  windCriteriaRationale: string
+  waveCriteriaSource: string
+  waveCriteriaRationale: string
+  swellCriteriaSource: string
+  swellCriteriaRationale: string
   cautionWindSpeed?: number
   cautionWaveHeight?: number
   cautionSwellHeight?: number
-  isActive: boolean
 }) =>
   request<MarineSafetyProfile>(() => fetch(`/api/marine/safety-profiles/${encodeURIComponent(id)}`, requestOptions('PUT', input)))
+
+export const reviewMarineSafetyProfile = (id: string) =>
+  request<MarineSafetyProfile>(() => fetch(`/api/marine/safety-profiles/${encodeURIComponent(id)}/review`, requestOptions('POST')))
 
 export const deactivateMarineSafetyProfile = (id: string) =>
   request<void>(() => fetch(`/api/marine/safety-profiles/${encodeURIComponent(id)}`, requestOptions('DELETE')))

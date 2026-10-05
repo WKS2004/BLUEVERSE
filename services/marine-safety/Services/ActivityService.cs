@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Blueverse.MarineSafety.Data;
 using Blueverse.MarineSafety.Dtos;
 using Blueverse.MarineSafety.Models;
@@ -49,8 +50,7 @@ public sealed class ActivityService : IActivityService
 
     public async Task<MarineActivityDto> CreateActivityAsync(CreateActivityDto dto, CancellationToken cancellationToken)
     {
-        var name = dto.Name!.Trim();
-        var type = dto.ActivityType!.Trim();
+        var (name, type) = Normalize(dto.Name, dto.ActivityType);
 
         await EnsureNameAvailableAsync(name, null, cancellationToken);
 
@@ -64,7 +64,14 @@ public sealed class ActivityService : IActivityService
         };
 
         _db.MarineActivities.Add(entity);
-        await _db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (IsNameUniqueViolation(exception))
+        {
+            throw new ActivityNameConflictException($"An activity named '{name}' already exists.");
+        }
         return ToDto(entity);
     }
 
@@ -81,15 +88,21 @@ public sealed class ActivityService : IActivityService
             return null;
         }
 
-        var name = dto.Name!.Trim();
-        var type = dto.ActivityType!.Trim();
+        var (name, type) = Normalize(dto.Name, dto.ActivityType);
 
         await EnsureNameAvailableAsync(name, activity.Id, cancellationToken);
 
         activity.Name = name;
         activity.ActivityType = type;
         activity.UpdatedAt = DateTime.UtcNow;
-        await _db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (IsNameUniqueViolation(exception))
+        {
+            throw new ActivityNameConflictException($"An activity named '{name}' already exists.");
+        }
         return ToDto(activity);
     }
 
@@ -135,6 +148,28 @@ public sealed class ActivityService : IActivityService
         }
     }
 
+    private static (string Name, string Type) Normalize(string? rawName, string? rawType)
+    {
+        var name = rawName?.Trim() ?? string.Empty;
+        var type = rawType?.Trim() ?? string.Empty;
+        if (name.Length is < 2 or > 128)
+        {
+            throw new ActivityValidationException("Activity name must contain 2 to 128 non-space characters.");
+        }
+        if (type.Length is < 2 or > 64)
+        {
+            throw new ActivityValidationException("Activity type must contain 2 to 64 non-space characters.");
+        }
+        return (name, type);
+    }
+
+    private static bool IsNameUniqueViolation(DbUpdateException exception) =>
+        exception.InnerException is PostgresException
+        {
+            SqlState: PostgresErrorCodes.UniqueViolation,
+            ConstraintName: "IX_MarineActivities_Name"
+        };
+
     private static MarineActivityDto ToDto(MarineActivity activity) => new(
         activity.Id,
         activity.Name,
@@ -146,3 +181,5 @@ public sealed class ActivityService : IActivityService
 
 /// <summary>The requested activity name is already used by another reference row.</summary>
 public sealed class ActivityNameConflictException(string message) : Exception(message);
+
+public sealed class ActivityValidationException(string message) : Exception(message);

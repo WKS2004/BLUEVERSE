@@ -98,7 +98,7 @@ uses Node 24's built-in test runner; request contracts mock `fetch`, while DOM
 tests use JSDOM, React Testing Library and `user-event` with Vite SSR module
 loading. The tests cover the implemented Auth, profile, administration,
 navigation, recovery and shared-shell behaviors without a live API or browser.
-The current suite passes 198 cases (2026-10-03), including 41 marine-safety
+The current suite passes 201 cases (2026-10-06), including 44 marine-safety
 API-boundary and component cases. These tests are not a
 substitute for deployed-gateway or real-browser end-to-end checks. The
 registry contains the shared home, Auth registration and session-management,
@@ -120,5 +120,6 @@ permission-gated by the server-owned `marine.profile.read` grant (plus
 coastal design system. The pages render the server's condition evidence and
 deterministic suitability classification — including source, UTC timestamps,
 freshness and missing fields — and never recompute or soften a result. The
-paired Flutter routes are registered under the same workflow IDs; the mobile
-surface is not implemented yet.
+Flutter implements the paired marine screens under the same workflow IDs and
+public API contract. Local Flutter runtime verification remains open in this
+environment.

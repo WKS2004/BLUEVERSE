@@ -17,16 +17,22 @@ responsibility, and cross-member contracts here describe only the
 marine-safety side of each handoff. Decisions follow the eight G00 exit
 criteria.
 
-## Latest implementation verification — 2026-10-03
+## Latest implementation verification — 2026-10-06
 
-The marine service test suite passes **117/117**. The full React Web suite
-passes **198/198**, including **41 marine-safety cases**; React lint and the
-shared UI-integration validator pass. The service tests use an in-memory
-database and deterministic Auth/provider doubles, so this run does not verify
-the production Auth-table SQL against PostgreSQL. Flutter and executable
-Agentic AI remain unimplemented, and component PR/merge plus G07 evidence are
-not recorded. The historical revision notes below retain their original
-counts and dates.
+The current React Web suite passes **201/201**, including **44 marine-safety
+cases**; the production Web build, endpoint catalog and shared UI-integration
+validator pass. The backend project builds with zero warnings or errors and
+contains 118 authored cases. Its latest VSTest attempt timed out during the
+testhost handshake, so **117/117** remains the last completed backend run.
+Backend tests use an in-memory database and deterministic Auth/provider
+doubles, so they do not verify the production Auth-table SQL against
+PostgreSQL. Flutter marine screens are implemented and the ten changed marine
+sources pass direct Dart formatting with the expected package-resolution
+warning; Flutter analysis/runtime verification remains open because the local
+package configuration and cached dependencies are absent. Executable Agentic
+AI, component PR/merge and G07 evidence are not recorded. The historical
+revision notes below retain their original counts
+and dates.
 
 ## 1. Owner and branch assignment (exit criterion 1)
 
@@ -52,12 +58,12 @@ counts and dates.
 | Decision | Record |
 |---|---|
 | Service identity | Folder `services/marine-safety`, project `Blueverse.MarineSafety`, container `blueverse-marine-safety`, internal base route `/api/marine` (short prefix chosen deliberately; the component keeps the `marine-safety` name for folder, project and container identity). |
-| Public operation set | `GET /api/marine/health`, `GET /api/marine/current`, `GET /api/marine/snapshots/{id}`, `GET /api/marine/history`, `POST /api/marine/evaluate`, `GET /api/marine/assessments`, `GET /api/marine/assessments/{id}`, `GET|POST /api/marine/activities`, `GET|PUT|DELETE /api/marine/activities/{id}`, `GET|POST /api/marine/safety-profiles`, `GET|PUT|DELETE /api/marine/safety-profiles/{id}`, `GET /api/marine/safety-profiles/by-activity/{activityId}` — registered in `docs/api/endpoint-catalog.json`. Revision (7) added the activity reference-table CRUD and the read-only assessment-history surface; every other operation is unchanged. |
+| Public operation set | `GET /api/marine/health`, `GET /api/marine/current`, `GET /api/marine/snapshots/{id}`, `GET /api/marine/history`, `POST /api/marine/evaluate`, `GET /api/marine/assessments`, `GET /api/marine/assessments/{id}`, `GET|POST /api/marine/activities`, `GET|PUT|DELETE /api/marine/activities/{id}`, `GET|POST /api/marine/safety-profiles`, `GET|PUT|DELETE /api/marine/safety-profiles/{id}`, `POST /api/marine/safety-profiles/{id}/review`, `GET /api/marine/safety-profiles/by-activity/{activityId}` — registered in `docs/api/endpoint-catalog.json`. Revision (7) added activity CRUD and assessment history; revision (11) adds explicit profile review. |
 | Route/transport | `services/api` forwards `/api/marine/{**catch-all}` over YARP to `http://marine-safety:8080` on the private network; clients never address the component service. No `/api/v1`-style segments. |
 | Permission codes | `marine.profile.read` (condition reads, history, evaluate, assessment reads, activity reads), `marine.profile.manage` in addition to read (profile and activity create/update/deactivate). Codes are defined in Auth's `PermissionCodes`, seeded for the Admin role by the Auth seeder (approved additive change), and resolved from current role assignments (never JWT claims). Enforced in the component service via the `PERMISSION:<code>` policy convention. The marine-safety service mirrors the constants locally for enforcement; provisioning belongs to Auth. |
 | Authentication and session validity | The service accepts the Auth-issued signed JWT as a bearer token or through Auth browser cookies, preferring an explicit bearer header when both are present. `blueverse_active_account_id` selects `blueverse_access_token_<userIdN>`; a legacy token is accepted only if its subject matches that selection. A malformed selection fails closed; without a selection, the legacy single-account cookie remains supported. The service validates signature, issuer, audience, HS256 algorithm and lifetime, then checks the current Auth user (`IsActive`, `TokenVersion`) and exact unexpired `ActiveSessions` row (`session_id`, `session_version`). A revoked, expired or stale session is rejected with 401; a valid session without the current required permission receives 403. The component performs read-only checks; Auth remains the only identity/session writer. |
 | Swagger | The component serves its OpenAPI document under `/api/marine/swagger` (anonymous, gateway-forwarded). The public API Swagger UI at `/api/swagger` lists it beside the public API and Auth documents; the gateway forwards document requests over the existing `/api/marine` route. The component service is not modified for aggregation. |
-| Error/status behavior | RFC 7807 ProblemDetails. 400 invalid input (coordinates, ranges, missing fields), 401 unauthenticated or expired/revoked/stale Auth session, 403 an active caller lacking a required permission grant, 404 unknown activity/snapshot/profile/assessment, 409 no active profile for an activity or a duplicate activity name, 503 with `Retry-After` when Open-Meteo is unavailable. Profile and activity delete semantics: delete deactivates, never hard-deletes. |
+| Error/status behavior | RFC 7807 ProblemDetails. 400 invalid input (coordinates, ranges, missing fields), 401 unauthenticated or expired/revoked/stale Auth session, 403 an active caller lacking a required permission grant, 404 unknown activity/snapshot/profile/assessment, 409 no reviewed active profile for an activity, a pending profile review, or a duplicate activity name, 503 with `Retry-After` when Open-Meteo is unavailable. Profile and activity delete semantics: delete deactivates, never hard-deletes. |
 | DTO ownership | Request/response DTOs live in the component service (`Blueverse.MarineSafety.Dtos`); EF entities are never exposed. Response bodies always carry source, forecast/retrieval times, freshness and missing fields where applicable. |
 | Provider seam | `IOpenMeteoClient` is the only provider boundary. Result `MarineConditionsResult` carries nullable values plus `MissingFields`; failure is the typed `OpenMeteoUnavailableException`. Bounded retry (1, transient-only) and 10 s per-attempt timeout. |
 
@@ -66,14 +72,15 @@ counts and dates.
 | Decision | Record |
 |---|---|
 | Database sharing | One shared PostgreSQL 16 `blueverse` database. Each member service owns its own tables and EF Core migrations in the public schema; no separate database and no cross-service table writes. |
-| Migration ownership | `services/marine-safety/Migrations` (initial: `InitialMarineSafetySchema`). Auth keeps identity migrations; the public API owns no domain tables. Migrations apply at service startup with a bounded timeout. |
+| Migration ownership | `services/marine-safety/Migrations` (`InitialMarineSafetySchema`, `SafetyProfileReviewAndAssessmentEvidence`). Auth keeps identity migrations; the public API owns no domain tables. Migrations apply at service startup with a bounded timeout. |
 | Table ownership | `MarineActivities`, `SafetyProfiles`, `ConditionSnapshots`, `SuitabilityAssessments` are owned by this service only. Other services must not read or write them; cross-component data moves through public API contracts. |
-| Keys/constraints | GUID PKs; FK profile→activity (cascade); FK assessment→activity (restrict); CHECK constraints for positive limits and caution-below-max; partial unique index enforcing one active profile per activity; numeric precision `numeric(8,5)`/`(9,5)` coordinates, `(6,2)`/`(5,2)` environmental values; `MissingFields text[]`. |
+| Keys/constraints | GUID PKs; FK profile→activity (cascade); FK assessment→activity (restrict); CHECK constraints for positive limits and caution-below-max; partial unique index enforcing one active profile per activity; unique `(ActivityId, Version)`; numeric precision `numeric(8,5)`/`(9,5)` coordinates, `(6,2)`/`(5,2)` environmental values; `MissingFields text[]`. |
 | Time semantics | All persisted and exchanged times are UTC (`timestamptz`). Open-Meteo is queried with `timezone=UTC`. The requested period is an ordinary query input (`dateTime`, optional; defaults to now). Freshness compares retrieval recency and forecast validity against the configured window — retrieval time and forecast time are distinct facts and both are stored. |
 | Freshness policy | `FRESH` when `now − RetrievedAt ≤ FreshnessMaxAge` and `now − ForecastTime ≤ FreshnessMaxAge`; `STALE` otherwise; `UNAVAILABLE` only where no snapshot exists. Default window 60 minutes via `OpenMeteo:FreshnessMaxAgeMinutes` (documented implementation decision; the component contract deliberately sets no numeric limit). |
 | Missing data | A provider field that is absent, malformed, negative or non-finite is reported in `MissingFields` and stored as NULL. Missing values are never coerced to zero or another safe value, and a missing required factor forces `UNKNOWN`. |
 | Snapshot retention/reuse | A stored snapshot may be reused for the same rounded coordinate and hour within a 15-minute retrieval-recency window; otherwise a fresh acquisition is made and persisted. History endpoints classify freshness at read time. |
 | Suitability rule vocabulary | `SUITABLE`, `CAUTION`, `UNSUITABLE`, `UNKNOWN`. `CAUTION` is produced only when the applied profile configures explicit caution bands; strict profiles yield three-state results. No implicit percentage rule. |
+| Safety-profile evidence and review | Numeric limits remain owner-supplied; no default live values are approved by this record. Every wind, wave and swell criterion requires its own source reference and rationale. New or changed limits are immutable inactive drafts. A different authorized manager must review and approve the draft before evaluation; evaluation returns 409 while no reviewed, source-complete active profile exists. The author, reviewer, review time and effective interval are recorded. Test-only example citations are not evidence for production limits. |
 
 ## 5. Service and delivery identity (exit criterion 5)
 
@@ -216,3 +223,14 @@ counts and dates.
   Auth-table SQL against PostgreSQL. Documentation was reconciled with the
   frozen G00 decisions and current implementation; Flutter, executable AI,
   cross-component integration, PR/merge and G07 remain open.
+- Revision 2026-10-06 (11): completed the profile-review and assessment-evidence
+  implementation across the backend, React Web and Flutter marine surfaces.
+  Every new wind, wave and swell criterion requires a source and rationale;
+  drafts are immutable, a different authorized manager must review them, and
+  evaluation blocks until a reviewed active profile exists. Assessment history
+  stores condition snapshots, exact criteria evidence and an explicit legacy
+  completeness state. The React suite passes 201/201 (44 marine cases), the
+  Web build and both contract validators pass, and the backend project builds
+  cleanly. The source contains 118 backend test cases, but VSTest could not
+  complete on this host because testhost startup timed out; PostgreSQL/Auth SQL
+  and Flutter runtime verification remain open.

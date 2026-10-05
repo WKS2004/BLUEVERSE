@@ -74,9 +74,9 @@ public sealed class ConditionService : IConditionService
             Rain = acquired.Rain,
             WeatherCode = acquired.WeatherCode,
             Source = acquired.Source,
-            FreshnessStatus = FreshnessStatuses.Fresh,
             MissingFields = [.. acquired.MissingFields]
         };
+        stored.FreshnessStatus = _freshnessPolicy.Classify(stored, DateTime.UtcNow);
 
         _db.ConditionSnapshots.Add(stored);
         await _db.SaveChangesAsync(cancellationToken);
@@ -113,8 +113,17 @@ public sealed class ConditionService : IConditionService
         return sameHour && recentlyRetrieved ? candidate : null;
     }
 
-    public Task<ConditionSnapshot?> GetSnapshotAsync(Guid id, CancellationToken cancellationToken) =>
-        _db.ConditionSnapshots.AsNoTracking().SingleOrDefaultAsync(s => s.Id == id, cancellationToken);
+    public async Task<ConditionSnapshot?> GetSnapshotAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var snapshot = await _db.ConditionSnapshots
+            .AsNoTracking()
+            .SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
+        if (snapshot is not null)
+        {
+            snapshot.FreshnessStatus = _freshnessPolicy.Classify(snapshot, DateTime.UtcNow);
+        }
+        return snapshot;
+    }
 
     public async Task<IReadOnlyList<ConditionSnapshot>> GetHistoryAsync(
         decimal? latitude,

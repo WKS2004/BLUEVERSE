@@ -80,6 +80,18 @@ public sealed class MarineConditionsController : ControllerBase
         [FromQuery] DateTime? to,
         CancellationToken cancellationToken)
     {
+        if ((latitude.HasValue && latitude is < -90 or > 90) ||
+            (longitude.HasValue && longitude is < -180 or > 180) ||
+            (from.HasValue && to.HasValue && MarineTime.ToUtc(from.Value) > MarineTime.ToUtc(to.Value)))
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Invalid history filters",
+                Detail = "Coordinates must be within WGS84 ranges and the from time must not be later than the to time.",
+                Status = StatusCodes.Status400BadRequest
+            });
+        }
+
         var history = await _conditions.GetHistoryAsync(latitude, longitude, from, to, cancellationToken);
         return Ok(history.Select(ToDto).ToList());
     }
@@ -143,12 +155,14 @@ public sealed class SuitabilityController : ControllerBase
         }
         catch (SuitabilityValidationException exception)
         {
-            var isProfileProblem = exception.Field == "activityId";
+            var isProfileProblem = exception.Field is "activityId" or "review";
             return StatusCode(
                 isProfileProblem ? StatusCodes.Status409Conflict : StatusCodes.Status404NotFound,
                 new ProblemDetails
                 {
-                    Title = isProfileProblem ? "No Safety Profile Configured" : "Activity Not Found",
+                    Title = exception.Field == "review"
+                        ? "Safety Profile Review Required"
+                        : isProfileProblem ? "No Safety Profile Configured" : "Activity Not Found",
                     Detail = exception.Message,
                     Status = isProfileProblem ? StatusCodes.Status409Conflict : StatusCodes.Status404NotFound
                 });

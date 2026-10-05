@@ -4,14 +4,19 @@
 `features/marine-safety`; Agentic AI branch after G07:
 `agentic-ai/marine-conditions`.
 
-**Implementation status — 2026-10-03:** work areas 1 and 2 are implemented
-in `services/marine-safety`; the React portion of work area 3 is implemented
-and the Flutter portion remains open. The service suite passes 117 tests and
-the full React suite passes 198, including 41 marine cases. The Auth SQL path
-has not been verified against PostgreSQL. By the accepted Member 2 G00
-decision, work area 4's public AI workflow and typed adapter are deferred; no
-executable Agentic AI work is included. The component PR/merge, cross-component
-verification and G07 are not recorded.
+**Implementation status — 2026-10-06:** work areas 1 and 2 are implemented
+in `services/marine-safety`; both React and Flutter portions of work area 3 are
+implemented. The current React suite passes 201/201, including 44 marine
+cases, and the Web production build passes. The backend test project builds
+cleanly and contains 118 authored cases, but its latest VSTest attempt timed
+out during testhost startup; the last completed run was 117/117. The Auth SQL
+path has not been verified against PostgreSQL, and direct Dart formatting
+completed with the expected package-resolution warning; Flutter analysis and
+runtime verification remain open because the SDK package configuration and
+cached dependencies are absent. By the accepted
+Member 2 G00 decision, work area 4's public AI workflow and typed adapter are
+deferred; no executable Agentic AI work is included. The component PR/merge,
+cross-component verification and G07 are not recorded.
 
 This plan divides the [Sanuda Abeysinghe (Member 2) component contract](../components/member-2-marine-conditions-safety-intelligence.md)
 into work areas for one complete component branch. The

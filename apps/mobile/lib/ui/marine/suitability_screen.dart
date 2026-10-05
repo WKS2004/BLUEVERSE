@@ -29,7 +29,8 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
     text: _initialLongitude.toStringAsFixed(5),
   );
   final _timeController = TextEditingController();
-  String _activityId = MarineRepository.referenceActivities.first['id'] as String;
+  String _activityId =
+      MarineRepository.referenceActivities.first['id'] as String;
   List<Map<String, dynamic>> _activities = const [];
   ConditionSnapshotDto? _snapshot;
   SuitabilityResultDto? _result;
@@ -69,8 +70,7 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
         : null;
     if (requestedTime == null && _timeController.text.isNotEmpty) {
       setState(() {
-        _formError =
-            'Enter the requested time as a valid UTC moment, e.g. 2026-09-26T10:00.';
+        _formError = 'Enter the requested time as a valid UTC moment, e.g. 2026-09-26T10:00.';
         _error = null;
         _snapshot = null;
         _result = null;
@@ -85,17 +85,13 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
       _result = null;
     });
     try {
-      final conditions = await widget.service.currentConditions(
-        latitude: latitude,
-        longitude: longitude,
-        timeUtc: requestedTime,
-      );
       final result = await widget.service.evaluateSuitability(
         activityId: _activityId,
         latitude: latitude,
         longitude: longitude,
         timeUtc: requestedTime,
       );
+      final conditions = result.toConditionSnapshot();
       if (mounted) {
         setState(() {
           _snapshot = conditions;
@@ -115,8 +111,7 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
     } catch (error) {
       if (mounted) {
         setState(() {
-          _error =
-              'The marine service could not be reached. Check the gateway address and try again.';
+          _error = 'The marine service could not be reached. Check the gateway address and try again.';
           _loading = false;
           _snapshot = null;
           _result = null;
@@ -147,9 +142,9 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
             if (_snapshot != null) _evidenceCard(),
             if (_result != null) _resultCard(),
             if (_snapshot == null &&
-                    _result == null &&
-                    !_loading &&
-                    _error == null)
+                _result == null &&
+                !_loading &&
+                _error == null)
               _emptyPrompt(),
             const _NoteCard(),
           ],
@@ -159,43 +154,43 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
   }
 
   Widget _errorCard() => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              const Icon(Icons.cloud_off_outlined, color: Colors.redAccent),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  _error!,
-                  style: const TextStyle(color: Colors.redAccent),
-                ),
-              ),
-            ],
+    child: Padding(
+      padding: const EdgeInsets.all(14),
+      child: Row(
+        children: [
+          const Icon(Icons.cloud_off_outlined, color: Colors.redAccent),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              _error!,
+              style: const TextStyle(color: Colors.redAccent),
+            ),
           ),
-        ),
-      );
+        ],
+      ),
+    ),
+  );
 
   Widget _formErrorCard() => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              const Icon(Icons.error_outline, color: Colors.amberAccent),
-              const SizedBox(width: 12),
-              const Flexible(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 4),
-                  child: Text(
-                    'Enter valid values before checking the coast.',
-                    maxLines: 3,
-                  ),
-                ),
+    child: Padding(
+      padding: const EdgeInsets.all(14),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, color: Colors.amberAccent),
+          const SizedBox(width: 12),
+          const Flexible(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                'Enter valid values before checking the coast.',
+                maxLines: 3,
               ),
-            ],
+            ),
           ),
-        ),
-      );
+        ],
+      ),
+    ),
+  );
 
   Widget _queryCard() {
     return Card(
@@ -340,14 +335,14 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
   }
 
   Widget _emptyPrompt() => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: const Text(
-            'Enter a coastal location and check the sea before you plan. Missing or stale evidence is always labelled rather than silently treated as safe.',
-            style: TextStyle(color: Colors.blueGrey),
-          ),
-        ),
-      );
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: const Text(
+        'Enter a coastal location and check the sea before you plan. Missing or stale evidence is always labelled rather than silently treated as safe.',
+        style: TextStyle(color: Colors.blueGrey),
+      ),
+    ),
+  );
 
   Widget _detailRow(String label, dynamic value) {
     final text = value is DateTime
@@ -366,10 +361,7 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
             ),
           ),
           Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(color: Colors.blueGrey),
-            ),
+            child: Text(text, style: const TextStyle(color: Colors.blueGrey)),
           ),
         ],
       ),
@@ -380,8 +372,8 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
     final tone = freshness == 'FRESH'
         ? 'bg-green-100 text-green-800'
         : freshness == 'STALE'
-            ? 'bg-amber-100 text-amber-800'
-            : 'bg-red-100 text-red-800';
+        ? 'bg-amber-100 text-amber-800'
+        : 'bg-red-100 text-red-800';
     return Chip(
       label: Text(freshness),
       backgroundColor: Colors.transparent,
@@ -396,10 +388,10 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
     final tone = status == 'SUITABLE'
         ? 'bg-green-100 text-green-800'
         : status == 'CAUTION'
-            ? 'bg-amber-100 text-amber-800'
-            : status == 'UNSUITABLE'
-                ? 'bg-red-100 text-red-800'
-                : 'bg-slate-100 text-slate-700';
+        ? 'bg-amber-100 text-amber-800'
+        : status == 'UNSUITABLE'
+        ? 'bg-red-100 text-red-800'
+        : 'bg-slate-100 text-slate-700';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -426,27 +418,24 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
       _list('MISSING OR STALE EVIDENCE', missing, Colors.blueGrey);
 
   Widget _list(String title, List<String> items, Color color) => Padding(
-        padding: const EdgeInsets.only(top: 6),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: TextStyle(fontWeight: FontWeight.w700, color: color),
-            ),
-            const SizedBox(height: 4),
-            ...items.map(
-              (item) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  item,
-                  style: TextStyle(color: color),
-                ),
-              ),
-            ),
-          ],
+    padding: const EdgeInsets.only(top: 6),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(fontWeight: FontWeight.w700, color: color),
         ),
-      );
+        const SizedBox(height: 4),
+        ...items.map(
+          (item) => Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Text(item, style: TextStyle(color: color)),
+          ),
+        ),
+      ],
+    ),
+  );
 
   Widget _field({
     required TextEditingController controller,
@@ -467,10 +456,9 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
           borderSide: BorderSide(color: Colors.blueAccent, width: 1.5),
         ),
       ),
-      inputFormatters: keyboardType == TextInputType.numberWithOptions(decimal: true)
-          ? <TextInputFormatter>[
-              FilteringTextInputFormatter.digitsOnly
-            ]
+      inputFormatters:
+          keyboardType == TextInputType.numberWithOptions(decimal: true)
+          ? <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly]
           : null,
     );
   }
@@ -490,8 +478,7 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
     if (parts.length > 2) return null;
     final integer = int.tryParse(parts[0]);
     if (integer == null) return null;
-    final fractional =
-        parts.length == 2 ? double.parse('0.' + parts[1]) : 0.0;
+    final fractional = parts.length == 2 ? double.parse('0.' + parts[1]) : 0.0;
     final value = integer.toDouble() + fractional;
     if (value < min || value > max) return null;
     return value;
@@ -511,25 +498,25 @@ class _NoteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Server assessment',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  color: Colors.blueAccent,
-                ),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'The outcome is calculated on the backend from configured safety profiles and retrieved conditions. Flutter never reclassifies the result, even when fields are missing or stale.',
-                style: TextStyle(height: 1.4, color: Colors.blueGrey),
-              ),
-            ],
+    child: Padding(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Server assessment',
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              color: Colors.blueAccent,
+            ),
           ),
-        ),
-      );
+          const SizedBox(height: 6),
+          const Text(
+            'The outcome is calculated on the backend from configured safety profiles and retrieved conditions. Flutter never reclassifies the result, even when fields are missing or stale.',
+            style: TextStyle(height: 1.4, color: Colors.blueGrey),
+          ),
+        ],
+      ),
+    ),
+  );
 }

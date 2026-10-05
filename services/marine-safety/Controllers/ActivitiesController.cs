@@ -67,6 +67,15 @@ public sealed class ActivitiesController : ControllerBase
                 Status = StatusCodes.Status409Conflict
             });
         }
+        catch (ActivityValidationException exception)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Invalid activity",
+                Detail = exception.Message,
+                Status = StatusCodes.Status400BadRequest
+            });
+        }
     }
 
     [HasPermission("marine.profile.manage")]
@@ -88,6 +97,15 @@ public sealed class ActivitiesController : ControllerBase
                 Title = "Activity Name Already In Use",
                 Detail = exception.Message,
                 Status = StatusCodes.Status409Conflict
+            });
+        }
+        catch (ActivityValidationException exception)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Invalid activity",
+                Detail = exception.Message,
+                Status = StatusCodes.Status400BadRequest
             });
         }
     }

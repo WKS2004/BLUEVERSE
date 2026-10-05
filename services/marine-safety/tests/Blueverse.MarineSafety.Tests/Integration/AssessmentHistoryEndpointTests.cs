@@ -111,6 +111,17 @@ public sealed class AssessmentHistoryEndpointTests : IClassFixture<MarineSafetyW
         Assert.Equal("FRESH", row.GetProperty("freshnessStatus").GetString());
         Assert.False(row.GetProperty("conditionSnapshotId").GetGuid().Equals(Guid.Empty));
         Assert.False(row.GetProperty("safetyProfileId").GetGuid().Equals(Guid.Empty));
+        Assert.NotEqual(default, row.GetProperty("forecastTime").GetDateTimeOffset());
+        Assert.Equal(15m, row.GetProperty("conditions").GetProperty("windSpeed").GetDecimal());
+        Assert.Equal(0.8m, row.GetProperty("conditions").GetProperty("waveHeight").GetDecimal());
+        Assert.Equal(0.7m, row.GetProperty("conditions").GetProperty("swellHeight").GetDecimal());
+        Assert.NotEqual(default, row.GetProperty("conditionRetrievedAt").GetDateTimeOffset());
+        Assert.Equal("COMPLETE", row.GetProperty("evidenceCompleteness").GetString());
+        var windCriterion = row.GetProperty("criteria").EnumerateArray()
+            .Single(criterion => criterion.GetProperty("factor").GetString() == "windSpeed");
+        Assert.Equal(25m, windCriterion.GetProperty("maximum").GetDecimal());
+        Assert.Equal("Test safety standard, section 4", windCriterion.GetProperty("source").GetString());
+        Assert.Contains("cited limit", windCriterion.GetProperty("rationale").GetString(), StringComparison.Ordinal);
         Assert.True(row.GetProperty("evaluatedAt").GetDateTimeOffset() <= DateTimeOffset.UtcNow);
         Assert.True(row.GetProperty("requestedTime").GetDateTimeOffset() <= DateTimeOffset.UtcNow);
         Assert.True(row.GetProperty("createdAt").GetDateTimeOffset() <= DateTimeOffset.UtcNow);
@@ -167,12 +178,13 @@ public sealed class AssessmentHistoryEndpointTests : IClassFixture<MarineSafetyW
 
         // ...and a profile-backed second activity with its own assessment.
         var second = Guid.NewGuid();
+        var secondName = "Jet Skiing " + Guid.NewGuid().ToString("N");
         await _factory.SeedAsync(db =>
         {
             db.MarineActivities.Add(new MarineActivity
             {
                 Id = second,
-                Name = "Jet Skiing " + Guid.NewGuid().ToString("N"),
+                Name = secondName,
                 ActivityType = "BoatTour",
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
@@ -184,6 +196,16 @@ public sealed class AssessmentHistoryEndpointTests : IClassFixture<MarineSafetyW
                 MaxWindSpeed = 25m,
                 MaxWaveHeight = 1.5m,
                 MaxSwellHeight = 1.2m,
+                WindCriteriaSource = "Test safety standard, section 4",
+                WindCriteriaRationale = "This cited limit is used as deterministic test evidence.",
+                WaveCriteriaSource = "Test sea-state standard, section 2",
+                WaveCriteriaRationale = "This cited limit is used as deterministic test evidence.",
+                SwellCriteriaSource = "Test swell guidance, section 3",
+                SwellCriteriaRationale = "This cited limit is used as deterministic test evidence.",
+                CreatedByUserId = MarineSafetyTestSeed.ManagerUserId,
+                ReviewedByUserId = MarineSafetyTestSeed.ReviewerUserId,
+                ReviewedAt = DateTime.UtcNow,
+                EffectiveFrom = DateTime.UtcNow,
                 IsActive = true,
                 Version = 1,
                 CreatedAt = DateTime.UtcNow,

@@ -14,8 +14,8 @@ namespace Blueverse.MarineSafety.Services;
 ///
 /// Evaluation order is deliberate:
 ///   1. request validation and activity existence;
-///   2. a configured safety profile must exist (missing profile is a
-///      validation error, never an implicit "safe");
+///   2. a reviewed safety profile with cited criteria must exist (missing or
+///      unreviewed profile is a conflict, never an implicit "safe");
 ///   3. condition evidence must be fresh (stale evidence cannot support a
 ///      positive classification);
 ///   4. every required factor must be present (a missing factor yields
@@ -64,7 +64,20 @@ public sealed class SuitabilityService : ISuitabilityService
         {
             throw new SuitabilityValidationException(
                 "activityId",
-                $"No active safety profile is configured for activity '{activity.Name}'.");
+                $"No reviewed active safety profile is configured for activity '{activity.Name}'.");
+        }
+
+        if (!profile.ReviewedAt.HasValue ||
+            string.IsNullOrWhiteSpace(profile.WindCriteriaSource) ||
+            string.IsNullOrWhiteSpace(profile.WindCriteriaRationale) ||
+            string.IsNullOrWhiteSpace(profile.WaveCriteriaSource) ||
+            string.IsNullOrWhiteSpace(profile.WaveCriteriaRationale) ||
+            string.IsNullOrWhiteSpace(profile.SwellCriteriaSource) ||
+            string.IsNullOrWhiteSpace(profile.SwellCriteriaRationale))
+        {
+            throw new SuitabilityValidationException(
+                "review",
+                $"The safety profile for '{activity.Name}' is awaiting review with a source and rationale for wind, wave and swell limits.");
         }
 
         var requestedTime = MarineTime.ToUtc(request.DateTime ?? DateTime.UtcNow);
@@ -93,10 +106,12 @@ public sealed class SuitabilityService : ISuitabilityService
         {
             Id = Guid.NewGuid(),
             ActivityId = activity.Id,
+            ActivityName = activity.Name,
             ProfileVersion = profile.Version,
             Latitude = Math.Round(request.Latitude, 3, MidpointRounding.AwayFromZero),
             Longitude = Math.Round(request.Longitude, 3, MidpointRounding.AwayFromZero),
             RequestedTime = requestedTime,
+            ForecastTime = conditions.ForecastTime,
             EvaluatedAt = evaluatedAt,
             Result = status,
             Violations = [.. violations],
@@ -106,6 +121,26 @@ public sealed class SuitabilityService : ISuitabilityService
             FreshnessStatus = freshness,
             ConditionSnapshotId = conditions.Id,
             SafetyProfileId = profile.Id,
+            ConditionRetrievedAt = conditions.RetrievedAt,
+            WindSpeed = conditions.WindSpeed,
+            WaveHeight = conditions.WaveHeight,
+            SwellHeight = conditions.SwellHeight,
+            Rain = conditions.Rain,
+            WeatherCode = conditions.WeatherCode,
+            ConditionMissingFields = [.. conditions.MissingFields],
+            MaxWindSpeed = profile.MaxWindSpeed,
+            MaxWaveHeight = profile.MaxWaveHeight,
+            MaxSwellHeight = profile.MaxSwellHeight,
+            CautionWindSpeed = profile.CautionWindSpeed,
+            CautionWaveHeight = profile.CautionWaveHeight,
+            CautionSwellHeight = profile.CautionSwellHeight,
+            WindCriteriaSource = profile.WindCriteriaSource!,
+            WindCriteriaRationale = profile.WindCriteriaRationale!,
+            WaveCriteriaSource = profile.WaveCriteriaSource!,
+            WaveCriteriaRationale = profile.WaveCriteriaRationale!,
+            SwellCriteriaSource = profile.SwellCriteriaSource!,
+            SwellCriteriaRationale = profile.SwellCriteriaRationale!,
+            EvidenceCompleteness = "COMPLETE",
             CreatedAt = evaluatedAt
         };
 
@@ -123,6 +158,7 @@ public sealed class SuitabilityService : ISuitabilityService
             activity.Name,
             new LocationDto(record.Latitude, record.Longitude),
             requestedTime,
+            conditions.ForecastTime,
             evaluatedAt,
             new ConditionsDto(
                 conditions.WindSpeed,
@@ -182,7 +218,6 @@ public sealed class SuitabilityService : ISuitabilityService
             .OrderByDescending(r => r.EvaluatedAt)
             .ThenByDescending(r => r.Id)
             .Take(200)
-            .Include(r => r.Activity)
             .ToListAsync(cancellationToken);
 
         return records.Select(ToHistoryDto).ToList();
@@ -192,25 +227,37 @@ public sealed class SuitabilityService : ISuitabilityService
         _db.SuitabilityAssessments
             .AsNoTracking()
             .Where(r => r.Id == id)
-            .Include(r => r.Activity)
             .Select(r => ToHistoryDto(r))
             .SingleOrDefaultAsync(cancellationToken);
 
     private static AssessmentHistoryDto ToHistoryDto(SuitabilityAssessmentRecord record) => new(
         record.Id,
         record.ActivityId,
-        record.Activity?.Name ?? string.Empty,
+        record.ActivityName,
         record.ConditionSnapshotId,
         record.SafetyProfileId,
         record.ProfileVersion,
         record.Latitude,
         record.Longitude,
         record.RequestedTime,
+        record.ForecastTime,
         record.EvaluatedAt,
         record.Result,
         record.Violations,
         record.CautionFactors,
         record.MissingFields,
+        record.ConditionMissingFields,
+        new ConditionsDto(record.WindSpeed, record.WaveHeight, record.SwellHeight, record.Rain, record.WeatherCode),
+        record.ConditionRetrievedAt,
+        [
+            new SafetyCriterionSnapshotDto("windSpeed", record.MaxWindSpeed, record.CautionWindSpeed,
+                record.WindCriteriaSource, record.WindCriteriaRationale),
+            new SafetyCriterionSnapshotDto("waveHeight", record.MaxWaveHeight, record.CautionWaveHeight,
+                record.WaveCriteriaSource, record.WaveCriteriaRationale),
+            new SafetyCriterionSnapshotDto("swellHeight", record.MaxSwellHeight, record.CautionSwellHeight,
+                record.SwellCriteriaSource, record.SwellCriteriaRationale)
+        ],
+        record.EvidenceCompleteness,
         record.Source,
         record.FreshnessStatus,
         record.CreatedAt);

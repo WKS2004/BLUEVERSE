@@ -8,12 +8,13 @@ import {
   deactivateMarineSafetyProfile,
   createMarineSafetyProfile,
   evaluateMarineSuitability,
-  getMarineConditions,
+  getMarineAssessments,
   getMarineHistory,
   getMarineSafetyProfiles,
+  reviewMarineSafetyProfile,
   updateMarineSafetyProfile,
 } from '../../features/marine/marineApi'
-import type { MarineConditionSnapshot, MarineSafetyProfile, MarineSuitabilityResult } from '../../features/marine/marineApi'
+import type { MarineAssessmentHistory, MarineConditionSnapshot, MarineSafetyProfile, MarineSuitabilityResult } from '../../features/marine/marineApi'
 import { MARINE_ACTIVITY_REFERENCES } from '../../features/marine/marineActivities'
 import { hasAllPermissions } from '../../features/authorization/permissions'
 import { useAuthSession } from '../../features/auth/authSession'
@@ -210,15 +211,26 @@ export function MarineConditionsPage() {
     setLoading(true)
     try {
       const requestedTime = dateTime ? toUtcTimestamp(dateTime) : undefined
-      const [conditions, suitability] = await Promise.all([
-        getMarineConditions(parsedLatitude, parsedLongitude, requestedTime || undefined),
-        evaluateMarineSuitability({
-          activityId,
-          latitude: parsedLatitude,
-          longitude: parsedLongitude,
-          dateTime: requestedTime || undefined,
-        }),
-      ])
+      const suitability = await evaluateMarineSuitability({
+        activityId,
+        latitude: parsedLatitude,
+        longitude: parsedLongitude,
+        dateTime: requestedTime || undefined,
+      })
+      if (!suitability.conditions || !suitability.source || !suitability.freshness || !suitability.retrievedAt || !suitability.forecastTime) {
+        throw new MarineApiError(502, 'The assessment did not include its matching condition evidence. Please retry.')
+      }
+      const conditions: MarineConditionSnapshot = {
+        id: suitability.snapshotId,
+        latitude: suitability.location.latitude,
+        longitude: suitability.location.longitude,
+        forecastTime: suitability.forecastTime,
+        retrievedAt: suitability.retrievedAt,
+        ...suitability.conditions,
+        source: suitability.source,
+        freshnessStatus: suitability.freshness,
+        missingFields: suitability.missingFields,
+      }
       setSnapshot(conditions)
       setResult(suitability)
     } catch (reason) {
@@ -286,17 +298,22 @@ export function MarineHistoryPage() {
   const [longitude, setLongitude] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
+  const [activityId, setActivityId] = useState('')
+  const [resultFilter, setResultFilter] = useState('')
   const [snapshots, setSnapshots] = useState<MarineConditionSnapshot[]>([])
+  const [assessments, setAssessments] = useState<MarineAssessmentHistory[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
-    void getMarineHistory().then((items) => {
-      if (active) setSnapshots(items)
-    }).catch((reason: unknown) => {
-      if (active) setError(getMarineError(reason))
+    void Promise.allSettled([getMarineHistory(), getMarineAssessments()]).then(([conditionRows, assessmentRows]) => {
+      if (!active) return
+      if (conditionRows.status === 'fulfilled') setSnapshots(conditionRows.value)
+      if (assessmentRows.status === 'fulfilled') setAssessments(assessmentRows.value)
+      const failed = [conditionRows, assessmentRows].find((row) => row.status === 'rejected')
+      if (failed?.status === 'rejected') setError(getMarineError(failed.reason))
     }).finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [])
@@ -315,17 +332,30 @@ export function MarineHistoryPage() {
       setFormError('Enter the history window as valid UTC dates and times.')
       return
     }
+    if (fromTimestamp && toTimestamp && new Date(fromTimestamp) > new Date(toTimestamp)) {
+      setFormError('The From time must be earlier than or equal to the To time.')
+      return
+    }
     setFormError(null)
     setError(null)
     setLoading(true)
     try {
-      const items = await getMarineHistory({
+      const [items, assessmentItems] = await Promise.all([
+        getMarineHistory({
         ...(parsedLatitude === '' ? {} : { latitude: parsedLatitude }),
         ...(parsedLongitude === '' ? {} : { longitude: parsedLongitude }),
         ...(from ? { from: fromTimestamp } : {}),
         ...(to ? { to: toTimestamp } : {}),
-      })
+        }),
+        getMarineAssessments({
+          ...(activityId ? { activityId } : {}),
+          ...(resultFilter ? { result: resultFilter } : {}),
+          ...(from ? { from: fromTimestamp } : {}),
+          ...(to ? { to: toTimestamp } : {}),
+        }),
+      ])
       setSnapshots(items)
+      setAssessments(assessmentItems)
     } catch (reason) {
       setError(getMarineError(reason))
     } finally {
@@ -334,13 +364,13 @@ export function MarineHistoryPage() {
   }
 
   return <MarinePageFrame
-    intro="Review stored condition snapshots with their source, timestamps, freshness and unavailable fields. History distinguishes past evidence from the current reading on the conditions page."
-    title="Condition history"
+    intro="Review stored condition readings and past suitability assessments with the source evidence and exact reviewed limits that produced each result."
+    title="Marine history"
   >
     <div className="grid gap-5">
       <section className={cardClass}>
         <p className="text-xs font-extrabold tracking-[0.15em] text-coast-blue">FILTER HISTORY</p>
-        <form className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-5" onSubmit={search}>
+        <form className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4" onSubmit={search}>
           <label className="text-sm font-bold" htmlFor="history-latitude">Latitude
             <input className={inputClass} id="history-latitude" inputMode="decimal" onChange={(event) => setLatitude(event.target.value)} value={latitude} />
           </label>
@@ -352,6 +382,18 @@ export function MarineHistoryPage() {
           </label>
           <label className="text-sm font-bold" htmlFor="history-to">To <span className="font-normal text-coast-muted">(UTC)</span>
             <input className={inputClass} id="history-to" onChange={(event) => setTo(event.target.value)} type="datetime-local" value={to} />
+          </label>
+          <label className="text-sm font-bold" htmlFor="history-activity">Assessment activity
+            <select className={inputClass} id="history-activity" onChange={(event) => setActivityId(event.target.value)} value={activityId}>
+              <option value="">All activities</option>
+              {MARINE_ACTIVITY_REFERENCES.map((activity) => <option key={activity.id} value={activity.id}>{activity.name}</option>)}
+            </select>
+          </label>
+          <label className="text-sm font-bold" htmlFor="history-result">Assessment result
+            <select className={inputClass} id="history-result" onChange={(event) => setResultFilter(event.target.value)} value={resultFilter}>
+              <option value="">All results</option>
+              {['SUITABLE', 'CAUTION', 'UNSUITABLE', 'UNKNOWN'].map((result) => <option key={result} value={result}>{result}</option>)}
+            </select>
           </label>
           <div className="flex items-end">
             <button className={secondaryButton} disabled={loading} type="submit">Apply filters</button>
@@ -384,6 +426,34 @@ export function MarineHistoryPage() {
             </li>)}
           </ul>}
       </section>
+
+      <section className={cardClass}>
+        <div className="flex flex-wrap items-end justify-between gap-4 border-b border-coast-line pb-5">
+          <div><p className="text-xs font-extrabold tracking-[0.15em] text-coast-blue">SUITABILITY ASSESSMENTS</p><h2 className="mt-2 font-display text-2xl tracking-[-0.035em]">Past activity decisions</h2></div>
+          <span className="rounded-full bg-coast-sage px-3 py-1.5 text-xs font-extrabold text-coast-deep">{assessments.length} assessments</span>
+        </div>
+        {loading ? null : assessments.length === 0
+          ? <p className="py-5 text-sm text-coast-muted">No suitability assessments match these filters yet.</p>
+          : <ul className="divide-y divide-coast-line">
+            {assessments.map((assessment) => <li className="grid gap-3 py-5" key={assessment.id}>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div><h3 className="font-bold text-coast-deep">{assessment.activityName ?? 'Activity name not recorded'} · {assessment.result}</h3><p className="mt-1 text-xs text-coast-muted">Assessment {assessment.id} · profile v{assessment.profileVersion} · snapshot {assessment.conditionSnapshotId}</p></div>
+                <FreshnessChip freshness={assessment.freshnessStatus} />
+              </div>
+              <p className="text-sm text-coast-muted">{assessment.latitude}, {assessment.longitude} · requested {formatTimestamp(assessment.requestedTime)} · forecast {formatTimestamp(assessment.forecastTime)} · evaluated {formatTimestamp(assessment.evaluatedAt)}</p>
+              <p className="text-sm text-coast-ink">Wind: {assessment.conditions?.windSpeed ?? 'Not recorded'} km/h · Wave: {assessment.conditions?.waveHeight ?? 'Not recorded'} m · Swell: {assessment.conditions?.swellHeight ?? 'Not recorded'} m · Rain: {assessment.conditions?.rain ?? 'Not recorded'} mm · {assessment.source || 'source not recorded'} · retrieved {formatTimestamp(assessment.conditionRetrievedAt)}</p>
+              {assessment.evidenceCompleteness !== 'COMPLETE' && <p className="rounded-xl bg-coast-sand px-3 py-2 text-xs leading-5 text-coast-deep">Some evidence predates evidence snapshots and cannot be reconstructed reliably.</p>}
+              {(assessment.violations ?? []).length > 0 && <p className="text-sm text-red-800">Exceeded limits: {assessment.violations.join('; ')}</p>}
+              {(assessment.cautionFactors ?? []).length > 0 && <p className="text-sm text-coast-deep">Caution factors: {assessment.cautionFactors.map(formatFactor).join(', ')}</p>}
+              {(assessment.missingFields ?? []).length > 0 && <p className="text-xs text-coast-muted">Assessment missing: {assessment.missingFields.map(formatFactor).join(', ')}</p>}
+              {(assessment.criteria ?? []).length === 0
+                ? <p className="text-xs leading-5 text-coast-muted">Safety limits and their sources and rationales were not recorded for this assessment.</p>
+                : (assessment.criteria ?? []).map((criterion) => <p className="text-xs leading-5 text-coast-muted" key={criterion.factor}>
+                  {formatFactor(criterion.factor)} limit {criterion.maximum === null ? 'not recorded' : `${criterion.maximum}${unitByFactor[criterion.factor] ? ` ${unitByFactor[criterion.factor]}` : ''}`} · {criterion.source ?? 'source not recorded'} · {criterion.rationale ?? 'rationale not recorded'}
+                </p>)}
+            </li>)}
+          </ul>}
+      </section>
     </div>
   </MarinePageFrame>
 }
@@ -395,6 +465,12 @@ type ProfileDraft = {
   cautionWindSpeed: string
   cautionWaveHeight: string
   cautionSwellHeight: string
+  windCriteriaSource: string
+  windCriteriaRationale: string
+  waveCriteriaSource: string
+  waveCriteriaRationale: string
+  swellCriteriaSource: string
+  swellCriteriaRationale: string
 }
 
 const emptyDraft: ProfileDraft = {
@@ -404,7 +480,36 @@ const emptyDraft: ProfileDraft = {
   cautionWindSpeed: '',
   cautionWaveHeight: '',
   cautionSwellHeight: '',
+  windCriteriaSource: '',
+  windCriteriaRationale: '',
+  waveCriteriaSource: '',
+  waveCriteriaRationale: '',
+  swellCriteriaSource: '',
+  swellCriteriaRationale: '',
 }
+
+function profileToDraft(profile: MarineSafetyProfile): ProfileDraft {
+  return {
+    maxWindSpeed: String(profile.maxWindSpeed),
+    maxWaveHeight: String(profile.maxWaveHeight),
+    maxSwellHeight: String(profile.maxSwellHeight),
+    cautionWindSpeed: profile.cautionWindSpeed === null ? '' : String(profile.cautionWindSpeed),
+    cautionWaveHeight: profile.cautionWaveHeight === null ? '' : String(profile.cautionWaveHeight),
+    cautionSwellHeight: profile.cautionSwellHeight === null ? '' : String(profile.cautionSwellHeight),
+    windCriteriaSource: profile.windCriteriaSource ?? '',
+    windCriteriaRationale: profile.windCriteriaRationale ?? '',
+    waveCriteriaSource: profile.waveCriteriaSource ?? '',
+    waveCriteriaRationale: profile.waveCriteriaRationale ?? '',
+    swellCriteriaSource: profile.swellCriteriaSource ?? '',
+    swellCriteriaRationale: profile.swellCriteriaRationale ?? '',
+  }
+}
+
+const profileCriteria = [
+  { factor: 'Wind', source: 'windCriteriaSource', rationale: 'windCriteriaRationale' },
+  { factor: 'Wave', source: 'waveCriteriaSource', rationale: 'waveCriteriaRationale' },
+  { factor: 'Swell', source: 'swellCriteriaSource', rationale: 'swellCriteriaRationale' },
+] as const
 
 function parsePositiveLimit(raw: string, max: number): number | null {
   if (!COORDINATE_PATTERN.test(raw.trim())) return null
@@ -446,9 +551,22 @@ function SafetyProfileForm({ idPrefix, profile, draft, onDraftChange, onSubmit, 
     <label className="text-sm font-bold" htmlFor={`${idPrefix}-caution-swell`}>Caution swell height <span className="font-normal text-coast-muted">(optional)</span>
       <input className={inputClass} disabled={busy} id={`${idPrefix}-caution-swell`} inputMode="decimal" max={50} min={0.01} onChange={field('cautionSwellHeight')} step="any" type="number" value={draft.cautionSwellHeight} />
     </label>
+    <div className="grid gap-3 sm:col-span-2 xl:col-span-3">
+      <h3 className="font-display text-lg">Evidence for each limit</h3>
+      <p className="text-sm leading-6 text-coast-muted">Cite the source that supports each wind, wave and swell limit, then explain why it applies to this activity. A second authorized manager must review the draft before it can be used.</p>
+      {profileCriteria.map(({ factor, source, rationale }) => <fieldset className="grid gap-3 rounded-2xl border border-coast-line p-4 md:grid-cols-2" key={factor}>
+        <legend className="px-2 text-sm font-extrabold text-coast-deep">{factor} criteria</legend>
+        <label className="text-sm font-bold" htmlFor={`${idPrefix}-${source}`}>Source reference
+          <input className={inputClass} disabled={busy} id={`${idPrefix}-${source}`} maxLength={512} minLength={3} onChange={field(source)} placeholder="Publication, authority or URL" required value={draft[source]} />
+        </label>
+        <label className="text-sm font-bold" htmlFor={`${idPrefix}-${rationale}`}>Rationale
+          <textarea className={`${inputClass} min-h-24`} disabled={busy} id={`${idPrefix}-${rationale}`} maxLength={2000} minLength={10} onChange={field(rationale)} placeholder={`Why this ${factor.toLowerCase()} limit is appropriate`} required value={draft[rationale]} />
+        </label>
+      </fieldset>)}
+    </div>
     <div className="flex flex-wrap items-center gap-3 sm:col-span-2 xl:col-span-3">
       <button className={primaryButton} disabled={busy} type="submit">{submitLabel}</button>
-      {profile && <p className="text-xs text-coast-muted">Saving increments the profile version so past assessments stay interpretable.</p>}
+      {profile && <p className="text-xs text-coast-muted">Saving creates a new immutable profile version and leaves the current approved version in place until review.</p>}
     </div>
   </form>
 }
@@ -465,38 +583,36 @@ export function MarineSafetyProfilesPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
-  const [editorProfileId, setEditorProfileId] = useState('')
   const selected = profiles.find((profile) => profile.id === selectedId) ?? null
+  const selectedHasProvenance = Boolean(
+    selected?.windCriteriaSource?.trim() && selected.windCriteriaRationale?.trim() &&
+    selected.waveCriteriaSource?.trim() && selected.waveCriteriaRationale?.trim() &&
+    selected.swellCriteriaSource?.trim() && selected.swellCriteriaRationale?.trim(),
+  )
   const profiledActivityIds = useMemo(
     () => new Set(profiles.filter((profile) => profile.isActive).map((profile) => profile.activityId)),
     [profiles],
   )
-
-  if (selected && editorProfileId !== selected.id) {
-    setEditorProfileId(selected.id)
-    setEditDraft({
-      maxWindSpeed: String(selected.maxWindSpeed),
-      maxWaveHeight: String(selected.maxWaveHeight),
-      maxSwellHeight: String(selected.maxSwellHeight),
-      cautionWindSpeed: selected.cautionWindSpeed === null ? '' : String(selected.cautionWindSpeed),
-      cautionWaveHeight: selected.cautionWaveHeight === null ? '' : String(selected.cautionWaveHeight),
-      cautionSwellHeight: selected.cautionSwellHeight === null ? '' : String(selected.cautionSwellHeight),
-    })
-  }
 
   useEffect(() => {
     let active = true
     void getMarineSafetyProfiles().then((items) => {
       if (!active) return
       setProfiles(items)
-      setSelectedId((current) => items.some((profile) => profile.id === current) ? current : items[0]?.id ?? '')
+      const initialProfile = items[0] ?? null
+      setSelectedId(initialProfile?.id ?? '')
+      setEditDraft(initialProfile ? profileToDraft(initialProfile) : emptyDraft)
     }).catch((reason: unknown) => {
       if (active) setError(getMarineError(reason))
     }).finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [])
 
-  function parseDraft(draft: ProfileDraft): { limits: { maxWindSpeed: number; maxWaveHeight: number; maxSwellHeight: number }; caution: { cautionWindSpeed?: number; cautionWaveHeight?: number; cautionSwellHeight?: number } } | { error: string } {
+  function parseDraft(draft: ProfileDraft): {
+    limits: { maxWindSpeed: number; maxWaveHeight: number; maxSwellHeight: number }
+    caution: { cautionWindSpeed?: number; cautionWaveHeight?: number; cautionSwellHeight?: number }
+    criteria: Pick<ProfileDraft, 'windCriteriaSource' | 'windCriteriaRationale' | 'waveCriteriaSource' | 'waveCriteriaRationale' | 'swellCriteriaSource' | 'swellCriteriaRationale'>
+  } | { error: string } {
     const maxWind = parsePositiveLimit(draft.maxWindSpeed, 1000)
     const maxWave = parsePositiveLimit(draft.maxWaveHeight, 50)
     const maxSwell = parsePositiveLimit(draft.maxSwellHeight, 50)
@@ -509,8 +625,22 @@ export function MarineSafetyProfilesPage() {
     if (cautionWind === null || cautionWave === null || cautionSwell === null) {
       return { error: 'Optional caution limits must be positive numbers below their maximum.' }
     }
+    for (const criterion of profileCriteria) {
+      const source = draft[criterion.source].trim()
+      const rationale = draft[criterion.rationale].trim()
+      if (source.length < 3 || source.length > 512) return { error: `Add a source reference of 3 to 512 characters for the ${criterion.factor.toLowerCase()} limit.` }
+      if (rationale.length < 10 || rationale.length > 2000) return { error: `Add a rationale of 10 to 2000 characters for the ${criterion.factor.toLowerCase()} limit.` }
+    }
     return {
       limits: { maxWindSpeed: maxWind, maxWaveHeight: maxWave, maxSwellHeight: maxSwell },
+      criteria: {
+        windCriteriaSource: draft.windCriteriaSource.trim(),
+        windCriteriaRationale: draft.windCriteriaRationale.trim(),
+        waveCriteriaSource: draft.waveCriteriaSource.trim(),
+        waveCriteriaRationale: draft.waveCriteriaRationale.trim(),
+        swellCriteriaSource: draft.swellCriteriaSource.trim(),
+        swellCriteriaRationale: draft.swellCriteriaRationale.trim(),
+      },
       caution: {
         ...(cautionWind === '' ? {} : { cautionWindSpeed: cautionWind }),
         ...(cautionWave === '' ? {} : { cautionWaveHeight: cautionWave }),
@@ -525,12 +655,13 @@ export function MarineSafetyProfilesPage() {
     if ('error' in parsed) { setError(parsed.error); return }
     setBusy(true); setError(null); setNotice(null)
     try {
-      const created = await createMarineSafetyProfile({ activityId: createActivityId, ...parsed.limits, ...parsed.caution })
+      const created = await createMarineSafetyProfile({ activityId: createActivityId, ...parsed.limits, ...parsed.criteria, ...parsed.caution })
       const items = await getMarineSafetyProfiles()
       setProfiles(items)
       setSelectedId(created.id)
+      setEditDraft(profileToDraft(items.find((profile) => profile.id === created.id) ?? created))
       setCreateDraft(emptyDraft)
-      setNotice(`A new version of the ${created.activityName} safety profile is now active.`)
+      setNotice(`Version ${created.version} for ${created.activityName} is saved and awaiting review. Current approved limits remain in effect until it is approved.`)
     } catch (reason) { setError(getMarineError(reason)) } finally { setBusy(false) }
   }
 
@@ -541,9 +672,25 @@ export function MarineSafetyProfilesPage() {
     if ('error' in parsed) { setError(parsed.error); return }
     setBusy(true); setError(null); setNotice(null)
     try {
-      const updated = await updateMarineSafetyProfile(selected.id, { ...parsed.limits, ...parsed.caution, isActive: selected.isActive })
-      setProfiles((items) => items.map((profile) => profile.id === updated.id ? updated : profile))
-      setNotice(`The ${updated.activityName} safety profile was saved as version ${updated.version}.`)
+      const updated = await updateMarineSafetyProfile(selected.id, { ...parsed.limits, ...parsed.criteria, ...parsed.caution })
+      const items = await getMarineSafetyProfiles()
+      setProfiles(items)
+      setSelectedId(updated.id)
+      setEditDraft(profileToDraft(items.find((profile) => profile.id === updated.id) ?? updated))
+      setNotice(`Version ${updated.version} for ${updated.activityName} is saved and awaiting review. The earlier version remains unchanged.`)
+    } catch (reason) { setError(getMarineError(reason)) } finally { setBusy(false) }
+  }
+
+  async function reviewProfile() {
+    if (!selected || !canManage || selected.reviewedAt || busy) return
+    setBusy(true); setError(null); setNotice(null)
+    try {
+      const approved = await reviewMarineSafetyProfile(selected.id)
+      const items = await getMarineSafetyProfiles()
+      setProfiles(items)
+      setSelectedId(approved.id)
+      setEditDraft(profileToDraft(items.find((profile) => profile.id === approved.id) ?? approved))
+      setNotice(`Version ${approved.version} for ${approved.activityName} is approved and effective from ${formatTimestamp(approved.effectiveFrom)}.`)
     } catch (reason) { setError(getMarineError(reason)) } finally { setBusy(false) }
   }
 
@@ -554,13 +701,15 @@ export function MarineSafetyProfilesPage() {
       await deactivateMarineSafetyProfile(selected.id)
       const items = await getMarineSafetyProfiles()
       setProfiles(items)
-      setSelectedId((current) => items.some((profile) => profile.id === current) ? current : items[0]?.id ?? '')
+      const nextProfile = items.find((profile) => profile.id === selected.id) ?? items[0] ?? null
+      setSelectedId(nextProfile?.id ?? '')
+      setEditDraft(nextProfile ? profileToDraft(nextProfile) : emptyDraft)
       setNotice(`The ${selected.activityName} safety profile was deactivated. Assessments keep their history.`)
     } catch (reason) { setError(getMarineError(reason)) } finally { setBusy(false) }
   }
 
   return <MarinePageFrame
-    intro="Inspect the deterministic safety configuration for each coastal activity. Limits come from the server with explicit units; changing them is permission-gated and versioned so past assessments stay interpretable."
+    intro="Review activity limits with their cited basis. Each change creates an immutable draft; a different authorized manager must approve the cited wind, wave and swell criteria before a version can be used."
     title="Safety profiles"
   >
     <div className="grid gap-5">
@@ -569,7 +718,7 @@ export function MarineSafetyProfilesPage() {
 
       {canManage && <section className={cardClass}>
         <p className="text-xs font-extrabold tracking-[0.15em] text-coast-blue">NEW PROFILE VERSION</p>
-        <p className="mt-2 text-sm text-coast-muted">Creating a profile supersedes the activity’s previous active one while keeping its history.</p>
+        <p className="mt-2 text-sm text-coast-muted">Creating a draft keeps the current approved limits in effect. A different authorized manager must review the new version before it can be used.</p>
         <SafetyProfileForm
           busy={busy}
           draft={createDraft}
@@ -593,10 +742,10 @@ export function MarineSafetyProfilesPage() {
             ? <p className="py-5 text-sm text-coast-muted">No safety profiles are configured yet{canManage ? '. Create the first one above.' : '.'}</p>
             : <ul className="mt-3 grid gap-2">
               {profiles.map((profile) => <li key={profile.id}>
-                <button aria-current={profile.id === selectedId ? 'true' : undefined} className={`w-full rounded-2xl border px-4 py-3 text-left transition ${profile.id === selectedId ? 'border-coast-blue bg-coast-sage/70' : 'border-transparent hover:border-coast-line hover:bg-coast-paper'}`} onClick={() => setSelectedId(profile.id)} type="button">
+                <button aria-current={profile.id === selectedId ? 'true' : undefined} className={`w-full rounded-2xl border px-4 py-3 text-left transition ${profile.id === selectedId ? 'border-coast-blue bg-coast-sage/70' : 'border-transparent hover:border-coast-line hover:bg-coast-paper'}`} onClick={() => { setSelectedId(profile.id); setEditDraft(profileToDraft(profile)) }} type="button">
                   <span className="flex flex-wrap items-center justify-between gap-2">
                     <span className="break-words font-bold text-coast-deep">{profile.activityName}</span>
-                    <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-extrabold ${profile.isActive ? 'bg-emerald-50 text-emerald-800' : 'bg-coast-paper text-coast-muted'}`}>{profile.isActive ? 'ACTIVE' : 'INACTIVE'}</span>
+                    <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-extrabold ${profile.isActive && profile.reviewedAt ? 'bg-emerald-50 text-emerald-800' : 'bg-coast-paper text-coast-muted'}`}>{profile.isActive && profile.reviewedAt ? 'ACTIVE' : profile.reviewedAt ? 'SUPERSEDED' : 'REVIEW REQUIRED'}</span>
                   </span>
                   <span className="mt-1 block text-xs text-coast-muted">Version {profile.version} · v{profile.version} limits · updated {formatTimestamp(profile.updatedAt)}</span>
                 </button>
@@ -609,9 +758,27 @@ export function MarineSafetyProfilesPage() {
             <div><p className="text-xs font-extrabold tracking-[0.15em] text-coast-blue">PROFILE DETAILS</p><h2 className="mt-1 break-words font-display text-2xl">{selected.activityName}</h2></div>
             <span className="rounded-full bg-coast-sand px-3 py-1.5 text-xs font-extrabold text-coast-deep">Version {selected.version}</span>
           </div>
+          <div className="mt-4 grid gap-2 rounded-2xl bg-coast-paper p-4 text-sm text-coast-muted">
+            <p><span className="font-bold text-coast-deep">Approval:</span> {selected.reviewedAt ? `reviewed ${formatTimestamp(selected.reviewedAt)}${selected.isActive ? ' · effective' : ''}` : 'not reviewed; this version cannot support assessments'}</p>
+            {selected.effectiveFrom && <p><span className="font-bold text-coast-deep">Effective from:</span> {formatTimestamp(selected.effectiveFrom)}</p>}
+            {selected.effectiveTo && <p><span className="font-bold text-coast-deep">Effective until:</span> {formatTimestamp(selected.effectiveTo)}</p>}
+            <p><span className="font-bold text-coast-deep">Wind source:</span> {selected.windCriteriaSource ?? 'Not recorded'}. {selected.windCriteriaRationale ?? ''}</p>
+            <p><span className="font-bold text-coast-deep">Wave source:</span> {selected.waveCriteriaSource ?? 'Not recorded'}. {selected.waveCriteriaRationale ?? ''}</p>
+            <p><span className="font-bold text-coast-deep">Swell source:</span> {selected.swellCriteriaSource ?? 'Not recorded'}. {selected.swellCriteriaRationale ?? ''}</p>
+          </div>
           <SafetyProfileForm busy={busy || !canManage} draft={editDraft} idPrefix="edit-profile" onDraftChange={setEditDraft} onSubmit={saveProfile} profile={selected} submitLabel="Save limits" />
           {canManage
             ? <div className="mt-6 border-t border-coast-line pt-5">
+              {!selected.reviewedAt && <div className="mb-4 grid gap-2">
+                {selectedHasProvenance
+                  ? <>
+                    <button className={primaryButton} disabled={busy || selected.createdByUserId === user?.id} onClick={() => void reviewProfile()} type="button">Review and activate this version</button>
+                    {selected.createdByUserId === user?.id
+                      ? <p className="text-xs text-coast-muted">A different authorized manager must review this version. Sign in with another manager account to approve it.</p>
+                      : <p className="text-xs text-coast-muted">Approval makes this immutable version effective and records the review time.</p>}
+                  </>
+                  : <p className="text-xs text-coast-muted">This older version has no complete source record. Add source and rationale for every factor, save a new version, then have another manager review it.</p>}
+              </div>}
               <button className={dangerButton} disabled={busy} onClick={() => void deactivateProfile()} type="button">Deactivate profile</button>
               <p className="mt-2 text-xs text-coast-muted">Profiles are deactivated rather than deleted so assessment history keeps its reference.</p>
             </div>

@@ -196,11 +196,13 @@ using (var scope = app.Services.CreateScope())
     }
     catch (OperationCanceledException) when (initializationTimeout.IsCancellationRequested)
     {
-        logger.LogWarning("Marine-safety database initialization timed out; the service will remain unavailable until the database is reachable.");
+        logger.LogCritical("Marine-safety database initialization timed out; refusing to start without the required schema.");
+        throw;
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "Could not initialize the marine-safety database on startup.");
+        logger.LogCritical(ex, "Could not initialize the marine-safety database; refusing to start without the required schema.");
+        throw;
     }
 }
 

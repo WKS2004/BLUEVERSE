@@ -16,10 +16,10 @@ class MarineRepository {
     required double longitude,
     DateTime? timeUtc,
   }) => client.getConditions(
-        latitude: latitude,
-        longitude: longitude,
-        timeUtc: timeUtc,
-      );
+    latitude: latitude,
+    longitude: longitude,
+    timeUtc: timeUtc,
+  );
 
   Future<List<ConditionSnapshotDto>> history({
     double? latitude,
@@ -27,11 +27,23 @@ class MarineRepository {
     DateTime? fromUtc,
     DateTime? toUtc,
   }) => client.getHistory(
-        latitude: latitude,
-        longitude: longitude,
-        fromUtc: fromUtc,
-        toUtc: toUtc,
-      );
+    latitude: latitude,
+    longitude: longitude,
+    fromUtc: fromUtc,
+    toUtc: toUtc,
+  );
+
+  Future<List<MarineAssessmentHistoryDto>> assessments({
+    String? activityId,
+    String? result,
+    DateTime? fromUtc,
+    DateTime? toUtc,
+  }) => client.getAssessments(
+    activityId: activityId,
+    result: result,
+    fromUtc: fromUtc,
+    toUtc: toUtc,
+  );
 
   Future<SuitabilityResultDto> evaluateSuitability({
     required String activityId,
@@ -39,15 +51,16 @@ class MarineRepository {
     required double longitude,
     DateTime? timeUtc,
   }) => client.evaluateSuitability(
-        activityId: activityId,
-        latitude: latitude,
-        longitude: longitude,
-        timeUtc: timeUtc,
-      );
+    activityId: activityId,
+    latitude: latitude,
+    longitude: longitude,
+    timeUtc: timeUtc,
+  );
 
   /// Returns active profiles only. Read-only historical/archeological data is
   /// owned by the backend and visible in the full profile list.
-  Future<List<SafetyProfileDto>> currentProfiles() => client.getSafetyProfiles();
+  Future<List<SafetyProfileDto>> currentProfiles() =>
+      client.getSafetyProfiles();
 
   Future<SafetyProfileDto?> profile(String id) => client.getSafetyProfile(id);
 
@@ -56,48 +69,94 @@ class MarineRepository {
     required double maxWindSpeed,
     required double maxWaveHeight,
     required double maxSwellHeight,
+    required String windCriteriaSource,
+    required String windCriteriaRationale,
+    required String waveCriteriaSource,
+    required String waveCriteriaRationale,
+    required String swellCriteriaSource,
+    required String swellCriteriaRationale,
     double? cautionWindSpeed,
     double? cautionWaveHeight,
     double? cautionSwellHeight,
   }) => client.createSafetyProfile(
-        activityId: activityId,
-        maxWindSpeed: maxWindSpeed,
-        maxWaveHeight: maxWaveHeight,
-        maxSwellHeight: maxSwellHeight,
-        cautionWindSpeed: cautionWindSpeed,
-        cautionWaveHeight: cautionWaveHeight,
-        cautionSwellHeight: cautionSwellHeight,
-      );
+    activityId: activityId,
+    maxWindSpeed: maxWindSpeed,
+    maxWaveHeight: maxWaveHeight,
+    maxSwellHeight: maxSwellHeight,
+    windCriteriaSource: windCriteriaSource,
+    windCriteriaRationale: windCriteriaRationale,
+    waveCriteriaSource: waveCriteriaSource,
+    waveCriteriaRationale: waveCriteriaRationale,
+    swellCriteriaSource: swellCriteriaSource,
+    swellCriteriaRationale: swellCriteriaRationale,
+    cautionWindSpeed: cautionWindSpeed,
+    cautionWaveHeight: cautionWaveHeight,
+    cautionSwellHeight: cautionSwellHeight,
+  );
 
   Future<SafetyProfileDto> updateProfile({
     required String id,
     required double maxWindSpeed,
     required double maxWaveHeight,
     required double maxSwellHeight,
+    required String windCriteriaSource,
+    required String windCriteriaRationale,
+    required String waveCriteriaSource,
+    required String waveCriteriaRationale,
+    required String swellCriteriaSource,
+    required String swellCriteriaRationale,
     double? cautionWindSpeed,
     double? cautionWaveHeight,
     double? cautionSwellHeight,
-    required bool isActive,
   }) => client.updateSafetyProfile(
-        id: id,
-        maxWindSpeed: maxWindSpeed,
-        maxWaveHeight: maxWaveHeight,
-        maxSwellHeight: maxSwellHeight,
-        cautionWindSpeed: cautionWindSpeed,
-        cautionWaveHeight: cautionWaveHeight,
-        cautionSwellHeight: cautionSwellHeight,
-        isActive: isActive,
-      );
+    id: id,
+    maxWindSpeed: maxWindSpeed,
+    maxWaveHeight: maxWaveHeight,
+    maxSwellHeight: maxSwellHeight,
+    windCriteriaSource: windCriteriaSource,
+    windCriteriaRationale: windCriteriaRationale,
+    waveCriteriaSource: waveCriteriaSource,
+    waveCriteriaRationale: waveCriteriaRationale,
+    swellCriteriaSource: swellCriteriaSource,
+    swellCriteriaRationale: swellCriteriaRationale,
+    cautionWindSpeed: cautionWindSpeed,
+    cautionWaveHeight: cautionWaveHeight,
+    cautionSwellHeight: cautionSwellHeight,
+  );
 
-  Future<void> deactivateProfile(String id) => client.deactivateSafetyProfile(id);
+  Future<SafetyProfileDto> reviewProfile(String id) =>
+      client.reviewSafetyProfile(id);
+
+  Future<void> deactivateProfile(String id) =>
+      client.deactivateSafetyProfile(id);
 
   /// Reference activity identifiers owned by the backend service.
   static const List<Map<String, dynamic>> _referenceActivities = [
-    {'id': '33333333-3333-3333-3333-333333333301', 'name': 'Surfing', 'type': 'Surfing'},
-    {'id': '33333333-3333-3333-3333-333333333302', 'name': 'Snorkeling', 'type': 'Snorkeling'},
-    {'id': '33333333-3333-3333-3333-333333333303', 'name': 'Scuba Diving', 'type': 'Diving'},
-    {'id': '33333333-3333-3333-3333-333333333304', 'name': 'Whale and Dolphin Watching', 'type': 'BoatTour'},
-    {'id': '33333333-3333-3333-3333-333333333305', 'name': 'Coastal Boat Tour', 'type': 'BoatTour'},
+    {
+      'id': '33333333-3333-3333-3333-333333333301',
+      'name': 'Surfing',
+      'type': 'Surfing',
+    },
+    {
+      'id': '33333333-3333-3333-3333-333333333302',
+      'name': 'Snorkeling',
+      'type': 'Snorkeling',
+    },
+    {
+      'id': '33333333-3333-3333-3333-333333333303',
+      'name': 'Scuba Diving',
+      'type': 'Diving',
+    },
+    {
+      'id': '33333333-3333-3333-3333-333333333304',
+      'name': 'Whale and Dolphin Watching',
+      'type': 'BoatTour',
+    },
+    {
+      'id': '33333333-3333-3333-3333-333333333305',
+      'name': 'Coastal Boat Tour',
+      'type': 'BoatTour',
+    },
   ];
 
   /// Immutable service-owned activity reference rows. Only these IDs are used

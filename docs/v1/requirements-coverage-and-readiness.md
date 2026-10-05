@@ -8,15 +8,16 @@ ownership amendments. Start with the
 this page to resolve cross-component decisions and collect implementation
 evidence.
 
-## Current implementation snapshot — 2026-10-03
+## Current implementation snapshot — 2026-10-06
 
 Member 2's `features/marine-safety` branch contains an implemented ASP.NET
-Core service, public API integration and React Web workflows. The marine
-backend passes 117/117 tests; the full React suite passes 198/198, including
-41 marine cases. Marine Flutter screens and executable Agentic AI remain
-unimplemented. The Auth-session and live-permission SQL path has not yet been
-verified against PostgreSQL; G07, the component PR/merge and cross-component
-compatibility evidence are not recorded. See the [component contract](components/member-2-marine-conditions-safety-intelligence.md),
+Core service, public API integration, React Web workflows and Flutter marine
+screens. The current React suite passes 201/201, including 44 marine cases;
+the latest completed marine backend run was 117/117, while the current source
+contains 118 authored cases and the latest VSTest attempt timed out during
+testhost startup. The Auth-session and live-permission SQL path has not yet
+been verified against PostgreSQL; Flutter runtime analysis, G07, the component
+PR/merge and cross-component compatibility evidence are not recorded. See the [component contract](components/member-2-marine-conditions-safety-intelligence.md),
 [G00 record](g00/member-2-marine-safety-decisions.md) and
 [branch tracker](member-branch-workflow.md#component-branch-status) for
 current detail. The overall v1 NO-GO remains because the full team G00/G07,
@@ -44,7 +45,7 @@ recorded above and in the live catalogs.
 |---|---|---|
 | v0 foundation and shared contracts | Ready as the starting baseline | Existing API/Auth, React/Flutter, Docker/Compose, role-to-permission model, endpoint catalog, UI registry and agent resources are present. Static catalog, UI-integration and agent-resource validators passed on this audit. This does not assert that application builds, tests or live infrastructure were rerun. |
 | v1 requirements and member plans | Ready as implementation specifications | Four complete member contracts, four paired-agent contracts, work-area plans, relationship map, workflow, device, integration, quality and branch guides link the scope. These are target contracts, not implementation evidence. |
-| Four member services and workflows | Historical baseline: not implemented; expected before kickoff | As of 2026-09-26, `services/` contained only `api` and `auth`. Member 2's marine backend and React workflow were implemented later; the other member services and marine Flutter UI remain open. |
+| Four member services and workflows | Historical baseline: not implemented; expected before kickoff | As of 2026-09-26, `services/` contained only `api` and `auth`. Member 2's marine backend, React workflow and Flutter screens were implemented later; the other member services remain open. |
 | G00 shared contract freeze | Pending; required before component coding | Named owners and branch assignments are confirmed in the [canonical owner map](../project/ai-team-members.md). Settle the shared contracts listed below, record decisions in their owning contracts, and mark G00 accepted in the [branch tracker](member-branch-workflow.md#component-branch-status). |
 | External integrations and device behavior | Interfaces can be planned at G00; live decisions are owner gates | Agree cross-member data contracts and adapter boundaries before parallel work. Select and verify the map provider, Open-Meteo data policy, IT3091 wire/auth contract and Wanshaja Sooriyabandara (Member 4) image storage policy before accepting each live integration. |
 | Executable Agentic AI | Correctly deferred; prohibited before G07 | Member branches prepare only their business workflow and typed, bounded, unavailable-aware AI integration seams. Start executable agents, tools, orchestration, model calls and AI-owned state on `agentic-ai/**` only after all four components pass G07. |

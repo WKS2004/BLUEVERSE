@@ -40,13 +40,28 @@ public class SafetyProfile
     /// <summary>Optional soft swell-height ceiling in metres.</summary>
     public decimal? CautionSwellHeight { get; set; }
 
+    // Threshold provenance is required before a profile can be reviewed.
+    // Nullable storage keeps profiles created before the review workflow
+    // readable while ensuring they cannot silently become approved.
+    public string? WindCriteriaSource { get; set; }
+    public string? WindCriteriaRationale { get; set; }
+    public string? WaveCriteriaSource { get; set; }
+    public string? WaveCriteriaRationale { get; set; }
+    public string? SwellCriteriaSource { get; set; }
+    public string? SwellCriteriaRationale { get; set; }
+
+    public Guid? CreatedByUserId { get; set; }
+    public Guid? ReviewedByUserId { get; set; }
+    public DateTime? ReviewedAt { get; set; }
+    public DateTime? EffectiveFrom { get; set; }
+    public DateTime? EffectiveTo { get; set; }
+
     /// <summary>True while the profile is the applicable configuration for its activity.</summary>
     public bool IsActive { get; set; } = true;
 
     /// <summary>
-    /// Monotonic version number incremented on every update so past
-    /// assessments remain interpretable against the configuration that
-    /// produced them.
+    /// Monotonic immutable profile version. Editing creates a new draft row;
+    /// reviewed versions remain unchanged for assessment history.
     /// </summary>
     public int Version { get; set; } = 1;
 
