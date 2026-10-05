@@ -12,14 +12,11 @@ public sealed class ItinerariesApiAuthTests(PlannerApiFactory factory) : IClassF
     private readonly Guid _ownerId = Guid.NewGuid();
     private readonly Guid _destId = Guid.NewGuid();
     private readonly DateTime _startsAt = DateTime.UtcNow.AddDays(1);
-    private readonly ItineraryCreateRequestDto _createRequest = new(
-        Guid.NewGuid(),
+    private readonly CreateItineraryRequestDto _createRequest = new(
+        "Coastal Weekend",
+        null,
         DateTime.UtcNow.AddDays(1),
         DateTime.UtcNow.AddDays(1).AddHours(4),
-        2,
-        null,
-        "INTERMEDIATE",
-        false,
         []);
 
     [Fact]

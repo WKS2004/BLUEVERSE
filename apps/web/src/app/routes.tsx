@@ -2,6 +2,7 @@ import { Link, Navigate, Outlet, Route, Routes, useLocation } from 'react-router
 import DashboardPage from '../pages/DashboardPage'
 import HomePage from '../pages/HomePage'
 import LoginPage from '../pages/LoginPage'
+import PlannerPage from '../pages/PlannerPage'
 import ProfilePage from '../pages/ProfilePage'
 import RegistrationPage from '../pages/RegistrationPage'
 import { NotFoundPage, ServerErrorPage } from '../pages/GlobalErrorPage'
@@ -54,6 +55,7 @@ export default function AppRoutes() {
       <Route element={<RequireAuth />}>
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/planner" element={<PlannerPage />} />
         <Route path="/admin" element={<RequireAnyAdminPermission permissions={['auth.permission.read', 'auth.role.read', 'auth.user.read']}><AdminIndexPage /></RequireAnyAdminPermission>} />
         <Route path="/admin/permissions" element={<RequireAnyAdminPermission permissions={['auth.permission.read']}><AdminPermissionsPage /></RequireAnyAdminPermission>} />
         <Route path="/admin/roles" element={<RequireAnyAdminPermission permissions={['auth.role.read']}><AdminRolesPage /></RequireAnyAdminPermission>} />

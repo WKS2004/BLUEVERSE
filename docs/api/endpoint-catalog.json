@@ -250,6 +250,26 @@
       "status": "implemented",
       "description": "Global server and unhandled-render recovery page within Flutter app navigation.",
       "usage": "Explains the temporary interruption, provides retry and home actions, and keeps implementation details hidden."
+    },
+    {
+      "id": "react-planner-recommendations",
+      "client": "react",
+      "route": "/planner",
+      "source": "apps/web/src/app/routes.tsx",
+      "workflowId": "planner-recommendations",
+      "status": "implemented",
+      "description": "Smart Coastal Planner recommendation workflow: trip constraints form, ranked candidate days, per-candidate suitability, operations and biodiversity inspection, and planning workflow status.",
+      "usage": "Renders the shared planner workflow for signed-in accounts; signed-out visitors are redirected to sign in."
+    },
+    {
+      "id": "flutter-planner-recommendations",
+      "client": "flutter",
+      "route": "/planner",
+      "source": "apps/mobile/lib/main.dart",
+      "workflowId": "planner-recommendations",
+      "status": "implemented",
+      "description": "Smart Coastal Planner recommendation workflow: trip constraints form with native date and time pickers, ranked candidate days, per-candidate suitability, operations and biodiversity inspection, and planning workflow status.",
+      "usage": "Renders the shared planner workflow for signed-in accounts on the mobile client."
     }
   ],
   "gatewayRoutes": [
@@ -910,7 +930,10 @@
       "auth": "permission:planner.recommendations.create",
       "description": "Submit coastal preferences and generate candidates from validated catalogue, marine, and operations evidence.",
       "usage": "Completes with explicit uncertainty notes and no candidates when required peer services do not respond.",
-      "source": "services/coastal-planner/Controllers/RecommendationsController.cs"
+      "source": "services/coastal-planner/Controllers/RecommendationsController.cs",
+      "uiWorkflowIds": [
+        "planner-recommendations"
+      ]
     },
     {
       "id": "planner-recommendations-get",
@@ -923,7 +946,10 @@
       "auth": "permission:planner.recommendations.read",
       "description": "Retrieve recommendation candidate details, suitability, and evidence.",
       "usage": "Retrieves the candidates and peer status notes for a recommendation session.",
-      "source": "services/coastal-planner/Controllers/RecommendationsController.cs"
+      "source": "services/coastal-planner/Controllers/RecommendationsController.cs",
+      "uiWorkflowIds": [
+        "planner-recommendations"
+      ]
     },
     {
       "id": "planner-workflows-get",
@@ -936,7 +962,10 @@
       "auth": "permission:planner.workflows.read",
       "description": "Get status and lifecycle of a planning workflow.",
       "usage": "Tracks asynchronous or completed planning workflow status and audit records.",
-      "source": "services/coastal-planner/Controllers/WorkflowsController.cs"
+      "source": "services/coastal-planner/Controllers/WorkflowsController.cs",
+      "uiWorkflowIds": [
+        "planner-recommendations"
+      ]
     },
     {
       "id": "planner-itineraries-create",
@@ -1027,7 +1056,10 @@
       "auth": "permission:planner.biodiversity.read",
       "description": "Query validated biodiversity prediction context for a canonical destination/location.",
       "usage": "Returns validated ML prediction context consumed by Experience Catalogue (Member 1).",
-      "source": "services/coastal-planner/Controllers/BiodiversityController.cs"
+      "source": "services/coastal-planner/Controllers/BiodiversityController.cs",
+      "uiWorkflowIds": [
+        "planner-recommendations"
+      ]
     }
   ],
   "testOnlyEndpoints": [

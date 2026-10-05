@@ -117,6 +117,25 @@
       ]
     },
     {
+      "id": "planner-recommendations",
+      "status": "implemented",
+      "description": "Shared Smart Coastal Planner workflow at /planner. Signed-in users enter trip constraints (target destination, start and end dates, planned hours, experience level and optional preferred activities) and receive ranked candidate days. Each candidate shows marine suitability, availability and operational status with reasons, and can be inspected for biodiversity prediction context. The planning workflow status and its uncertainty notes are surfaced honestly, including when peer services are quiet.",
+      "web": {
+        "route": "/planner",
+        "source": "apps/web/src/app/routes.tsx"
+      },
+      "mobile": {
+        "route": "/planner",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": [
+        "planner-recommendations-create",
+        "planner-recommendations-get",
+        "planner-workflows-get",
+        "planner-biodiversity-predictions"
+      ]
+    },
+    {
       "id": "auth-admin-entry",
       "status": "implemented",
       "description": "Permission-aware administration entry for users who hold at least one current administration read grant.",
@@ -403,6 +422,38 @@
       "publicBoundary": "api",
       "ownerService": "auth",
       "operationId": "AssignRoles"
+    },
+    {
+      "id": "planner-recommendations-create",
+      "method": "POST",
+      "path": "/api/planner/recommendations",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "CreateRecommendations"
+    },
+    {
+      "id": "planner-recommendations-get",
+      "method": "GET",
+      "path": "/api/planner/recommendations/{recommendationId:guid}",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "GetRecommendation"
+    },
+    {
+      "id": "planner-workflows-get",
+      "method": "GET",
+      "path": "/api/planner/workflows/{workflowId:guid}",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "GetWorkflow"
+    },
+    {
+      "id": "planner-biodiversity-predictions",
+      "method": "GET",
+      "path": "/api/planner/biodiversity/predictions",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "GetPredictions"
     }
   ]
 }

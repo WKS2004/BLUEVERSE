@@ -26,7 +26,7 @@ Feature branch: `features/coastal-planner`; paired Agentic AI branch:
 
 The Member 3 G00 proposals are in [G00 Decisions — Smart Coastal Planner & Itinerary Management](../g00/member-3-coastal-planner.md). They define component IDs and handoffs, candidate routes and permissions, state/error semantics, service identity, health behavior, and AI/ML seams (including IT3091 biodiversity inference).
 
-These decisions are ready for shared review but are not yet team-accepted. The global G00 tracker remains **Pending** until all four owners agree. Proposed business routes, service names and schemas are not implemented by this record.
+These decisions are ready for shared review with Member 3 agreement recorded. The G00 shared-contract freeze is marked **Accepted** in the readiness tracker and branch tracker; four-owner ratification is recorded in the G00 review checklist. Proposed business routes, service names and schemas are not implemented until the implementation branch is started.
 
 ## 1. Purpose and user outcome
 
@@ -362,7 +362,7 @@ required by the repository's individual contribution rules.
 
 ## 12. Decisions and owner gates
 
-The Member 3 G00 proposals are recorded in the [Smart Coastal Planner & Itinerary Management G00 proposal](../g00/member-3-coastal-planner.md). It remains a proposal until all four owners agree; the shared G00 gate is still pending.
+The Member 3 G00 proposals are recorded in the [Smart Coastal Planner & Itinerary Management G00 proposal](../g00/member-3-coastal-planner.md). Member 3 agreement is recorded in the G00 shared-contract freeze, and the four-owner ratification is in the G00 review checklist. Component coding may begin after this document is accepted.
 
 The following choices are proposed at G00 but require shared ratification or remain owner gates: final preference schema and data-retention boundaries; candidate ranking and tie-breaking; the exact input/evidence that makes a condition required; workflow status vocabulary; synchronous/asynchronous API behavior; itinerary ownership/sharing; item uniqueness, ordering and concurrency; how re-evaluation detects and stores changes; result snapshot/retention policy; how recommendation failures are presented; and the IT3091 private request and response schema, authentication, location precision, supported output fields, freshness/timeout/retry/error mapping, health semantics, cache/retention policy and public Ushan Srinuka (Member 1) consumer API capability. Record the provider contract and privacy/failure decisions in the implementation/API/ADR documentation before the adapter is accepted. No numeric safety policy is delegated to the planner or LLM.
 

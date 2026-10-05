@@ -25,7 +25,7 @@ public class CoastalPlannerService : ICoastalPlannerService
 
     public async Task<RecommendationResultDto> GenerateRecommendationsAsync(
         RecommendationRequestDto request, 
-        Guid? userId, 
+        Guid userId, 
         CancellationToken ct = default)
     {
         ValidateRecommendationRequest(request, userId);
@@ -35,7 +35,7 @@ public class CoastalPlannerService : ICoastalPlannerService
             WorkflowId = Guid.NewGuid(),
             WorkflowType = "TOURIST_RECOMMENDATION",
             Status = "PROCESSING",
-            InitiatorUserId = userId!.Value,
+            InitiatorUserId = userId,
             Objective = $"Coastal planning for destination {request.TargetDestinationId}",
             CreatedAtUtc = DateTime.UtcNow
         };
@@ -181,7 +181,7 @@ public class CoastalPlannerService : ICoastalPlannerService
         {
             RecommendationId = recommendationId,
             WorkflowId = workflow.WorkflowId,
-            UserId = userId!.Value,
+            UserId = userId,
             TargetDestinationId = request.TargetDestinationId,
             StartsAtUtc = request.StartsAt,
             EndsAtUtc = request.EndsAt,

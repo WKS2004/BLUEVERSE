@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router'
 import { hasAnyPermission } from '../../features/authorization/permissions'
 import { useAuthSession } from '../../features/auth/authSession'
 
-type Area = 'profile' | 'dashboard' | 'admin'
+type Area = 'profile' | 'dashboard' | 'admin' | 'planner'
 type NavigationGroup = { id: Area; label: string; href: string; children: { label: string; href: string }[] }
 
 function groupsFor(permissions: string[]): NavigationGroup[] {
@@ -19,6 +19,11 @@ function groupsFor(permissions: string[]): NavigationGroup[] {
       id: 'dashboard', label: 'Dashboard', href: '/dashboard', children: [
         { label: 'Account overview', href: '/dashboard#overview' },
         { label: 'Coastal focus', href: '/dashboard#coastal-focus' },
+      ],
+    },
+    {
+      id: 'planner', label: 'Coastal planner', href: '/planner', children: [
+        { label: 'Plan a trip', href: '/planner' },
       ],
     },
   ]
@@ -62,7 +67,7 @@ export default function AccountAreaNavigation({ active }: { active: Area }) {
   }
 
   return <aside aria-label="Account navigation" className="lg:sticky lg:top-[76px] lg:z-10 lg:h-[calc(100dvh-76px)] lg:max-h-[calc(100dvh-76px)] lg:w-full lg:self-start lg:overflow-y-auto lg:border-r lg:border-coast-line lg:bg-coast-paper/95 lg:px-4 lg:pb-6 lg:pt-6">
-    <nav aria-label="Profile, dashboard and administration">
+    <nav aria-label="Profile, dashboard, coastal planner and administration">
       <div className="rounded-3xl border border-coast-line bg-white/80 p-2 shadow-sm lg:hidden">
         <div className="flex min-w-0 gap-1 overflow-x-auto">
           {groups.map((group) => <div className="shrink-0" key={group.id}><Disclosure group={group} expanded={expanded === group.id} onToggle={() => toggle(group.id)} showChildren={false} /></div>)}

@@ -33,6 +33,8 @@ the smaller shared-client workflow contract.
 | react | `/500` | `server-error-recovery` | Explains the temporary interruption between the shared header and footer, provides retry and home actions, and keeps implementation details hidden. |
 | flutter | `/404` | `not-found-recovery` | Explains the missing page in coastal language and routes users back to the home page. |
 | flutter | `/500` | `server-error-recovery` | Explains the temporary interruption, provides retry and home actions, and keeps implementation details hidden. |
+| react | `/planner` | `planner-recommendations` | Renders the shared planner workflow for signed-in accounts; signed-out visitors are redirected to sign in. |
+| flutter | `/planner` | `planner-recommendations` | Renders the shared planner workflow for signed-in accounts on the mobile client. |
 
 ## Gateway and server routes
 

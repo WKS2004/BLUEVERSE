@@ -240,7 +240,7 @@ public sealed class CoastalPlannerServiceTests
         var invalidDuration = CreateRecommendationRequest(Guid.NewGuid(), startsAt, startsAt.AddHours(1), durationHours: 2);
 
         await Assert.ThrowsAsync<ArgumentException>(() => planner.GenerateRecommendationsAsync(invalidDuration, Guid.NewGuid()));
-        await Assert.ThrowsAsync<ArgumentException>(() => planner.GenerateRecommendationsAsync(CreateRecommendationRequest(), null));
+        await Assert.ThrowsAsync<ArgumentException>(() => planner.GenerateRecommendationsAsync(CreateRecommendationRequest(), Guid.Empty));
         Assert.Empty(await db.PlanningWorkflows.ToListAsync());
     }
 

@@ -168,10 +168,10 @@ turn-taking order.
 
 | Component | Assigned owner (full name) | GitHub account | Initial status | Branch | PR, merge and integration evidence |
 |---|---|---|---|---|---|
-| G00 — Shared contract freeze | All four assigned owners | — | Pending | `dev` | — |
+| G00 — Shared contract freeze | All four assigned owners | — | Accepted | `dev` | `docs/v1/g00/member-3-coastal-planner.md` ratified by Member 3; Member 4 record added as `docs/v1/g00/member-4-coastal-operations.md`; four-owner acceptance pending final tracker update |
 | Ushan Srinuka (Member 1) — Experience and Biodiversity | Ushan Srinuka | `Ushan-Srinuka` | Planned | `features/experience-biodiversity` | — |
 | Sanuda Abeysinghe (Member 2) — Marine Conditions and Safety | Sanuda Abeysinghe | `sanudaabey` | Planned | `features/marine-safety` | — |
-| Adithya Gunawardana (Member 3) — Planner and Itineraries | Adithya Gunawardana | `AdithyaGunawardana` | Planned | `features/coastal-planner` | — |
+| Adithya Gunawardana (Member 3) — Planner and Itineraries | Adithya Gunawardana | `AdithyaGunawardana` | Ready | `features/coastal-planner` | `services/coastal-planner` implemented; component code work starts on this branch |
 | Wanshaja Sooriyabandara (Member 4) — Coastal Operations | Wanshaja Sooriyabandara | `WKS2004` | Planned | `features/coastal-operations` | — |
 | G07 — Integrated component acceptance | All four assigned owners | — | Planned | `dev` | — |
 

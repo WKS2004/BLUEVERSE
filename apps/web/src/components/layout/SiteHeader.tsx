@@ -5,7 +5,7 @@ import { MAX_DEVICE_ACCOUNTS, useAuthSession } from '../../features/auth/authSes
 import { preserveAuthLoadingContextForReload } from '../../features/loading/backendLoading'
 
 type SiteHeaderProps = {
-  active?: 'home' | 'login' | 'register' | 'profile' | 'dashboard'
+  active?: 'home' | 'login' | 'register' | 'profile' | 'dashboard' | 'planner'
   compactMobile?: boolean
 }
 
@@ -142,6 +142,7 @@ function SiteHeader({ active = 'home', compactMobile = false }: SiteHeaderProps)
             <nav aria-label="Account menu" className="grid gap-1">
               <Link className={accountMenuLinkClass} to="/profile" onClick={() => { setAccountMenuOpen(false); setMenuOpen(false) }}>Profile <span aria-hidden="true">↗</span></Link>
               <Link className={accountMenuLinkClass} to="/dashboard" onClick={() => { setAccountMenuOpen(false); setMenuOpen(false) }}>Dashboard <span aria-hidden="true">↗</span></Link>
+              <Link className={accountMenuLinkClass} to="/planner" onClick={() => { setAccountMenuOpen(false); setMenuOpen(false) }}>Coastal planner <span aria-hidden="true">↗</span></Link>
               {accountLimitReached ? (
                 <p className="mx-4 my-2 text-[11px] leading-5 text-coast-muted">Remove an account from this browser before adding another. The limit is five.</p>
               ) : (

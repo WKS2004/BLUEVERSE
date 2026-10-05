@@ -73,19 +73,20 @@ public sealed class CoastalPlannerDbContextTests
     {
         await using var db = CreateDatabase();
         var workflowId = Guid.NewGuid();
+        var initiatorId = Guid.NewGuid();
         var workflow = new PlanningWorkflow
         {
             WorkflowId = workflowId,
             WorkflowType = "TOURIST_RECOMMENDATION",
             Status = "COMPLETED",
-            InitiatorUserId = Guid.NewGuid(),
+            InitiatorUserId = initiatorId,
             CreatedAtUtc = DateTime.UtcNow
         };
         var recommendation = new RecommendationSession
         {
             RecommendationId = Guid.NewGuid(),
             WorkflowId = workflowId,
-            UserId = workflow.InitiatorUserId,
+            UserId = initiatorId,
             TargetDestinationId = Guid.NewGuid(),
             StartsAtUtc = DateTime.UtcNow.AddDays(1),
             EndsAtUtc = DateTime.UtcNow.AddDays(2),
