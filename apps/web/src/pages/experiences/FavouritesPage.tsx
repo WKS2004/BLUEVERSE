@@ -216,7 +216,7 @@ export default function FavouritesPage() {
                             className="inline-flex min-h-9 items-center rounded-full bg-coast-sand px-3 text-xs font-bold text-coast-deep hover:bg-coast-glass"
                             to="/experiences"
                           >
-                            Explore Catalogue →
+                            Explore Experiences →
                           </Link>
                         )}
 

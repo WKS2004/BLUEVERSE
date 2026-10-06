@@ -248,7 +248,7 @@ export default function OfferingDetailPage() {
                     </div>
 
                     <div className="rounded-2xl bg-coast-sand p-3">
-                      <span className="block text-[11px] font-bold text-coast-muted">Catalogue Status</span>
+                      <span className="block text-[11px] font-bold text-coast-muted">Listing Status</span>
                       <span className="text-sm font-extrabold text-coast-deep">{offering.status}</span>
                     </div>
                   </div>

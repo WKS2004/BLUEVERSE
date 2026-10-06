@@ -966,3 +966,29 @@
 - Summary of what the AI Agent did: Stored the selected view in the `/experiences` query string (`?tab=map` for the map) so refresh and direct links restore the same tab. Added a brief, reduced-motion-aware fade/slide transition when switching tabs. Rebuilt the local frontend container.
 - AI output accepted/changed/rejected: Accepted URL-backed view state after a live reload showed the session-only approach did not preserve the selection in the preview. Kept the existing route and API contracts unchanged.
 - Verification/evidence: `npm run build`, targeted ESLint, the UI integration validator, and `git diff --check` passed. The rebuilt local frontend retained the map tab after a reload and removed the map query when switching back to Destinations & Offerings. An earlier preview load showed map tiles with collapsed attribution; the final reload restored the map tab but the map API reported its provider configuration unavailable, so final tile availability was not verified. No test suite was run.
+
+## 2026-10-06 — Make experience discovery wording more inviting
+
+- Date/time or time range: 2026-10-06 17:10–17:39 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop
+- AI Model: GPT-6
+- Summary of the user's request: Replace formal “Catalogue” wording with clearer, more interactive language throughout the experience-biodiversity component.
+- Summary of what the AI Agent did: Updated React and Flutter discovery, management, favourites, offering-status, access, loading, and error copy to use terms such as “Explore,” “Manage Experiences,” and “coastal experiences.” Updated the user-approved existing WEB-EXP and MOB-EXP label assertions. Kept permission identifiers and internal implementation names unchanged, and rebuilt the local frontend preview.
+- AI output accepted/changed/rejected: Accepted action-oriented labels and simpler explanations; retained domain permission codes and internal class/method names because they are not user-facing copy.
+- Verification/evidence: `npm run build`, focused ESLint on `ExperiencesPage.tsx`, `OfferingDetailPage.tsx`, and `experienceApi.ts`, UI integration validation, and `git diff --check` passed. The local preview reloaded on `/experiences?tab=map` and showed “Explore coastal destinations.” Broader ESLint still reports React-hook issues in untouched lines of the management and favourites pages. Flutter analyze and formatting commands stalled without output and were stopped; Flutter static analysis and all test suites remain unverified.
+
+## 2026-10-06 — Remove diagnostics from experience management screens
+
+- Date/time or time range: 2026-10-06 17:40–17:58 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop
+- AI Model: GPT-6
+- Summary of the user's request: Review dependency and Agent Seam status logs and remove the unnecessary diagnostics tab from experience management.
+- Summary of what the AI Agent did: Removed the diagnostics tab, panel, navigation link and automatic diagnostics fetch from React and Flutter. Updated the management workflow description and registry references while preserving backend diagnostics and the pre-G07 seam.
+- AI output accepted/changed/rejected: Kept the backend safe-fallback behavior and expected pre-G07 `not_connected` seam. Client request adapters and existing test fixtures/assertions remain pending user approval to remove or update under the repository test-change rule.
+- Verification/evidence: React production build passed; endpoint catalog generation and validation passed; `git diff --check` passed with existing LF/CRLF warnings. UI integration validation currently flags retained diagnostics endpoint literals in client adapters and existing test fixtures after their UI references were removed. Full web lint reports existing React-hook issues and an existing unused test parameter. Flutter analysis stalled without output and was stopped; test suites were not run.

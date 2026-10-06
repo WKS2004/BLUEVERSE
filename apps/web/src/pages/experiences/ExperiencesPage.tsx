@@ -171,7 +171,7 @@ export default function ExperiencesPage() {
         }
       } catch (err: unknown) {
         if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Unable to load coastal experiences catalogue.')
+          setError(err instanceof Error ? err.message : "We couldn't load coastal experiences. Please try again.")
         }
       } finally {
         if (isMounted) setLoading(false)
@@ -508,7 +508,7 @@ export default function ExperiencesPage() {
                     className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/30 px-5 text-sm font-bold text-white transition duration-200 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                     to="/experiences/manage"
                   >
-                    <span>Catalogue Management</span>
+                    <span>Manage Experiences</span>
                     <span aria-hidden="true">↗</span>
                   </Link>
                 )}
@@ -562,7 +562,7 @@ export default function ExperiencesPage() {
           </div>
         </section>
 
-        {/* View 1: Catalogue (Destinations & Activities) */}
+        {/* View 1: Destinations & Activities */}
         {activeTab === 'catalog' && (
           <div className={`mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-12 ${hasSwitchedExperienceTab ? 'motion-safe:animate-coast-tab' : ''}`}>
             {/* Filter controls */}
@@ -646,7 +646,7 @@ export default function ExperiencesPage() {
             {loading ? (
               <div className="py-16 text-center">
                 <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-coast-deep border-r-transparent" />
-                <p className="mt-3 text-sm font-semibold text-coast-muted">Loading coastal catalogue...</p>
+                <p className="mt-3 text-sm font-semibold text-coast-muted">Loading coastal experiences...</p>
               </div>
             ) : (
               <>
@@ -922,7 +922,7 @@ export default function ExperiencesPage() {
 
                   {/* Coastal Highlights from Database */}
                   <div className="mt-4 border-t border-coast-line/60 pt-4">
-                    <p className="text-[11px] font-bold text-coast-muted">Coastal destinations from catalogue:</p>
+                    <p className="text-[11px] font-bold text-coast-muted">Explore coastal destinations:</p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {activeDestinations.map((dest) => (
                         <button

@@ -299,8 +299,8 @@
       "source": "apps/web/src/app/routes.tsx",
       "workflowId": "experience-catalogue-management",
       "status": "implemented",
-      "description": "Catalogue curation and operations management workspace for destinations, activities, offerings, schedules, and service resilience diagnostics.",
-      "usage": "Provides pre-flight publication evaluation audits, lifecycle transitions, timetable management, and peer microservice connectivity monitoring."
+      "description": "Catalogue curation and operations management workspace for destinations, activities, offerings, and schedules.",
+      "usage": "Provides pre-flight publication evaluation audits, lifecycle transitions, and timetable management."
     },
     {
       "id": "mobile-experiences",

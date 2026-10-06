@@ -404,7 +404,7 @@ async function request<T>(
       } else if (response.status === 401) {
         detail = 'Authentication is required for this action. Please sign in.'
       } else if (response.status === 403) {
-        detail = 'Your account does not have permission for this catalogue action.'
+        detail = "You don't have permission to make this change."
       } else if (response.status === 404) {
         detail = 'The requested coastal destination or experience was not found.'
       }

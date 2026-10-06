@@ -87,13 +87,6 @@ class ExperienceViewModel extends ChangeNotifier {
   bool isLoadingOffering = false;
   bool isEvaluatingAvailability = false;
 
-  // Diagnostics and pre-G07 access seam
-  DependenciesStatusResponseDto? dependenciesStatus;
-  String? dependenciesStatusError;
-  AgentContextResponseDto? agentContext;
-  String? agentContextError;
-  bool isLoadingDiagnostics = false;
-
   int _discoveryRequestId = 0;
   int _placeSearchRequestId = 0;
   int _mapConfigRequestId = 0;
@@ -383,9 +376,9 @@ class ExperienceViewModel extends ChangeNotifier {
     final allStatesFailed = stateWasMissing.every((missing) => missing);
     final anyStateFailed = stateHadError.any((failed) => failed);
     managementCatalogErrorMessage = allStatesFailed
-        ? 'The catalogue could not be loaded. Check your connection and try again.'
+        ? "We couldn't load coastal experiences. Check your connection and try again."
         : anyStateFailed
-        ? 'Some publication states could not be loaded. Refresh to see the complete catalogue.'
+        ? 'Some publishing statuses could not be loaded. Refresh to see the full list.'
         : null;
     isLoadingManagementCatalog = false;
     notifyListeners();
@@ -891,27 +884,6 @@ class ExperienceViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> loadDiagnostics() async {
-    isLoadingDiagnostics = true;
-    dependenciesStatusError = null;
-    agentContextError = null;
-    notifyListeners();
-
-    final results = await Future.wait<Object?>([
-      _safeCall(repository.getDependenciesStatus),
-      _safeCall(repository.getAgentContext),
-    ]);
-    final dependencies =
-        results[0] as _LoadResult<DependenciesStatusResponseDto>;
-    final agent = results[1] as _LoadResult<AgentContextResponseDto>;
-    dependenciesStatus = dependencies.value;
-    dependenciesStatusError = dependencies.error;
-    agentContext = agent.value;
-    agentContextError = agent.error;
-    isLoadingDiagnostics = false;
-    notifyListeners();
-  }
-
   void clearMessages() {
     errorMessage = null;
     catalogueNotice = null;
@@ -950,7 +922,7 @@ class ExperienceViewModel extends ChangeNotifier {
         return _LoadResult<List<T>>(
           value: items,
           error: items.length < total
-              ? 'The catalogue returned an incomplete page.'
+              ? 'The experience list is incomplete. Refresh and try again.'
               : null,
         );
       }
@@ -960,7 +932,7 @@ class ExperienceViewModel extends ChangeNotifier {
 
     return _LoadResult<List<T>>(
       value: items,
-      error: 'The catalogue exceeds the mobile page limit.',
+      error: 'There are too many coastal experiences to load at once.',
     );
   }
 

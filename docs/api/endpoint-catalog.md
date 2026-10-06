@@ -37,7 +37,7 @@ the smaller shared-client workflow contract.
 | react | `/experiences/destinations/:id` | `experience-destination-detail` | Displays comprehensive destination intelligence including real-time sea telemetry, harbor advisories, and species predictions with provenance. |
 | react | `/experiences/offerings/:id` | `experience-offering-detail` | Evaluates departure slot availability in real time against operational limits and capacity constraints. |
 | react | `/experiences/favourites` | `experience-favourites-management` | Manages user-saved coastal items with personal notes and one-click removal. |
-| react | `/experiences/manage` | `experience-catalogue-management` | Provides pre-flight publication evaluation audits, lifecycle transitions, timetable management, and peer microservice connectivity monitoring. |
+| react | `/experiences/manage` | `experience-catalogue-management` | Provides pre-flight publication evaluation audits, lifecycle transitions, and timetable management. |
 | flutter | `/experiences` | `experience-discovery` | Cross-platform mobile discovery route for destinations, activities, and offerings. |
 | flutter | `/experiences/destinations/:id` | `experience-destination-detail` | Mobile destination view with marine conditions, operational advisories, and biodiversity insights. |
 | flutter | `/experiences/offerings/:id` | `experience-offering-detail` | Mobile offering view with departure timetables and availability checks. |

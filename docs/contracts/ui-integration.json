@@ -308,7 +308,7 @@
     {
       "id": "experience-catalogue-management",
       "status": "implemented",
-      "description": "Coastal catalogue curation and operational management workspace. Supports destination, activity, offering, and schedule slot authoring, pre-flight publication evaluation audits, publication status transitions, and peer service resilience diagnostics.",
+      "description": "Coastal catalogue curation and operational management workspace. Supports destination, activity, offering, and schedule slot authoring, pre-flight publication evaluation audits, and publication status transitions.",
       "web": {
         "route": "/experiences/manage",
         "source": "apps/web/src/app/routes.tsx"
@@ -340,9 +340,7 @@
         "experience-offering-schedules-list",
         "experience-offering-schedule-add",
         "experience-offering-schedule-update",
-        "experience-offering-schedule-delete",
-        "experience-dependencies-status",
-        "experience-agent-context"
+        "experience-offering-schedule-delete"
       ]
     }
   ],
@@ -588,14 +586,6 @@
       "operationId": "EvaluatePublication"
     },
     {
-      "id": "experience-agent-context",
-      "method": "GET",
-      "path": "/api/experiences/agent/context",
-      "publicBoundary": "api",
-      "ownerService": "experience-biodiversity",
-      "operationId": "GetAgentContext"
-    },
-    {
       "id": "experience-availability-evaluate",
       "method": "POST",
       "path": "/api/experiences/availability/evaluations",
@@ -818,14 +808,6 @@
       "publicBoundary": "api",
       "ownerService": "experience-biodiversity",
       "operationId": "DeleteSchedule"
-    },
-    {
-      "id": "experience-dependencies-status",
-      "method": "GET",
-      "path": "/api/experiences/dependencies/status",
-      "publicBoundary": "api",
-      "ownerService": "experience-biodiversity",
-      "operationId": "GetDependenciesStatus"
     }
   ]
 }

@@ -39,7 +39,6 @@ function groupsFor(permissions: string[]): NavigationGroup[] {
         { label: 'Destinations', href: '/experiences/manage#destinations' },
         { label: 'Activities', href: '/experiences/manage#activities' },
         { label: 'Offerings & Schedules', href: '/experiences/manage#offerings' },
-        { label: 'Diagnostics & Seam', href: '/experiences/manage#diagnostics' },
       ],
     })
   }

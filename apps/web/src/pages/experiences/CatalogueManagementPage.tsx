@@ -5,8 +5,6 @@ import SiteFooter from '../../components/layout/SiteFooter'
 import SiteHeader from '../../components/layout/SiteHeader'
 import type {
   ActivityDto,
-  AgentContextResponseDto,
-  DependenciesStatusResponseDto,
   DestinationDto,
   OfferingDto,
   PublicationEvaluationResponse,
@@ -25,8 +23,6 @@ import {
   evaluateDestinationPublication,
   evaluateOfferingPublication,
   getActivities,
-  getAgentContext,
-  getDependenciesStatus,
   getDestinations,
   getOfferings,
   getOfferingSchedules,
@@ -44,15 +40,17 @@ import { hasAnyPermission } from '../../features/authorization/permissions'
 export default function CatalogueManagementPage() {
   const { user } = useAuthSession()
   const location = useLocation()
-  const [activeTab, setActiveTab] = useState<'destinations' | 'activities' | 'offerings' | 'diagnostics'>('destinations')
+  const [activeTab, setActiveTab] = useState<'destinations' | 'activities' | 'offerings'>('destinations')
 
   const canManage =
     hasAnyPermission(user, ['experiences.catalogue.manage', 'auth.role.system.manage'])
 
   useEffect(() => {
     const hash = location.hash.replace('#', '')
-    if (hash === 'destinations' || hash === 'activities' || hash === 'offerings' || hash === 'diagnostics') {
+    if (hash === 'destinations' || hash === 'activities' || hash === 'offerings') {
       setActiveTab(hash)
+    } else if (hash === 'diagnostics') {
+      setActiveTab('destinations')
     }
   }, [location.hash])
 
@@ -112,10 +110,6 @@ export default function CatalogueManagementPage() {
   const [newSchedStart, setNewSchedStart] = useState('')
   const [newSchedEnd, setNewSchedEnd] = useState('')
 
-  // Diagnostics & Seam
-  const [diagStatus, setDiagStatus] = useState<DependenciesStatusResponseDto | null>(null)
-  const [agentSeam, setAgentSeam] = useState<AgentContextResponseDto | null>(null)
-
   // Evaluation & Action Feedback
   const [evalResult, setEvalResult] = useState<PublicationEvaluationResponse | null>(null)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
@@ -144,7 +138,7 @@ export default function CatalogueManagementPage() {
       if (destItems.length > 0 && !newOffDestId) setNewOffDestId(destItems[0].id)
       if (actItems.length > 0 && !newOffActId) setNewOffActId(actItems[0].id)
     } catch (err: unknown) {
-      setErrorMessage(err instanceof Error ? err.message : 'Error loading catalogue data.')
+      setErrorMessage(err instanceof Error ? err.message : "We couldn't load experience details. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -474,8 +468,10 @@ export default function CatalogueManagementPage() {
     const editOffId = searchParams.get('editOffering')
     const tabParam = searchParams.get('tab')
 
-    if (tabParam === 'destinations' || tabParam === 'activities' || tabParam === 'offerings' || tabParam === 'diagnostics') {
+    if (tabParam === 'destinations' || tabParam === 'activities' || tabParam === 'offerings') {
       setActiveTab(tabParam)
+    } else if (tabParam === 'diagnostics') {
+      setActiveTab('destinations')
     }
 
     if (editDestId && destinations.length > 0) {
@@ -492,20 +488,6 @@ export default function CatalogueManagementPage() {
       }
     }
   }, [location.search, destinations, offerings])
-
-  // Load diagnostics
-  async function handleLoadDiagnostics() {
-    setLoading(true)
-    try {
-      const [diag, seam] = await Promise.all([getDependenciesStatus(), getAgentContext()])
-      setDiagStatus(diag)
-      setAgentSeam(seam)
-    } catch (err: unknown) {
-      setErrorMessage(err instanceof Error ? err.message : 'Failed to load diagnostics.')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   return (
     <div className="flex min-h-screen flex-col bg-coast-paper font-sans text-coast-ink" id="top">
@@ -526,9 +508,9 @@ export default function CatalogueManagementPage() {
 
           <section aria-labelledby="mgmt-title">
             <div>
-              <p className="text-xs font-extrabold tracking-[0.16em] text-coast-blue">AUTHORITATIVE CATALOGUE</p>
+              <p className="text-xs font-extrabold tracking-[0.16em] text-coast-blue">COASTAL EXPERIENCE MANAGEMENT</p>
               <h1 className="mt-2 font-display text-4xl font-bold tracking-tight text-coast-ink sm:text-5xl" id="mgmt-title">
-                Catalogue Management Workspace
+                Manage Coastal Experiences
               </h1>
               <p className="mt-2 text-sm leading-6 text-coast-muted">
                 Maintain coastal destinations, activities, participatory offerings, schedules, and publication lifecycle with pre-flight evaluation.
@@ -607,18 +589,6 @@ export default function CatalogueManagementPage() {
             >
               Offerings & Schedules ({offerings?.length ?? 0})
             </button>
-            <button
-              className={`border-b-2 px-5 py-3 text-sm font-extrabold transition ${
-                activeTab === 'diagnostics' ? 'border-coast-deep text-coast-deep' : 'border-transparent text-coast-muted hover:text-coast-deep'
-              }`}
-              onClick={() => {
-                setActiveTab('diagnostics')
-                handleLoadDiagnostics()
-              }}
-              type="button"
-            >
-              Dependencies & Agent Seam
-            </button>
           </div>
 
           {/* 1. Destinations Panel */}
@@ -626,7 +596,7 @@ export default function CatalogueManagementPage() {
             <div className="mt-8 space-y-8">
               {!canManage && (
                 <div className="rounded-2xl border border-coast-line bg-coast-sand/40 p-4 text-xs font-semibold text-coast-muted">
-                  Read-only view. You have catalogue inspection rights (<span className="font-mono">experiences.catalogue.read</span>). Catalogue write, update, delete, and publication operations require administrative permissions.
+                  Read-only view. You can review destinations, activities, and offerings. Editing, publishing, or removing them requires experience-management permission.
                 </div>
               )}
 
@@ -814,7 +784,7 @@ export default function CatalogueManagementPage() {
             <div className="mt-8 space-y-8">
               {!canManage && (
                 <div className="rounded-2xl border border-coast-line bg-coast-sand/40 p-4 text-xs font-semibold text-coast-muted">
-                  Read-only view. You have catalogue inspection rights (<span className="font-mono">experiences.catalogue.read</span>). Catalogue write, update, delete, and publication operations require administrative permissions.
+                  Read-only view. You can review destinations, activities, and offerings. Editing, publishing, or removing them requires experience-management permission.
                 </div>
               )}
 
@@ -955,7 +925,7 @@ export default function CatalogueManagementPage() {
             <div className="mt-8 space-y-8">
               {!canManage && (
                 <div className="rounded-2xl border border-coast-line bg-coast-sand/40 p-4 text-xs font-semibold text-coast-muted">
-                  Read-only view. You have catalogue inspection rights (<span className="font-mono">experiences.catalogue.read</span>). Catalogue write, update, delete, and publication operations require administrative permissions.
+                  Read-only view. You can review destinations, activities, and offerings. Editing, publishing, or removing them requires experience-management permission.
                 </div>
               )}
 
@@ -1083,7 +1053,7 @@ export default function CatalogueManagementPage() {
               <div className="grid gap-8 lg:grid-cols-2">
                 {/* Offerings list */}
                 <div className="rounded-3xl border border-coast-line bg-white p-6 shadow-sm">
-                  <h3 className="font-display text-xl font-bold text-coast-ink">Offerings Catalogue</h3>
+                  <h3 className="font-display text-xl font-bold text-coast-ink">Experience Offerings</h3>
                   <div className="mt-4 divide-y divide-coast-line max-h-96 overflow-y-auto">
                     {offerings.map((o) => (
                       <div className="py-3" key={o.id}>
@@ -1221,91 +1191,6 @@ export default function CatalogueManagementPage() {
             </div>
           )}
 
-          {/* 4. Diagnostics & Seam Panel */}
-          {activeTab === 'diagnostics' && (
-            <div className="mt-8 grid gap-8 lg:grid-cols-2">
-              {/* Dependencies Diagnostics */}
-              <div className="rounded-3xl border border-coast-line bg-white p-6 shadow-sm sm:p-8">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-display text-2xl font-bold text-coast-ink">Peer Microservices Health</h3>
-                  <button
-                    className="rounded-full bg-coast-sand px-3 py-1 text-xs font-bold text-coast-deep hover:bg-coast-glass"
-                    onClick={handleLoadDiagnostics}
-                    type="button"
-                  >
-                    Refresh
-                  </button>
-                </div>
-
-                <p className="mt-2 text-xs leading-5 text-coast-muted">
-                  Fault-tolerant connectivity status of external member services (Marine Safety, Coastal Operations, Biodiversity Inference).
-                </p>
-
-                {diagStatus ? (
-                  <div className="mt-6 space-y-3">
-                    {(diagStatus.dependencies || []).map((dep, idx) => (
-                      <div className="rounded-2xl border border-coast-line bg-coast-pearl p-4 text-xs" key={idx}>
-                        <div className="flex items-center justify-between">
-                          <span className="font-extrabold text-coast-ink">{dep.serviceName}</span>
-                          <span
-                            className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
-                              dep.responded ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                            }`}
-                          >
-                            {dep.status}
-                          </span>
-                        </div>
-                        <p className="mt-1 font-mono text-[11px] text-coast-muted">{dep.endpoint || dep.targetEndpoint || ''}</p>
-                        <p className="mt-1 text-[11px] text-coast-muted">
-                          Latency: {dep.latencyMs}ms · Checked: {dep.checkedAt ? new Date(dep.checkedAt).toLocaleTimeString() : 'Recent'}
-                        </p>
-                        {dep.message && <p className="mt-1 text-xs text-coast-deep">{dep.message}</p>}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-12 text-center text-xs text-coast-muted">Loading microservice health status...</div>
-                )}
-              </div>
-
-              {/* Agent Seam Status */}
-              <div className="rounded-3xl border border-coast-line bg-coast-sage p-6 shadow-sm sm:p-8">
-                <h3 className="font-display text-2xl font-bold text-coast-ink">Agentic AI Pre-G07 Seam</h3>
-                <p className="mt-2 text-xs leading-5 text-coast-muted">
-                  Typed context seam providing component catalog telemetry for future Agentic AI orchestration under ADR-0007 and ADR-0020.
-                </p>
-
-                {agentSeam ? (
-                  <div className="mt-6 space-y-4 text-xs">
-                    <div className="rounded-2xl bg-white p-4 border border-coast-line">
-                      <span className="font-bold text-coast-deep">Agent Role:</span> {agentSeam.agentName}
-                    </div>
-                    <div className="rounded-2xl bg-white p-4 border border-coast-line">
-                      <span className="font-bold text-coast-deep">Integration Status:</span>{' '}
-                      <span className="rounded-full bg-amber-100 px-2 py-0.5 font-bold text-amber-800">
-                        {agentSeam.status} (Expected Pre-G07)
-                      </span>
-                    </div>
-                    <div className="rounded-2xl bg-white p-4 border border-coast-line">
-                      <span className="font-bold text-coast-deep">Seam Detail:</span>
-                      <p className="mt-1 text-coast-ink leading-5">{agentSeam.detail}</p>
-                    </div>
-
-                    <div className="rounded-2xl bg-white p-4 border border-coast-line">
-                      <span className="font-bold text-coast-deep">Planned Registered Tools:</span>
-                      <ul className="mt-2 list-disc pl-5 space-y-1 text-coast-muted font-mono">
-                        {(agentSeam.plannedTools || []).map((t, idx) => (
-                          <li key={idx}>{t}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="py-12 text-center text-xs text-coast-muted">Loading Agent Seam contract...</div>
-                )}
-              </div>
-            </div>
-          )}
         </section>
         </div>
       </main>

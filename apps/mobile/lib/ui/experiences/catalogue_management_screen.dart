@@ -41,7 +41,7 @@ class _CatalogueManagementScreenState extends State<CatalogueManagementScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final user = widget.authViewModel.user;
       final canManage =
@@ -50,7 +50,6 @@ class _CatalogueManagementScreenState extends State<CatalogueManagementScreen>
               user.permissions.contains('auth.role.system.manage'));
       if (!canManage) return;
       widget.viewModel.loadManagementCatalog();
-      widget.viewModel.loadDiagnostics();
     });
   }
 
@@ -75,7 +74,7 @@ class _CatalogueManagementScreenState extends State<CatalogueManagementScreen>
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Catalogue Management'),
+            title: const Text('Manage Coastal Experiences'),
             bottom: TabBar(
               controller: _tabController,
               isScrollable: true,
@@ -84,10 +83,6 @@ class _CatalogueManagementScreenState extends State<CatalogueManagementScreen>
                 Tab(icon: Icon(Icons.place_outlined), text: 'Destinations'),
                 Tab(icon: Icon(Icons.snowshoeing_outlined), text: 'Activities'),
                 Tab(icon: Icon(Icons.local_offer_outlined), text: 'Offerings'),
-                Tab(
-                  icon: Icon(Icons.health_and_safety_outlined),
-                  text: 'Diagnostics & Seam',
-                ),
               ],
             ),
           ),
@@ -109,7 +104,7 @@ class _CatalogueManagementScreenState extends State<CatalogueManagementScreen>
                               ? null
                               : vm.loadManagementCatalog,
                           icon: const Icon(Icons.refresh),
-                          label: const Text('Retry catalogue load'),
+                          label: const Text('Retry loading experience data'),
                         ),
                       ),
                     ],
@@ -127,7 +122,6 @@ class _CatalogueManagementScreenState extends State<CatalogueManagementScreen>
                           _buildDestinationsManager(context, vm),
                           _buildActivitiesManager(context, vm),
                           _buildOfferingsManager(context, vm),
-                          _buildDiagnosticsTab(context, vm),
                         ],
                       ),
                     ),
@@ -148,12 +142,12 @@ class _CatalogueManagementScreenState extends State<CatalogueManagementScreen>
             const Icon(Icons.lock_outline, size: 54, color: Colors.orange),
             const SizedBox(height: 16),
             const Text(
-              'Catalogue Access Restricted',
+              'Experience Management Restricted',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             const Text(
-              'Managing coastal catalog entries requires experiences.catalogue.manage or system manager permissions.',
+              'Editing destinations, activities, and offerings requires experience-management permission.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey),
             ),
@@ -741,151 +735,6 @@ class _CatalogueManagementScreenState extends State<CatalogueManagementScreen>
                     ),
                   ],
                 ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDiagnosticsTab(BuildContext context, ExperienceViewModel vm) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Subsystem Readiness & Seam',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: () => vm.loadDiagnostics(),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Dependencies Status Card
-          Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.cloud_sync,
-                        color: BlueversePalette.coastDeep,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Upstream Dependencies',
-                        style: Theme.of(context).textTheme.titleSmall
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  if (vm.isLoadingDiagnostics && vm.dependenciesStatus == null)
-                    const LinearProgressIndicator()
-                  else if (vm.dependenciesStatus != null) ...[
-                    Text(
-                      'Status: ${vm.dependenciesStatus!.overallStatus ?? "HEALTHY"}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    ...vm.dependenciesStatus!.dependencies.map(
-                      (dep) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(dep.serviceName),
-                            Chip(
-                              visualDensity: VisualDensity.compact,
-                              label: Text(
-                                dep.status,
-                                style: const TextStyle(fontSize: 10),
-                              ),
-                              backgroundColor:
-                                  dep.status == 'HEALTHY' ||
-                                      dep.status == 'CONNECTED'
-                                  ? Colors.green.shade100
-                                  : Colors.orange.shade100,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ] else ...[
-                    Text(
-                      vm.dependenciesStatusError == null
-                          ? 'Dependency status is unavailable.'
-                          : 'Dependency status could not be loaded. Try again.',
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Agent Context Seam Card
-          Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.smart_toy_outlined,
-                        color: BlueversePalette.coastDeep,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Agent Context Seam (Pre-G07 Safe)',
-                        style: Theme.of(context).textTheme.titleSmall
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Typed private seam provides read-only contextual boundary data. Executable tools and agent runs remain disconnected.',
-                    style: TextStyle(fontSize: 12, height: 1.4),
-                  ),
-                  const SizedBox(height: 12),
-                  if (vm.agentContext != null) ...[
-                    Text(
-                      'Agent: ${vm.agentContext!.agentName}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 4),
-                    Text('Status: ${vm.agentContext!.status}'),
-                    const SizedBox(height: 4),
-                    Text('Detail: ${vm.agentContext!.detail}'),
-                  ] else ...[
-                    Text(
-                      vm.agentContextError == null
-                          ? 'Agent seam context is unavailable.'
-                          : 'Agent seam context could not be loaded. Try again.',
-                    ),
-                  ],
-                ],
               ),
             ),
           ),

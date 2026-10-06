@@ -140,7 +140,7 @@ class _ExperiencesDiscoveryScreenState extends State<ExperiencesDiscoveryScreen>
               if (canManageCatalogue)
                 IconButton(
                   key: const Key('btn-manage-catalogue-nav'),
-                  tooltip: 'Catalogue Management',
+                  tooltip: 'Manage Experiences',
                   icon: const Icon(Icons.tune_outlined),
                   onPressed: () {
                     Navigator.pushNamed(context, '/experiences/manage');
@@ -151,7 +151,7 @@ class _ExperiencesDiscoveryScreenState extends State<ExperiencesDiscoveryScreen>
               controller: _tabController,
               indicatorColor: BlueversePalette.coastDeep,
               tabs: const [
-                Tab(icon: Icon(Icons.grid_view_outlined), text: 'Catalog'),
+                Tab(icon: Icon(Icons.grid_view_outlined), text: 'Explore'),
                 Tab(icon: Icon(Icons.map_outlined), text: 'Coastal Map'),
               ],
             ),
@@ -1005,7 +1005,7 @@ class _ExperiencesDiscoveryScreenState extends State<ExperiencesDiscoveryScreen>
           ),
           const SizedBox(height: 4),
           Text(
-            'Pan and zoom to explore. Select a marker or catalogue destination to inspect it below.',
+            'Pan and zoom to explore. Select a marker or destination to see its details below.',
             style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
             textAlign: TextAlign.center,
           ),

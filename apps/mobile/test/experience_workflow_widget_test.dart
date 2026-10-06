@@ -534,7 +534,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Catalogue Management'), findsOneWidget);
+        expect(find.text('Manage Coastal Experiences'), findsOneWidget);
         expect(find.text('Destinations'), findsOneWidget);
         expect(find.text('Activities'), findsOneWidget);
         expect(find.text('Offerings'), findsOneWidget);
@@ -898,9 +898,9 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Catalogue Access Restricted'), findsOneWidget);
+        expect(find.text('Experience Management Restricted'), findsOneWidget);
         expect(
-          find.textContaining('Managing coastal catalog entries requires'),
+          find.textContaining('Editing destinations, activities, and offerings requires'),
           findsOneWidget,
         );
         expect(

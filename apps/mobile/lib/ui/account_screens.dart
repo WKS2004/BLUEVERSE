@@ -1054,7 +1054,7 @@ class _AuthDashboardScreenState extends State<AuthDashboardScreen> {
                             key: const Key('btn-dashboard-catalogue-manage'),
                             onPressed: () => Navigator.pushNamed(context, '/experiences/manage'),
                             icon: const Icon(Icons.tune),
-                            label: const Text('Catalogue Manage'),
+                            label: const Text('Manage Experiences'),
                           ),
                         FilledButton.tonalIcon(
                           onPressed: () => Navigator.pushNamed(context, '/profile'),
