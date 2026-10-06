@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:mobile/data/models/experience_models.dart';
 import 'package:mobile/data/repositories/experience_repository.dart';
 import 'package:mobile/data/services/auth_credential_store.dart';
@@ -37,8 +40,7 @@ ExperienceViewModel createTestViewModel({
     final path = request.url.path;
 
     if (path == '/api/experiences/destinations' && request.method == 'GET') {
-      return http.Response(
-        '''
+      return http.Response('''
         {
           "total": ${destinations?.length ?? 1},
           "page": 1,
@@ -58,14 +60,11 @@ ExperienceViewModel createTestViewModel({
             }
           ]
         }
-        ''',
-        200,
-      );
+        ''', 200);
     }
 
     if (path == '/api/experiences/activities' && request.method == 'GET') {
-      return http.Response(
-        '''
+      return http.Response('''
         {
           "total": 1,
           "page": 1,
@@ -82,14 +81,11 @@ ExperienceViewModel createTestViewModel({
             }
           ]
         }
-        ''',
-        200,
-      );
+        ''', 200);
     }
 
     if (path == '/api/experiences/offerings' && request.method == 'GET') {
-      return http.Response(
-        '''
+      return http.Response('''
         {
           "total": 1,
           "page": 1,
@@ -114,31 +110,27 @@ ExperienceViewModel createTestViewModel({
             }
           ]
         }
-        ''',
-        200,
-      );
+        ''', 200);
     }
 
     if (path == '/api/experiences/map/config') {
-      return http.Response(
-        '''
+      return http.Response('''
         {
-          "provider": "OpenStreetMap",
-          "tileServiceType": "vector",
-          "vectorTileUrl": "https://tile.openstreetmap.org",
-          "availableStyles": {"standard": "osm-standard"},
-          "defaultStyle": "standard",
-          "attribution": "© OpenStreetMap",
-          "documentationUrl": "https://osm.org"
+          "provider": "OpenFreeMap",
+          "tileServiceType": "VectorTiles",
+          "vectorTileUrl": "https://tiles.openfreemap.org/styles/{style}",
+          "availableStyles": {
+            "liberty": "https://tiles.openfreemap.org/styles/liberty"
+          },
+          "defaultStyle": "liberty",
+          "attribution": "© OpenFreeMap contributors, © OpenStreetMap contributors",
+          "documentationUrl": "https://openfreemap.org/"
         }
-        ''',
-        200,
-      );
+        ''', 200);
     }
 
     if (path == '/api/experiences/favourites' && request.method == 'GET') {
-      return http.Response(
-        '''
+      return http.Response('''
         [
           {
             "id": "fav-1",
@@ -150,14 +142,12 @@ ExperienceViewModel createTestViewModel({
             "createdAt": "2026-09-10T00:00:00Z"
           }
         ]
-        ''',
-        200,
-      );
+        ''', 200);
     }
 
-    if (path == '/api/experiences/destinations/dest-mirissa' && request.method == 'GET') {
-      return http.Response(
-        '''
+    if (path == '/api/experiences/destinations/dest-mirissa' &&
+        request.method == 'GET') {
+      return http.Response('''
         {
           "id": "dest-mirissa",
           "name": "Mirissa Coastal Haven",
@@ -170,14 +160,12 @@ ExperienceViewModel createTestViewModel({
           "createdAt": "2026-09-01T00:00:00Z",
           "updatedAt": "2026-09-02T00:00:00Z"
         }
-        ''',
-        200,
-      );
+        ''', 200);
     }
 
-    if (path == '/api/experiences/destinations/dest-mirissa/marine-conditions') {
-      return http.Response(
-        '''
+    if (path ==
+        '/api/experiences/destinations/dest-mirissa/marine-conditions') {
+      return http.Response('''
         {
           "destinationId": "dest-mirissa",
           "destinationName": "Mirissa Coastal Haven",
@@ -194,14 +182,11 @@ ExperienceViewModel createTestViewModel({
           "fallbackUsed": false,
           "disclaimer": "Coastal safety verified."
         }
-        ''',
-        200,
-      );
+        ''', 200);
     }
 
     if (path == '/api/experiences/destinations/dest-mirissa/biodiversity') {
-      return http.Response(
-        '''
+      return http.Response('''
         {
           "destinationId": "dest-mirissa",
           "destinationName": "Mirissa Coastal Haven",
@@ -221,14 +206,12 @@ ExperienceViewModel createTestViewModel({
           "attemptsCount": 1,
           "latencyMs": 25
         }
-        ''',
-        200,
-      );
+        ''', 200);
     }
 
-    if (path == '/api/experiences/offerings/off-whale-safari' && request.method == 'GET') {
-      return http.Response(
-        '''
+    if (path == '/api/experiences/offerings/off-whale-safari' &&
+        request.method == 'GET') {
+      return http.Response('''
         {
           "id": "off-whale-safari",
           "destinationId": "dest-mirissa",
@@ -246,14 +229,11 @@ ExperienceViewModel createTestViewModel({
           "createdAt": "2026-09-01T00:00:00Z",
           "updatedAt": "2026-09-02T00:00:00Z"
         }
-        ''',
-        200,
-      );
+        ''', 200);
     }
 
     if (path == '/api/experiences/offerings/off-whale-safari/schedules') {
-      return http.Response(
-        '''
+      return http.Response('''
         [
           {
             "id": "sched-1",
@@ -266,14 +246,12 @@ ExperienceViewModel createTestViewModel({
             "updatedAt": "2026-09-02T00:00:00Z"
           }
         ]
-        ''',
-        200,
-      );
+        ''', 200);
     }
 
-    if (path == '/api/experiences/availability/evaluations' && request.method == 'POST') {
-      return http.Response(
-        '''
+    if (path == '/api/experiences/availability/evaluations' &&
+        request.method == 'POST') {
+      return http.Response('''
         {
           "offeringId": "off-whale-safari",
           "startsAt": "2026-10-10T06:00:00Z",
@@ -293,14 +271,11 @@ ExperienceViewModel createTestViewModel({
           },
           "evaluatedAt": "2026-10-03T02:00:00Z"
         }
-        ''',
-        200,
-      );
+        ''', 200);
     }
 
     if (path == '/api/experiences/dependencies/status') {
-      return http.Response(
-        '''
+      return http.Response('''
         {
           "serviceName": "Experience Service",
           "overallStatus": "HEALTHY",
@@ -313,14 +288,11 @@ ExperienceViewModel createTestViewModel({
             }
           ]
         }
-        ''',
-        200,
-      );
+        ''', 200);
     }
 
     if (path == '/api/experiences/agent/context') {
-      return http.Response(
-        '''
+      return http.Response('''
         {
           "agentName": "Experience Planner Seam",
           "status": "PRE_G07_SEAM_READY",
@@ -328,9 +300,7 @@ ExperienceViewModel createTestViewModel({
           "plannedTools": ["discovery"],
           "checkedAt": "2026-10-03T02:00:00Z"
         }
-        ''',
-        200,
-      );
+        ''', 200);
     }
 
     return http.Response('Not Found', 404);
@@ -340,105 +310,199 @@ ExperienceViewModel createTestViewModel({
     client: client,
     storage: TestCredentialStore(),
   );
-  return ExperienceViewModel(repository: ExperienceRepository(apiService: apiService));
+  return ExperienceViewModel(
+    repository: ExperienceRepository(apiService: apiService),
+  );
+}
+
+class _TestMapLibrePlatform extends MapLibrePlatform {
+  @override
+  Widget buildView(
+    Map<String, dynamic> creationParams,
+    OnPlatformViewCreatedCallback onPlatformViewCreated,
+    Set<Factory<OneSequenceGestureRecognizer>>? gestureRecognizers,
+  ) => const SizedBox.expand();
+
+  @override
+  Future<void> initPlatform(int id) async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 void main() {
   group('MOB-EXP Experience Discovery and Exploration Workflow Tests', () {
-    testWidgets('MOB-EXP-001 discovery screen renders destinations and offerings cards', (tester) async {
-      final vm = createTestViewModel();
-      addTearDown(vm.dispose);
+    testWidgets(
+      'MOB-EXP-001 discovery screen renders destinations and offerings cards',
+      (tester) async {
+        final vm = createTestViewModel();
+        addTearDown(vm.dispose);
 
-      await tester.pumpWidget(
-        mobileTestApp(
-          home: ExperiencesDiscoveryScreen(viewModel: vm),
-        ),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          mobileTestApp(home: ExperiencesDiscoveryScreen(viewModel: vm)),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Coastal Experiences'), findsOneWidget);
-      expect(find.text('Mirissa Coastal Haven'), findsOneWidget);
-      expect(find.text('Sunrise Blue Whale Safari'), findsOneWidget);
-      expect(find.text('LKR 12500 / person'), findsOneWidget);
-      expect(find.byKey(const Key('input-experience-search')), findsOneWidget);
-    });
+        expect(find.text('Coastal Experiences'), findsOneWidget);
+        expect(find.text('Mirissa Coastal Haven'), findsOneWidget);
+        expect(find.text('Sunrise Blue Whale Safari'), findsOneWidget);
+        expect(find.text('LKR 12500 / person'), findsOneWidget);
+        expect(
+          find.byKey(const Key('input-experience-search')),
+          findsOneWidget,
+        );
+      },
+    );
 
-    testWidgets('MOB-EXP-002 coastal map tab displays map container and nearby triggers', (tester) async {
-      final vm = createTestViewModel();
-      addTearDown(vm.dispose);
+    testWidgets(
+      'MOB-EXP-002 coastal map tab uses fetched map config and nearby triggers',
+      (tester) async {
+        final originalTargetPlatform = debugDefaultTargetPlatformOverride;
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
+        addTearDown(
+          () => debugDefaultTargetPlatformOverride = originalTargetPlatform,
+        );
 
-      await tester.pumpWidget(
-        mobileTestApp(
-          home: ExperiencesDiscoveryScreen(viewModel: vm, initialTab: 1),
-        ),
-      );
-      await tester.pumpAndSettle();
+        final originalMapPlatformFactory = MapLibrePlatform.createInstance;
+        MapLibrePlatform.createInstance = _TestMapLibrePlatform.new;
+        addTearDown(
+          () => MapLibrePlatform.createInstance = originalMapPlatformFactory,
+        );
 
-      expect(find.text('OpenStreetMap Coastal View'), findsOneWidget);
-      expect(find.text('Nearby Coastal Hotspots'), findsOneWidget);
-      expect(find.byKey(const Key('input-map-place-search')), findsOneWidget);
-    });
+        final vm = createTestViewModel();
+        addTearDown(vm.dispose);
 
-    testWidgets('MOB-EXP-003 destination detail screen renders conditions and biodiversity telemetry', (tester) async {
-      final vm = createTestViewModel();
-      addTearDown(vm.dispose);
-
-      await tester.pumpWidget(
-        mobileTestApp(
-          home: DestinationDetailScreen(
-            destinationId: 'dest-mirissa',
-            viewModel: vm,
+        await tester.pumpWidget(
+          mobileTestApp(
+            home: ExperiencesDiscoveryScreen(viewModel: vm, initialTab: 1),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Mirissa Coastal Haven'), findsNWidgets(2));
-      expect(find.text('Live Marine Conditions'), findsOneWidget);
-      expect(find.text('0.8 m'), findsOneWidget);
-      expect(find.text('Calm Waters'), findsOneWidget);
-      expect(find.text('Biodiversity & Conservation'), findsOneWidget);
-      expect(find.textContaining('Balaenoptera musculus'), findsOneWidget);
-    });
-
-    testWidgets('MOB-EXP-004 offering detail screen performs live availability evaluation', (tester) async {
-      final vm = createTestViewModel();
-      addTearDown(vm.dispose);
-
-      await tester.pumpWidget(
-        mobileTestApp(
-          home: OfferingDetailScreen(
-            offeringId: 'off-whale-safari',
-            viewModel: vm,
+        expect(find.byType(MapLibreMap), findsOneWidget);
+        expect(vm.mapConfig?.provider, 'OpenFreeMap');
+        expect(
+          vm.mapConfig?.availableStyles['liberty'],
+          'https://tiles.openfreemap.org/styles/liberty',
+        );
+        expect(
+          find.text('© OpenFreeMap contributors, © OpenStreetMap contributors'),
+          findsOneWidget,
+        );
+        final mapWidget = tester.widget<MapLibreMap>(find.byType(MapLibreMap));
+        expect(
+          mapWidget.styleString,
+          'https://tiles.openfreemap.org/styles/liberty',
+        );
+        expect(
+          mapWidget.gestureRecognizers?.any(
+            (factory) => factory.constructor() is EagerGestureRecognizer,
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+          isTrue,
+          reason: 'Map drag gestures must be claimed by MapLibre inside the swipeable tab view.',
+        );
+        expect(
+          find.byKey(const Key('btn-map-current-location')),
+          findsOneWidget,
+        );
+        final destinationChip = find.byKey(
+          const Key('chip-map-destination-dest-mirissa'),
+        );
+        expect(destinationChip, findsOneWidget);
+        await tester.ensureVisible(destinationChip);
+        await tester.tap(destinationChip);
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const Key('card-map-selected-location')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const Key('btn-map-open-destination')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const Key('btn-map-explore-experiences')),
+          findsOneWidget,
+        );
+        expect(find.text('All Coastlines'), findsOneWidget);
+        expect(
+          find.byKey(const Key('btn-refresh-map-nearby')),
+          findsOneWidget,
+        );
+        expect(find.text('Nearby coastal destinations'), findsOneWidget);
+        expect(find.byKey(const Key('input-map-place-search')), findsOneWidget);
+      },
+    );
 
-      expect(find.text('Sunrise Blue Whale Safari'), findsNWidgets(2));
-      expect(find.text('Upcoming Schedule Windows (1)'), findsOneWidget);
+    testWidgets(
+      'MOB-EXP-003 destination detail screen renders conditions and biodiversity telemetry',
+      (tester) async {
+        final vm = createTestViewModel();
+        addTearDown(vm.dispose);
 
-      final evalBtn = find.byKey(const Key('btn-evaluate-availability'));
-      expect(evalBtn, findsOneWidget);
+        await tester.pumpWidget(
+          mobileTestApp(
+            home: DestinationDetailScreen(
+              destinationId: 'dest-mirissa',
+              viewModel: vm,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      await tester.ensureVisible(evalBtn);
-      await tester.pumpAndSettle();
+        expect(find.text('Mirissa Coastal Haven'), findsNWidgets(2));
+        expect(find.text('Live Marine Conditions'), findsOneWidget);
+        expect(find.text('0.8 m'), findsOneWidget);
+        expect(find.text('Calm Waters'), findsOneWidget);
+        expect(find.text('Biodiversity & Conservation'), findsOneWidget);
+        expect(find.textContaining('Balaenoptera musculus'), findsOneWidget);
+      },
+    );
 
-      await tester.tap(evalBtn);
-      await tester.pumpAndSettle();
+    testWidgets(
+      'MOB-EXP-004 offering detail screen performs live availability evaluation',
+      (tester) async {
+        final vm = createTestViewModel();
+        addTearDown(vm.dispose);
 
-      expect(find.byKey(const Key('box-availability-result')), findsOneWidget);
-      expect(find.text('Available for Booking'), findsOneWidget);
-    });
+        await tester.pumpWidget(
+          mobileTestApp(
+            home: OfferingDetailScreen(
+              offeringId: 'off-whale-safari',
+              viewModel: vm,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-    testWidgets('MOB-EXP-005 favourites screen renders saved wishlist items', (tester) async {
+        expect(find.text('Sunrise Blue Whale Safari'), findsNWidgets(2));
+        expect(find.text('Upcoming Schedule Windows (1)'), findsOneWidget);
+
+        final evalBtn = find.byKey(const Key('btn-evaluate-availability'));
+        expect(evalBtn, findsOneWidget);
+
+        await tester.ensureVisible(evalBtn);
+        await tester.pumpAndSettle();
+
+        await tester.tap(evalBtn);
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const Key('box-availability-result')),
+          findsOneWidget,
+        );
+        expect(find.text('Available for Booking'), findsOneWidget);
+      },
+    );
+
+    testWidgets('MOB-EXP-005 favourites screen renders saved wishlist items', (
+      tester,
+    ) async {
       final vm = createTestViewModel();
       addTearDown(vm.dispose);
 
       await tester.pumpWidget(
-        mobileTestApp(
-          home: FavouritesScreen(viewModel: vm),
-        ),
+        mobileTestApp(home: FavouritesScreen(viewModel: vm)),
       );
       await tester.pumpAndSettle();
 
@@ -446,103 +510,118 @@ void main() {
       expect(find.text('Mirissa Coastal Haven'), findsOneWidget);
     });
 
-    testWidgets('MOB-EXP-006 catalogue management screen shows tabs for authorized managers', (tester) async {
-      final vm = createTestViewModel();
-      addTearDown(vm.dispose);
+    testWidgets(
+      'MOB-EXP-006 catalogue management screen shows tabs for authorized managers',
+      (tester) async {
+        final vm = createTestViewModel();
+        addTearDown(vm.dispose);
 
-      final user = mobileTestUser(
-        permissions: const ['experiences.catalogue.manage'],
-      );
-      final authRepo = FakeAuthRepository(user: user);
-      addTearDown(authRepo.close);
-      final authVm = AuthViewModel(repository: authRepo)..user = user;
-      addTearDown(authVm.dispose);
+        final user = mobileTestUser(
+          permissions: const ['experiences.catalogue.manage'],
+        );
+        final authRepo = FakeAuthRepository(user: user);
+        addTearDown(authRepo.close);
+        final authVm = AuthViewModel(repository: authRepo)..user = user;
+        addTearDown(authVm.dispose);
 
-      await tester.pumpWidget(
-        mobileTestApp(
-          home: CatalogueManagementScreen(
-            viewModel: vm,
-            authViewModel: authVm,
+        await tester.pumpWidget(
+          mobileTestApp(
+            home: CatalogueManagementScreen(
+              viewModel: vm,
+              authViewModel: authVm,
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Catalogue Management'), findsOneWidget);
-      expect(find.text('Destinations'), findsOneWidget);
-      expect(find.text('Activities'), findsOneWidget);
-      expect(find.text('Offerings'), findsOneWidget);
-      expect(find.text('Diagnostics & Seam'), findsOneWidget);
-      expect(find.byKey(const Key('btn-create-destination-dialog')), findsOneWidget);
-    });
+        expect(find.text('Catalogue Management'), findsOneWidget);
+        expect(find.text('Destinations'), findsOneWidget);
+        expect(find.text('Activities'), findsOneWidget);
+        expect(find.text('Offerings'), findsOneWidget);
+        expect(find.text('Diagnostics & Seam'), findsOneWidget);
+        expect(
+          find.byKey(const Key('btn-create-destination-dialog')),
+          findsOneWidget,
+        );
+      },
+    );
 
-    testWidgets('MOB-EXP-007 discovery search input and filter chips trigger reload', (tester) async {
-      final vm = createTestViewModel();
-      addTearDown(vm.dispose);
+    testWidgets(
+      'MOB-EXP-007 discovery search input and filter chips trigger reload',
+      (tester) async {
+        final vm = createTestViewModel();
+        addTearDown(vm.dispose);
 
-      await tester.pumpWidget(
-        mobileTestApp(
-          home: ExperiencesDiscoveryScreen(viewModel: vm),
-        ),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          mobileTestApp(home: ExperiencesDiscoveryScreen(viewModel: vm)),
+        );
+        await tester.pumpAndSettle();
 
-      final searchInput = find.byKey(const Key('input-experience-search'));
-      expect(searchInput, findsOneWidget);
+        final searchInput = find.byKey(const Key('input-experience-search'));
+        expect(searchInput, findsOneWidget);
 
-      await tester.enterText(searchInput, 'Coral');
-      await tester.testTextInput.receiveAction(TextInputAction.done);
-      await tester.pumpAndSettle();
+        await tester.enterText(searchInput, 'Coral');
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await tester.pumpAndSettle();
 
-      expect(vm.searchQuery, 'Coral');
+        expect(vm.searchQuery, 'Coral');
 
-      // Tap on a Region chip via widget type and text
-      final southernFilterChip = find.widgetWithText(FilterChip, 'Southern Province');
-      expect(southernFilterChip, findsOneWidget);
-      await tester.tap(southernFilterChip);
-      await tester.pumpAndSettle();
+        // Tap on a Region chip via widget type and text
+        final southernFilterChip = find.widgetWithText(
+          FilterChip,
+          'Southern Province',
+        );
+        expect(southernFilterChip, findsOneWidget);
+        await tester.tap(southernFilterChip);
+        await tester.pumpAndSettle();
 
-      expect(vm.selectedRegion, 'Southern Province');
+        expect(vm.selectedRegion, 'Southern Province');
 
-      // Tap on a Category chip via ChoiceChip
-      final marineChoiceChip = find.widgetWithText(ChoiceChip, 'Marine Life');
-      expect(marineChoiceChip, findsOneWidget);
-      await tester.tap(marineChoiceChip);
-      await tester.pumpAndSettle();
+        // Tap on a Category chip via ChoiceChip
+        final marineChoiceChip = find.widgetWithText(ChoiceChip, 'Marine Life');
+        expect(marineChoiceChip, findsOneWidget);
+        await tester.tap(marineChoiceChip);
+        await tester.pumpAndSettle();
 
-      expect(vm.selectedCategory, 'Marine Life');
-    });
+        expect(vm.selectedCategory, 'Marine Life');
+      },
+    );
 
-    testWidgets('MOB-EXP-008 coastal map place search and nearby triggers run smoothly', (tester) async {
-      final vm = createTestViewModel();
-      addTearDown(vm.dispose);
+    testWidgets(
+      'MOB-EXP-008 coastal map place search and nearby triggers run smoothly',
+      (tester) async {
+        final vm = createTestViewModel();
+        addTearDown(vm.dispose);
 
-      await tester.pumpWidget(
-        mobileTestApp(
-          home: ExperiencesDiscoveryScreen(viewModel: vm, initialTab: 1),
-        ),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          mobileTestApp(
+            home: ExperiencesDiscoveryScreen(viewModel: vm, initialTab: 1),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      final placeSearch = find.byKey(const Key('input-map-place-search'));
-      expect(placeSearch, findsOneWidget);
+        final placeSearch = find.byKey(const Key('input-map-place-search'));
+        expect(placeSearch, findsOneWidget);
 
-      await tester.enterText(placeSearch, 'Mirissa');
-      await tester.testTextInput.receiveAction(TextInputAction.done);
-      await tester.pumpAndSettle();
+        await tester.enterText(placeSearch, 'Mirissa');
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await tester.pumpAndSettle();
 
-      // Trigger "Near Me"
-      final nearMeBtn = find.text('Near Me');
-      expect(nearMeBtn, findsOneWidget);
-      await tester.tap(nearMeBtn);
-      await tester.pumpAndSettle();
-    });
+        // Trigger "Near Me"
+        final nearMeBtn = find.text('Near Me');
+        expect(nearMeBtn, findsOneWidget);
+        await tester.tap(nearMeBtn);
+        await tester.pumpAndSettle();
+      },
+    );
 
-    testWidgets('MOB-EXP-009 destination detail handles missing marine conditions gracefully', (tester) async {
-      final client = MockClient((request) async {
-        if (request.url.path == '/api/experiences/destinations/dest-empty' && request.method == 'GET') {
-          return http.Response(
-            '''
+    testWidgets(
+      'MOB-EXP-009 destination detail handles missing marine conditions gracefully',
+      (tester) async {
+        final client = MockClient((request) async {
+          if (request.url.path == '/api/experiences/destinations/dest-empty' &&
+              request.method == 'GET') {
+            return http.Response('''
             {
               "id": "dest-empty",
               "name": "Isolated Sandy Shore",
@@ -554,29 +633,23 @@ void main() {
               "createdAt": "2026-09-01T00:00:00Z",
               "updatedAt": "2026-09-02T00:00:00Z"
             }
-            ''',
-            200,
-          );
-        }
-        if (request.url.path == '/api/experiences/offerings') {
-          return http.Response(
-            '''
+            ''', 200);
+          }
+          if (request.url.path == '/api/experiences/offerings') {
+            return http.Response('''
             {
               "total": 0,
               "page": 1,
               "pageSize": 20,
               "items": []
             }
-            ''',
-            200,
-          );
-        }
-        if (request.url.path.contains('/marine-conditions')) {
-          return http.Response('Internal Error', 500);
-        }
-        if (request.url.path.contains('/biodiversity')) {
-          return http.Response(
-            '''
+            ''', 200);
+          }
+          if (request.url.path.contains('/marine-conditions')) {
+            return http.Response('Internal Error', 500);
+          }
+          if (request.url.path.contains('/biodiversity')) {
+            return http.Response('''
             {
               "destinationId": "dest-empty",
               "destinationName": "Isolated Sandy Shore",
@@ -589,41 +662,58 @@ void main() {
               "attemptsCount": 0,
               "latencyMs": 0
             }
-            ''',
-            200,
-          );
-        }
-        return http.Response('Not Found', 404);
-      });
+            ''', 200);
+          }
+          return http.Response('Not Found', 404);
+        });
 
-      final service = ExperienceApiService(
-        client: client,
-        storage: TestCredentialStore(),
-      );
-      final vm = ExperienceViewModel(repository: ExperienceRepository(apiService: service));
-      addTearDown(vm.dispose);
+        final service = ExperienceApiService(
+          client: client,
+          storage: TestCredentialStore(),
+        );
+        final vm = ExperienceViewModel(
+          repository: ExperienceRepository(apiService: service),
+        );
+        addTearDown(vm.dispose);
 
-      await tester.pumpWidget(
-        mobileTestApp(
-          home: DestinationDetailScreen(
-            destinationId: 'dest-empty',
-            viewModel: vm,
+        await tester.pumpWidget(
+          mobileTestApp(
+            home: DestinationDetailScreen(
+              destinationId: 'dest-empty',
+              viewModel: vm,
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Isolated Sandy Shore'), findsNWidgets(2));
-      expect(find.text('Live Marine Conditions'), findsOneWidget);
-      expect(find.text('Live marine sensor conditions currently calibrating.'), findsOneWidget);
-      expect(find.text('Species Observed: 0'), findsOneWidget);
-    });
+        expect(find.text('Isolated Sandy Shore'), findsNWidgets(2));
+        expect(find.text('Live Marine Conditions'), findsOneWidget);
+        expect(
+          find.text(
+            'Marine conditions could not be loaded. Check local guidance before setting out.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Biodiversity model unavailable'), findsOneWidget);
+        expect(
+          find.text(
+            'No species predictions are available for this destination right now.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('No telemetry'), findsOneWidget);
+        expect(find.text('Species Observed: 0'), findsNothing);
+      },
+    );
 
-    testWidgets('MOB-EXP-010 offering detail handles unavailable or restricted slots', (tester) async {
-      final client = MockClient((request) async {
-        if (request.url.path == '/api/experiences/offerings/off-whale-safari' && request.method == 'GET') {
-          return http.Response(
-            '''
+    testWidgets(
+      'MOB-EXP-010 offering detail handles unavailable or restricted slots',
+      (tester) async {
+        final client = MockClient((request) async {
+          if (request.url.path ==
+                  '/api/experiences/offerings/off-whale-safari' &&
+              request.method == 'GET') {
+            return http.Response('''
             {
               "id": "off-whale-safari",
               "destinationId": "dest-mirissa",
@@ -638,16 +728,15 @@ void main() {
               "createdAt": "2026-09-01T00:00:00Z",
               "updatedAt": "2026-09-02T00:00:00Z"
             }
-            ''',
-            200,
-          );
-        }
-        if (request.url.path == '/api/experiences/offerings/off-whale-safari/schedules') {
-          return http.Response('[]', 200);
-        }
-        if (request.url.path == '/api/experiences/availability/evaluations' && request.method == 'POST') {
-          return http.Response(
-            '''
+            ''', 200);
+          }
+          if (request.url.path ==
+              '/api/experiences/offerings/off-whale-safari/schedules') {
+            return http.Response('[]', 200);
+          }
+          if (request.url.path == '/api/experiences/availability/evaluations' &&
+              request.method == 'POST') {
+            return http.Response('''
             {
               "offeringId": "off-whale-safari",
               "startsAt": "2026-10-10T06:00:00Z",
@@ -667,45 +756,51 @@ void main() {
               },
               "evaluatedAt": "2026-10-03T02:00:00Z"
             }
-            ''',
-            200,
-          );
-        }
-        return http.Response('Not Found', 404);
-      });
+            ''', 200);
+          }
+          return http.Response('Not Found', 404);
+        });
 
-      final service = ExperienceApiService(
-        client: client,
-        storage: TestCredentialStore(),
-      );
-      final vm = ExperienceViewModel(repository: ExperienceRepository(apiService: service));
-      addTearDown(vm.dispose);
+        final service = ExperienceApiService(
+          client: client,
+          storage: TestCredentialStore(),
+        );
+        final vm = ExperienceViewModel(
+          repository: ExperienceRepository(apiService: service),
+        );
+        addTearDown(vm.dispose);
 
-      await tester.pumpWidget(
-        mobileTestApp(
-          home: OfferingDetailScreen(
-            offeringId: 'off-whale-safari',
-            viewModel: vm,
+        await tester.pumpWidget(
+          mobileTestApp(
+            home: OfferingDetailScreen(
+              offeringId: 'off-whale-safari',
+              viewModel: vm,
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final evalBtn = find.byKey(const Key('btn-evaluate-availability'));
-      await tester.ensureVisible(evalBtn);
-      await tester.tap(evalBtn);
-      await tester.pumpAndSettle();
+        final evalBtn = find.byKey(const Key('btn-evaluate-availability'));
+        await tester.ensureVisible(evalBtn);
+        await tester.tap(evalBtn);
+        await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('box-availability-result')), findsOneWidget);
-      expect(find.text('Status: UNAVAILABLE'), findsOneWidget);
-      expect(find.textContaining('HIGH_SWELL_WARNING'), findsOneWidget);
-    });
+        expect(
+          find.byKey(const Key('box-availability-result')),
+          findsOneWidget,
+        );
+        expect(find.text('Status: UNAVAILABLE'), findsOneWidget);
+        expect(find.textContaining('HIGH_SWELL_WARNING'), findsOneWidget);
+      },
+    );
 
-    testWidgets('MOB-EXP-011 favourites screen supports filter chips and item removal', (tester) async {
-      final client = MockClient((request) async {
-        if (request.method == 'GET' && request.url.path == '/api/experiences/favourites') {
-          return http.Response(
-            '''
+    testWidgets(
+      'MOB-EXP-011 favourites screen supports filter chips and item removal',
+      (tester) async {
+        final client = MockClient((request) async {
+          if (request.method == 'GET' &&
+              request.url.path == '/api/experiences/favourites') {
+            return http.Response('''
             [
               {
                 "id": "fav-1",
@@ -726,120 +821,135 @@ void main() {
                 "createdAt": "2026-09-11T00:00:00Z"
               }
             ]
-            ''',
-            200,
-          );
-        }
-        if (request.method == 'DELETE' &&
-            request.url.path == '/api/experiences/favourites/DESTINATION/dest-mirissa') {
-          return http.Response('', 204);
-        }
-        return http.Response('Not Found', 404);
-      });
+            ''', 200);
+          }
+          if (request.method == 'DELETE' &&
+              request.url.path ==
+                  '/api/experiences/favourites/DESTINATION/dest-mirissa') {
+            return http.Response('', 204);
+          }
+          return http.Response('Not Found', 404);
+        });
 
-      final service = ExperienceApiService(
-        client: client,
-        storage: TestCredentialStore(),
-      );
-      final vm = ExperienceViewModel(repository: ExperienceRepository(apiService: service));
-      addTearDown(vm.dispose);
+        final service = ExperienceApiService(
+          client: client,
+          storage: TestCredentialStore(),
+        );
+        final vm = ExperienceViewModel(
+          repository: ExperienceRepository(apiService: service),
+        );
+        addTearDown(vm.dispose);
 
-      await tester.pumpWidget(
-        mobileTestApp(
-          home: FavouritesScreen(viewModel: vm),
-        ),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          mobileTestApp(home: FavouritesScreen(viewModel: vm)),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Mirissa Coastal Haven'), findsOneWidget);
-      expect(find.text('Sunrise Blue Whale Safari'), findsOneWidget);
+        expect(find.text('Mirissa Coastal Haven'), findsOneWidget);
+        expect(find.text('Sunrise Blue Whale Safari'), findsOneWidget);
 
-      // Filter by Offerings only
-      final offeringsFilter = find.text('Offerings');
-      expect(offeringsFilter, findsOneWidget);
-      await tester.tap(offeringsFilter);
-      await tester.pumpAndSettle();
+        // Filter by Offerings only
+        final offeringsFilter = find.text('Offerings');
+        expect(offeringsFilter, findsOneWidget);
+        await tester.tap(offeringsFilter);
+        await tester.pumpAndSettle();
 
-      expect(find.text('Sunrise Blue Whale Safari'), findsOneWidget);
-      expect(find.text('Mirissa Coastal Haven'), findsNothing);
+        expect(find.text('Sunrise Blue Whale Safari'), findsOneWidget);
+        expect(find.text('Mirissa Coastal Haven'), findsNothing);
 
-      // Back to All
-      await tester.tap(find.text('All Saved (2)'));
-      await tester.pumpAndSettle();
+        // Back to All
+        await tester.tap(find.text('All Saved (2)'));
+        await tester.pumpAndSettle();
 
-      // Remove destination
-      final removeBtn = find.byKey(const Key('btn-remove-favourite-fav-1'));
-      expect(removeBtn, findsOneWidget);
-      await tester.tap(removeBtn);
-      await tester.pumpAndSettle();
+        // Remove destination
+        final removeBtn = find.byKey(const Key('btn-remove-favourite-fav-1'));
+        expect(removeBtn, findsOneWidget);
+        await tester.tap(removeBtn);
+        await tester.pumpAndSettle();
 
-      // Verifies destination is removed from active favourites in view model
-      expect(vm.isFavourite('DESTINATION', 'dest-mirissa'), isFalse);
-    });
+        // Verifies destination is removed from active favourites in view model
+        expect(vm.isFavourite('DESTINATION', 'dest-mirissa'), isFalse);
+      },
+    );
 
-    testWidgets('MOB-EXP-012 catalogue management screen shows access denied without permission', (tester) async {
-      final vm = createTestViewModel();
-      addTearDown(vm.dispose);
+    testWidgets(
+      'MOB-EXP-012 catalogue management screen shows access denied without permission',
+      (tester) async {
+        final vm = createTestViewModel();
+        addTearDown(vm.dispose);
 
-      // User lacking experiences.catalogue.manage
-      final unprivilegedUser = mobileTestUser(permissions: const ['experiences.view']);
-      final authRepo = FakeAuthRepository(user: unprivilegedUser);
-      addTearDown(authRepo.close);
-      final authVm = AuthViewModel(repository: authRepo)..user = unprivilegedUser;
-      addTearDown(authVm.dispose);
+        // User lacking experiences.catalogue.manage
+        final unprivilegedUser = mobileTestUser(
+          permissions: const ['experiences.view'],
+        );
+        final authRepo = FakeAuthRepository(user: unprivilegedUser);
+        addTearDown(authRepo.close);
+        final authVm = AuthViewModel(repository: authRepo)
+          ..user = unprivilegedUser;
+        addTearDown(authVm.dispose);
 
-      await tester.pumpWidget(
-        mobileTestApp(
-          home: CatalogueManagementScreen(
-            viewModel: vm,
-            authViewModel: authVm,
+        await tester.pumpWidget(
+          mobileTestApp(
+            home: CatalogueManagementScreen(
+              viewModel: vm,
+              authViewModel: authVm,
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Catalogue Access Restricted'), findsOneWidget);
-      expect(find.textContaining('Managing coastal catalog entries requires'), findsOneWidget);
-      expect(find.byKey(const Key('btn-create-destination-dialog')), findsNothing);
-    });
+        expect(find.text('Catalogue Access Restricted'), findsOneWidget);
+        expect(
+          find.textContaining('Managing coastal catalog entries requires'),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const Key('btn-create-destination-dialog')),
+          findsNothing,
+        );
+      },
+    );
 
-    testWidgets('MOB-EXP-013 catalogue management destination creation dialog renders form', (tester) async {
-      final vm = createTestViewModel();
-      addTearDown(vm.dispose);
+    testWidgets(
+      'MOB-EXP-013 catalogue management destination creation dialog renders form',
+      (tester) async {
+        final vm = createTestViewModel();
+        addTearDown(vm.dispose);
 
-      final user = mobileTestUser(
-        permissions: const ['experiences.catalogue.manage'],
-      );
-      final authRepo = FakeAuthRepository(user: user);
-      addTearDown(authRepo.close);
-      final authVm = AuthViewModel(repository: authRepo)..user = user;
-      addTearDown(authVm.dispose);
+        final user = mobileTestUser(
+          permissions: const ['experiences.catalogue.manage'],
+        );
+        final authRepo = FakeAuthRepository(user: user);
+        addTearDown(authRepo.close);
+        final authVm = AuthViewModel(repository: authRepo)..user = user;
+        addTearDown(authVm.dispose);
 
-      await tester.pumpWidget(
-        mobileTestApp(
-          home: CatalogueManagementScreen(
-            viewModel: vm,
-            authViewModel: authVm,
+        await tester.pumpWidget(
+          mobileTestApp(
+            home: CatalogueManagementScreen(
+              viewModel: vm,
+              authViewModel: authVm,
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final createBtn = find.byKey(const Key('btn-create-destination-dialog'));
-      expect(createBtn, findsOneWidget);
-      await tester.tap(createBtn);
-      await tester.pumpAndSettle();
+        final createBtn = find.byKey(
+          const Key('btn-create-destination-dialog'),
+        );
+        expect(createBtn, findsOneWidget);
+        await tester.tap(createBtn);
+        await tester.pumpAndSettle();
 
-      expect(find.text('Add Coastal Destination'), findsOneWidget);
-      expect(find.text('Name *'), findsOneWidget);
-      expect(find.text('Save'), findsOneWidget);
+        expect(find.text('Add Coastal Destination'), findsOneWidget);
+        expect(find.text('Name *'), findsOneWidget);
+        expect(find.text('Save'), findsOneWidget);
 
-      // Cancel dialog
-      await tester.tap(find.text('Cancel'));
-      await tester.pumpAndSettle();
-      expect(find.text('Add Coastal Destination'), findsNothing);
-    });
+        // Cancel dialog
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+        expect(find.text('Add Coastal Destination'), findsNothing);
+      },
+    );
   });
 }
-
-

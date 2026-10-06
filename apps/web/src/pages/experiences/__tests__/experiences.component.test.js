@@ -23,6 +23,7 @@ const [
   { default: OfferingDetailPage },
   { default: FavouritesPage },
   { default: CatalogueManagementPage },
+  loading,
   { Routes, Route },
 ] = await Promise.all([
   loadWebModule('/src/pages/experiences/ExperiencesPage.tsx'),
@@ -30,6 +31,7 @@ const [
   loadWebModule('/src/pages/experiences/OfferingDetailPage.tsx'),
   loadWebModule('/src/pages/experiences/FavouritesPage.tsx'),
   loadWebModule('/src/pages/experiences/CatalogueManagementPage.tsx'),
+  loadWebModule('/src/features/loading/backendLoading.ts'),
   import('react-router'),
 ])
 
@@ -748,8 +750,28 @@ test('WEB-EXP-014 Admin role and role-editor permission do not expose catalogue 
 // WEB-EXP-010: Interactive Coastal Map & Place Search
 // -------------------------------------------------------------
 test('WEB-EXP-010 discovery hub renders interactive coastal map and searches places (ui-integration: experience-discovery)', async () => {
+  const requestedPaths = []
+  const requestedUrls = []
+  let resolvePlaceSearch
+  let resolveNearbyRequest
+  let holdNearbyResponse = false
+  const previousGeolocation = Object.getOwnPropertyDescriptor(window.navigator, 'geolocation')
+  const previousSecureContext = Object.getOwnPropertyDescriptor(window, 'isSecureContext')
+  Object.defineProperty(window.navigator, 'geolocation', {
+    configurable: true,
+    value: {
+      getCurrentPosition(onSuccess) {
+        onSuccess({ coords: { latitude: 6.0321, longitude: 80.2167 } })
+      },
+    },
+  })
+  Object.defineProperty(window, 'isSecureContext', { configurable: true, value: true })
+
   globalThis.fetch = async (input) => {
     const url = String(input)
+    const requestUrl = new URL(url, window.location.origin)
+    requestedUrls.push(requestUrl)
+    requestedPaths.push(requestUrl.pathname + requestUrl.search)
     if (url.includes('/api/experiences/destinations')) {
       return jsonResponse({ total: 1, page: 1, pageSize: 20, items: [mockDestination] })
     }
@@ -771,47 +793,114 @@ test('WEB-EXP-010 discovery hub renders interactive coastal map and searches pla
       })
     }
     if (url.includes('/api/experiences/map/search')) {
-      return jsonResponse({
-        query: 'mirissa',
-        results: [
-          {
-            displayName: 'Mirissa Beach, Southern Province, Sri Lanka',
-            latitude: 5.9482,
-            longitude: 80.4578,
-            type: 'beach',
-            category: 'place',
-            region: 'Southern Province',
-            country: 'Sri Lanka',
-          },
-        ],
-        source: 'Photon-OSM',
-        fallback: false,
-        retrievedAt: '2026-09-27T12:00:00Z',
+      return new Promise((resolve) => {
+        resolvePlaceSearch = () => resolve(jsonResponse({
+          query: 'mirissa',
+          results: [
+            {
+              displayName: 'Mirissa Beach, Southern Province, Sri Lanka',
+              latitude: 5.9482,
+              longitude: 80.4578,
+              type: 'beach',
+              category: 'place',
+              region: 'Southern Province',
+              country: 'Sri Lanka',
+            },
+          ],
+          source: 'Photon-OSM',
+          fallback: false,
+          retrievedAt: '2026-09-27T12:00:00Z',
+        }))
       })
+    }
+    if (url.includes('/api/experiences/nearby')) {
+      const response = {
+        query: { latitude: 6.0321, longitude: 80.2167, radiusMeters: 50000, limit: 10 },
+        count: 1,
+        results: [{
+          destinationId: mockDestination.id,
+          name: 'Mirissa Bay',
+          slug: 'mirissa-bay',
+          region: 'Southern Province',
+          latitude: 5.9482,
+          longitude: 80.4716,
+          distanceMeters: 31500,
+          activeOfferingsCount: 2,
+        }],
+      }
+      if (holdNearbyResponse) {
+        holdNearbyResponse = false
+        return new Promise((resolve) => {
+          resolveNearbyRequest = () => resolve(jsonResponse(response))
+        })
+      }
+      return jsonResponse(response)
     }
     return jsonResponse({})
   }
 
-  renderInApp(createElement(ExperiencesPage), { path: '/experiences' })
-  await screen.findByRole('heading', { name: /Explore our coast/i })
+  try {
+    const user = userEvent.setup()
+    renderInApp(createElement(ExperiencesPage), { path: '/experiences' })
+    await screen.findByRole('heading', { name: /Explore our coast/i })
+    await waitFor(() => assert.equal(loading.getLoadingScreenSnapshot(), false))
 
-  // Switch to "Interactive Coastal Map" tab
-  const mapTab = screen.getByRole('button', { name: /Interactive Coastal Map/i })
-  await userEvent.setup().click(mapTab)
+    // Switch to "Interactive Coastal Map" tab
+    const mapTab = screen.getByRole('button', { name: /Interactive Coastal Map/i })
+    await user.click(mapTab)
 
-  // Verify map section heading
-  assert.ok(await screen.findByRole('heading', { name: /Interactive Coastal Map of Sri Lanka/i }))
-  assert.ok(screen.getByText(/INDIAN OCEAN/i))
-  assert.ok(screen.getByText(/BAY OF BENGAL/i))
+    // Verify map section heading
+    assert.ok(await screen.findByRole('heading', { name: /Interactive Coastal Map of Sri Lanka/i }))
+    assert.ok(await screen.findByTestId('experience-coastal-map'))
+    assert.ok(await screen.findByText(/OpenFreeMap/i))
 
-  // Verify search input
-  const searchInput = screen.getByPlaceholderText(/e\.g\. Mirissa, Trincomalee/i)
-  await userEvent.setup().type(searchInput, 'mirissa')
-  const searchBtn = screen.getByRole('button', { name: /^Search$/i })
-  await userEvent.setup().click(searchBtn)
+    // Verify place search input and nearby discovery
+    const searchInput = screen.getByPlaceholderText(/e\.g\. Mirissa, Trincomalee/i)
+    await user.type(searchInput, 'm')
+    await user.click(screen.getByRole('button', { name: /^Search$/i }))
+    const shortQueryError = await screen.findByText(/Enter at least 2 characters/i)
+    assert.ok(screen.getByTestId('map-place-search-card').contains(shortQueryError))
+    assert.equal(screen.getAllByRole('alert').length, 1)
 
-  // Verify place search result and selected location card
-  assert.ok((await screen.findAllByText(/Mirissa Beach, Southern Province/i)).length >= 1)
-  assert.ok(screen.getByRole('button', { name: /Explore Experiences Here/i }))
+    await user.clear(searchInput)
+    await user.type(searchInput, 'mirissa')
+    holdNearbyResponse = true
+    await user.click(screen.getByRole('button', { name: /^Search$/i }))
+    await waitFor(() => assert.equal(typeof resolvePlaceSearch, 'function'))
+    assert.equal(loading.getLoadingScreenSnapshot(), false)
+    resolvePlaceSearch()
+
+    assert.ok((await screen.findAllByText(/Mirissa Beach, Southern Province/i)).length >= 1)
+    assert.ok(screen.getByRole('button', { name: /Explore Experiences Here/i }))
+    assert.ok(await screen.findByText(/Nearby coastal destinations/i))
+    await waitFor(() => assert.equal(typeof resolveNearbyRequest, 'function'))
+    assert.equal(loading.getLoadingScreenSnapshot(), false)
+    assert.ok(screen.getByText(/Finding places/i))
+    resolveNearbyRequest()
+    assert.ok(await screen.findByText(/31.5 km/))
+
+    // Device coordinates are requested only after the visitor selects the location control.
+    await user.click(screen.getByRole('button', { name: /Use current location/i }))
+    assert.ok(await screen.findByText(/Your approximate location/i))
+    await waitFor(() => {
+      assert.ok(requestedPaths.some((path) => path.startsWith('/api/experiences/nearby?latitude=6.0321&longitude=80.2167')))
+    })
+    assert.equal(screen.queryByText(/Coordinates: 6.0321/), null)
+    assert.equal(requestedUrls.some((url) =>
+      ['tiles.openfreemap.org', 'www.openstreetmap.org'].includes(url.hostname)
+      && url.href.includes('6.0321'),
+    ), false)
+  } finally {
+    if (previousGeolocation) {
+      Object.defineProperty(window.navigator, 'geolocation', previousGeolocation)
+    } else {
+      delete window.navigator.geolocation
+    }
+    if (previousSecureContext) {
+      Object.defineProperty(window, 'isSecureContext', previousSecureContext)
+    } else {
+      delete window.isSecureContext
+    }
+  }
 })
 

@@ -221,7 +221,7 @@
     {
       "id": "experience-discovery",
       "status": "implemented",
-      "description": "Public coastal experience discovery hub. Provides catalogue browsing across destinations, activities, and offerings with filters and search, radius-based nearby coastal search with Haversine distance, and interactive vector-tile map exploration with geocoded place search.",
+      "description": "Public coastal experience discovery hub. Provides catalogue browsing across destinations, activities, and offerings with filters and search, radius-based nearby coastal search with Haversine distance, geocoded place search, and an interactive map rendered from the registered map configuration and destination coordinates. Map rendering may differ by client and does not itself provide turn-by-turn routing.",
       "web": {
         "route": "/experiences",
         "source": "apps/web/src/app/routes.tsx"

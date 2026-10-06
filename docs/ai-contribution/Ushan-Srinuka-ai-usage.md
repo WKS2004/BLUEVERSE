@@ -754,3 +754,215 @@
   - `python scripts/validation/validate_ui_integrations.py` passed with exit code 0.
   - `flutter test --no-pub` passed all 102 tests (87 existing + 15 new tests) in 16 seconds.
 
+## 2026-10-05 — Flutter Experience & Biodiversity reliability fixes
+
+- Date/time or time range: 2026-10-05 22:31 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop
+- AI Model: GPT-6
+- Summary of the user's request: Continue the interrupted Flutter
+  Experience & Biodiversity audit, fix mobile defects and gaps, refine the
+  repository G00 proposal as needed, and record the contribution as Ushan.
+- Summary of what the AI Agent did: Decoupled discovery data failures,
+  corrected biodiversity and marine-condition unavailable states, added
+  permission-on-demand approximate location and timezone-safe schedule flows,
+  completed schedule and catalogue editing, made management load all
+  permission-authorized publication states, protected account-scoped favourites
+  against stale requests, and updated mobile guidance, UI integration metadata,
+  G00 proposal details, and the approved MOB-EXP-009 assertions.
+- AI output accepted/changed/rejected: Accepted source-backed reliability and
+  UX changes. Pinned geolocator to compatible `14.0.2` after package solving
+  showed that `14.1.x` conflicts with the current Windows secure-storage
+  dependency. Updated Ushan's G00 input while retaining shared-owner G00
+  agreement as pending. Did not add executable Agentic AI behavior. Existing
+  Flutter tests were not run.
+- Verification/evidence: `flutter pub get` passed;
+  `flutter analyze lib` passed with no issues. Full `flutter analyze` reports
+  one existing unused import in `test/experience_api_service_test.dart`; that
+  separate test was left unchanged. `scripts/validation/validate_ui_integrations.py`
+  passed, UI JSON and Android/iOS XML parsed successfully, and `git diff --check`
+  passed. The Flutter test suite was not run. Relevant changes are in
+  `apps/mobile/`, `docs/contracts/ui-integration.json` and
+  `docs/v1/g00/member-1-experience-biodiversity.md`.
+
+## 2026-10-06 — Diagnose Android Flutter run failure
+
+- Date/time or time range: 2026-10-06 00:36 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop
+- AI Model: GPT-6
+- Summary of the user's request: Investigate the Android build failure from
+  `flutter run` for the Experience & Biodiversity mobile component.
+- Summary of what the AI Agent did: Traced the captured failures to a Google
+  Maven read timeout followed by insufficient disk space while Gradle cached
+  and transformed Android build artifacts. Compared the app's AGP, Gradle,
+  Kotlin and compatibility flags against its installed Flutter SDK template;
+  recommended recovering disk/cache capacity before changing version pins.
+- AI output accepted/changed/rejected: Kept the repository build configuration
+  unchanged because it matches Flutter 3.47.2's generated defaults; provided
+  a PowerShell option to put Gradle and Flutter temporary files on D:.
+- Verification/evidence: Read Flutter SDK version metadata and its Android
+  Gradle template constants (Flutter 3.47.2, AGP 9.1.0, Gradle 9.3.1, Kotlin
+  2.4.0), verified both `android.newDsl=false` and
+  `android.builtInKotlin=false`, and inspected `geolocator_android` 5.1.1+1's
+  AGP 9.0.1 dependency. The supplied log reports the Maven timeout and
+  `There is not enough space on the disk`; no Android build was rerun.
+
+## 2026-10-06 — Diagnose Kotlin cache failure across Windows drives
+
+- Date/time or time range: 2026-10-06 00:46 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop
+- AI Model: GPT-6
+- Summary of the user's request: Investigate the follow-up Android
+  `flutter run` failure after Gradle reached Kotlin compilation.
+- Summary of what the AI Agent did: Located the failing
+  `package_info_plus:compileDebugKotlin` incremental cache, confirmed its
+  Kotlin source is under the C: Pub cache while the project and build cache
+  are on D:, and matched the cross-root exception to Flutter's reported
+  Windows build issue. Recommended moving `PUB_CACHE` to D:, cleaning
+  generated Flutter build state, then fetching packages and retrying.
+- AI output accepted/changed/rejected: Updated the prior diagnosis: the
+  attached run has moved past the disk/download failure and now has a distinct
+  cross-drive Kotlin incremental-cache failure. Kept Android Gradle versions
+  unchanged and did not add a slower project-wide incremental-compilation
+  workaround.
+- Verification/evidence: Reviewed the full pasted log, `.dart_tool/package_config.json`,
+  `.flutter-plugins-dependencies` and Android Gradle properties. Confirmed the
+  C:/D: path split and checked Kotlin's documented incremental-compilation
+  switch and Dart's `PUB_CACHE` setting. No Android build or tests were run.
+
+## 2026-10-06 — Replace illustrative Flutter coastal map
+
+- Date/time or time range: 2026-10-06 01:58–02:01 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop
+- AI Model: GPT-6
+- Summary of the user's request: Replace the inaccurate hand-drawn Sri Lankan
+  map in the Flutter Experience & Biodiversity workflow with a real map fetched
+  through the existing map configuration integration.
+- Summary of what the AI Agent did: Added MapLibre rendering from the registered
+  map configuration, catalogue-coordinate destination markers, map and tile
+  loading/retry states, and replaced the silhouette UI. Updated the approved
+  MOB-EXP-002 fixture/assertions and documented the current provider proposal
+  while keeping shared G00 acceptance pending.
+- AI output accepted/changed/rejected: Accepted the real map implementation;
+  updated the map test to verify the configured OpenFreeMap style and
+  attribution. No endpoint or route was added.
+- Verification/evidence: `dart analyze lib test/experience_workflow_widget_test.dart`
+  passed with no issues; the UI integration and endpoint catalog validators
+  passed; `git diff --check` passed. The widget test and Android Gradle build
+  were not run.
+
+
+## 2026-10-06 — Restore mobile experience API availability
+
+- Date/time or time range: 2026-10-06 02:17–02:22 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop
+- AI Model: GPT-6
+- Summary of the user's request: Diagnose and fix the mobile map, search, nearby, catalogue and diagnostics failures shown on the Redmi Note 14.
+- Summary of what the AI Agent did: Confirmed the public gateway was reachable but the running Compose stack, launched from a sibling checkout, had no Experience & Biodiversity service container. Started only that service from this checkout using its cached image, without rebuilding or replacing the other services. Confirmed database initialization completed and reviewed the diagnostics endpoints' authentication boundary and mobile token forwarding.
+- AI output accepted/changed/rejected: Accepted the missing service container as the shared cause of the 502 failures and restored it. No application source or existing tests were changed.
+- Verification/evidence: Through the laptop Wi-Fi address, `/api/health`, `/api/experiences/health`, destinations, map configuration, map search and nearby returned HTTP 200; the service health response reported the database connected. Anonymous probes of protected diagnostics routes returned HTTP 401 as expected; the mobile client sends its stored bearer token. Flutter tests and device-side authenticated diagnostics were not run.
+
+## 2026-10-06 — Improve coastal map interactions on mobile and web
+
+- Date/time or time range: 2026-10-06 03:00–03:14 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop
+- AI Model: GPT-6
+- Summary of the user's request: Make the Flutter coastal map usable without tab swipes stealing map drags, add a current-location action to Flutter and React, and align the mobile map experience with the React web map.
+- Summary of what the AI Agent did: Added MapLibre GL JS to React and lazy-loaded it on the map tab; wired configured map styles, catalogue markers, place selection, pan/zoom, current-location markers and nearby results to existing public API operations. Updated Flutter's map gesture ownership, map height, destination chips and details, selected-place camera focus and current-location control. Updated the approved WEB-EXP-010 and MOB-EXP-002 tests and synchronized the G00, device-location and ADR-0017 provider notes without recording shared G00 acceptance.
+- AI output accepted/changed/rejected: Accepted the configured MapLibre renderer for React to match Flutter and the explicit location action in both clients. Kept device coordinates in memory and sent them only to the public nearby API after the user action. Added no endpoint or route.
+- Verification/evidence: `npm run build` passed; targeted Dart analysis passed with no issues; the React test file passed `node --check`; `scripts/validation/validate_ui_integrations.py` passed; `git diff --check` passed with existing LF/CRLF conversion warnings. Test suites and device execution were not run.
+
+## 2026-10-06 — Fix web coastal map layout and location control
+
+- Date/time or time range: 2026-10-06 11:11 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop
+- AI Model: GPT-6
+- Summary of the user's request: Stop the coastal map from overlapping page content and add a Google Maps-style control for using the visitor's current location.
+- Summary of what the AI Agent did: Added an accessible floating location button within the map viewport and reused the existing permission-aware browser geolocation and nearby-destination flow. Separated the full-size map layer from MapLibre's own container so its CSS cannot collapse the map canvas; rebuilt and restarted only the local frontend.
+- AI output accepted/changed/rejected: Accepted the existing OpenFreeMap/MapLibre source and location flow. Removed the duplicate header location action and kept the map control available during loading or provider errors. No endpoint or route was added.
+- Verification/evidence: `npm run build` passed; lint on the two changed web source files passed with one existing hook-dependency warning; the UI integration validator passed; `git diff --check` passed. The live localhost map showed loaded Sri Lanka tiles, the location control, map attribution within the rounded map, and the footer below the map without overlap. Full web lint still reports pre-existing errors in `CatalogueManagementPage.tsx`, `FavouritesPage.tsx` and the existing component test. Test suites were not run.
+
+## 2026-10-06 — Localize coastal map refreshes and align Flutter discovery
+
+- Date/time or time range: 2026-10-06 11:48–12:01 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop
+- AI Model: GPT-6
+- Summary of the user's request: Keep map refresh and error feedback within the relevant map sections, stop destination markers shifting on hover, and make Flutter's map experience more like React's.
+- Summary of what the AI Agent did: Scoped web place-search feedback to the map search card and prevented stale map-search responses from overwriting a newer selection. Removed hover scaling from anchored map markers. Added Flutter coast-region camera presets, selected-place detail/actions, distance-based nearby results, separate GPS and nearby loading states, local map configuration and nearby refresh controls, stale-result retention during nearby refresh, and stale-search cancellation. Rebuilt and restarted only the local frontend container.
+- AI output accepted/changed/rejected: Accepted the same public API workflows and existing OpenFreeMap/MapLibre provider. No endpoint, route or G00 contract changes were made. Updated the user-approved WEB-EXP-010 and MOB-EXP-002 assertions for map-local search feedback and Flutter map controls.
+- Verification/evidence: Dart analysis of the changed Flutter source reported no issues; targeted ESLint and `npm run build` passed; the UI integration validator passed; `git diff --check` passed with existing line-ending conversion warnings. The frontend Docker image built and its local container restarted. Test suites and Flutter device execution were not run; Vite reported its existing large MapLibre chunk warning.
+
+## 2026-10-06 — Keep coastal map updates local and consistent
+
+- Date/time or time range: 2026-10-06 12:12–12:32 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop
+- AI Model: GPT-6
+- Summary of the user's request: Make the coastal map look consistent across browsers and stop map search and nearby updates from showing a full-page refresh.
+- Summary of what the AI Agent did: Excluded map configuration, place-search and nearby requests from the shared page-wide loading screen; memoized the selected map focus so unrelated React updates do not recreate all map markers; kept MapLibre attribution expanded to avoid viewport-threshold changes; added pending-request assertions to approved WEB-EXP-010; rebuilt and restarted only the local frontend container.
+- AI output accepted/changed/rejected: Kept the existing public map API, MapLibre provider and shared loader for non-map requests. No route, endpoint or G00 contract changed.
+- Verification/evidence: `npm run build` passed with the known MapLibre large-chunk warning; targeted ESLint passed; the WEB-EXP-010 file passed `node --check`; the UI integration validator passed; `git diff --check` passed with existing LF/CRLF conversion warnings. The local in-app browser visibly loaded the tiles and markers, showed expanded attribution within the map, kept the footer below it, and updated the selected-place and nearby sections without a global loading overlay. Edge automation could not be inspected because the browser extension's request-header policy was unavailable. The test suite was not run.
+
+## 2026-10-06 — Restore the coastal map attribution pill
+
+- Date/time or time range: 2026-10-06 12:50 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop
+- AI Model: GPT-6
+- Summary of the user's request: Restore the earlier compact MapLibre attribution pill consistently across browsers after the expanded attribution appeared as an unwanted bar.
+- Summary of what the AI Agent did: Set the React coastal map's attribution control to compact mode at all viewport sizes and rebuilt/restarted the local frontend container.
+- AI output accepted/changed/rejected: Replaced the previous forced-expanded setting; kept the MapLibre provider-supplied credits and info toggle.
+- Verification/evidence: `npm run build` passed with the known MapLibre large-chunk warning; targeted ESLint passed; `python scripts/validation/validate_ui_integrations.py` passed using the bundled Python runtime; `git diff --check` passed with existing line-ending warnings. The localhost map visibly showed the rounded credit pill and info toggle at a narrow viewport. Edge inspection was unavailable because its browser request-header policy could not load, and Chrome was not available. No test suite was run.
+
+## 2026-10-06 — Start the map attribution collapsed
+
+- Date/time or time range: 2026-10-06 13:07 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop
+- AI Model: GPT-6
+- Summary of the user's request: Keep the attribution collapsed on initial map load and expand its credit text only when the visitor clicks the info control.
+- Summary of what the AI Agent did: Collapsed MapLibre's compact attribution control before removing the loading overlay, preserving its click-to-expand behavior, then rebuilt and restarted the local frontend.
+- AI output accepted/changed/rejected: Kept the compact rounded control and provider credits; changed its initial state to collapsed.
+- Verification/evidence: `npm run build` passed with the known MapLibre large-chunk warning; targeted ESLint passed; the UI integration validator passed; `git diff --check` passed with existing line-ending warnings. In the local browser, the loaded map exposed only the collapsed info control; clicking showed OpenFreeMap, OpenMapTiles and OpenStreetMap credit links, and clicking again collapsed it. No test suite was run.
+
+## 2026-10-06 — Persist the selected coastal experience view
+
+- Date/time or time range: 2026-10-06 13:07–13:31 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop
+- AI Model: GPT-6
+- Summary of the user's request: Keep the selected Destinations & Offerings or Interactive Coastal Map tab after refresh and animate transitions in both directions.
+- Summary of what the AI Agent did: Stored the selected view in the `/experiences` query string (`?tab=map` for the map) so refresh and direct links restore the same tab. Added a brief, reduced-motion-aware fade/slide transition when switching tabs. Rebuilt the local frontend container.
+- AI output accepted/changed/rejected: Accepted URL-backed view state after a live reload showed the session-only approach did not preserve the selection in the preview. Kept the existing route and API contracts unchanged.
+- Verification/evidence: `npm run build`, targeted ESLint, the UI integration validator, and `git diff --check` passed. The rebuilt local frontend retained the map tab after a reload and removed the map query when switching back to Destinations & Offerings. An earlier preview load showed map tiles with collapsed attribution; the final reload restored the map tab but the map API reported its provider configuration unavailable, so final tile availability was not verified. No test suite was run.

@@ -376,8 +376,8 @@ class CreateScheduleRequest {
   final bool? isActive;
 
   Map<String, dynamic> toJson() => {
-    'startsAt': startsAt.toIso8601String(),
-    'endsAt': endsAt.toIso8601String(),
+    'startsAt': startsAt.toUtc().toIso8601String(),
+    'endsAt': endsAt.toUtc().toIso8601String(),
     if (timeZoneId != null) 'timeZoneId': timeZoneId,
     if (isActive != null) 'isActive': isActive,
   };
@@ -397,8 +397,8 @@ class UpdateScheduleRequest {
   final bool? isActive;
 
   Map<String, dynamic> toJson() => {
-    'startsAt': startsAt.toIso8601String(),
-    'endsAt': endsAt.toIso8601String(),
+    'startsAt': startsAt.toUtc().toIso8601String(),
+    'endsAt': endsAt.toUtc().toIso8601String(),
     if (timeZoneId != null) 'timeZoneId': timeZoneId,
     if (isActive != null) 'isActive': isActive,
   };
@@ -428,7 +428,8 @@ class PublicationEvaluationResponse {
       currentStatus: json['currentStatus'] as String? ?? '',
       requestedStatus: json['requestedStatus'] as String? ?? '',
       canTransition: json['canTransition'] as bool? ?? false,
-      reasons: (json['reasons'] as List?)?.whereType<String>().toList() ?? const [],
+      reasons:
+          (json['reasons'] as List?)?.whereType<String>().toList() ?? const [],
     );
   }
 }
@@ -446,8 +447,8 @@ class AvailabilityEvaluationRequest {
 
   Map<String, dynamic> toJson() => {
     'offeringId': offeringId,
-    'startsAt': startsAt.toIso8601String(),
-    'endsAt': endsAt.toIso8601String(),
+    'startsAt': startsAt.toUtc().toIso8601String(),
+    'endsAt': endsAt.toUtc().toIso8601String(),
   };
 }
 
@@ -567,9 +568,13 @@ class AvailabilityEvaluationResponse {
           ? DateTime.tryParse(json['endsAt'] as String) ?? DateTime.now()
           : DateTime.now(),
       status: json['status'] as String? ?? 'UNKNOWN',
-      reasonCodes: (json['reasonCodes'] as List?)?.whereType<String>().toList() ?? const [],
+      reasonCodes:
+          (json['reasonCodes'] as List?)?.whereType<String>().toList() ??
+          const [],
       offering: OfferingSummaryDto.fromJson(
-        json['offering'] is Map ? Map<String, dynamic>.from(json['offering']) : const {},
+        json['offering'] is Map
+            ? Map<String, dynamic>.from(json['offering'])
+            : const {},
       ),
       operationalRestriction: json['operationalRestriction'] is Map
           ? OperationalRestrictionContextDto.fromJson(
@@ -605,7 +610,8 @@ class FocalSpeciesPredictionDto {
       speciesName: json['speciesName'] as String? ?? '',
       scientificName: json['scientificName'] as String? ?? '',
       conservationStatus: json['conservationStatus'] as String? ?? '',
-      occurrenceProbability: (json['occurrenceProbability'] as num?)?.toDouble() ?? 0.0,
+      occurrenceProbability:
+          (json['occurrenceProbability'] as num?)?.toDouble() ?? 0.0,
       habitatSuitability: json['habitatSuitability'] as String?,
       primaryThreats: json['primaryThreats'] as String?,
     );
@@ -658,9 +664,14 @@ class BiodiversityContextResponseDto {
       latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
       longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
       status: json['status'] as String? ?? 'not_connected',
-      predictions: (json['predictions'] as List?)
+      predictions:
+          (json['predictions'] as List?)
               ?.whereType<Map>()
-              .map((p) => FocalSpeciesPredictionDto.fromJson(Map<String, dynamic>.from(p)))
+              .map(
+                (p) => FocalSpeciesPredictionDto.fromJson(
+                  Map<String, dynamic>.from(p),
+                ),
+              )
               .toList() ??
           const [],
       modelVersion: json['modelVersion'] as String?,
@@ -806,9 +817,14 @@ class OperationalAdvisoriesResponseDto {
       attemptsCount: json['attemptsCount'] as int? ?? 0,
       latencyMs: json['latencyMs'] as int? ?? 0,
       remoteStatus: json['remoteStatus'] as String? ?? 'NOT_CONNECTED',
-      advisories: (json['advisories'] as List?)
+      advisories:
+          (json['advisories'] as List?)
               ?.whereType<Map>()
-              .map((a) => ActiveAdvisoryItemDto.fromJson(Map<String, dynamic>.from(a)))
+              .map(
+                (a) => ActiveAdvisoryItemDto.fromJson(
+                  Map<String, dynamic>.from(a),
+                ),
+              )
               .toList() ??
           const [],
       fallbackUsed: json['fallbackUsed'] as bool? ?? false,
@@ -872,15 +888,18 @@ class MapConfigDto {
 
   factory MapConfigDto.fromJson(Map<String, dynamic> json) {
     return MapConfigDto(
-      provider: json['provider'] as String? ?? 'OpenStreetMap / BLUEVERSE Tile Grid',
+      provider:
+          json['provider'] as String? ?? 'OpenStreetMap / BLUEVERSE Tile Grid',
       tileServiceType: json['tileServiceType'] as String? ?? 'vector',
       vectorTileUrl: json['vectorTileUrl'] as String? ?? '',
-      availableStyles: (json['availableStyles'] as Map?)?.map(
+      availableStyles:
+          (json['availableStyles'] as Map?)?.map(
             (k, v) => MapEntry(k.toString(), v.toString()),
           ) ??
           const {},
       defaultStyle: json['defaultStyle'] as String? ?? 'coastal-bathymetry',
-      attribution: json['attribution'] as String? ?? '© OpenStreetMap contributors',
+      attribution:
+          json['attribution'] as String? ?? '© OpenStreetMap contributors',
       documentationUrl: json['documentationUrl'] as String? ?? '',
     );
   }
@@ -936,9 +955,14 @@ class MapSearchResponseDto {
   factory MapSearchResponseDto.fromJson(Map<String, dynamic> json) {
     return MapSearchResponseDto(
       query: json['query'] as String? ?? '',
-      results: (json['results'] as List?)
+      results:
+          (json['results'] as List?)
               ?.whereType<Map>()
-              .map((r) => MapSearchResultItemDto.fromJson(Map<String, dynamic>.from(r)))
+              .map(
+                (r) => MapSearchResultItemDto.fromJson(
+                  Map<String, dynamic>.from(r),
+                ),
+              )
               .toList() ??
           const [],
       source: json['source'] as String? ?? '',
@@ -987,10 +1011,7 @@ class NearbyDestinationDto {
 }
 
 class NearbyResponse {
-  const NearbyResponse({
-    required this.count,
-    required this.results,
-  });
+  const NearbyResponse({required this.count, required this.results});
 
   final int count;
   final List<NearbyDestinationDto> results;
@@ -998,9 +1019,13 @@ class NearbyResponse {
   factory NearbyResponse.fromJson(Map<String, dynamic> json) {
     return NearbyResponse(
       count: json['count'] as int? ?? 0,
-      results: (json['results'] as List?)
+      results:
+          (json['results'] as List?)
               ?.whereType<Map>()
-              .map((d) => NearbyDestinationDto.fromJson(Map<String, dynamic>.from(d)))
+              .map(
+                (d) =>
+                    NearbyDestinationDto.fromJson(Map<String, dynamic>.from(d)),
+              )
               .toList() ??
           const [],
     );
@@ -1088,9 +1113,14 @@ class DependenciesStatusResponseDto {
       overallStatus: json['overallStatus'] as String?,
       evaluatedAt: json['evaluatedAt'] as String?,
       timestamp: json['timestamp'] as String?,
-      dependencies: (json['dependencies'] as List?)
+      dependencies:
+          (json['dependencies'] as List?)
               ?.whereType<Map>()
-              .map((d) => MicroserviceDependencyReportDto.fromJson(Map<String, dynamic>.from(d)))
+              .map(
+                (d) => MicroserviceDependencyReportDto.fromJson(
+                  Map<String, dynamic>.from(d),
+                ),
+              )
               .toList() ??
           const [],
       resilienceNote: json['resilienceNote'] as String?,
@@ -1119,7 +1149,9 @@ class AgentContextResponseDto {
       agentName: json['agentName'] as String? ?? '',
       status: json['status'] as String? ?? '',
       detail: json['detail'] as String? ?? '',
-      plannedTools: (json['plannedTools'] as List?)?.whereType<String>().toList() ?? const [],
+      plannedTools:
+          (json['plannedTools'] as List?)?.whereType<String>().toList() ??
+          const [],
       checkedAt: json['checkedAt'] as String? ?? '',
     );
   }
@@ -1146,7 +1178,8 @@ class PagedResult<T> {
       total: json['total'] as int? ?? 0,
       page: json['page'] as int? ?? 1,
       pageSize: json['pageSize'] as int? ?? 0,
-      items: (json['items'] as List?)
+      items:
+          (json['items'] as List?)
               ?.whereType<Map>()
               .map((item) => fromJsonT(Map<String, dynamic>.from(item)))
               .toList() ??

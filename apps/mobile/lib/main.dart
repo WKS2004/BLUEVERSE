@@ -75,7 +75,14 @@ class _MyAppState extends State<MyApp> {
     }
 
     final wasAuthenticated = _lastAuthenticatedUserId != null;
+    final previousUserId = _lastAuthenticatedUserId;
     _lastAuthenticatedUserId = activeUserId;
+    if (previousUserId != activeUserId) {
+      _experienceViewModel.clearUserScopedState();
+      if (activeUserId != null) {
+        _experienceViewModel.loadFavourites();
+      }
+    }
     if (wasAuthenticated && activeUserId == null) {
       _replaceNavigationWith('/');
     }
@@ -118,9 +125,9 @@ class _MyAppState extends State<MyApp> {
         '/signup': (_) => AuthRegistrationScreen(viewModel: _authViewModel),
         '/profile': (_) => AuthProfileScreen(viewModel: _authViewModel),
         '/dashboard': (_) => AuthDashboardScreen(
-              viewModel: _authViewModel,
-              experienceViewModel: _experienceViewModel,
-            ),
+          viewModel: _authViewModel,
+          experienceViewModel: _experienceViewModel,
+        ),
         '/admin': (_) => AuthAdminLandingScreen(viewModel: _authViewModel),
         '/admin/permissions': (_) => AuthAdminScreen(
           viewModel: _authViewModel,
@@ -134,10 +141,18 @@ class _MyAppState extends State<MyApp> {
           viewModel: _authViewModel,
           section: AuthAdminSection.users,
         ),
-        '/experiences': (_) => ExperiencesDiscoveryScreen(viewModel: _experienceViewModel),
-        '/experiences/destinations/:id': (_) => ExperiencesDiscoveryScreen(viewModel: _experienceViewModel),
-        '/experiences/offerings/:id': (_) => ExperiencesDiscoveryScreen(viewModel: _experienceViewModel),
-        '/experiences/favourites': (_) => FavouritesScreen(viewModel: _experienceViewModel),
+        '/experiences': (_) => ExperiencesDiscoveryScreen(
+          viewModel: _experienceViewModel,
+          authViewModel: _authViewModel,
+        ),
+        '/experiences/destinations/:id': (_) =>
+            ExperiencesDiscoveryScreen(viewModel: _experienceViewModel),
+        '/experiences/offerings/:id': (_) =>
+            ExperiencesDiscoveryScreen(viewModel: _experienceViewModel),
+        '/experiences/favourites': (_) => FavouritesScreen(
+          viewModel: _experienceViewModel,
+          authViewModel: _authViewModel,
+        ),
         '/experiences/manage': (_) => CatalogueManagementScreen(
           viewModel: _experienceViewModel,
           authViewModel: _authViewModel,
@@ -149,21 +164,27 @@ class _MyAppState extends State<MyApp> {
         final uri = Uri.tryParse(settings.name ?? '');
         if (uri != null) {
           final segments = uri.pathSegments;
-          if (segments.length == 3 && segments[0] == 'experiences' && segments[1] == 'destinations') {
+          if (segments.length == 3 &&
+              segments[0] == 'experiences' &&
+              segments[1] == 'destinations') {
             return MaterialPageRoute(
               settings: settings,
               builder: (_) => DestinationDetailScreen(
                 destinationId: segments[2],
                 viewModel: _experienceViewModel,
+                authViewModel: _authViewModel,
               ),
             );
           }
-          if (segments.length == 3 && segments[0] == 'experiences' && segments[1] == 'offerings') {
+          if (segments.length == 3 &&
+              segments[0] == 'experiences' &&
+              segments[1] == 'offerings') {
             return MaterialPageRoute(
               settings: settings,
               builder: (_) => OfferingDetailScreen(
                 offeringId: segments[2],
                 viewModel: _experienceViewModel,
+                authViewModel: _authViewModel,
               ),
             );
           }

@@ -373,8 +373,11 @@ function requestOptions(method = 'GET', body?: unknown): RequestInit {
   }
 }
 
-async function request<T>(send: () => Promise<Response>): Promise<T> {
-  return withLoadingScreen(async () => {
+async function request<T>(
+  send: () => Promise<Response>,
+  options: { loadingScreen?: boolean } = {},
+): Promise<T> {
+  const execute = async () => {
     let response: Response
     try {
       response = await send()
@@ -413,7 +416,9 @@ async function request<T>(send: () => Promise<Response>): Promise<T> {
     }
 
     return payload as T
-  })
+  }
+
+  return options.loadingScreen === false ? execute() : withLoadingScreen(execute)
 }
 
 // ----------------- Destinations -----------------
@@ -613,10 +618,10 @@ export const removeFavourite = (targetType: string, targetId: string) =>
 
 // ----------------- Map & Nearby Proximity -----------------
 export const getMapConfig = () =>
-  request<MapConfigDto>(() => fetch('/api/experiences/map/config', requestOptions()))
+  request<MapConfigDto>(() => fetch('/api/experiences/map/config', requestOptions()), { loadingScreen: false })
 
 export const searchMapPlaces = (query: string) =>
-  request<MapSearchResponseDto>(() => fetch(`/api/experiences/map/search?q=${encodeURIComponent(query)}`, requestOptions()))
+  request<MapSearchResponseDto>(() => fetch(`/api/experiences/map/search?q=${encodeURIComponent(query)}`, requestOptions()), { loadingScreen: false })
 
 export const getNearbyExperiences = (
   params:
@@ -645,7 +650,10 @@ export const getNearbyExperiences = (
     query.set('limit', String(params.limit ?? 10))
   }
 
-  return request<NearbyResponse>(() => fetch(`/api/experiences/nearby?${query.toString()}`, requestOptions()))
+  return request<NearbyResponse>(
+    () => fetch(`/api/experiences/nearby?${query.toString()}`, requestOptions()),
+    { loadingScreen: false },
+  )
 }
 
 // ----------------- Diagnostics & Agent Seam -----------------

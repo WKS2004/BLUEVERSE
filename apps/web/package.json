@@ -11,6 +11,7 @@
     "test:ci": "node --experimental-strip-types --test"
   },
   "dependencies": {
+    "maplibre-gl": "^6.12.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router": "^8.4.0"

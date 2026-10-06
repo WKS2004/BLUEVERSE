@@ -1,5 +1,5 @@
-import { useEffect, useState, useTransition } from 'react'
-import { Link } from 'react-router'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import { Link, useSearchParams } from 'react-router'
 import SiteFooter from '../../components/layout/SiteFooter'
 import SiteHeader from '../../components/layout/SiteHeader'
 import { useAuthSession } from '../../features/auth/authSession'
@@ -9,19 +9,25 @@ import type {
   FavouriteDto,
   MapConfigDto,
   MapSearchResultItemDto,
+  NearbyDestinationDto,
   OfferingDto,
 } from '../../features/experiences/experienceApi'
+import type { ExperienceMapFocus, ExperienceMapView } from '../../features/experiences/ExperienceCoastalMap'
 import {
   addFavourite,
   getActivities,
   getDestinations,
   getMapConfig,
+  getNearbyExperiences,
   getOfferings,
   getUserFavourites,
   removeFavourite,
   searchMapPlaces,
 } from '../../features/experiences/experienceApi'
 import { hasAnyPermission } from '../../features/authorization/permissions'
+
+const ExperienceCoastalMap = lazy(() => import('../../features/experiences/ExperienceCoastalMap'))
+type ExperienceTab = 'catalog' | 'map'
 
 const FALLBACK_DESTINATIONS = [
   { id: 'dest-mirissa', name: 'Mirissa Coastal Haven', region: 'Southern Province', latitude: 5.9482, longitude: 80.4716 },
@@ -31,9 +37,37 @@ const FALLBACK_DESTINATIONS = [
   { id: 'dest-arugambay', name: 'Arugam Bay Surf Point', region: 'Eastern Province', latitude: 6.8415, longitude: 81.8354 },
 ]
 
+const COASTAL_MAP_VIEWS: Record<'ALL' | 'SOUTH' | 'EAST' | 'WEST' | 'NORTH', ExperienceMapView> = {
+  ALL: { latitude: 7.8731, longitude: 80.7718, zoom: 6.5 },
+  SOUTH: { latitude: 5.98, longitude: 80.62, zoom: 8.5 },
+  EAST: { latitude: 7.35, longitude: 81.55, zoom: 8 },
+  WEST: { latitude: 7.15, longitude: 79.92, zoom: 8 },
+  NORTH: { latitude: 9.05, longitude: 80.05, zoom: 8 },
+}
+
+function isValidMapCoordinate(latitude: number, longitude: number) {
+  return Number.isFinite(latitude)
+    && Number.isFinite(longitude)
+    && latitude >= -85.0511
+    && latitude <= 85.0511
+    && longitude >= -180
+    && longitude <= 180
+    && !(latitude === 0 && longitude === 0)
+}
+
 export default function ExperiencesPage() {
   const { user } = useAuthSession()
-  const [activeTab, setActiveTab] = useState<'catalog' | 'map'>('catalog')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeTab: ExperienceTab = searchParams.get('tab') === 'map' ? 'map' : 'catalog'
+  const [hasSwitchedExperienceTab, setHasSwitchedExperienceTab] = useState(false)
+  const changeExperienceTab = (tab: ExperienceTab) => {
+    if (tab !== activeTab) setHasSwitchedExperienceTab(true)
+
+    const nextSearchParams = new URLSearchParams(searchParams)
+    if (tab === 'map') nextSearchParams.set('tab', 'map')
+    else nextSearchParams.delete('tab')
+    setSearchParams(nextSearchParams, { replace: true })
+  }
 
   // Catalog state
   const [destinations, setDestinations] = useState<DestinationDto[]>([])
@@ -59,6 +93,7 @@ export default function ExperiencesPage() {
   const [placeResults, setPlaceResults] = useState<MapSearchResultItemDto[]>([])
   const [placeSearched, setPlaceSearched] = useState(false)
   const [placeLoading, setPlaceLoading] = useState(false)
+  const [placeSearchError, setPlaceSearchError] = useState<string | null>(null)
   const [selectedSpot, setSelectedSpot] = useState<{
     id?: string
     name: string
@@ -68,26 +103,34 @@ export default function ExperiencesPage() {
     description?: string
     offeringsCount?: number
     isSearchResult?: boolean
+    isCurrentLocation?: boolean
   } | null>(null)
+  const [isLocating, setIsLocating] = useState(false)
+  const [locationError, setLocationError] = useState<string | null>(null)
+  const [nearbyResults, setNearbyResults] = useState<NearbyDestinationDto[] | null>(null)
+  const [nearbyError, setNearbyError] = useState<string | null>(null)
+  const [isLoadingNearby, setIsLoadingNearby] = useState(false)
+  const locationRequestId = useRef(0)
+  const nearbyRequestId = useRef(0)
+  const placeSearchRequestId = useRef(0)
   const [activeRegionView, setActiveRegionView] = useState<'ALL' | 'SOUTH' | 'EAST' | 'WEST' | 'NORTH'>('ALL')
 
   const activeDestinations = destinations.length > 0 ? destinations : FALLBACK_DESTINATIONS
 
-  const osmEmbedUrl = selectedSpot
-    ? `https://www.openstreetmap.org/export/embed.html?bbox=${(selectedSpot.lon - 0.12).toFixed(4)}%2C${(selectedSpot.lat - 0.08).toFixed(4)}%2C${(selectedSpot.lon + 0.12).toFixed(4)}%2C${(selectedSpot.lat + 0.08).toFixed(4)}&layer=mapnik&marker=${selectedSpot.lat.toFixed(4)}%2C${selectedSpot.lon.toFixed(4)}`
-    : activeRegionView === 'SOUTH'
-      ? 'https://www.openstreetmap.org/export/embed.html?bbox=79.9000%2C5.8000%2C81.2000%2C6.4000&layer=mapnik'
-      : activeRegionView === 'EAST'
-        ? 'https://www.openstreetmap.org/export/embed.html?bbox=81.0000%2C6.6000%2C82.1000%2C8.9000&layer=mapnik'
-        : activeRegionView === 'WEST'
-          ? 'https://www.openstreetmap.org/export/embed.html?bbox=79.6000%2C6.5000%2C80.3000%2C8.5000&layer=mapnik'
-          : activeRegionView === 'NORTH'
-            ? 'https://www.openstreetmap.org/export/embed.html?bbox=79.6000%2C8.9000%2C80.9000%2C9.9000&layer=mapnik'
-            : 'https://www.openstreetmap.org/export/embed.html?bbox=79.2000%2C5.7000%2C82.2000%2C10.0000&layer=mapnik'
+  const mapView: ExperienceMapView = selectedSpot
+    ? {
+        latitude: selectedSpot.lat,
+        longitude: selectedSpot.lon,
+        zoom: selectedSpot.isCurrentLocation ? 12 : 12.5,
+      }
+    : COASTAL_MAP_VIEWS[activeRegionView]
 
-  const osmViewUrl = selectedSpot
-    ? `https://www.openstreetmap.org/?mlat=${selectedSpot.lat.toFixed(4)}&mlon=${selectedSpot.lon.toFixed(4)}#map=13/${selectedSpot.lat.toFixed(4)}/${selectedSpot.lon.toFixed(4)}`
-    : 'https://www.openstreetmap.org/#map=7/7.8731/80.7718'
+  const mapFocus = useMemo<ExperienceMapFocus | null>(() => selectedSpot ? {
+    name: selectedSpot.name,
+    latitude: selectedSpot.lat,
+    longitude: selectedSpot.lon,
+    isCurrentLocation: selectedSpot.isCurrentLocation,
+  } : null, [selectedSpot])
 
   const [, startTransition] = useTransition()
 
@@ -140,6 +183,12 @@ export default function ExperiencesPage() {
       isMounted = false
     }
   }, [user])
+
+  useEffect(() => () => {
+    locationRequestId.current += 1
+    nearbyRequestId.current += 1
+    placeSearchRequestId.current += 1
+  }, [])
 
   async function handleSearch(e?: React.FormEvent) {
     if (e) e.preventDefault()
@@ -198,42 +247,171 @@ export default function ExperiencesPage() {
     )
   }
 
+  async function loadNearbyAt(latitude: number, longitude: number, label: string) {
+    const requestId = ++nearbyRequestId.current
+    if (!isValidMapCoordinate(latitude, longitude)) {
+      setNearbyResults(null)
+      setIsLoadingNearby(false)
+      setNearbyError('This location could not be used. Search for another coastal place.')
+      return
+    }
+    setNearbyResults(null)
+    setNearbyError(null)
+    setIsLoadingNearby(true)
+    try {
+      const response = await getNearbyExperiences({ latitude, longitude, radiusMeters: 50000, limit: 10 })
+      if (requestId !== nearbyRequestId.current) return
+      setNearbyResults(response.results)
+      if (response.results.length === 0) {
+        setNearbyError(`No published destinations were found within 50 km of ${label}.`)
+      }
+    } catch (err: unknown) {
+      if (requestId !== nearbyRequestId.current) return
+      setNearbyError(err instanceof Error ? err.message : 'Nearby destinations could not be loaded. Try again.')
+    } finally {
+      if (requestId === nearbyRequestId.current) setIsLoadingNearby(false)
+    }
+  }
+
+  function clearNearbyResults() {
+    nearbyRequestId.current += 1
+    setIsLoadingNearby(false)
+    setNearbyResults(null)
+    setNearbyError(null)
+  }
+
+  function cancelPlaceSearch() {
+    placeSearchRequestId.current += 1
+    setPlaceLoading(false)
+  }
+
+  function handleMapSearchResult(place: MapSearchResultItemDto, fromSearchResponse = false) {
+    if (!fromSearchResponse) cancelPlaceSearch()
+    if (!isValidMapCoordinate(place.latitude, place.longitude)) {
+      setLocationError('That place returned invalid coordinates. Search for another coastal place.')
+      return
+    }
+    locationRequestId.current += 1
+    setIsLocating(false)
+    setLocationError(null)
+    setSelectedSpot({
+      name: place.displayName,
+      region: place.region || place.country || 'Sri Lanka',
+      lat: place.latitude,
+      lon: place.longitude,
+      isSearchResult: true,
+    })
+    void loadNearbyAt(place.latitude, place.longitude, place.displayName)
+  }
+
+  function handleUseCurrentLocation() {
+    cancelPlaceSearch()
+    const requestId = ++locationRequestId.current
+    nearbyRequestId.current += 1
+    setIsLocating(true)
+    setLocationError(null)
+    setNearbyResults(null)
+    setNearbyError(null)
+    setIsLoadingNearby(false)
+
+    if (typeof window === 'undefined' || window.isSecureContext === false) {
+      setIsLocating(false)
+      setLocationError('Current location is available only on a secure connection. Search for a coastal place instead.')
+      return
+    }
+    if (!navigator.geolocation) {
+      setIsLocating(false)
+      setLocationError('Location is not available in this browser. Search for a coastal place instead.')
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        if (requestId !== locationRequestId.current) return
+        const { latitude, longitude } = position.coords
+        if (!isValidMapCoordinate(latitude, longitude)) {
+          setIsLocating(false)
+          setLocationError('Your approximate location could not be read. Search for a coastal place instead.')
+          return
+        }
+
+        setSelectedSpot({
+          name: 'Your approximate location',
+          region: 'Current location',
+          lat: latitude,
+          lon: longitude,
+          isCurrentLocation: true,
+        })
+        setIsLocating(false)
+        void loadNearbyAt(latitude, longitude, 'your approximate location')
+      },
+      (error) => {
+        if (requestId !== locationRequestId.current) return
+        setIsLocating(false)
+        setLocationError(error.code === error.PERMISSION_DENIED
+          ? 'Location permission was not granted. Search for a coastal place instead.'
+          : error.code === error.TIMEOUT
+            ? 'Getting your approximate location took too long. Try again or search for a place.'
+            : 'Your approximate location is unavailable. Search for a coastal place instead.')
+      },
+      { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 },
+    )
+  }
 
 
   async function handlePlaceSearch(e?: React.FormEvent) {
     if (e) e.preventDefault()
+    cancelPlaceSearch()
     const trimmed = placeQuery.trim()
-    if (!trimmed) return
-    if (trimmed.length < 2) {
-      setError('Please enter at least 2 characters to search for a coastal place.')
+    if (!trimmed) {
+      setPlaceSearched(false)
+      setPlaceResults([])
+      setPlaceSearchError(null)
       return
     }
+    if (trimmed.length < 2) {
+      setPlaceSearched(false)
+      setPlaceResults([])
+      setPlaceSearchError('Enter at least 2 characters to search for a coastal place.')
+      return
+    }
+    const requestId = ++placeSearchRequestId.current
 
+    locationRequestId.current += 1
+    nearbyRequestId.current += 1
+    setIsLocating(false)
+    setIsLoadingNearby(false)
+    setNearbyResults(null)
+    setNearbyError(null)
+    setLocationError(null)
+    setPlaceResults([])
+    setPlaceSearched(false)
     setPlaceLoading(true)
-    setError(null)
+    setPlaceSearchError(null)
     try {
       const [places, config] = await Promise.all([
         searchMapPlaces(trimmed),
         mapConfig ? Promise.resolve(mapConfig) : getMapConfig().catch(() => null),
       ])
-      setPlaceResults(places.results)
+      if (requestId !== placeSearchRequestId.current) return
+      const validPlaces = places.results.filter((place) =>
+        isValidMapCoordinate(place.latitude, place.longitude),
+      )
+      setPlaceResults(validPlaces)
       if (config) setMapConfig(config)
       setPlaceSearched(true)
 
-      if (places.results.length > 0) {
-        const first = places.results[0]
-        setSelectedSpot({
-          name: first.displayName,
-          region: first.region || first.country || 'Sri Lanka',
-          lat: first.latitude,
-          lon: first.longitude,
-          isSearchResult: true,
-        })
+      if (validPlaces.length > 0) {
+        handleMapSearchResult(validPlaces[0], true)
+      } else if (places.results.length > 0) {
+        setLocationError('The place search returned invalid coordinates. Search for another coastal place.')
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Place search failed. Please try another coastal name.')
+      if (requestId === placeSearchRequestId.current) {
+        setPlaceSearchError(err instanceof Error ? err.message : 'Place search failed. Please try another coastal name.')
+      }
     } finally {
-      setPlaceLoading(false)
+      if (requestId === placeSearchRequestId.current) setPlaceLoading(false)
     }
   }
 
@@ -246,6 +424,14 @@ export default function ExperiencesPage() {
     description?: string | null
     offeringsCount?: number
   }) {
+    cancelPlaceSearch()
+    if (!isValidMapCoordinate(dest.latitude, dest.longitude)) {
+      setLocationError('This destination has invalid coordinates, so it cannot be shown on the map.')
+      return
+    }
+    locationRequestId.current += 1
+    setIsLocating(false)
+    setLocationError(null)
     setSelectedSpot({
       id: dest.id,
       name: dest.name,
@@ -253,8 +439,9 @@ export default function ExperiencesPage() {
       lat: dest.latitude,
       lon: dest.longitude,
       description: dest.description || undefined,
-      offeringsCount: (dest as any).offeringsCount ?? offerings.filter((o) => o.destinationId === dest.id).length,
+      offeringsCount: dest.offeringsCount ?? offerings.filter((o) => o.destinationId === dest.id).length,
     })
+    void loadNearbyAt(dest.latitude, dest.longitude, dest.name)
   }
 
   // Filtered destinations based on search query and region
@@ -339,7 +526,7 @@ export default function ExperiencesPage() {
           </div>
         )}
 
-        {error && (
+        {error && activeTab === 'catalog' && (
           <div className="mx-auto mt-4 max-w-7xl px-5 sm:px-8 lg:px-12">
             <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-900">
               {error}
@@ -356,7 +543,7 @@ export default function ExperiencesPage() {
                   ? 'border-coast-deep text-coast-deep'
                   : 'border-transparent text-coast-muted hover:text-coast-deep'
               }`}
-              onClick={() => setActiveTab('catalog')}
+              onClick={() => changeExperienceTab('catalog')}
               type="button"
             >
               Destinations & Offerings
@@ -367,7 +554,7 @@ export default function ExperiencesPage() {
                   ? 'border-coast-deep text-coast-deep'
                   : 'border-transparent text-coast-muted hover:text-coast-deep'
               }`}
-              onClick={() => setActiveTab('map')}
+              onClick={() => changeExperienceTab('map')}
               type="button"
             >
               Interactive Coastal Map
@@ -377,7 +564,7 @@ export default function ExperiencesPage() {
 
         {/* View 1: Catalogue (Destinations & Activities) */}
         {activeTab === 'catalog' && (
-          <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-12">
+          <div className={`mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-12 ${hasSwitchedExperienceTab ? 'motion-safe:animate-coast-tab' : ''}`}>
             {/* Filter controls */}
             <form className="mb-8 grid gap-4 rounded-3xl border border-coast-line bg-coast-pearl p-5 shadow-sm sm:grid-cols-5 sm:items-end" onSubmit={handleSearch}>
               <div className="sm:col-span-2">
@@ -683,7 +870,7 @@ export default function ExperiencesPage() {
 
         {/* View 3: Interactive Coastal Map */}
         {activeTab === 'map' && (
-          <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-12">
+          <div className={`mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-12 ${hasSwitchedExperienceTab ? 'motion-safe:animate-coast-tab' : ''}`}>
             <div className="mb-8">
               <p className="text-xs font-extrabold tracking-[0.16em] text-coast-blue">COASTAL EXPLORER</p>
               <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-coast-ink sm:text-4xl">
@@ -699,7 +886,7 @@ export default function ExperiencesPage() {
               {/* Left Column: Search & Place Details */}
               <div className="flex flex-col gap-6 lg:col-span-5">
                 {/* Search Card */}
-                <div className="rounded-3xl border border-coast-line bg-coast-pearl p-6 shadow-sm">
+                <div className="rounded-3xl border border-coast-line bg-coast-pearl p-6 shadow-sm" data-testid="map-place-search-card">
                   <h3 className="text-sm font-extrabold tracking-wide text-coast-deep">
                     FIND COASTAL SPOTS & BAYS
                   </h3>
@@ -710,7 +897,11 @@ export default function ExperiencesPage() {
                   <form className="mt-4 flex gap-2" onSubmit={handlePlaceSearch}>
                     <input
                       className="flex-1 rounded-2xl border border-coast-line bg-white px-4 py-2.5 text-sm text-coast-ink focus:border-coast-blue focus:outline-none focus:ring-2 focus:ring-coast-glass"
-                      onChange={(e) => setPlaceQuery(e.target.value)}
+                          onChange={(e) => {
+                            cancelPlaceSearch()
+                            setPlaceQuery(e.target.value)
+                        setPlaceSearchError(null)
+                      }}
                       placeholder="e.g. Mirissa, Trincomalee, Bentota..."
                       type="search"
                       value={placeQuery}
@@ -723,6 +914,11 @@ export default function ExperiencesPage() {
                       {placeLoading ? 'Searching...' : 'Search'}
                     </button>
                   </form>
+                  {placeSearchError && (
+                    <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900" role="alert">
+                      {placeSearchError}
+                    </p>
+                  )}
 
                   {/* Coastal Highlights from Database */}
                   <div className="mt-4 border-t border-coast-line/60 pt-4">
@@ -781,15 +977,7 @@ export default function ExperiencesPage() {
                               <button
                                 type="button"
                                 className="shrink-0 rounded-full bg-coast-sand px-3 py-1 text-[11px] font-extrabold text-coast-deep hover:bg-coast-glass transition"
-                                onClick={() => {
-                                  setSelectedSpot({
-                                    name: p.displayName,
-                                    region: p.region || p.country || 'Sri Lanka',
-                                    lat: p.latitude,
-                                    lon: p.longitude,
-                                    isSearchResult: true,
-                                  })
-                                }}
+                                onClick={() => handleMapSearchResult(p)}
                               >
                                 View
                               </button>
@@ -810,9 +998,15 @@ export default function ExperiencesPage() {
                     <h3 className="mt-3 font-display text-2xl font-bold text-coast-ink">
                       {selectedSpot.name}
                     </h3>
-                    <p className="mt-1 text-xs font-semibold text-coast-muted">
-                      Coordinates: {selectedSpot.lat.toFixed(4)}°N, {selectedSpot.lon.toFixed(4)}°E
-                    </p>
+                    {selectedSpot.isCurrentLocation ? (
+                      <p className="mt-1 text-xs text-coast-muted">
+                        Your approximate position is held temporarily to find nearby destinations.
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-xs font-semibold text-coast-muted">
+                        Coordinates: {selectedSpot.lat.toFixed(4)}°N, {selectedSpot.lon.toFixed(4)}°E
+                      </p>
+                    )}
 
                     {selectedSpot.description && (
                       <p className="mt-3 text-xs leading-5 text-coast-muted">
@@ -841,7 +1035,7 @@ export default function ExperiencesPage() {
                         className="inline-flex min-h-10 flex-1 items-center justify-center rounded-full border border-coast-line bg-white px-4 text-xs font-extrabold text-coast-deep transition hover:bg-coast-sand"
                         onClick={() => {
                           setSearchQuery(selectedSpot.name)
-                          setActiveTab('catalog')
+                          changeExperienceTab('catalog')
                         }}
                       >
                         Explore Experiences Here
@@ -855,13 +1049,53 @@ export default function ExperiencesPage() {
                     </p>
                   </div>
                 )}
+
+                {locationError && (
+                  <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="alert">
+                    {locationError}
+                  </p>
+                )}
+
+                {(isLoadingNearby || nearbyError || nearbyResults !== null) && (
+                  <section aria-live="polite" className="rounded-3xl border border-coast-line bg-white p-5 shadow-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-sm font-extrabold text-coast-deep">Nearby coastal destinations</h3>
+                      {isLoadingNearby && <span className="text-xs text-coast-muted">Finding places…</span>}
+                    </div>
+                    {nearbyError && (
+                      <p className="mt-3 rounded-xl bg-coast-sage px-3 py-2 text-xs leading-5 text-coast-muted" role="status">
+                        {nearbyError}
+                      </p>
+                    )}
+                    {nearbyResults && nearbyResults.length > 0 && (
+                      <ul className="mt-3 divide-y divide-coast-line">
+                        {nearbyResults.map((destination) => (
+                          <li key={destination.destinationId} className="flex items-center justify-between gap-3 py-3">
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-bold text-coast-ink">{destination.name}</p>
+                              <p className="text-xs text-coast-muted">
+                                {destination.region || 'Coastal destination'} · {(destination.distanceMeters / 1000).toFixed(1)} km
+                              </p>
+                            </div>
+                            <Link
+                              className="shrink-0 rounded-full bg-coast-sand px-3 py-1.5 text-xs font-extrabold text-coast-deep hover:bg-coast-glass"
+                              to={`/experiences/destinations/${destination.destinationId}`}
+                            >
+                              View
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </section>
+                )}
               </div>
 
-              {/* Right Column: Real Geographic Map of Sri Lanka */}
+              {/* Right Column: Interactive coastal map */}
               <div className="flex flex-col lg:col-span-7">
-                <div className="relative flex flex-col h-[580px] sm:h-[660px] w-full overflow-hidden rounded-3xl border border-coast-line bg-[#e8f3f6] shadow-sm">
+                <div className="relative flex h-[65vh] min-h-[520px] max-h-[720px] w-full flex-col overflow-hidden rounded-3xl border border-coast-line bg-[#e8f3f6] shadow-sm">
                   {/* Map Header / Region Selector Bar */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-coast-line/70 bg-white/95 px-4 py-2.5 backdrop-blur-sm z-10">
+                  <div className="z-10 flex flex-wrap items-center justify-between gap-2 border-b border-coast-line/70 bg-white/95 px-4 py-2.5 backdrop-blur-sm">
                     <div className="flex flex-wrap gap-1.5">
                       {(
                         [
@@ -881,6 +1115,11 @@ export default function ExperiencesPage() {
                               : 'bg-coast-pearl text-coast-deep border border-coast-line hover:bg-white'
                           }`}
                           onClick={() => {
+                            cancelPlaceSearch()
+                            locationRequestId.current += 1
+                            setIsLocating(false)
+                            clearNearbyResults()
+                            setLocationError(null)
                             setSelectedSpot(null)
                             setActiveRegionView(key)
                           }}
@@ -894,48 +1133,58 @@ export default function ExperiencesPage() {
                       <button
                         type="button"
                         className="rounded-full border border-coast-line bg-white px-2.5 py-1 text-xs font-bold text-coast-muted hover:text-coast-deep transition"
-                        onClick={() => setSelectedSpot(null)}
+                        onClick={() => {
+                          cancelPlaceSearch()
+                          locationRequestId.current += 1
+                          setIsLocating(false)
+                          clearNearbyResults()
+                          setLocationError(null)
+                          setSelectedSpot(null)
+                        }}
                       >
                         Reset to Island View ⟲
                       </button>
                     )}
+
                   </div>
 
-                  {/* Real Geographic Map of Sri Lanka (OpenStreetMap Cartography) */}
-                  <div className="relative flex-1 w-full bg-[#cad2d3]">
-                    <iframe
-                      title="Interactive Coastal Map of Sri Lanka"
-                      src={osmEmbedUrl}
-                      className="h-full w-full border-0"
-                      loading="lazy"
-                    />
-
-                    {/* Surrounding Marine Waters Indicators */}
-                    <div className="pointer-events-none absolute bottom-3 left-4 z-10 flex flex-wrap items-center gap-2 rounded-xl bg-white/90 px-3 py-1.5 text-[11px] font-bold text-coast-deep backdrop-blur-sm border border-coast-line/70 shadow-sm">
-                      <span className="text-coast-blue">🌊</span>
-                      <span>INDIAN OCEAN (South & West)</span>
-                      <span className="text-coast-line">•</span>
-                      <span>BAY OF BENGAL (East)</span>
-                      <span className="text-coast-line">•</span>
-                      <span>GULF OF MANNAR (Northwest)</span>
-                    </div>
-
-                    {/* External Map Link & Attribution */}
-                    <div className="absolute bottom-3 right-4 z-10 flex items-center gap-2">
-                      <a
-                        href={osmViewUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-extrabold text-coast-deep backdrop-blur-sm border border-coast-line/70 shadow-sm hover:bg-white transition"
-                      >
-                        Open on OpenStreetMap ↗
-                      </a>
-                      <div className="hidden md:block rounded-full bg-white/85 px-3 py-1 text-[10px] font-semibold text-coast-muted backdrop-blur-sm border border-coast-line/60 shadow-sm">
-                        {mapConfig?.attribution || 'Map data © OpenStreetMap contributors'}
+                  <div className="relative min-h-0 flex-1 w-full bg-[#cad2d3]">
+                    <Suspense fallback={(
+                      <div className="grid h-full min-h-72 place-items-center p-6 text-center text-sm text-coast-muted" role="status">
+                        Preparing the interactive coastal map…
                       </div>
-                    </div>
+                    )}>
+                      <ExperienceCoastalMap
+                        destinations={destinations}
+                        focus={mapFocus}
+                        onDestinationSelected={handleSelectDestination}
+                        styleUrl={mapConfig ? mapConfig.availableStyles[mapConfig.defaultStyle] ?? null : null}
+                        view={mapView}
+                      />
+                    </Suspense>
+                    <button
+                      aria-label="Use current location"
+                      className="absolute bottom-12 right-4 z-30 grid size-12 place-items-center rounded-full border border-coast-line bg-white text-coast-deep shadow-lg transition hover:bg-coast-pearl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coast-blue disabled:cursor-wait disabled:opacity-70"
+                      disabled={isLocating}
+                      onClick={handleUseCurrentLocation}
+                      title="Use current location"
+                      type="button"
+                    >
+                      {isLocating ? (
+                        <span className="size-5 animate-spin rounded-full border-2 border-coast-line border-t-coast-deep" aria-hidden="true" />
+                      ) : (
+                        <svg aria-hidden="true" className="size-5" fill="none" viewBox="0 0 24 24">
+                          <circle cx="12" cy="12" r="7" stroke="currentColor" strokeWidth="1.8" />
+                          <circle cx="12" cy="12" r="2" fill="currentColor" />
+                          <path d="M12 2v3M12 19v3M2 12h3m14 0h3" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+                        </svg>
+                      )}
+                    </button>
                   </div>
                 </div>
+                <p className="mt-2 text-center text-xs text-coast-muted">
+                  Pan and zoom to explore. Select a marker to see its destination. Map tiles: {mapConfig?.attribution || 'OpenFreeMap and OpenStreetMap contributors'}.
+                </p>
               </div>
             </div>
           </div>

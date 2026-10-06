@@ -147,16 +147,16 @@ separate from post-G07 Agentic AI work; see
 
 ## v1 map-provider target
 
-Ushan Srinuka (Member 1) owns the BLUEVERSE adapter for the selected map API as part of
-location-aware destination and activity discovery. React and Flutter reach
-map capabilities only through the public API and Ushan Srinuka's private component
-service; provider credentials and outbound requests remain server-side.
-Provider-returned place
-or map data is untrusted discovery/display context and does not own canonical
-destination records. The provider, exact map features and compatible
-rendering approach remain open under
-[ADR-0017](../adr/ADR-0017-map-provider-integration-boundary.md). This
-integration is not implemented in the current repository.
+Ushan Srinuka (Member 1) owns the map configuration and place-search adapter in
+the private component service. React and Flutter call those capabilities only
+through the public API. Flutter renders OpenFreeMap vector tiles with MapLibre
+using the public style URL returned by `GET /api/experiences/map/config`; this
+bounded tile-rendering request is the only direct map-provider request made by
+the client. It contains neither user location nor credentials. Search and
+geocoding remain server-mediated, and provider results remain untrusted
+display context rather than canonical destination records. The implemented
+provider and boundary are documented in
+[ADR-0017](../adr/ADR-0017-map-provider-integration-boundary.md).
 
 The one-service-per-member target and the public API integration-only rule are
 recorded in [ADR-0020](../adr/ADR-0020-member-component-service-boundaries.md).

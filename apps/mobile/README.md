@@ -37,6 +37,19 @@ of the last active device account returns to the carousel. Its photos are
 bundled under `assets/coastal/onboarding/` and reuse the current BLUEVERSE
 coastal photography.
 
+The experience-biodiversity workflow is available at `/experiences`,
+`/experiences/favourites` and `/experiences/manage`, with destination and
+offering detail routes. Discovery, availability, biodiversity context,
+favourites and catalogue management use the registered public API. The
+Coastal Map tab gets its MapLibre style configuration from the public API and
+renders OpenFreeMap vector tiles with markers at catalogue destination
+coordinates. Map panning and zooming do not request device location; **Near
+Me** requests approximate location only after the user taps it, sends it to the
+nearby API request and does not save it in the app. Place search and catalogue
+browsing remain available without location permission. Biodiversity values are
+model predictions, not species observations. Schedules are interpreted in
+`Asia/Colombo` and sent to the API as UTC instants.
+
 ## Commands
 
 Run from `apps/mobile`:

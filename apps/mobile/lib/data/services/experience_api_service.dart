@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 import '../models/experience_models.dart';
-import '../../ui/feedback/loading_screen_controller.dart';
 import 'api_gateway_config.dart';
 import 'auth_credential_store.dart';
 
@@ -25,9 +24,9 @@ class ExperienceApiService {
     http.Client? client,
     AuthCredentialStore? storage,
     ApiGatewayConfig? gateway,
-  })  : _transport = client ?? http.Client(),
-        _storage = storage ?? const SecureAuthCredentialStore(),
-        _gateway = gateway ?? const ApiGatewayConfig();
+  }) : _transport = client ?? http.Client(),
+       _storage = storage ?? const SecureAuthCredentialStore(),
+       _gateway = gateway ?? const ApiGatewayConfig();
 
   static const _activeAccountIdKey = 'blueverse.active_account_id';
   static const _accessTokenKey = 'blueverse.access_token';
@@ -65,7 +64,10 @@ class ExperienceApiService {
       queryParameters: queryParams,
     );
 
-    return _decode(response, (json) => PagedResult.fromJson(json, DestinationDto.fromJson));
+    return _decode(
+      response,
+      (json) => PagedResult.fromJson(json, DestinationDto.fromJson),
+    );
   }
 
   Future<DestinationDto> getDestinationById(String id) async {
@@ -76,7 +78,9 @@ class ExperienceApiService {
     return _decode(response, DestinationDto.fromJson);
   }
 
-  Future<DestinationDto> createDestination(CreateDestinationRequest request) async {
+  Future<DestinationDto> createDestination(
+    CreateDestinationRequest request,
+  ) async {
     final response = await _request(
       '/api/experiences/destinations',
       (uri) async => _transport.post(
@@ -88,7 +92,10 @@ class ExperienceApiService {
     return _decode(response, DestinationDto.fromJson);
   }
 
-  Future<DestinationDto> updateDestination(String id, UpdateDestinationRequest request) async {
+  Future<DestinationDto> updateDestination(
+    String id,
+    UpdateDestinationRequest request,
+  ) async {
     final response = await _request(
       '/api/experiences/destinations/${Uri.encodeComponent(id)}',
       (uri) async => _transport.put(
@@ -123,7 +130,10 @@ class ExperienceApiService {
     return _decode(response, PublicationEvaluationResponse.fromJson);
   }
 
-  Future<DestinationDto> updateDestinationPublication(String id, String status) async {
+  Future<DestinationDto> updateDestinationPublication(
+    String id,
+    String status,
+  ) async {
     final response = await _request(
       '/api/experiences/destinations/${Uri.encodeComponent(id)}/publication',
       (uri) async => _transport.patch(
@@ -135,7 +145,9 @@ class ExperienceApiService {
     return _decode(response, DestinationDto.fromJson);
   }
 
-  Future<MarineConditionsContextDto> getDestinationMarineConditions(String id) async {
+  Future<MarineConditionsContextDto> getDestinationMarineConditions(
+    String id,
+  ) async {
     final response = await _request(
       '/api/experiences/destinations/${Uri.encodeComponent(id)}/marine-conditions',
       (uri) async => _transport.get(uri, headers: await _authHeaders()),
@@ -143,7 +155,9 @@ class ExperienceApiService {
     return _decode(response, MarineConditionsContextDto.fromJson);
   }
 
-  Future<OperationalAdvisoriesResponseDto> getDestinationOperationalAdvisories(String id) async {
+  Future<OperationalAdvisoriesResponseDto> getDestinationOperationalAdvisories(
+    String id,
+  ) async {
     final response = await _request(
       '/api/experiences/destinations/${Uri.encodeComponent(id)}/operational-advisories',
       (uri) async => _transport.get(uri, headers: await _authHeaders()),
@@ -151,7 +165,9 @@ class ExperienceApiService {
     return _decode(response, OperationalAdvisoriesResponseDto.fromJson);
   }
 
-  Future<BiodiversityContextResponseDto> getDestinationBiodiversity(String id) async {
+  Future<BiodiversityContextResponseDto> getDestinationBiodiversity(
+    String id,
+  ) async {
     final response = await _request(
       '/api/experiences/destinations/${Uri.encodeComponent(id)}/biodiversity',
       (uri) async => _transport.get(uri, headers: await _authHeaders()),
@@ -170,7 +186,8 @@ class ExperienceApiService {
     int? pageSize,
   }) async {
     final queryParams = <String, String>{
-      if (destinationId != null && destinationId.isNotEmpty) 'destinationId': destinationId,
+      if (destinationId != null && destinationId.isNotEmpty)
+        'destinationId': destinationId,
       if (category != null && category.isNotEmpty) 'category': category,
       if (query != null && query.isNotEmpty) 'query': query,
       if (status != null && status.isNotEmpty) 'status': status,
@@ -224,7 +241,10 @@ class ExperienceApiService {
     return _decode(response, ActivityDto.fromJson);
   }
 
-  Future<ActivityDto> updateActivity(String id, UpdateActivityRequest request) async {
+  Future<ActivityDto> updateActivity(
+    String id,
+    UpdateActivityRequest request,
+  ) async {
     final response = await _request(
       '/api/experiences/activities/${Uri.encodeComponent(id)}',
       (uri) async => _transport.put(
@@ -259,7 +279,10 @@ class ExperienceApiService {
     return _decode(response, PublicationEvaluationResponse.fromJson);
   }
 
-  Future<ActivityDto> updateActivityPublication(String id, String status) async {
+  Future<ActivityDto> updateActivityPublication(
+    String id,
+    String status,
+  ) async {
     final response = await _request(
       '/api/experiences/activities/${Uri.encodeComponent(id)}/publication',
       (uri) async => _transport.patch(
@@ -282,7 +305,8 @@ class ExperienceApiService {
   }) async {
     final queryParams = <String, String>{
       if (activityId != null && activityId.isNotEmpty) 'activityId': activityId,
-      if (destinationId != null && destinationId.isNotEmpty) 'destinationId': destinationId,
+      if (destinationId != null && destinationId.isNotEmpty)
+        'destinationId': destinationId,
       if (status != null && status.isNotEmpty) 'status': status,
       if (page != null) 'page': page.toString(),
       if (pageSize != null) 'pageSize': pageSize.toString(),
@@ -294,7 +318,10 @@ class ExperienceApiService {
       queryParameters: queryParams,
     );
 
-    return _decode(response, (json) => PagedResult.fromJson(json, OfferingDto.fromJson));
+    return _decode(
+      response,
+      (json) => PagedResult.fromJson(json, OfferingDto.fromJson),
+    );
   }
 
   Future<OfferingDto> getOfferingById(String id) async {
@@ -317,7 +344,10 @@ class ExperienceApiService {
     return _decode(response, OfferingDto.fromJson);
   }
 
-  Future<OfferingDto> updateOffering(String id, UpdateOfferingRequest request) async {
+  Future<OfferingDto> updateOffering(
+    String id,
+    UpdateOfferingRequest request,
+  ) async {
     final response = await _request(
       '/api/experiences/offerings/${Uri.encodeComponent(id)}',
       (uri) async => _transport.put(
@@ -352,7 +382,10 @@ class ExperienceApiService {
     return _decode(response, PublicationEvaluationResponse.fromJson);
   }
 
-  Future<OfferingDto> updateOfferingPublication(String id, String status) async {
+  Future<OfferingDto> updateOfferingPublication(
+    String id,
+    String status,
+  ) async {
     final response = await _request(
       '/api/experiences/offerings/${Uri.encodeComponent(id)}/publication',
       (uri) async => _transport.patch(
@@ -379,10 +412,15 @@ class ExperienceApiService {
       (uri) async => _transport.get(uri, headers: await _authHeaders()),
       queryParameters: queryParams,
     );
-    return _decodeList(response).map(ScheduleDto.fromJson).toList(growable: false);
+    return _decodeList(response)
+        .map(ScheduleDto.fromJson)
+        .toList(growable: false);
   }
 
-  Future<ScheduleDto> addOfferingSchedule(String id, CreateScheduleRequest request) async {
+  Future<ScheduleDto> addOfferingSchedule(
+    String id,
+    CreateScheduleRequest request,
+  ) async {
     final response = await _request(
       '/api/experiences/offerings/${Uri.encodeComponent(id)}/schedules',
       (uri) async => _transport.post(
@@ -441,7 +479,9 @@ class ExperienceApiService {
       '/api/experiences/favourites',
       (uri) async => _transport.get(uri, headers: await _authHeaders()),
     );
-    return _decodeList(response).map(FavouriteDto.fromJson).toList(growable: false);
+    return _decodeList(response)
+        .map(FavouriteDto.fromJson)
+        .toList(growable: false);
   }
 
   Future<FavouriteDto> addFavourite(String targetType, String targetId) async {
@@ -528,7 +568,9 @@ class ExperienceApiService {
         ? null
         : await _storage.read('$_accessTokenKey.$activeAccountId');
     final legacyToken = await _storage.read(_accessTokenKey);
-    final token = activeAccountId == null ? legacyToken : (scopedToken ?? legacyToken);
+    final token = activeAccountId == null
+        ? legacyToken
+        : (scopedToken ?? legacyToken);
 
     return {
       ..._jsonHeaders,
@@ -569,7 +611,8 @@ class ExperienceApiService {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return;
     }
-    var message = 'The coastal experience request failed (${response.statusCode}).';
+    var message =
+        'The coastal experience request failed (${response.statusCode}).';
     Object? errorData;
     try {
       final decoded = jsonDecode(response.body);
@@ -595,7 +638,8 @@ class ExperienceApiService {
         if (queryParameters != null && queryParameters.isNotEmpty) {
           targetUri = targetUri.replace(queryParameters: queryParameters);
         }
-        final response = await request(targetUri).timeout(const Duration(seconds: 4));
+        final response = await request(targetUri)
+            .timeout(const Duration(seconds: 4));
         _preferredBaseUri = baseUri;
         return response;
       } on Object catch (error) {
@@ -605,7 +649,10 @@ class ExperienceApiService {
       }
     }
 
-    throw ExperienceApiException(0, _gateway.connectionFailureMessage(candidates));
+    throw ExperienceApiException(
+      0,
+      _gateway.connectionFailureMessage(candidates),
+    );
   }
 
   List<Uri> _orderedBaseUris() {

@@ -67,9 +67,15 @@ in the [single-branch workflow](member-branch-workflow.md).
    available in both clients.
 2. The client requests one location reading while the screen is active. It
    explains why location is useful before the operating system/browser prompt.
+   React requires a secure browser context and reports unsupported, denied,
+   unavailable and timed-out location separately. Neither client requests
+   location automatically when the map opens.
 3. The client maps the result to the location input for a nearby query. It
    shows a concise, user-understandable selected-location label and the
    search radius/filters that will be used; raw coordinates need not be shown.
+   Coordinates remain in client memory and are sent only to the public nearby
+   endpoint; map tile/style requests never contain the location. The map draws
+   the current-location marker locally.
 4. `services/api` authenticates/authorizes and routes the search to the private
    Ushan Srinuka (Member 1) service. That service validates coordinate/radius bounds and
    filters, then returns nearby destinations/activities with the same

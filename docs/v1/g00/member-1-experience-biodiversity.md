@@ -87,11 +87,11 @@ and never calls Auth.
 
 | Method and candidate public path | Capability | Implemented / Proposed permission |
 |---|---|---|
-| `GET /api/experiences/destinations` | Browse/search published destinations with filters and pagination | Anonymous for published records; `experiences.catalogue.read` to request other publication states |
-| `GET /api/experiences/destinations/{destinationId:guid}` | Destination detail and its published experience context | Anonymous for published records; `experiences.catalogue.read` for non-published records |
-| `GET /api/experiences/activities` | Read the canonical activity taxonomy | Anonymous for published records; `experiences.catalogue.read` to request other publication states |
-| `GET /api/experiences/offerings` | Browse/search published offerings with filters and pagination | Anonymous for published offerings with published parents; `experiences.catalogue.read` to request other publication states |
-| `GET /api/experiences/offerings/{offeringId:guid}` | Offering detail and schedule information | Anonymous for published offerings with published parents; `experiences.catalogue.read` for non-published records |
+| `GET /api/experiences/destinations` | Browse/search published destinations with filters and pagination | Anonymous for published records; `experiences.catalogue.read` or `experiences.catalogue.manage` for other publication states |
+| `GET /api/experiences/destinations/{destinationId:guid}` | Destination detail and its published experience context | Anonymous for published records; `experiences.catalogue.read` or `experiences.catalogue.manage` for non-published records |
+| `GET /api/experiences/activities` | Read the canonical activity taxonomy | Anonymous for published records; `experiences.catalogue.read` or `experiences.catalogue.manage` for other publication states |
+| `GET /api/experiences/offerings` | Browse/search published offerings with filters and pagination | Anonymous for published offerings with published parents; `experiences.catalogue.read` or `experiences.catalogue.manage` for other publication states |
+| `GET /api/experiences/offerings/{offeringId:guid}` | Offering detail and schedule information | Anonymous for published offerings with published parents; `experiences.catalogue.read` or `experiences.catalogue.manage` for non-published records |
 | `GET /api/experiences/nearby` | Find nearby published destinations/offerings from validated place name/keyword or coordinates | Anonymous; results include published destinations only |
 | `POST /api/experiences/destinations` and `PUT /api/experiences/destinations/{destinationId:guid}` | Create/update a destination | `experiences.catalogue.manage` |
 | `DELETE /api/experiences/destinations/{destinationId:guid}` | Delete a destination | `experiences.catalogue.manage` |
@@ -143,19 +143,28 @@ the endpoint catalog is updated when routes are implemented.
   unavailable/invalid outcomes. The request context may identify a canonical
   destination or activity and its location; it must not contain unnecessary
   personal/device-location data.
-- Map requests and credentials stay server-side in Ushan's service. Provider
-  responses are normalized, attribution is preserved, provider places remain
-  non-canonical suggestions, and manual/list discovery remains available on
-  provider failure. The vendor and enabled capability remain an owner decision
-  before live integration acceptance.
+- Place search, provider configuration and credential-bearing map requests stay
+  behind Ushan's service and the public API. The current Flutter implementation
+  gets a MapLibre style from `GET /api/experiences/map/config`, then the renderer
+  fetches public OpenFreeMap style/vector-tile resources from that configured
+  HTTPS host only. React uses MapLibre GL JS with the same configured style and
+  bounded tile-rendering exception. Neither client sends device location or
+  user data with tile requests. Current-location coordinates stay in client
+  memory and go only to the public nearby endpoint after the user taps the
+  location control; the location marker is rendered locally. Provider results
+  remain non-canonical suggestions and manual/list discovery remains available
+  on provider failure. The shared provider, terms, attribution, quota and
+  rendering-boundary decisions remain proposals pending G00 review.
 - All schedule and cross-component event instants use UTC RFC 3339 values;
   local schedule interpretation carries an IANA time-zone ID. Interval
   boundaries are inclusive at start and exclusive at end.
 
 **For shared agreement:** Member 3 confirms the biodiversity consumer contract;
 Member 4 confirms restriction status, version, freshness and failure meanings;
-all owners accept the timestamp and interval rules. The map feature schema is
-finalized after vendor and feature selection, before live provider acceptance.
+all owners accept the timestamp and interval rules. Owners review whether the
+current OpenFreeMap/MapLibre rendering in both clients meets the shared
+provider, terms, attribution and public-API boundary before
+accepting the map feature contract.
 
 ## 5. Proposed workflow, UI and dependency states
 
@@ -163,16 +172,43 @@ finalized after vendor and feature selection, before live provider acceptance.
 |---|---|---|---|
 | `experience-discovery` | `/experiences` | `/experiences` | Browse, search, detail and effective availability |
 | `experience-catalogue-management` | `/experiences/manage` | `/experiences/manage` | Equivalent authorized catalogue and schedule management |
-| `experience-favourites` | `/experiences/saved` | `/experiences/saved` | View, save and remove caller-owned targets |
-| `experience-biodiversity-report` | `/experiences/reports/{workflowId}` | `/experiences/reports/{workflowId}` | View a sourced report or its explicit unavailable state |
+| `experience-favourites` | `/experiences/saved` | `/experiences/favourites` | View, save and remove caller-owned targets |
 
-The business request owns an opaque UUID `workflowId`; it is distinct from any
-later AI execution record. Proposed dependency states are `NOT_CONNECTED`,
-`UNAVAILABLE` and `AVAILABLE`; report outcomes remain separate from dependency
-health. An absent/unavailable AI runtime produces no report and no fabricated
-success. Keep API liveness and database readiness separate. The AI probe is
-internal and bounded; expose its state through an authorized business workflow
-status rather than changing `GET /api/health`.
+For this member's mobile proposal, approximate device location is requested only
+after the user taps **Near Me**. The coordinates are used for the public nearby
+API request and are not persisted by the client; manual place search and list
+browsing remain available when permission is denied or location is unavailable.
+Both Coastal Maps use the registered `GET /api/experiences/map/config`
+contract to obtain the MapLibre style and provider attribution, then render
+OpenFreeMap vector tiles and published catalogue destinations at their stored
+coordinates. MapLibre Native on Flutter and MapLibre GL JS on React request
+tiles only from the HTTPS OpenFreeMap host returned by that API configuration.
+Neither client sends device location or user data with tile requests. Location
+is requested only after the user taps the location control; coordinates remain
+in client memory, go only to the public nearby API and appear as a locally
+rendered marker. Place search and nearby requests continue through the public
+API. Selecting a destination marker shows its location details and an action to
+open the registered detail route. These are maps for exploration, not
+turn-by-turn routing. The shared-owner G00 agreement remains pending; see the
+bounded implementation decision recorded in ADR-0017.
+
+Biodiversity results are presented as model predictions, with source, model
+version, uncertainty and disclaimer visible. Unknown or unavailable results
+remain explicit; predicted likelihood is never labelled as observed presence.
+Availability checks use an exact active schedule window or an explicitly
+selected local window in `Asia/Colombo`, converted to UTC instants for the
+public API. The current API request does not accept party size, so the mobile
+client does not imply that a party-size check was performed. Catalogue managers
+can add, edit, activate/deactivate and delete offering schedule windows.
+Catalogue management requests `DRAFT`, `PUBLISHED` and `ARCHIVED` records with
+separate permission-checked list queries; public discovery continues to use the
+published-only reads.
+
+Report presentation is deferred until G07 and a reviewed public workflow/API
+contract exist. Before then, the mobile component does not claim to provide an
+AI-generated report. Keep API liveness and database readiness separate. Any
+future AI probe remains internal and bounded; expose its state through an
+authorized business workflow status rather than changing `GET /api/health`.
 
 **For shared agreement:** agree workflow IDs and React/Flutter paths across
 owners, status vocabulary, request correlation, retryability, and actor/
@@ -181,10 +217,11 @@ The exact internal transport and trust mechanism remain a shared G00 decision.
 
 ## 6. Decisions deliberately deferred
 
-G00 does not select a map vendor, approve provider licensing/attribution or
-quotas, create production credentials, implement the IT3091 adapter, expose a
-new endpoint, or implement a member workflow. Those decisions require the
-owner's provider review and the applicable component acceptance evidence.
+G00 does not ratify the current OpenFreeMap/MapLibre Flutter and React
+implementations, approve provider licensing/attribution or quotas, create
+production credentials, implement the IT3091 adapter, expose a new endpoint,
+or accept the member workflow. Those decisions require the owners' provider
+review and the applicable component acceptance evidence.
 Actual Agentic AI agents, prompts, tools, model calls and orchestration remain
 gated on G07.
 
