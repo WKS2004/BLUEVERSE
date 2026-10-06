@@ -1,4 +1,4 @@
-import { PlannerApiError } from './plannerApi.ts'
+import { PlannerApiError, type RecommendationHighlight } from './plannerApi.ts'
 
 export function plannerError(error: unknown): string {
   if (error instanceof PlannerApiError) {
@@ -45,4 +45,14 @@ export function validatePlanningWindow(startsAt: string, endsAt: string, hours: 
   if (Date.parse(startsAt) < now || Date.parse(endsAt) > now + 30 * 86400000) return 'Choose future dates within the next 30 days.'
   if (!Number.isInteger(hours) || hours < 1 || hours > (Date.parse(endsAt) - Date.parse(startsAt)) / 3600000) return 'Choose a whole number of hours that fits within your trip.'
   return null
+}
+
+export function getRecommendationHighlights(): Promise<RecommendationHighlight[]> {
+  return import('./plannerApi').then(m => m.getRecommendationHighlights())
+}
+
+export { RecommendationHighlight }
+
+export function isHighlight(value: unknown): value is RecommendationHighlight {
+  return import('./plannerApi').then(m => m.isHighlight(value))
 }

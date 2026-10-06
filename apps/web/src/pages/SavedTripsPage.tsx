@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import PlannerLayout, { primaryButton, secondaryButton } from '../features/planner/PlannerLayout'
+import AccountAreaNavigation from '../components/account/AccountAreaNavigation'
 import { listItineraries, type Itinerary } from '../features/planner/plannerApi'
 import { dateTime, plannerError } from '../features/planner/plannerPresentation'
 import { hasAllPermissions } from '../features/authorization/permissions'
@@ -8,7 +9,18 @@ import { useAuthSession } from '../features/auth/authSession'
 import lagoonImage from '../assets/coastal/mangrove-lagoon.jpg'
 
 export default function SavedTripsPage() {
-  return <PlannerLayout permission="planner.itineraries.manage"><SavedTrips /></PlannerLayout>
+  return (
+    <div className="flex min-h-screen flex-col bg-coast-paper font-sans text-coast-ink">
+      <PlannerLayout permission="planner.itineraries.manage" publicRead={false}>
+        <>
+          <AccountAreaNavigation active="planner" />
+          <main className="mx-auto min-h-[70vh] max-w-[90rem] flex-1 grid grid-cols-1 gap-6 px-4 py-6 sm:px-8 sm:py-10 lg:grid-cols-[15rem_minmax(0,1fr)] lg:items-start lg:gap-8 lg:px-6 lg:py-0">
+            <SavedTrips />
+          </main>
+        </>
+      </PlannerLayout>
+    </div>
+  )
 }
 function SavedTrips() {
   const { user } = useAuthSession()

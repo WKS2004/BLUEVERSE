@@ -11,7 +11,7 @@ import { dateTime, plannerError, statusLabel, utcTime, validatePlanningWindow } 
 
 export default function PlannerWorkspace() {
   const { recommendationId } = useParams()
-  return <PlannerLayout permission={recommendationId ? 'planner.recommendations.read' : 'planner.recommendations.create'}><Content key={recommendationId ?? 'new'} /></PlannerLayout>
+  return <PlannerLayout permission={recommendationId ? 'planner.recommendations.read' : 'planner.recommendations.create'} publicRead={true}><Content key={recommendationId ?? 'new'} /></PlannerLayout>
 }
 
 function Content() {

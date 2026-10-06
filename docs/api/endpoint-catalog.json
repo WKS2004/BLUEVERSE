@@ -33,6 +33,16 @@
   ],
   "frontendRoutes": [
     {
+      "id": "react-planner-plan",
+      "client": "react",
+      "route": "/planner/plan",
+      "source": "apps/web/src/app/routes.tsx",
+      "workflowId": "planner-plan",
+      "status": "implemented",
+      "description": "Dedicated coastal trip planning page: destination, activities, dates, duration, experience level, optional wildlife context, trip title and notes, with draft/confirm semantics and a saved-trips toggle.",
+      "usage": "Authenticated coastal planner workflow for creating and confirming a trip. Anonymous visitors are redirected to sign in when they try to plan a trip; the recommendations page remains publicly visible."
+    },
+    {
       "id": "web-home",
       "client": "react",
       "route": "/",
@@ -259,8 +269,8 @@
       "source": "apps/web/src/app/routes.tsx",
       "workflowId": "planner-recommendations",
       "status": "implemented",
-      "description": "Smart Coastal Planner recommendation workflow: trip constraints form, ranked candidate days, per-candidate suitability, operations and biodiversity inspection, and planning workflow status.",
-      "usage": "Renders the shared planner workflow for signed-in accounts; signed-out visitors are redirected to sign in."
+      "description": "Public coastal recommendations home page: trending/coastal highlights drawn from the catalogue and recent confirmed trips, with recommendation-style highlight cards and a Plan a trip button that sends visitors to sign in when needed.",
+      "usage": "Publicly visible recommendations entry point. Planning actions require sign-in and the planner.recommendations.create permission."
     },
     {
       "id": "flutter-planner-recommendations",
@@ -486,6 +496,23 @@
     }
   ],
   "publicApiEndpoints": [
+    {
+      "id": "planner-recommendations-highlights",
+      "method": "GET",
+      "path": "/api/planner/recommendations/highlights",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "operationId": "GetHighlights",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Public coastal highlight cards drawn from the catalogue and recent confirmed trips.",
+      "usage": "Provides the curated highlight cards shown on the public coastal planner home page and used by the planning page.",
+      "source": "services/coastal-planner/Controllers/RecommendationsController.cs",
+      "uiWorkflowIds": [
+        "planner-recommendations",
+        "planner-plan"
+      ]
+    },
     {
       "id": "api-health",
       "method": "GET",
@@ -993,7 +1020,8 @@
       "usage": "Fits verified offering intervals and experience levels; records MATCHES_FOUND, NO_MATCHES or DEPENDENCIES_UNAVAILABLE within a 40-second budget.",
       "source": "services/coastal-planner/Controllers/RecommendationsController.cs",
       "uiWorkflowIds": [
-        "planner-recommendations"
+        "planner-recommendations",
+        "planner-plan"
       ]
     },
     {
@@ -1010,7 +1038,8 @@
       "source": "services/coastal-planner/Controllers/RecommendationsController.cs",
       "uiWorkflowIds": [
         "planner-recommendations",
-        "planner-recommendation-result"
+        "planner-recommendation-result",
+        "planner-plan"
       ]
     },
     {
@@ -1027,7 +1056,8 @@
       "source": "services/coastal-planner/Controllers/WorkflowsController.cs",
       "uiWorkflowIds": [
         "planner-recommendations",
-        "planner-recommendation-result"
+        "planner-recommendation-result",
+        "planner-plan"
       ]
     },
     {
@@ -1040,10 +1070,12 @@
       "status": "implemented",
       "auth": "permission:planner.itineraries.manage",
       "description": "Create a user-owned saved itinerary.",
-      "usage": "Saves an owner itinerary with time zones; an optional recommendationId validates new selections against the owner snapshot and 15-minute lifetime.",
+      "usage": "Saves an owner itinerary with time zones; an optional recommendationId validates new selections against the owner snapshot and 15-minute lifetime. New itineraries can be created as drafts or confirmed at creation time.",
       "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
       "uiWorkflowIds": [
-        "planner-recommendation-result"
+        "planner-recommendation-result",
+        "planner-plan",
+        "planner-saved-trips"
       ]
     },
     {
@@ -1056,11 +1088,12 @@
       "status": "implemented",
       "auth": "permission:planner.itineraries.manage",
       "description": "List the caller's saved itineraries.",
-      "usage": "Returns paginated itineraries owned by the calling user.",
+      "usage": "Returns paginated itineraries owned by the calling user. Used by the saved trips page and by the planning page when appending to an existing trip.",
       "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
       "uiWorkflowIds": [
         "planner-recommendation-result",
-        "planner-saved-trips"
+        "planner-saved-trips",
+        "planner-plan"
       ]
     },
     {
@@ -1077,7 +1110,8 @@
       "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
       "uiWorkflowIds": [
         "planner-recommendation-result",
-        "planner-trip-management"
+        "planner-trip-management",
+        "planner-plan"
       ]
     },
     {
@@ -1089,12 +1123,13 @@
       "operationId": "UpdateItinerary",
       "status": "implemented",
       "auth": "permission:planner.itineraries.manage",
-      "description": "Update itinerary details, reorder items, or adjust dates.",
-      "usage": "Preserves stop identity while editing and reordering; checks concurrencyVersion, rejects overlapping/duplicate stops and resets stale evidence after schedule changes.",
+      "description": "Update editable itinerary details, reorder items, or adjust dates.",
+      "usage": "Preserves stop identity while editing and reordering; checks concurrencyVersion, rejects overlapping/duplicate stops and resets stale evidence after schedule changes. Confirmed trips cannot be edited.",
       "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
       "uiWorkflowIds": [
         "planner-recommendation-result",
-        "planner-trip-management"
+        "planner-trip-management",
+        "planner-plan"
       ]
     },
     {
@@ -1107,10 +1142,11 @@
       "status": "implemented",
       "auth": "permission:planner.itineraries.manage",
       "description": "Delete a caller-owned itinerary.",
-      "usage": "Removes an itinerary owned by the authenticated caller.",
+      "usage": "Removes an itinerary owned by the authenticated caller. Available for both draft and confirmed itineraries.",
       "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
       "uiWorkflowIds": [
-        "planner-trip-management"
+        "planner-trip-management",
+        "planner-plan"
       ]
     },
     {
@@ -1123,10 +1159,11 @@
       "status": "implemented",
       "auth": "permission:planner.itineraries.manage",
       "description": "Evaluate existing itinerary against current marine suitability, availability, and operational restrictions.",
-      "usage": "Atomically records previous/current evidence, review snapshot and a new optimistic version; HasChanges and RequiresReview have separate meanings.",
+      "usage": "Atomically records previous/current evidence, review snapshot and a new optimistic version; HasChanges and RequiresReview have separate meanings. Available for both draft and confirmed itineraries.",
       "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
       "uiWorkflowIds": [
-        "planner-trip-management"
+        "planner-trip-management",
+        "planner-plan"
       ]
     },
     {
@@ -1143,7 +1180,8 @@
       "source": "services/coastal-planner/Controllers/BiodiversityController.cs",
       "uiWorkflowIds": [
         "planner-recommendations",
-        "planner-recommendation-result"
+        "planner-recommendation-result",
+        "planner-plan"
       ]
     },
     {

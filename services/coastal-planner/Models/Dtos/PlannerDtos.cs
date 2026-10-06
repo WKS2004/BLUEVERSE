@@ -74,6 +74,7 @@ public record ItineraryDto(
     int ConcurrencyVersion,
     DateTime CreatedAt,
     DateTime UpdatedAt,
+    ItineraryStatus Status,
     List<ItineraryItemDto> Items,
     string TimeZone = "Asia/Colombo"
 );
@@ -92,7 +93,8 @@ public record ItineraryItemDto(
     string LastAvailabilityStatus,
     string LastOperationalStatus,
     string? AdvisoryNote,
-    string TimeZone = "Asia/Colombo"
+    string TimeZone = "Asia/Colombo",
+    double FitScore = 0
 );
 
 public record CreateItineraryRequestDto(
@@ -102,7 +104,8 @@ public record CreateItineraryRequestDto(
     DateTime EndsAt,
     List<CreateItineraryItemRequestDto> Items,
     Guid? RecommendationId = null,
-    string TimeZone = "Asia/Colombo"
+    string TimeZone = "Asia/Colombo",
+    bool ConfirmPlan = false
 );
 
 public record CreateItineraryItemRequestDto(
@@ -125,7 +128,8 @@ public record UpdateItineraryRequestDto(
     int ConcurrencyVersion,
     List<CreateItineraryItemRequestDto> Items,
     Guid? RecommendationId = null,
-    string TimeZone = "Asia/Colombo"
+    string TimeZone = "Asia/Colombo",
+    bool ConfirmPlan = false
 );
 
 public record ItineraryReEvaluationRequestDto(
@@ -157,6 +161,28 @@ public record ItineraryReEvaluationItemDto(
     DateTime? MarineConditionTime = null,
     Guid? SafetyProfileId = null
 );
+
+public record RecommendationHighlightDto(
+    Guid Id,
+    string Title,
+    DateTime StartsAt,
+    DateTime EndsAt,
+    string TimeZone,
+    Guid DestinationId,
+    string DestinationName,
+    Guid ActivityId,
+    string ActivityName,
+    Guid? OfferingId,
+    double FitScore,
+    string SuitabilityStatus,
+    string AvailabilityStatus,
+    string OperationalStatus,
+    Guid? RecommendationId,
+    string[] UncertaintyNotes,
+    DateTime GeneratedAt,
+    string Outcome,
+    int ItemCount,
+    RecommendationHighlightDto WithRecommendationId(Guid? value) => this with { RecommendationId = value });
 
 public record BiodiversityPredictionDto(
     Guid DestinationId,

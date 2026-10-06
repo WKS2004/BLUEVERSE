@@ -17,7 +17,7 @@ RUN --mount=type=cache,id=blueverse-nuget,target=/root/.nuget/packages,sharing=l
     --no-restore \
     /p:UseAppHost=false
 
-FROM dhi.io/aspnetcore:10-alpine AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS runtime
 
 WORKDIR /app
 

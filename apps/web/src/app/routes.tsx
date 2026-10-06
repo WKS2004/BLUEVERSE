@@ -3,6 +3,7 @@ import DashboardPage from '../pages/DashboardPage'
 import HomePage from '../pages/HomePage'
 import LoginPage from '../pages/LoginPage'
 import PlannerPage from '../pages/PlannerPage'
+import PlannerPlanPage from '../pages/PlannerPlanPage'
 import SavedTripsPage from '../pages/SavedTripsPage'
 import ItineraryPage from '../pages/ItineraryPage'
 import ProfilePage from '../pages/ProfilePage'
@@ -54,11 +55,12 @@ export default function AppRoutes() {
       <Route path="/signup" element={<RegistrationPage />} />
       <Route path="/404" element={<NotFoundPage />} />
       <Route path="/500" element={<ServerErrorPage />} />
+      <Route path="/planner" element={<PlannerPage />} />
+      <Route path="/planner/recommendations/:recommendationId" element={<PlannerPage />} />
       <Route element={<RequireAuth />}>
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/planner" element={<PlannerPage />} />
-        <Route path="/planner/recommendations/:recommendationId" element={<PlannerPage />} />
+        <Route path="/planner/plan" element={<PlannerPlanPage />} />
         <Route path="/planner/saved" element={<SavedTripsPage />} />
         <Route path="/planner/itineraries/:itineraryId" element={<ItineraryPage />} />
         <Route path="/admin" element={<RequireAnyAdminPermission permissions={['auth.permission.read', 'auth.role.read', 'auth.user.read']}><AdminIndexPage /></RequireAnyAdminPermission>} />

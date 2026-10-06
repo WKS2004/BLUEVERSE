@@ -67,3 +67,5 @@ docker-data/
 private/
 local/
 docs/ai/private/
+
+blobs/

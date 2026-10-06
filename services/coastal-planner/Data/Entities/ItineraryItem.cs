@@ -43,4 +43,6 @@ public class ItineraryItem
 
     [MaxLength(500)]
     public string? AdvisoryNote { get; set; }
+
+    public double FitScore { get; set; }
 }

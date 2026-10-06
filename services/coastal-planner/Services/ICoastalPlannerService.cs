@@ -13,6 +13,9 @@ public interface ICoastalPlannerService
     Task<ItineraryDto?> GetItineraryAsync(Guid itineraryId, Guid userId, CancellationToken ct = default);
     Task<ItineraryDto?> UpdateItineraryAsync(Guid itineraryId, UpdateItineraryRequestDto request, Guid userId, CancellationToken ct = default);
     Task<bool> DeleteItineraryAsync(Guid itineraryId, Guid userId, CancellationToken ct = default);
+    Task<ItineraryDto?> ConfirmItineraryAsync(Guid itineraryId, Guid userId, CancellationToken ct = default);
+    Task<ItineraryDto?> GetItineraryForRecommendationHighlightAsync(Guid itineraryId, Guid userId, CancellationToken ct = default);
+    Task<List<Guid>> ListItineraryIdsForHighlightsAsync(Guid userId, CancellationToken ct = default);
 
     Task<ItineraryReEvaluationResultDto?> ReEvaluateItineraryAsync(Guid itineraryId, Guid userId, ItineraryReEvaluationRequestDto request, CancellationToken ct = default);
     Task<List<ItineraryReEvaluationResultDto>?> GetEvaluationHistoryAsync(Guid itineraryId, Guid userId, CancellationToken ct = default) =>

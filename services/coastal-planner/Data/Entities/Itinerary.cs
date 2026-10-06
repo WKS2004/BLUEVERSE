@@ -28,5 +28,19 @@ public class Itinerary
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
 
+    [Required]
+    [MaxLength(16)]
+    public string Status { get; set; } = ItineraryStatus.Draft;
+
     public List<ItineraryItem> Items { get; set; } = new();
+
+    public bool IsDraft => Status == ItineraryStatus.Draft;
+
+    public bool IsConfirmed => Status == ItineraryStatus.Confirmed;
+}
+
+public static class ItineraryStatus
+{
+    public const string Draft = "Draft";
+    public const string Confirmed = "Confirmed";
 }

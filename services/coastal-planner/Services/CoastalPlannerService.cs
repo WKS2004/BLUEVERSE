@@ -321,6 +321,7 @@ public partial class CoastalPlannerService : ICoastalPlannerService
         if (!ValidTimeZone(request.TimeZone) || request.Items.Any(i => !ValidTimeZone(i.TimeZone)))
             throw new ArgumentException("Choose a supported destination time zone.");
 
+        var status = request.ConfirmPlan ? ItineraryStatus.Confirmed : ItineraryStatus.Draft;
         var itinerary = new Itinerary
         {
             ItineraryId = Guid.NewGuid(),
@@ -333,6 +334,7 @@ public partial class CoastalPlannerService : ICoastalPlannerService
             ConcurrencyVersion = 1,
             CreatedAtUtc = DateTime.UtcNow,
             UpdatedAtUtc = DateTime.UtcNow,
+            Status = status,
             Items = request.Items.Select(item => new ItineraryItem
             {
                 ItemId = Guid.NewGuid(),
@@ -346,7 +348,8 @@ public partial class CoastalPlannerService : ICoastalPlannerService
                 ScheduledEndUtc = item.ScheduledEnd,
                 LastSuitabilityStatus = "UNKNOWN",
                 LastAvailabilityStatus = "UNKNOWN",
-                LastOperationalStatus = "UNKNOWN"
+                LastOperationalStatus = "UNKNOWN",
+                FitScore = 0
             }).ToList()
         };
 
@@ -379,15 +382,52 @@ public partial class CoastalPlannerService : ICoastalPlannerService
         return itinerary == null ? null : MapItineraryToDto(itinerary);
     }
 
+    public async Task<ItineraryDto?> GetItineraryForRecommendationHighlightAsync(Guid itineraryId, Guid userId, CancellationToken ct = default)
+    {
+        var itinerary = await _db.Itineraries
+            .AsNoTracking()
+            .Include(i => i.Items)
+            .FirstOrDefaultAsync(i => i.ItineraryId == itineraryId && i.OwnerUserId == userId, ct);
+
+        if (itinerary == null) return null;
+
+        var destinationIds = itinerary.Items.Select(item => item.DestinationId).ToList();
+        var (catalogueItems, _, _) = await _peerClient.GetCatalogueOfferingsAsync(
+            destinationIds.FirstOrDefault(), null, ct);
+
+        var featuredActivityId = catalogueItems
+            .Where(item => item.DestinationId == destinationIds.FirstOrDefault())
+            .Select(item => item.ActivityId)
+            .FirstOrDefault();
+
+        return MapItineraryToDto(itinerary, featuredActivityId);
+    }
+
+    public async Task<List<Guid>> ListItineraryIdsForHighlightsAsync(Guid userId, CancellationToken ct = default)
+    {
+        return await _db.Itineraries
+            .Where(i => i.OwnerUserId == userId && i.Status == ItineraryStatus.Confirmed)
+            .OrderByDescending(i => i.CreatedAtUtc)
+            .Select(i => i.ItineraryId)
+            .Take(3)
+            .ToListAsync(ct);
+    }
+
     public async Task<ItineraryDto?> UpdateItineraryAsync(Guid itineraryId, UpdateItineraryRequestDto request, Guid ownerUserId, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        ValidateItinerary(ownerUserId, request.Title, request.Description, request.StartsAt, request.EndsAt, request.Items);
         var itinerary = await _db.Itineraries
             .Include(i => i.Items)
             .FirstOrDefaultAsync(i => i.ItineraryId == itineraryId && i.OwnerUserId == ownerUserId, ct);
 
         if (itinerary == null) return null;
+
+        if (itinerary.Status == ItineraryStatus.Confirmed)
+        {
+            throw new InvalidOperationException("A confirmed trip cannot be edited.");
+        }
+
+        ValidateItinerary(ownerUserId, request.Title, request.Description, request.StartsAt, request.EndsAt, request.Items);
 
         if (itinerary.ConcurrencyVersion != request.ConcurrencyVersion)
         {
@@ -408,6 +448,8 @@ public partial class CoastalPlannerService : ICoastalPlannerService
         {
             _db.ChangeTracker.Clear();
             itinerary = await _db.Itineraries.Include(i => i.Items).SingleAsync(i => i.ItineraryId == itineraryId && i.OwnerUserId == ownerUserId, ct);
+            if (itinerary.Status == ItineraryStatus.Confirmed)
+                throw new InvalidOperationException("A confirmed trip cannot be edited.");
             if (itinerary.ConcurrencyVersion != request.ConcurrencyVersion) throw new DbUpdateConcurrencyException("Trip changed.");
             await using var transaction = _db.Database.IsRelational() ? await _db.Database.BeginTransactionAsync(ct) : null;
             itinerary.Title = request.Title.Trim();
@@ -472,6 +514,32 @@ public partial class CoastalPlannerService : ICoastalPlannerService
         _db.Itineraries.Remove(itinerary);
         await _db.SaveChangesAsync(ct);
         return true;
+    }
+
+    public async Task<ItineraryDto?> ConfirmItineraryAsync(Guid itineraryId, Guid ownerUserId, CancellationToken ct = default)
+    {
+        var itinerary = await _db.Itineraries
+            .Include(i => i.Items)
+            .FirstOrDefaultAsync(i => i.ItineraryId == itineraryId && i.OwnerUserId == ownerUserId, ct);
+
+        if (itinerary == null) return null;
+
+        if (itinerary.Status == ItineraryStatus.Confirmed)
+        {
+            return MapItineraryToDto(itinerary);
+        }
+
+        if (itinerary.Items.Count == 0)
+        {
+            throw new ArgumentException("A trip can only be confirmed when it has at least one planned experience.");
+        }
+
+        itinerary.Status = ItineraryStatus.Confirmed;
+        itinerary.UpdatedAtUtc = DateTime.UtcNow;
+        itinerary.ConcurrencyVersion++;
+        await _db.SaveChangesAsync(ct);
+
+        return MapItineraryToDto(itinerary);
     }
 
     public async Task<ItineraryReEvaluationResultDto?> ReEvaluateItineraryAsync(
@@ -741,34 +809,43 @@ public partial class CoastalPlannerService : ICoastalPlannerService
         );
     }
 
-    private static ItineraryDto MapItineraryToDto(Itinerary i)
+    public IPeerServicesClient GetPeerClient() => _peerClient;
+
+    private static ItineraryDto MapItineraryToDto(Itinerary i, Guid? featuredActivityId = null)
     {
+        var items = i.Items.OrderBy(item => item.OrderIndex).Select(item => new ItineraryItemDto(
+            ItemId: item.ItemId,
+            ItineraryId: item.ItineraryId,
+            DestinationId: item.DestinationId,
+            ActivityId: item.ActivityId,
+            OfferingId: item.OfferingId,
+            Title: item.Title,
+            OrderIndex: item.OrderIndex,
+            ScheduledStart: item.ScheduledStartUtc,
+            ScheduledEnd: item.ScheduledEndUtc,
+            LastSuitabilityStatus: item.LastSuitabilityStatus,
+            LastAvailabilityStatus: item.LastAvailabilityStatus,
+            LastOperationalStatus: item.LastOperationalStatus,
+            AdvisoryNote: item.AdvisoryNote,
+            TimeZone: item.TimeZone,
+            FitScore: item.FitScore).ToList();
+
+        var featuredActivityTitle = featuredActivityId.HasValue
+            ? items.FirstOrDefault(item => item.ActivityId == featuredActivityId)?.Title
+            : null;
+
         return new ItineraryDto(
             ItineraryId: i.ItineraryId,
             OwnerUserId: i.OwnerUserId,
-            Title: i.Title,
+            Title: featuredActivityTitle ?? i.Title,
             Description: i.Description,
             StartsAt: i.StartsAtUtc,
             EndsAt: i.EndsAtUtc,
             ConcurrencyVersion: i.ConcurrencyVersion,
             CreatedAt: i.CreatedAtUtc,
             UpdatedAt: i.UpdatedAtUtc,
-            Items: i.Items.OrderBy(item => item.OrderIndex).Select(item => new ItineraryItemDto(
-                ItemId: item.ItemId,
-                ItineraryId: item.ItineraryId,
-                DestinationId: item.DestinationId,
-                ActivityId: item.ActivityId,
-                OfferingId: item.OfferingId,
-                Title: item.Title,
-                OrderIndex: item.OrderIndex,
-                ScheduledStart: item.ScheduledStartUtc,
-                ScheduledEnd: item.ScheduledEndUtc,
-                LastSuitabilityStatus: item.LastSuitabilityStatus,
-                LastAvailabilityStatus: item.LastAvailabilityStatus,
-                LastOperationalStatus: item.LastOperationalStatus,
-                AdvisoryNote: item.AdvisoryNote,
-                TimeZone: item.TimeZone
-            )).ToList(),
+            Status: i.Status,
+            Items: items,
             TimeZone: i.TimeZone
         );
     }

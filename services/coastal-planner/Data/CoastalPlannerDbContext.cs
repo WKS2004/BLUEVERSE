@@ -42,15 +42,24 @@ public class CoastalPlannerDbContext : DbContext
         {
             entity.Property(e => e.TimeZone).HasDefaultValue("Asia/Colombo");
             entity.ToTable("itineraries", "coastal_planner", table =>
-                table.HasCheckConstraint("CK_itineraries_date_range", "\"EndsAtUtc\" > \"StartsAtUtc\""));
+            {
+                table.HasCheckConstraint("CK_itineraries_date_range", "\"EndsAtUtc\" > \"StartsAtUtc\"");
+                table.HasCheckConstraint("CK_itineraries_status", "\"Status\" IN ('Draft','Confirmed')");
+            });
             entity.HasIndex(e => e.OwnerUserId);
             entity.HasIndex(e => e.CreatedAtUtc);
             entity.Property(e => e.ConcurrencyVersion).IsConcurrencyToken();
+            entity.Property(e => e.Status).HasDefaultValue(ItineraryStatus.Draft).HasMaxLength(16);
 
             entity.HasMany(e => e.Items)
                   .WithOne(i => i.Itinerary)
                   .HasForeignKey(i => i.ItineraryId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ItineraryItem>(entity =>
+        {
+            entity.Property(e => e.FitScore).HasDefaultValue(0);
         });
 
         modelBuilder.Entity<ItineraryItem>(entity =>

@@ -24,6 +24,35 @@ public class ItinerariesController : ControllerBase
         return Guid.TryParse(userIdStr, out userId) && userId != Guid.Empty;
     }
 
+    [HttpPost("confirm")]
+    [HasPermission("planner.itineraries.manage")]
+    public async Task<ActionResult<ItineraryDto>> ConfirmItinerary(
+        [FromRoute] Guid itineraryId,
+        CancellationToken ct)
+    {
+        if (!TryGetUserId(out var userId)) return Unauthorized();
+
+        var result = await _plannerService.ConfirmItineraryAsync(itineraryId, userId, ct);
+        if (result == null)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Type = "https://tools.ietf.org/html/rfc7807",
+                Title = "Itinerary not found",
+                Status = StatusCodes.Status404NotFound,
+                Detail = $"Itinerary {itineraryId} not found."
+            });
+        }
+
+        return Ok(result);
+    }
+
+    private bool TryGetUserId(out Guid userId)
+    {
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        return Guid.TryParse(userIdStr, out userId) && userId != Guid.Empty;
+    }
+
     [HttpPost]
     [HasPermission("planner.itineraries.manage")]
     public async Task<ActionResult<ItineraryDto>> CreateItinerary(
@@ -40,6 +69,10 @@ public class ItinerariesController : ControllerBase
         catch (ArgumentException ex)
         {
             return BadRequest(new ProblemDetails { Title = "Invalid itinerary", Status = StatusCodes.Status400BadRequest, Detail = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new ProblemDetails { Title = "Trip cannot be confirmed", Status = StatusCodes.Status400BadRequest, Detail = ex.Message });
         }
     }
 

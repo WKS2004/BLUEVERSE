@@ -14,7 +14,7 @@ RUN dotnet publish "${PROJECT_NAME}.csproj" \
     --no-restore \
     /p:UseAppHost=false
 
-FROM dhi.io/aspnetcore:10-alpine AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS runtime
 
 ARG PROJECT_NAME=Blueverse.Api
 WORKDIR /app
