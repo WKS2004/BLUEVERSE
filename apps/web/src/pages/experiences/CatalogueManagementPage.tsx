@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react'
-import { Link, useLocation } from 'react-router'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router'
 import AccountAreaNavigation from '../../components/account/AccountAreaNavigation'
 import SiteFooter from '../../components/layout/SiteFooter'
 import SiteHeader from '../../components/layout/SiteHeader'
+import activityHeroImage from '../../assets/coastal/management-activities.jpg'
+import destinationHeroImage from '../../assets/coastal/management-destinations.jpg'
+import offeringHeroImage from '../../assets/coastal/management-offerings.jpg'
 import type {
   ActivityDto,
   DestinationDto,
@@ -37,23 +40,196 @@ import {
 import { useAuthSession } from '../../features/auth/authSession'
 import { hasAnyPermission } from '../../features/authorization/permissions'
 
+type ManagementTab = 'destinations' | 'activities' | 'offerings'
+type TabTransition = {
+  from: ManagementTab
+  to: ManagementTab
+  direction: 'forward' | 'backward'
+  phase: 'exit' | 'enter'
+}
+
+const managementTabOrder: ManagementTab[] = ['destinations', 'activities', 'offerings']
+const managementTabPaths: Record<ManagementTab, string> = {
+  destinations: '/experiences/manage/destinations',
+  activities: '/experiences/manage/activities',
+  offerings: '/experiences/manage/offerings',
+}
+const managementTabAnimationClasses = {
+  exit: {
+    forward: 'motion-safe:animate-management-tab-exit-forward',
+    backward: 'motion-safe:animate-management-tab-exit-backward',
+  },
+  enter: {
+    forward: 'motion-safe:animate-management-tab-enter-forward',
+    backward: 'motion-safe:animate-management-tab-enter-backward',
+  },
+}
+
+function managementTabAnimationClass(tab: ManagementTab, transition: TabTransition | null) {
+  if (!transition) return ''
+  if (transition.phase === 'exit' && transition.from === tab) {
+    return managementTabAnimationClasses.exit[transition.direction]
+  }
+  if (transition.phase === 'enter' && transition.to === tab) {
+    return managementTabAnimationClasses.enter[transition.direction]
+  }
+  return ''
+}
+
+function managementTabFromHash(hash: string): ManagementTab | null {
+  const tab = hash.replace(/^#/, '')
+  return tab === 'destinations' || tab === 'activities' || tab === 'offerings'
+    ? tab
+    : null
+}
+
+function managementTabFromPathname(pathname: string): ManagementTab | null {
+  const routeTab = pathname.match(/^\/experiences\/manage\/([^/]+)\/?$/)?.[1]
+  return routeTab === 'destinations' || routeTab === 'activities' || routeTab === 'offerings'
+    ? routeTab
+    : null
+}
+
+function resolveManagementTab(pathname: string, search: string, hash: string): ManagementTab {
+  const pathTab = managementTabFromPathname(pathname)
+  if (pathTab) return pathTab
+
+  const hashTab = managementTabFromHash(hash)
+  if (hashTab) return hashTab
+
+  const searchParams = new URLSearchParams(search)
+  const tab = searchParams.get('tab')
+
+  if (searchParams.get('editDestination')) return 'destinations'
+  if (searchParams.get('editOffering')) return 'offerings'
+  if (tab === 'destinations' || tab === 'activities' || tab === 'offerings') {
+    return tab
+  }
+  if (tab === 'diagnostics') return 'destinations'
+
+  return 'destinations'
+}
+
+function ExperienceManagementHero({
+  id,
+  eyebrow,
+  title,
+  description,
+  count,
+  singular,
+  plural,
+  image,
+  imageAlt,
+  imagePosition = 'center',
+}: {
+  id: string
+  eyebrow: string
+  title: string
+  description: string
+  count: number
+  singular: string
+  plural: string
+  image: string
+  imageAlt: string
+  imagePosition?: string
+}) {
+  const collectionLabel = count === 0
+    ? `No ${plural.toLowerCase()} yet`
+    : `${count} ${count === 1 ? singular : plural}`
+
+  return (
+    <section
+      aria-labelledby={`${id}-title`}
+      className="overflow-hidden rounded-[2rem] border border-coast-line bg-coast-pearl shadow-sm"
+    >
+      <div className="relative h-56 overflow-hidden sm:h-64 lg:h-72">
+        <img
+          alt={imageAlt}
+          className="absolute inset-0 h-full w-full object-cover"
+          decoding="async"
+          loading="lazy"
+          src={image}
+          style={{ objectPosition: imagePosition }}
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-gradient-to-t from-coast-ink/45 via-transparent to-transparent"
+        />
+        <span className="absolute bottom-4 left-4 rounded-full border border-white/60 bg-white/85 px-3 py-1.5 text-[10px] font-extrabold tracking-[0.12em] text-coast-deep shadow-sm backdrop-blur-sm">
+          BLUEVERSE · COASTAL EXPERIENCES
+        </span>
+      </div>
+
+      <div className="flex min-w-0 flex-col justify-center p-5 sm:p-7 lg:p-9">
+        <span className="w-fit rounded-full border border-coast-line bg-white/75 px-3 py-1.5 text-[10px] font-extrabold tracking-[0.14em] text-coast-blue">
+          {eyebrow}
+        </span>
+        <h2
+          className="mt-4 max-w-xl font-display text-[1.65rem] font-bold leading-tight tracking-tight text-coast-ink sm:text-3xl lg:text-4xl"
+          id={`${id}-title`}
+        >
+          {title}
+        </h2>
+        <p className="mt-3 max-w-prose text-sm leading-6 text-coast-muted sm:text-base">
+          {description}
+        </p>
+        <div className="mt-6 flex items-center gap-2.5 border-t border-coast-line pt-4">
+          <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-coast-teal" />
+          <span className="text-xs font-bold text-coast-deep">{collectionLabel}</span>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 export default function CatalogueManagementPage() {
   const { user } = useAuthSession()
   const location = useLocation()
-  const [activeTab, setActiveTab] = useState<'destinations' | 'activities' | 'offerings'>('destinations')
+  const navigate = useNavigate()
+  const activeTab = resolveManagementTab(location.pathname, location.search, location.hash)
+  const [tabTransition, setTabTransition] = useState<TabTransition | null>(null)
+  const tabNavigationTimer = useRef<number | null>(null)
+  const tabAnimationTimer = useRef<number | null>(null)
 
   const canManage =
     hasAnyPermission(user, ['experiences.catalogue.manage', 'auth.role.system.manage'])
 
-  useEffect(() => {
-    const hash = location.hash.replace('#', '')
-    if (hash === 'destinations' || hash === 'activities' || hash === 'offerings') {
-      setActiveTab(hash)
-    } else if (hash === 'diagnostics') {
-      setActiveTab('destinations')
-    }
-  }, [location.hash])
+  function selectManagementTab(tab: ManagementTab) {
+    if (tab === activeTab) return
 
+    if (tabNavigationTimer.current !== null) window.clearTimeout(tabNavigationTimer.current)
+    if (tabAnimationTimer.current !== null) window.clearTimeout(tabAnimationTimer.current)
+
+    const direction: TabTransition['direction'] =
+      managementTabOrder.indexOf(tab) > managementTabOrder.indexOf(activeTab)
+      ? 'forward'
+      : 'backward'
+    const transition = { from: activeTab, to: tab, direction }
+    setTabTransition({ ...transition, phase: 'exit' })
+
+    const searchParams = new URLSearchParams(location.search)
+    searchParams.delete('editDestination')
+    searchParams.delete('editOffering')
+    searchParams.delete('tab')
+    const search = searchParams.toString()
+
+    tabNavigationTimer.current = window.setTimeout(() => {
+      navigate(
+        {
+          pathname: managementTabPaths[tab],
+          search: search ? `?${search}` : '',
+          hash: '',
+        },
+        { preventScrollReset: true },
+      )
+      tabNavigationTimer.current = null
+      setTabTransition({ ...transition, phase: 'enter' })
+      tabAnimationTimer.current = window.setTimeout(() => {
+        setTabTransition(null)
+        tabAnimationTimer.current = null
+      }, 240)
+    }, 130)
+  }
 
   // Destinations state
   const [destinations, setDestinations] = useState<DestinationDto[]>([])
@@ -115,6 +291,31 @@ export default function CatalogueManagementPage() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => () => {
+    if (tabNavigationTimer.current !== null) window.clearTimeout(tabNavigationTimer.current)
+    if (tabAnimationTimer.current !== null) window.clearTimeout(tabAnimationTimer.current)
+  }, [])
+
+  // Migrate old query/hash links to subsection URLs and keep subsection URLs canonical.
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search)
+    const hasLegacyTab = searchParams.has('tab')
+    const hasLegacyHash = managementTabFromHash(location.hash) !== null
+    const canonicalPath = managementTabPaths[activeTab]
+    if (location.pathname === canonicalPath && !hasLegacyTab && !hasLegacyHash) return
+
+    searchParams.delete('tab')
+    const search = searchParams.toString()
+    navigate(
+      {
+        pathname: canonicalPath,
+        search: search ? `?${search}` : '',
+        hash: hasLegacyHash ? '' : location.hash,
+      },
+      { replace: true },
+    )
+  }, [activeTab, location.hash, location.pathname, location.search, navigate])
 
   useEffect(() => {
     loadAll()
@@ -466,24 +667,15 @@ export default function CatalogueManagementPage() {
     const searchParams = new URLSearchParams(location.search)
     const editDestId = searchParams.get('editDestination')
     const editOffId = searchParams.get('editOffering')
-    const tabParam = searchParams.get('tab')
-
-    if (tabParam === 'destinations' || tabParam === 'activities' || tabParam === 'offerings') {
-      setActiveTab(tabParam)
-    } else if (tabParam === 'diagnostics') {
-      setActiveTab('destinations')
-    }
 
     if (editDestId && destinations.length > 0) {
       const target = destinations.find((d) => d.id === editDestId)
       if (target) {
-        setActiveTab('destinations')
         startEditDestination(target)
       }
     } else if (editOffId && offerings.length > 0) {
       const target = offerings.find((o) => o.id === editOffId)
       if (target) {
-        setActiveTab('offerings')
         startEditOffering(target)
       }
     }
@@ -494,7 +686,7 @@ export default function CatalogueManagementPage() {
       <SiteHeader active="experiences" />
 
       <main className="mx-auto grid w-full max-w-[90rem] flex-1 grid-cols-1 content-start gap-6 px-4 py-6 sm:px-8 sm:py-10 lg:grid-cols-[15rem_minmax(0,1fr)] lg:items-start lg:gap-8 lg:px-6 lg:py-0">
-        <AccountAreaNavigation active="experiences" />
+        <AccountAreaNavigation active="experiences" onExperienceTabSelect={selectManagementTab} />
 
         <div className="min-w-0 lg:py-12">
           <div className="mb-4">
@@ -561,39 +753,55 @@ export default function CatalogueManagementPage() {
           )}
 
           {/* Management Subtabs */}
-          <div className="mt-8 flex border-b border-coast-line">
-            <button
-              className={`border-b-2 px-5 py-3 text-sm font-extrabold transition ${
-                activeTab === 'destinations' ? 'border-coast-deep text-coast-deep' : 'border-transparent text-coast-muted hover:text-coast-deep'
-              }`}
-              onClick={() => setActiveTab('destinations')}
-              type="button"
-            >
-              Destinations ({destinations?.length ?? 0})
-            </button>
-            <button
-              className={`border-b-2 px-5 py-3 text-sm font-extrabold transition ${
-                activeTab === 'activities' ? 'border-coast-deep text-coast-deep' : 'border-transparent text-coast-muted hover:text-coast-deep'
-              }`}
-              onClick={() => setActiveTab('activities')}
-              type="button"
-            >
-              Activities ({activities?.length ?? 0})
-            </button>
-            <button
-              className={`border-b-2 px-5 py-3 text-sm font-extrabold transition ${
-                activeTab === 'offerings' ? 'border-coast-deep text-coast-deep' : 'border-transparent text-coast-muted hover:text-coast-deep'
-              }`}
-              onClick={() => setActiveTab('offerings')}
-              type="button"
-            >
-              Offerings & Schedules ({offerings?.length ?? 0})
-            </button>
+          <div className="sticky top-16 z-40 mt-8 bg-coast-paper/95 backdrop-blur-sm sm:top-[76px]">
+            <div className="flex min-w-0 overflow-x-auto border-b border-coast-line">
+              <button
+                aria-pressed={activeTab === 'destinations'}
+                className={`shrink-0 border-b-2 px-5 py-3 text-sm font-extrabold transition ${
+                  activeTab === 'destinations' ? 'border-coast-deep text-coast-deep' : 'border-transparent text-coast-muted hover:text-coast-deep'
+                }`}
+                onClick={() => selectManagementTab('destinations')}
+                type="button"
+              >
+                Destinations ({destinations?.length ?? 0})
+              </button>
+              <button
+                aria-pressed={activeTab === 'activities'}
+                className={`shrink-0 border-b-2 px-5 py-3 text-sm font-extrabold transition ${
+                  activeTab === 'activities' ? 'border-coast-deep text-coast-deep' : 'border-transparent text-coast-muted hover:text-coast-deep'
+                }`}
+                onClick={() => selectManagementTab('activities')}
+                type="button"
+              >
+                Activities ({activities?.length ?? 0})
+              </button>
+              <button
+                aria-pressed={activeTab === 'offerings'}
+                className={`shrink-0 border-b-2 px-5 py-3 text-sm font-extrabold transition ${
+                  activeTab === 'offerings' ? 'border-coast-deep text-coast-deep' : 'border-transparent text-coast-muted hover:text-coast-deep'
+                }`}
+                onClick={() => selectManagementTab('offerings')}
+                type="button"
+              >
+                Offerings & Schedules ({offerings?.length ?? 0})
+              </button>
+            </div>
           </div>
 
           {/* 1. Destinations Panel */}
           {activeTab === 'destinations' && (
-            <div className="mt-8 space-y-8">
+            <div className={`mt-8 space-y-8 ${managementTabAnimationClass('destinations', tabTransition)}`}>
+              <ExperienceManagementHero
+                count={destinations.length}
+                description="Keep reefs, beaches and lagoons easy to recognize and ready for thoughtful visits."
+                eyebrow="COASTAL DESTINATIONS"
+                id="destinations-hero"
+                image={destinationHeroImage}
+                imageAlt="A quiet tropical shoreline with clear water, rocky coves and palms."
+                plural="destinations"
+                title="Give every coastal place a clear story."
+                singular="destination"
+              />
               {!canManage && (
                 <div className="rounded-2xl border border-coast-line bg-coast-sand/40 p-4 text-xs font-semibold text-coast-muted">
                   Read-only view. You can review destinations, activities, and offerings. Editing, publishing, or removing them requires experience-management permission.
@@ -706,12 +914,12 @@ export default function CatalogueManagementPage() {
                 <h3 className="font-display text-xl font-bold text-coast-ink">Managed Destinations</h3>
                 <div className="mt-4 divide-y divide-coast-line">
                   {destinations.map((d) => (
-                    <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between" key={d.id}>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-sm font-extrabold text-coast-ink">{d.name}</h4>
+                    <div className="grid gap-3 py-4 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-center" key={d.id}>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <h4 className="min-w-0 break-words text-sm font-extrabold text-coast-ink">{d.name}</h4>
                           <span
-                            className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
+                            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
                               d.status === 'PUBLISHED'
                                 ? 'bg-emerald-100 text-emerald-800'
                                 : d.status === 'DRAFT'
@@ -722,23 +930,23 @@ export default function CatalogueManagementPage() {
                             {d.status}
                           </span>
                         </div>
-                        <p className="mt-1 text-xs text-coast-muted">
+                        <p className="mt-1 break-words text-xs text-coast-muted">
                           {d.region || 'Coastal'} · {d.latitude != null ? d.latitude.toFixed(4) : '0.0000'}°N, {d.longitude != null ? d.longitude.toFixed(4) : '0.0000'}°E
                         </p>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-nowrap sm:items-center xl:justify-end">
                         {canManage && (
                           <>
                             <button
-                              className="rounded-full border border-coast-line px-3 py-1.5 text-[11px] font-bold text-coast-deep hover:bg-coast-sand"
+                              className="flex min-h-9 items-center justify-center whitespace-nowrap rounded-full border border-coast-line px-3 py-1.5 text-[11px] font-bold text-coast-deep hover:bg-coast-sand"
                               onClick={() => startEditDestination(d)}
                               type="button"
                             >
                               Edit
                             </button>
                             <button
-                              className="rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-[11px] font-bold text-red-800 hover:bg-red-100"
+                              className="flex min-h-9 items-center justify-center whitespace-nowrap rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-[11px] font-bold text-red-800 hover:bg-red-100"
                               onClick={() => handleDeleteDestination(d)}
                               type="button"
                             >
@@ -747,7 +955,7 @@ export default function CatalogueManagementPage() {
                           </>
                         )}
                         <button
-                          className="rounded-full border border-coast-line px-3 py-1.5 text-[11px] font-bold text-coast-deep hover:bg-coast-sand"
+                          className="flex min-h-9 items-center justify-center whitespace-nowrap rounded-full border border-coast-line px-3 py-1.5 text-[11px] font-bold text-coast-deep hover:bg-coast-sand"
                           onClick={() => handleEvaluateDestination(d.id, 'PUBLISHED')}
                           type="button"
                         >
@@ -755,7 +963,7 @@ export default function CatalogueManagementPage() {
                         </button>
                         {canManage && d.status !== 'PUBLISHED' && (
                           <button
-                            className="rounded-full bg-coast-deep px-3 py-1.5 text-[11px] font-bold text-white hover:bg-coast-blue"
+                            className="flex min-h-9 items-center justify-center whitespace-nowrap rounded-full bg-coast-deep px-3 py-1.5 text-[11px] font-bold text-white hover:bg-coast-blue"
                             onClick={() => handleTransitionDestination(d.id, 'PUBLISHED')}
                             type="button"
                           >
@@ -764,7 +972,7 @@ export default function CatalogueManagementPage() {
                         )}
                         {canManage && d.status === 'PUBLISHED' && (
                           <button
-                            className="rounded-full border border-coast-line px-3 py-1.5 text-[11px] font-bold text-coast-muted hover:bg-coast-sand"
+                            className="flex min-h-9 items-center justify-center whitespace-nowrap rounded-full border border-coast-line px-3 py-1.5 text-[11px] font-bold text-coast-muted hover:bg-coast-sand"
                             onClick={() => handleTransitionDestination(d.id, 'DRAFT')}
                             type="button"
                           >
@@ -781,7 +989,19 @@ export default function CatalogueManagementPage() {
 
           {/* 2. Activities Panel */}
           {activeTab === 'activities' && (
-            <div className="mt-8 space-y-8">
+            <div className={`mt-8 space-y-8 ${managementTabAnimationClass('activities', tabTransition)}`}>
+              <ExperienceManagementHero
+                count={activities.length}
+                description="Organize experiences across the water, shoreline and wildlife, with local context close at hand."
+                eyebrow="COASTAL ACTIVITIES"
+                id="activities-hero"
+                image={activityHeroImage}
+                imageAlt="Visitors and a local guide snorkeling above a clear-water coral reef."
+                plural="activity types"
+                title="Make room for more ways to explore."
+                singular="activity type"
+                imagePosition="64% center"
+              />
               {!canManage && (
                 <div className="rounded-2xl border border-coast-line bg-coast-sand/40 p-4 text-xs font-semibold text-coast-muted">
                   Read-only view. You can review destinations, activities, and offerings. Editing, publishing, or removing them requires experience-management permission.
@@ -865,30 +1085,30 @@ export default function CatalogueManagementPage() {
                 <h3 className="font-display text-xl font-bold text-coast-ink">Managed Activity Taxonomy</h3>
                 <div className="mt-4 divide-y divide-coast-line">
                   {activities.map((a) => (
-                    <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between" key={a.id}>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-sm font-extrabold text-coast-ink">{a.name}</h4>
-                          <span className="rounded-full bg-coast-sand px-2 py-0.5 text-[10px] font-extrabold text-coast-deep">
+                    <div className="grid gap-3 py-4 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-center" key={a.id}>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <h4 className="min-w-0 break-words text-sm font-extrabold text-coast-ink">{a.name}</h4>
+                          <span className="shrink-0 rounded-full bg-coast-sand px-2 py-0.5 text-[10px] font-extrabold text-coast-deep">
                             {a.code}
                           </span>
-                          <span className="text-[10px] font-bold text-coast-muted">[{a.status}]</span>
+                          <span className="shrink-0 text-[10px] font-bold text-coast-muted">[{a.status}]</span>
                         </div>
-                        <p className="mt-1 text-xs text-coast-muted">{a.description || a.category}</p>
+                        <p className="mt-1 break-words text-xs text-coast-muted">{a.description || a.category}</p>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-nowrap sm:items-center xl:justify-end">
                         {canManage && (
                           <>
                             <button
-                              className="rounded-full border border-coast-line px-3 py-1.5 text-[11px] font-bold text-coast-deep hover:bg-coast-sand"
+                              className="flex min-h-9 items-center justify-center whitespace-nowrap rounded-full border border-coast-line px-3 py-1.5 text-[11px] font-bold text-coast-deep hover:bg-coast-sand"
                               onClick={() => startEditActivity(a)}
                               type="button"
                             >
                               Edit
                             </button>
                             <button
-                              className="rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-[11px] font-bold text-red-800 hover:bg-red-100"
+                              className="flex min-h-9 items-center justify-center whitespace-nowrap rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-[11px] font-bold text-red-800 hover:bg-red-100"
                               onClick={() => handleDeleteActivity(a)}
                               type="button"
                             >
@@ -897,7 +1117,7 @@ export default function CatalogueManagementPage() {
                           </>
                         )}
                         <button
-                          className="rounded-full border border-coast-line px-3 py-1.5 text-[11px] font-bold text-coast-deep hover:bg-coast-sand"
+                          className="flex min-h-9 items-center justify-center whitespace-nowrap rounded-full border border-coast-line px-3 py-1.5 text-[11px] font-bold text-coast-deep hover:bg-coast-sand"
                           onClick={() => handleEvaluateActivity(a.id, 'PUBLISHED')}
                           type="button"
                         >
@@ -905,7 +1125,7 @@ export default function CatalogueManagementPage() {
                         </button>
                         {canManage && a.status !== 'PUBLISHED' && (
                           <button
-                            className="rounded-full bg-coast-deep px-3 py-1.5 text-[11px] font-bold text-white hover:bg-coast-blue"
+                            className="flex min-h-9 items-center justify-center whitespace-nowrap rounded-full bg-coast-deep px-3 py-1.5 text-[11px] font-bold text-white hover:bg-coast-blue"
                             onClick={() => handleTransitionActivity(a.id, 'PUBLISHED')}
                             type="button"
                           >
@@ -922,7 +1142,19 @@ export default function CatalogueManagementPage() {
 
           {/* 3. Offerings & Schedules Panel */}
           {activeTab === 'offerings' && (
-            <div className="mt-8 space-y-8">
+            <div className={`mt-8 space-y-8 ${managementTabAnimationClass('offerings', tabTransition)}`}>
+              <ExperienceManagementHero
+                count={offerings.length}
+                description="Shape bookable coastal moments and keep their upcoming schedules clear for your team."
+                eyebrow="OFFERINGS & SCHEDULES"
+                id="offerings-hero"
+                image={offeringHeroImage}
+                imageAlt="A local coastal guide prepares a wooden outrigger with visitors at a Sri Lankan harbor."
+                imagePosition="center 68%"
+                plural="offerings"
+                title="Bring the right experiences onto the calendar."
+                singular="offering"
+              />
               {!canManage && (
                 <div className="rounded-2xl border border-coast-line bg-coast-sand/40 p-4 text-xs font-semibold text-coast-muted">
                   Read-only view. You can review destinations, activities, and offerings. Editing, publishing, or removing them requires experience-management permission.
@@ -1050,24 +1282,26 @@ export default function CatalogueManagementPage() {
               )}
 
               {/* Offerings and Schedules Grid */}
-              <div className="grid gap-8 lg:grid-cols-2">
+              <div className="grid gap-8 2xl:grid-cols-2">
                 {/* Offerings list */}
                 <div className="rounded-3xl border border-coast-line bg-white p-6 shadow-sm">
                   <h3 className="font-display text-xl font-bold text-coast-ink">Experience Offerings</h3>
                   <div className="mt-4 divide-y divide-coast-line max-h-96 overflow-y-auto">
                     {offerings.map((o) => (
-                      <div className="py-3" key={o.id}>
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-xs font-extrabold text-coast-ink">{o.title}</h4>
-                          <span className="text-[10px] font-bold text-coast-deep">[{o.status}]</span>
+                      <div className="grid gap-3 py-4 xl:grid-cols-[minmax(0,1fr)_23rem] xl:items-center" key={o.id}>
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <h4 className="min-w-0 break-words text-sm font-extrabold text-coast-ink">{o.title}</h4>
+                            <span className="shrink-0 text-[10px] font-bold text-coast-muted">[{o.status}]</span>
+                          </div>
+                          <p className="mt-1 break-words text-xs text-coast-muted">
+                            {o.destinationName} · {o.price != null ? `LKR ${o.price.toLocaleString()}` : ''}
+                          </p>
                         </div>
-                        <p className="mt-1 text-[11px] text-coast-muted">
-                          {o.destinationName} · {o.price != null ? `LKR ${o.price.toLocaleString()}` : ''}
-                        </p>
 
-                        <div className="mt-2 flex flex-wrap gap-2">
+                        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-nowrap sm:items-center xl:justify-end">
                           <button
-                            className="rounded-full bg-coast-sand px-2.5 py-1 text-[10px] font-bold text-coast-deep hover:bg-coast-glass"
+                            className="flex min-h-9 min-w-0 items-center justify-center rounded-full border border-coast-line bg-coast-sand px-3 py-1.5 text-center text-[11px] font-bold leading-tight text-coast-deep hover:bg-coast-glass sm:whitespace-nowrap"
                             onClick={() => setSelectedOfferingForSched(o.id)}
                             type="button"
                           >
@@ -1076,14 +1310,14 @@ export default function CatalogueManagementPage() {
                           {canManage && (
                             <>
                               <button
-                                className="rounded-full border border-coast-line px-2.5 py-1 text-[10px] font-bold text-coast-deep hover:bg-coast-sand"
+                                className="flex min-h-9 items-center justify-center whitespace-nowrap rounded-full border border-coast-line px-3 py-1.5 text-[11px] font-bold text-coast-deep hover:bg-coast-sand"
                                 onClick={() => startEditOffering(o)}
                                 type="button"
                               >
                                 Edit
                               </button>
                               <button
-                                className="rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[10px] font-bold text-red-800 hover:bg-red-100"
+                                className="flex min-h-9 items-center justify-center whitespace-nowrap rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-[11px] font-bold text-red-800 hover:bg-red-100"
                                 onClick={() => handleDeleteOffering(o)}
                                 type="button"
                               >
@@ -1092,7 +1326,7 @@ export default function CatalogueManagementPage() {
                             </>
                           )}
                           <button
-                            className="rounded-full border border-coast-line px-2.5 py-1 text-[10px] font-bold text-coast-deep hover:bg-coast-sand"
+                            className="flex min-h-9 items-center justify-center whitespace-nowrap rounded-full border border-coast-line px-3 py-1.5 text-[11px] font-bold text-coast-deep hover:bg-coast-sand"
                             onClick={() => handleEvaluateOffering(o.id, 'PUBLISHED')}
                             type="button"
                           >
@@ -1100,7 +1334,7 @@ export default function CatalogueManagementPage() {
                           </button>
                           {canManage && o.status !== 'PUBLISHED' && (
                             <button
-                              className="rounded-full bg-coast-deep px-2.5 py-1 text-[10px] font-bold text-white hover:bg-coast-blue"
+                              className="flex min-h-9 items-center justify-center whitespace-nowrap rounded-full bg-coast-deep px-3 py-1.5 text-[11px] font-bold text-white hover:bg-coast-blue"
                               onClick={() => handleTransitionOffering(o.id, 'PUBLISHED')}
                               type="button"
                             >

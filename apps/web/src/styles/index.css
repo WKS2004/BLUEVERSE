@@ -16,6 +16,10 @@
   --font-display: 'Sora', 'Manrope', 'Aptos', 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
   --animate-coast-arrive: coast-arrive 650ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
   --animate-coast-tab: coast-tab 300ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-management-tab-enter-forward: management-tab-enter-forward 240ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-management-tab-enter-backward: management-tab-enter-backward 240ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-management-tab-exit-forward: management-tab-exit-forward 130ms ease-in both;
+  --animate-management-tab-exit-backward: management-tab-exit-backward 130ms ease-in both;
   --animate-coast-menu: coast-menu 180ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
@@ -27,6 +31,24 @@
 @keyframes coast-tab {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes management-tab-enter-forward {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes management-tab-enter-backward {
+  from { opacity: 0; transform: translateX(-16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes management-tab-exit-forward {
+  to { opacity: 0; transform: translateX(-12px); }
+}
+
+@keyframes management-tab-exit-backward {
+  to { opacity: 0; transform: translateX(12px); }
 }
 
 @keyframes coast-menu {

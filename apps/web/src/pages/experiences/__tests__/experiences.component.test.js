@@ -595,7 +595,7 @@ test('WEB-EXP-009 catalogue management renders curation workspace and microservi
 
   // Test manager role view (canManage = true)
   renderInApp(createElement(CatalogueManagementPage), {
-    path: '/experiences/manage',
+    path: '/experiences/manage/destinations',
     auth: makeAuthSessionValue({
       status: 'signed-in',
       user: makeAuthUser({
@@ -642,7 +642,7 @@ test('WEB-EXP-009B renders read-only catalogue view without mutation forms when 
   }
 
   renderInApp(createElement(CatalogueManagementPage), {
-    path: '/experiences/manage',
+    path: '/experiences/manage/destinations',
     auth: makeAuthSessionValue({
       status: 'signed-in',
       user: makeAuthUser({
@@ -673,7 +673,7 @@ test('WEB-EXP-012 Admin role and auth.role.manage alone cannot enable catalogue 
   }
 
   renderInApp(createElement(CatalogueManagementPage), {
-    path: '/experiences/manage',
+    path: '/experiences/manage/destinations',
     auth: makeAuthSessionValue({
       status: 'signed-in',
       user: makeAuthUser({ roles: ['Admin'], permissions: ['auth.role.manage'] }),
@@ -701,7 +701,7 @@ test('WEB-EXP-013 system role manager permission enables the catalogue managemen
   }
 
   renderInApp(createElement(CatalogueManagementPage), {
-    path: '/experiences/manage',
+    path: '/experiences/manage/destinations',
     auth: makeAuthSessionValue({
       status: 'signed-in',
       user: makeAuthUser({ roles: ['SystemRoleManager'], permissions: ['auth.role.system.manage'] }),

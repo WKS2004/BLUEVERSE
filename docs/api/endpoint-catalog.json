@@ -295,12 +295,12 @@
     {
       "id": "web-catalogue-manage",
       "client": "react",
-      "route": "/experiences/manage",
+      "route": "/experiences/manage/:section",
       "source": "apps/web/src/app/routes.tsx",
       "workflowId": "experience-catalogue-management",
       "status": "implemented",
-      "description": "Catalogue curation and operations management workspace for destinations, activities, offerings, and schedules.",
-      "usage": "Provides pre-flight publication evaluation audits, lifecycle transitions, and timetable management."
+      "description": "Coastal experience management entry for the Destinations, Activities, and Offerings & Schedules subsections.",
+      "usage": "Direct subsection URLs preserve the selected management area on refresh; legacy base, query, and hash links are redirected to their matching subsection."
     },
     {
       "id": "mobile-experiences",

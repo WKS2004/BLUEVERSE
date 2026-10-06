@@ -506,7 +506,7 @@ export default function ExperiencesPage() {
                 {isAdmin && (
                   <Link
                     className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/30 px-5 text-sm font-bold text-white transition duration-200 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-                    to="/experiences/manage"
+                    to="/experiences/manage/destinations"
                   >
                     <span>Manage Experiences</span>
                     <span aria-hidden="true">↗</span>
@@ -664,7 +664,7 @@ export default function ExperiencesPage() {
                       {isAdmin && (
                         <Link
                           className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-coast-deep px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-coast-blue focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coast-blue"
-                          to="/experiences/manage#destinations"
+                          to="/experiences/manage/destinations"
                         >
                           <span aria-hidden="true" className="text-sm font-bold">+</span>
                           <span>Add Destination</span>
@@ -697,7 +697,7 @@ export default function ExperiencesPage() {
                                       aria-label={`Edit ${dest.name}`}
                                       className="inline-flex h-8 items-center gap-1 rounded-full border border-coast-line bg-white px-2.5 text-[11px] font-bold text-coast-deep transition hover:border-coast-blue hover:text-coast-blue hover:bg-coast-sand"
                                       title="Edit destination details"
-                                      to={`/experiences/manage?editDestination=${dest.id}#destinations`}
+                                      to={`/experiences/manage/destinations?editDestination=${dest.id}`}
                                     >
                                       <span>✎ Edit</span>
                                     </Link>
@@ -765,7 +765,7 @@ export default function ExperiencesPage() {
                       {isAdmin && (
                         <Link
                           className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-coast-deep px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-coast-blue focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coast-blue"
-                          to="/experiences/manage#offerings"
+                          to="/experiences/manage/offerings"
                         >
                           <span aria-hidden="true" className="text-sm font-bold">+</span>
                           <span>Add Offering</span>
@@ -798,7 +798,7 @@ export default function ExperiencesPage() {
                                       aria-label={`Edit ${off.title}`}
                                       className="inline-flex h-8 items-center gap-1 rounded-full border border-coast-line bg-white px-2.5 text-[11px] font-bold text-coast-deep transition hover:border-coast-blue hover:text-coast-blue hover:bg-coast-sand"
                                       title="Edit offering details"
-                                      to={`/experiences/manage?editOffering=${off.id}#offerings`}
+                                      to={`/experiences/manage/offerings?editOffering=${off.id}`}
                                     >
                                       <span>✎ Edit</span>
                                     </Link>

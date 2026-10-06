@@ -992,3 +992,107 @@
 - Summary of what the AI Agent did: Removed the diagnostics tab, panel, navigation link and automatic diagnostics fetch from React and Flutter. Updated the management workflow description and registry references while preserving backend diagnostics and the pre-G07 seam.
 - AI output accepted/changed/rejected: Kept the backend safe-fallback behavior and expected pre-G07 `not_connected` seam. Client request adapters and existing test fixtures/assertions remain pending user approval to remove or update under the repository test-change rule.
 - Verification/evidence: React production build passed; endpoint catalog generation and validation passed; `git diff --check` passed with existing LF/CRLF warnings. UI integration validation currently flags retained diagnostics endpoint literals in client adapters and existing test fixtures after their UI references were removed. Full web lint reports existing React-hook issues and an existing unused test parameter. Flutter analysis stalled without output and was stopped; test suites were not run.
+
+## 2026-10-06 — Preserve experience management tab on refresh
+
+- Date/time or time range: 2026-10-06 18:57 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop
+- AI Model: GPT-6
+- Summary of the user's request: Keep the selected Destinations, Activities, or Offerings & Schedules management tab selected when opening another tab and when refreshing `/experiences/manage`.
+- Summary of what the AI Agent did: Made the selected tab derive from the URL, write the chosen tab to the `tab` query parameter, and preserve existing edit deep links and legacy hash links.
+- AI output accepted/changed/rejected: Accepted query-backed tab state and retained the existing deep-link behavior; no other route or API contract was changed.
+- Verification/evidence: `npm run build` passed. `git diff --check` passed. The UI integration validator reports pre-existing undeclared diagnostics endpoint references in React/Flutter adapters and fixtures. Targeted ESLint reports existing hook errors in the management page. No test suite was run.
+
+## 2026-10-06 — Align experience management tabs and navigation
+
+- Date/time or time range: 2026-10-06 19:05–19:40 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop
+- AI Model: GPT-6
+- Summary of the user's request: Use the same URL hashes for Destinations, Activities, and Offerings & Schedules in both management navigation areas, and animate tab changes.
+- Summary of what the AI Agent did: Made hashes authoritative for selected panels, normalized older query tab links to hashes, highlighted the active account-navigation link, and applied the existing reduced-motion-aware coastal tab animation to each panel.
+- AI output accepted/changed/rejected: Accepted the existing app animation and hash-based state; retained edit deep links and removed only their conflicting tab query state when a tab is selected.
+- Verification/evidence: `npm run build` and `docker compose build frontend` passed; the frontend container was refreshed. In the local browser, both the page tabs and account navigation switched to matching hashes, Destinations, Activities, and Offerings & Schedules survived refresh, the active navigation link was highlighted, and the panel used the `coast-tab` animation. `git diff --check` passed. The UI integration validator still reports pre-existing diagnostics API literals; targeted ESLint still reports existing hook issues. No test suite was run.
+
+## 2026-10-06 — Animate both sides of experience management tab changes
+
+- Date/time or time range: 2026-10-06 20:27 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop
+- AI Model: GPT-6
+- Summary of the user's request: Ensure tab switching animates while moving between Destinations, Activities, and Offerings & Schedules.
+- Summary of what the AI Agent did: Added a directional exit animation for the current tab panel before updating the URL hash, followed by a directional entrance animation for the selected panel. Both page controls and account navigation use the same transition handler; animations respect reduced-motion preferences.
+- AI output accepted/changed/rejected: Kept hash-based tab selection and existing edit-link handling. Added explicit forward/backward transition direction typing after the production build exposed a TypeScript inference error.
+- Verification/evidence: `npm run build` and `docker compose build frontend` passed; restarted only the frontend container. In the local browser, forward and backward panel entrance transitions reported the expected computed animation names (`management-tab-enter-forward` and `management-tab-enter-backward`). `git diff --check` passed. Focused ESLint still reports existing `loadAll` hook declaration/dependency issues and a deep-link effect setState issue; no test suite was run.
+
+## 2026-10-06 — Add image-led experience management heroes
+
+- Date/time or time range: 2026-10-06 21:00 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop
+- AI Model: GPT-6
+- Summary of the user's request: Add attractive hero sections with suitable photos to each subsection of `/experiences/manage`.
+- Summary of what the AI Agent did: Added responsive, accessible photo-and-copy heroes to Destinations, Activities, and Offerings & Schedules, using the existing coastal shoreline, guided walk, and outrigger boat assets. Included section-specific descriptions and counts from each loaded collection; preserved tab hashes and existing management actions.
+- AI output accepted/changed/rejected: Reused checked-in BLUEVERSE photography, with descriptive alternatives and section-specific image crops; did not add routes, endpoints, business rules, or new imagery assets.
+- Verification/evidence: `npm run build` and `docker compose build frontend` passed; refreshed the frontend container. Browser review at mobile size showed the three intended hero images, copy, and loaded counts (5 destinations, 4 activity types, 3 offerings); desktop breakpoint measurements confirmed the image-and-copy split layout. `git diff --check` passed. UI integration validation continues to flag retained dependency/Agent Context endpoint literals in existing adapters and fixtures. Focused ESLint continues to report existing management-page hook issues. No test suite was run.
+
+## 2026-10-06 — Create dedicated management hero imagery and subsection routes
+
+- Date/time or time range: 2026-10-06 22:00–22:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop
+- AI Model: GPT-6
+- Summary of the user's request: Create three different coastal hero images, keep the screenshot's stacked image-and-copy layout at every screen size, and give Destinations, Activities, and Offerings & Schedules their own URLs.
+- Summary of what the AI Agent did: Generated and optimized three distinct Sri Lankan coastal photos, kept the hero content vertically stacked at all breakpoints, migrated management tabs and navigation to subsection paths, preserved legacy hash/query links by redirecting them, and synchronized the frontend route contract and catalog. Updated existing route fixtures after the user approved it.
+- AI output accepted/changed/rejected: Accepted the generated shoreline, snorkeling, and local boat-excursion imagery; converted the source PNGs to optimized JPEG assets before adding them. Retained the prior directional tab transition and subsection content.
+- Verification/evidence: `npm run build`, `docker compose up -d --build frontend`, and `python .agents/scripts/validate_endpoint_catalog.py` passed. In the browser, all three subsection URLs loaded their matching panels; Activities and Offerings & Schedules remained selected after refresh, and the old `#activities` URL redirected to `/experiences/manage/activities`. `validate_ui_integrations.py` still reports only the pre-existing dependency and agent-context API paths in React/Flutter adapters and fixtures. Tests were not run.
+
+## 2026-10-06 — Stabilize experience management list controls
+
+- Date/time or time range: 2026-10-06 23:14 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop
+- AI Model: GPT-6
+- Summary of the user's request: Fix the misaligned and unevenly wrapping action buttons in the Destinations and Activities management lists, and apply the same responsive treatment to Offerings & Schedules.
+- Summary of what the AI Agent did: Made long titles, status labels and descriptions wrap within their own content column; reserved a stable desktop action column for Destinations and Activities; arranged actions in predictable narrow layouts; and made Offering controls use a compact responsive grid. Moved the two Offering/Schedule panels to a wider breakpoint to avoid crowding.
+- AI output accepted/changed/rejected: Kept existing management actions, labels and data behavior. Applied responsive Tailwind utility classes only; did not change routes, API calls or business rules.
+- Verification/evidence: `docker compose build frontend` passed, including TypeScript compilation and Vite production bundling; `docker compose up -d --no-deps frontend` refreshed the running frontend; `git diff --check` passed. The existing Offerings page rendered after deployment with its action buttons aligned on one row at the available viewport. Direct host `npm run build` subsequently hit a Windows memory allocation failure, so the passing Docker build is the production-build evidence. Browser navigation to the other two management routes could not be completed because the Codex browser's `localhost` request was refused after the container restart; the frontend route returned HTTP 200 from the host. Tests were not run.
+
+## 2026-10-06 — Prevent offering status overlap at narrow widths
+
+- Date/time or time range: 2026-10-06 23:40 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop
+- AI Model: GPT-6
+- Summary of the user's request: Resume the management-list review in a fresh internal browser tab after restarting the laptop.
+- Summary of what the AI Agent did: Opened a fresh local browser tab, reviewed the Destinations, Activities, and Offerings lists at a narrow viewport, and moved the Offering status beneath its title below the wide split-panel breakpoint so the floating back-to-top button cannot obscure it. Rebuilt and refreshed the local frontend container.
+- AI output accepted/changed/rejected: Retained the earlier responsive action layouts; adjusted the Offering status placement based on the browser screenshot. No workflow actions, routes, or API behavior changed.
+- Verification/evidence: `docker compose build frontend` passed with TypeScript compilation and Vite bundling; `docker compose up -d --no-deps frontend` refreshed the app. Browser screenshots showed the Offering status labels clear of the floating control and the Destination/Activity controls aligned at the current narrow viewport. `git diff --check` passed. `validate_ui_integrations.py` reported existing undeclared `/api/experiences/dependencies/status` and `/api/experiences/agent/context` references in the React/Flutter adapters and tests. Tests were not run.
+
+## 2026-10-06 — Pin management tabs and align offering actions
+
+- Date/time or time range: 2026-10-06 23:53 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop
+- AI Model: GPT-6
+- Summary of the user's request: Keep the management subsection tabs visible while scrolling and make Experience Offering actions follow the Destinations/Activities row structure.
+- Summary of what the AI Agent did: Made the subsection strip sticky below the responsive site header and horizontally scrollable on narrow screens. Restructured offering rows into a details column plus matching action group, and delayed the two-panel offerings/schedules layout until very wide screens to preserve usable row width.
+- AI output accepted/changed/rejected: Preserved all action labels, permission gates, routes, and workflows; changed only the responsive presentation and grouping.
+- Verification/evidence: `docker compose build frontend` passed with TypeScript compilation and Vite bundling; the local frontend container was refreshed. Browser review while scrolled confirmed the subsection tabs remain directly below the site header, and offering title/status/details/actions follow the same row pattern as the other sections. `git diff --check` passed. `validate_ui_integrations.py` continues to report existing undeclared `/api/experiences/dependencies/status` and `/api/experiences/agent/context` references in React/Flutter adapters and tests. Tests were not run.

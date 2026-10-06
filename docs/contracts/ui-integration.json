@@ -308,9 +308,9 @@
     {
       "id": "experience-catalogue-management",
       "status": "implemented",
-      "description": "Coastal catalogue curation and operational management workspace. Supports destination, activity, offering, and schedule slot authoring, pre-flight publication evaluation audits, and publication status transitions.",
+      "description": "Coastal experience management workspace with dedicated Destinations, Activities, and Offerings & Schedules subsection routes. Supports schedule slot authoring, pre-flight publication evaluation audits, and publication status transitions.",
       "web": {
-        "route": "/experiences/manage",
+        "route": "/experiences/manage/:section",
         "source": "apps/web/src/app/routes.tsx"
       },
       "mobile": {
