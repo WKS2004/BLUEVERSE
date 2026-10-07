@@ -536,16 +536,18 @@ export function confirmItinerary(id: string): Promise<Itinerary> {
 }
 
 export function getRecommendationHighlights(): Promise<RecommendationHighlight[]> {
-  return checked(
-    request<RecommendationHighlight[]>(() =>
-      fetch('/api/planner/recommendations/highlights', {
-        credentials: 'include',
-        headers: { Accept: 'application/json' },
-        signal: AbortSignal.timeout(15000),
-      })
-    ),
-    v => Array.isArray(v) && v.every(isHighlight)
+  const pending = plannerHighlightsCache.get('highlights')
+  if (pending) return pending
+  const requestPromise = request<RecommendationHighlight[]>(() =>
+    fetch('/api/planner/recommendations/highlights', {
+      credentials: 'include',
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(15000),
+    })
   )
+  const checkedPromise = requestPromise.then(value => checked(value, v => Array.isArray(v) && v.every(isHighlight)))
+  plannerHighlightsCache.set('highlights', checkedPromise.catch(() => checkedPromise))
+  return checkedPromise
 }
 
 export type RecommendationPreferences = {
@@ -628,9 +630,7 @@ export function getBiodiversityPredictions(destinationId: string, activityId: st
     ),
     isPrediction
   )
-}
-
-// Interpret a user's wall clock in the destination's IANA time zone, independently
+}// Interpret a user's wall clock in the destination's IANA time zone, independently
 // of the browser location. Reject nonexistent or ambiguous clocks around DST.
 export function utcTime(value: string, zone: string): string {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) throw new Error('Choose a valid date and time.')
@@ -687,8 +687,12 @@ export function wallTime(value: string, zone: string): string {
   return `${part('year')}-${part('month')}-${part('day')}T${part('hour')}:${part('minute')}`
 }
 
+
 export function dateTime(value: string, zone = Intl.DateTimeFormat().resolvedOptions().timeZone): string {
   return new Intl.DateTimeFormat('en-GB', { timeZone: zone, day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(
     new Date(value),
   )
 }
+
+export const plannerHighlightsCache = new Map<string, Promise<RecommendationHighlight[]>>()
+

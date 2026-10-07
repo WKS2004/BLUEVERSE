@@ -98,4 +98,38 @@ This log records AI-assisted contributions for Adithya Gunawardana (`@AdithyaGun
   - Endpoint catalogue and UI integration validation passed (47 public endpoints, 30 registered frontend routes). All 35 validation-tool tests passed with temporary-directory access; the initial sandbox run was denied access to its fixture directories. Agent-resource validation passed for 23 repository skills. `git diff --check` passed.
   - DHI Auth, Coastal Planner and frontend builds passed; Compose configuration and startup passed. Final `/health`, `/api/health`, `/api/auth/health`, `/api/planner/health` and planner OpenAPI checks returned HTTP 200; planner and PostgreSQL containers were healthy. Cold NuGet downloads experienced timeouts before completing; a subsequent Auth restore reused the shared cache in about five seconds.
   - Real browser inspection at desktop and phone widths verified the missing-catalogue recovery page, absence of UUID-entry fields, no horizontal overflow and navigation to the owner saved-trip empty state. Restored normal browser sizing; saved local visual evidence outside the repository.
-  - Remaining acceptance: compatible catalogue/marine/operations/ML services are absent from this branch, so live recommendation integration cannot be claimed. Owner payload/path agreement, shared G00 acceptance, Flutter planner parity and accepted G07/executable AI remain pending. See `docs/development/coastal-planner.md`; this log is factual contribution evidence, not the student's individual assessed reflection.
+  - Remaining acceptance: compatible catalogue/marine/operations/ML services are absent from this branch, so live recommendation integration cannot be claimed. Owner payload/path agreement, shared G00 acceptance, Flutter planner parity and accepted G07/executable AI remain pending. See `docs/development/coastal-planner.md`; this log is factual contribution evidence, not the student's individual assessed reflection.## 2026-10-06 — Agentic AI planning prompt summary and endpoint-catalog housekeeping
+
+- Date/time or time range: 2026-10-06 (paused-and-resumed sessions before final verification).
+- GitHub Username: `AdithyaGunawardana`
+- Team Member Name (actual): Adithya Gunawardana
+- Agent Name: Freebuff/Codebuff agent session
+- Tool/App: ChatGPT Codex desktop session continuations
+- AI Model: GPT-6
+- Summary of the user's request: Record a summary of the prompts used, then continue the interrupted coastal-planner read-through, and later verify docs after a restart.
+- Summary of what the AI Agent did: 
+  - Recorded a concise task-plus-prompt summary in this log before continuing implementation review.
+  - Located and used the acting-member identity mapping in `docs/project/ai-team-members.md` and the log template in `docs/project/ai-usage-log-template.md`, then appended the entry to `docs/ai-contribution/AdithyaGunawardana-ai-usage.md`.
+  - Used those recorded prompts to continue the same task across the interrupted session: examine the current `features/coastal-planner` UI and API contract status, re-check the endpoint catalog JSON and the UI-integration contract JSON, regenerate and re-validate the endpoint-catalog Markdown view, and diagnose the surviving catalog/route/source mismatch and duplicate ID issues instead of restarting from scratch.
+  - Kept edits limited to the docs that the contract workflow says are authoritative for this kind of route/endpoint/UI change: `docs/api/endpoint-catalog.json`, `docs/contracts/ui-integration.json` and the regenerated `docs/api/endpoint-catalog.md`.
+- AI output accepted/changed/rejected: Accepted the logged summary as the record of the user's prompts for this session. Accepted the continued investigation and the doc-only corrections made from it. Did not fabricate a new feature completion claim; the underlying frontend/backend implementation was left at whatever state the working tree already had.
+- Verification/evidence: 
+  - Updated `docs/ai-contribution/AdithyaGunawardana-ai-usage.md` with the new entry.
+  - Regenerated endpoint catalog Markdown with `python .agents/scripts/validate_endpoint_catalog.py --write-markdown` and re-ran `python .agents/scripts/validate_endpoint_catalog.py`.
+  - Inspected `docs/api/endpoint-catalog.json`, `docs/contracts/ui-integration.json`, the React route table in `apps/web/src/app/routes.tsx`, the planner API client in `apps/web/src/features/planner/plannerApi.ts`, and the coastal-planner controller source under `services/coastal-planner/Controllers/ItinerariesController.cs`.
+
+## 2026-10-07 — Phase 1/Phase 2 completion check and continuing coastal-planner contract work
+
+- Date/time or time range: 2026-10-07 (interrupted session continued after restart; doc work only so far).
+- GitHub Username: `AdithyaGunawardana`
+- Team Member Name (actual): Adithya Gunawardana
+- Agent Name: Freebuff/Codebuff agent session
+- Tool/App: ChatGPT Codex desktop session continuations
+- AI Model: GPT-6
+- Summary of the user's request: Ask whether Phase 1 and Phase 2 of the coastal-planner frontend restructure are complete, where Phase 1 is splitting the planner route tree into public-read / protected-write and Phase 2 is making the arrival page `/planner` a recommendations/home page; if complete, continue through the remaining phases up to Phase 7. Record the prompts used.
+- Summary of what the AI Agent did:
+  - Interpreted the two phases as contract-facing work first: re-checked the React planner route table in `apps/web/src/app/routes.tsx`, the planner API client in `apps/web/src/features/planner/plannerApi.ts`, the coastal-planner controller sources under `services/coastal-planner/Controllers/`, and the authoritative contract docs `docs/api/endpoint-catalog.json`, `docs/contracts/ui-integration.json` and the regenerated `docs/api/endpoint-catalog.md`.
+  - Recorded the prompt summary in `docs/ai-contribution/AdithyaGunawardana-ai-usage.md` before continuing, using `docs/project/ai-team-members.md` and `docs/project/ai-usage-log-template.md`.
+- AI output accepted/changed/rejected: Accepted the logged prompt summary as the session record. Did not change application source in this turn; contract/docs work is in progress and not yet verified to a completion claim.
+- Verification/evidence: Updated `docs/ai-contribution/AdithyaGunawardana-ai-usage.md` with this entry.
+

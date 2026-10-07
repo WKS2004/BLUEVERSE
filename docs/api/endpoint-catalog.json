@@ -514,6 +514,23 @@
       ]
     },
     {
+      "id": "planner-itineraries-confirm",
+      "method": "POST",
+      "path": "/api/planner/itineraries/{itineraryId:guid}/confirm",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "operationId": "ConfirmItinerary",
+      "auth": "permission:planner.itineraries.manage",
+      "description": "Confirm a caller-owned draft itinerary so it can be processed.",
+      "usage": "Changes a draft trip to confirmed. Used by the trip detail page and the planning page when the user confirms a newly created trip.",
+      "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
+      "status": "implemented",
+      "uiWorkflowIds": [
+        "planner-trip-management",
+        "planner-plan"
+      ]
+    },
+    {
       "id": "api-health",
       "method": "GET",
       "path": "/api/health",
@@ -981,32 +998,7 @@
       "usage": "Authorized user editors can add or remove user roles; the service checks current caller grants, system-role constraints and invalidates the affected account sessions.",
       "source": "services/auth/Controllers/UsersController.cs"
     },
-    {
-      "id": "planner-health",
-      "method": "GET",
-      "path": "/api/planner/health",
-      "ownerService": "coastal-planner",
-      "publicBoundary": "api",
-      "operationId": "Get",
-      "status": "implemented",
-      "auth": "anonymous",
-      "description": "Reports Coastal Planner service and database readiness.",
-      "usage": "Used by the exec-form .NET Docker readiness probe, API startup dependency and gateway diagnostics; missing peers do not prevent readiness.",
-      "source": "services/coastal-planner/Controllers/HealthController.cs"
-    },
-    {
-      "id": "planner-swagger-document",
-      "method": "GET",
-      "path": "/api/planner/swagger/{documentName}/swagger.json",
-      "ownerService": "coastal-planner",
-      "publicBoundary": "api",
-      "operationId": "SwaggerDocument",
-      "status": "implemented",
-      "auth": "anonymous",
-      "description": "Returns the Coastal Planner OpenAPI document through the public API gateway.",
-      "usage": "Used by the unified Swagger UI and contract inspection without exposing the internal service host.",
-      "source": "services/coastal-planner/Program.cs"
-    },
+
     {
       "id": "planner-recommendations-create",
       "method": "POST",
@@ -1036,6 +1028,24 @@
       "description": "Retrieve recommendation candidate details, suitability, and evidence.",
       "usage": "Retrieves the candidates and peer status notes for a recommendation session.",
       "source": "services/coastal-planner/Controllers/RecommendationsController.cs",
+      "uiWorkflowIds": [
+        "planner-recommendations",
+        "planner-recommendation-result",
+        "planner-plan"
+      ]
+    },
+    {
+      "id": "planner-biodiversity-predictions",
+      "method": "GET",
+      "path": "/api/planner/biodiversity/predictions",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "operationId": "GetPredictions",
+      "status": "implemented",
+      "auth": "permission:planner.biodiversity.read",
+      "description": "Query validated biodiversity prediction context for a canonical destination/location.",
+      "usage": "Returns validated ML prediction context consumed by Experience Catalogue (Member 1).",
+      "source": "services/coastal-planner/Controllers/BiodiversityController.cs",
       "uiWorkflowIds": [
         "planner-recommendations",
         "planner-recommendation-result",
@@ -1097,6 +1107,22 @@
       ]
     },
     {
+      "id": "planner-itineraries-history",
+      "method": "GET",
+      "path": "/api/planner/itineraries/{itineraryId:guid}/re-evaluations",
+      "operationId": "GetEvaluationHistory",
+      "auth": "permission:planner.itineraries.manage",
+      "description": "Returns the latest 20 persisted condition review snapshots for a caller-owned trip.",
+      "usage": "Shows previous/current evidence, review actions and timestamps without changing selected experiences.",
+      "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "status": "implemented",
+      "uiWorkflowIds": [
+        "planner-trip-management"
+      ]
+    },
+    {
       "id": "planner-itineraries-get",
       "method": "GET",
       "path": "/api/planner/itineraries/{itineraryId:guid}",
@@ -1113,7 +1139,47 @@
         "planner-trip-management",
         "planner-plan"
       ]
-    },
+    }
+  ]
+}
+    {
+      "id": "planner-catalogue",
+      "method": "GET",
+      "path": "/api/planner/catalogue",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "operationId": "GetCatalogue",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Returns named destination and activity choices from the canonical experience catalogue.",
+      "usage": "Clients select names; canonical IDs remain inside requests. An absent or invalid source returns UNAVAILABLE without invented destinations. The public recommendations home page and the dedicated planning page both read from this endpoint without signing in.",
+      "source": "services/coastal-planner/Controllers/CatalogueController.cs",
+      "uiWorkflowIds": [
+        "planner-recommendations",
+        "planner-plan"
+      ]
+    }
+  ]
+}
+    {
+      "id": "planner-catalogue",
+      "method": "GET",
+      "path": "/api/planner/catalogue",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "operationId": "GetCatalogue",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Returns named destination and activity choices from the canonical experience catalogue.",
+      "usage": "Clients select names; canonical IDs remain inside requests. An absent or invalid source returns UNAVAILABLE without invented destinations. The public recommendations home page and the dedicated planning page both read from this endpoint without signing in.",
+      "source": "services/coastal-planner/Controllers/CatalogueController.cs",
+      "uiWorkflowIds": [
+        "planner-recommendations",
+        "planner-plan"
+      ]
+    }
+  ]
+}
     {
       "id": "planner-itineraries-update",
       "method": "PUT",
@@ -1150,6 +1216,23 @@
       ]
     },
     {
+      "id": "planner-itineraries-delete",
+      "method": "DELETE",
+      "path": "/api/planner/itineraries/{itineraryId:guid}",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "operationId": "DeleteItinerary",
+      "status": "implemented",
+      "auth": "permission:planner.itineraries.manage",
+      "description": "Delete a caller-owned itinerary.",
+      "usage": "Removes an itinerary owned by the authenticated caller. Available for both draft and confirmed itineraries.",
+      "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
+      "uiWorkflowIds": [
+        "planner-trip-management",
+        "planner-plan"
+      ]
+    },
+    {
       "id": "planner-itineraries-reevaluate",
       "method": "POST",
       "path": "/api/planner/itineraries/{itineraryId:guid}/re-evaluations",
@@ -1162,43 +1245,73 @@
       "usage": "Atomically records previous/current evidence, review snapshot and a new optimistic version; HasChanges and RequiresReview have separate meanings. Available for both draft and confirmed itineraries.",
       "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
       "uiWorkflowIds": [
-        "planner-trip-management",
-        "planner-plan"
-      ]
-    },
-    {
-      "id": "planner-biodiversity-predictions",
-      "method": "GET",
-      "path": "/api/planner/biodiversity/predictions",
-      "ownerService": "coastal-planner",
-      "publicBoundary": "api",
-      "operationId": "GetPredictions",
-      "status": "implemented",
-      "auth": "permission:planner.biodiversity.read",
-      "description": "Query validated biodiversity prediction context for a canonical destination/location.",
-      "usage": "Returns validated ML prediction context consumed by Experience Catalogue (Member 1).",
-      "source": "services/coastal-planner/Controllers/BiodiversityController.cs",
-      "uiWorkflowIds": [
-        "planner-recommendations",
-        "planner-recommendation-result",
-        "planner-plan"
-      ]
-    },
+      "planner-trip-management"
+    ]
+  },
+  {"id": "planner-itineraries-confirm",
+    "method": "POST",
+    "path": "/api/planner/itineraries/{itineraryId:guid}/confirm",
+    "ownerService": "coastal-planner",
+    "publicBoundary": "api",
+    "operationId": "ConfirmItinerary",
+    "auth": "permission:planner.itineraries.manage",
+    "description": "Confirm a caller-owned draft itinerary so it can be processed.",
+    "usage": "Changes a draft trip to confirmed. Used by the trip detail page and the planning page when the user confirms a newly created trip.",
+    "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
+    "status": "implemented",
+    "uiWorkflowIds": [
+      "planner-trip-management",
+      "planner-plan"
+    ]
+  },
+  {
+    "id": "planner-biodiversity-predictions",
+    "method": "GET",
+    "path": "/api/planner/biodiversity/predictions",
+    "ownerService": "coastal-planner",
+    "publicBoundary": "api",
+    "operationId": "GetPredictions",
+    "status": "implemented",
+    "auth": "permission:planner.biodiversity.read",
+    "description": "Query validated biodiversity prediction context for a canonical destination/location.",
+    "usage": "Returns validated ML prediction context consumed by Experience Catalogue (Member 1).",
+    "source": "services/coastal-planner/Controllers/BiodiversityController.cs",
+    "uiWorkflowIds": [
+      "planner-recommendations",
+      "planner-recommendation-result",
+      "planner-plan"
+    ]
+  },
+  {
+    "id": "planner-itineraries-confirm-legacy",
+    "method": "POST",
+    "path": "/api/planner/itineraries/confirm",
+    "ownerService": "coastal-planner",
+    "publicBoundary": "api",
+    "operationId": "ConfirmItinerary",
+    "status": "deprecated",
+    "auth": "permission:planner.itineraries.manage",
+    "description": "Legacy confirm path present in the current controller route table; do not advertise as a supported public workflow.",
+    "usage": "Catalogued only to explain a route the current controller still exposes; no UI workflow uses it.",
+    "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
+    "uiWorkflowIds": []
+  },
     {
       "id": "planner-catalogue",
       "method": "GET",
       "path": "/api/planner/catalogue",
       "operationId": "GetCatalogue",
-      "auth": "permission:planner.recommendations.create",
-      "description": "Returns named destination and activity choices from the canonical experience catalogue.",
-      "usage": "Clients select names; canonical IDs remain inside requests. An absent or invalid source returns UNAVAILABLE without invented destinations.",
-      "source": "services/coastal-planner/Controllers/CatalogueController.cs",
-      "ownerService": "coastal-planner",
-      "publicBoundary": "api",
-      "status": "implemented",
-      "uiWorkflowIds": [
-        "planner-recommendations"
-      ]
+    "auth": "anonymous",
+    "description": "Returns named destination and activity choices from the canonical experience catalogue.",
+    "usage": "Clients select names; canonical IDs remain inside requests. An absent or invalid source returns UNAVAILABLE without invented destinations. The public recommendations home page and the dedicated planning page both read from this endpoint without signing in.",
+    "source": "services/coastal-planner/Controllers/CatalogueController.cs",
+    "ownerService": "coastal-planner",
+    "publicBoundary": "api",
+    "status": "implemented",
+    "uiWorkflowIds": [
+      "planner-recommendations",
+      "planner-plan"
+    ]
     },
     {
       "id": "planner-itineraries-history",
@@ -1214,6 +1327,23 @@
       "status": "implemented",
       "uiWorkflowIds": [
         "planner-trip-management"
+      ]
+    },
+    {
+      "id": "planner-catalogue",
+      "method": "GET",
+      "path": "/api/planner/catalogue",
+      "operationId": "GetCatalogue",
+      "auth": "anonymous",
+      "description": "Returns named destination and activity choices from the canonical experience catalogue.",
+      "usage": "Clients select names; canonical IDs remain inside requests. An absent or invalid source returns UNAVAILABLE without invented destinations. The public recommendations home page and the dedicated planning page both read from this endpoint without signing in.",
+      "source": "services/coastal-planner/Controllers/CatalogueController.cs",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "status": "implemented",
+      "uiWorkflowIds": [
+        "planner-recommendations",
+        "planner-plan"
       ]
     }
   ],

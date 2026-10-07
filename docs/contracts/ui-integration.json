@@ -117,6 +117,34 @@
       ]
     },
     {
+      "id": "planner-plan",
+      "status": "in_progress",
+      "description": "Dedicated coastal trip planning page: pick a destination, time window, experience level and optional wildlife context, generate recommendation candidates, then save or append a trip as a draft or confirmed itinerary. React implemented; Flutter parity is pending.",
+      "web": {
+        "route": "/planner/plan",
+        "source": "apps/web/src/app/routes.tsx",
+        "status": "implemented"
+      },
+      "mobile": {
+        "route": "/planner/plan",
+        "source": "apps/mobile/lib/main.dart",
+        "status": "planned"
+      },
+      "apiRefs": [
+        "planner-catalogue",
+        "planner-recommendations-create",
+        "planner-recommendations-get",
+        "planner-workflows-get",
+        "planner-biodiversity-predictions",
+        "planner-itineraries-create",
+        "planner-itineraries-list",
+        "planner-itineraries-get",
+        "planner-itineraries-update",
+        "planner-itineraries-confirm",
+        "planner-recommendations-highlights"
+      ]
+    },
+    {
       "id": "planner-recommendations",
       "status": "in_progress",
       "description": "React uses named catalogue choices, local destination time, optional activities and safe recommendation evidence. Flutter screen parity and live member-service contracts remain pending.",
