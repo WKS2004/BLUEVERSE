@@ -1,6 +1,8 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Blueverse.CoastalPlanner.Authorization;
+using Blueverse.CoastalPlanner.Integration;
 using Blueverse.CoastalPlanner.Models.Dtos;
 using Blueverse.CoastalPlanner.Services;
 
@@ -8,7 +10,7 @@ namespace Blueverse.CoastalPlanner.Controllers;
 
 [ApiController]
 [Route("api/planner/recommendations")]
-public class RecommendationsController(ICoastalPlannerService plannerService) : ControllerBase
+public class RecommendationsController(ICoastalPlannerService plannerService, IPeerServicesClient peerClient) : ControllerBase
 {
     [HttpPost]
     [HasPermission("planner.recommendations.create")]
@@ -106,7 +108,6 @@ public class RecommendationsController(ICoastalPlannerService plannerService) : 
 
     private async Task<List<RecommendationHighlightDto>> GetCatalogueHighlightsAsync(CancellationToken ct)
     {
-        var peerClient = plannerService.GetPeerClient();
         var (catalogueItems, responded, _) = await peerClient.GetCatalogueOfferingsAsync(Guid.Empty, null, ct);
         if (!responded || catalogueItems.Count == 0)
         {
@@ -166,7 +167,7 @@ public class RecommendationsController(ICoastalPlannerService plannerService) : 
             ItemCount: itinerary.Items.Count);
     }
 
-    private static bool TryGetUserId(out Guid userId)
+    private bool TryGetUserId(out Guid userId)
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
         return Guid.TryParse(userIdStr, out userId) && userId != Guid.Empty;

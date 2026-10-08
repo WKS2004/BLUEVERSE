@@ -370,7 +370,7 @@ public partial class CoastalPlannerService : ICoastalPlannerService
             .Take(Math.Clamp(pageSize, 1, 100))
             .ToListAsync(ct);
 
-        return itineraries.Select(MapItineraryToDto).ToList();
+        return itineraries.Select(itinerary => MapItineraryToDto(itinerary)).ToList();
     }
 
     public async Task<ItineraryDto?> GetItineraryAsync(Guid itineraryId, Guid ownerUserId, CancellationToken ct = default)
@@ -510,6 +510,11 @@ public partial class CoastalPlannerService : ICoastalPlannerService
             .FirstOrDefaultAsync(i => i.ItineraryId == itineraryId && i.OwnerUserId == ownerUserId, ct);
 
         if (itinerary == null) return false;
+
+        if (itinerary.Status == ItineraryStatus.Confirmed)
+        {
+            throw new InvalidOperationException("A confirmed trip cannot be cancelled.");
+        }
 
         _db.Itineraries.Remove(itinerary);
         await _db.SaveChangesAsync(ct);
@@ -828,7 +833,7 @@ public partial class CoastalPlannerService : ICoastalPlannerService
             LastOperationalStatus: item.LastOperationalStatus,
             AdvisoryNote: item.AdvisoryNote,
             TimeZone: item.TimeZone,
-            FitScore: item.FitScore).ToList();
+            FitScore: item.FitScore)).ToList();
 
         var featuredActivityTitle = featuredActivityId.HasValue
             ? items.FirstOrDefault(item => item.ActivityId == featuredActivityId)?.Title

@@ -133,3 +133,16 @@ This log records AI-assisted contributions for Adithya Gunawardana (`@AdithyaGun
 - AI output accepted/changed/rejected: Accepted the logged prompt summary as the session record. Did not change application source in this turn; contract/docs work is in progress and not yet verified to a completion claim.
 - Verification/evidence: Updated `docs/ai-contribution/AdithyaGunawardana-ai-usage.md` with this entry.
 
+## 2026-10-08 — Coastal Planner route repair and recommendation-home update
+
+- Date/time or time range: 2026-10-08 (current working session).
+- GitHub Username: `AdithyaGunawardana`
+- Team Member Name (actual): Adithya Gunawardana
+- Agent Name: GitHub Copilot
+- Tool/App: Visual Studio Code
+- AI Model: GitHub Copilot
+- Summary of the user's request: Remove unnecessary Python files and repair the Coastal Planner so `/planner` shows recommendations, `/planner/plan` owns trip planning, drafts remain editable/cancellable, and confirmed trips cannot be changed or cancelled.
+- Summary of what the AI Agent did: Removed unreferenced branch scratch/catalogue-rewrite Python helpers while preserving canonical validators; fixed Coastal Planner backend syntax, authorization, route binding, DTO and projection defects; fixed React planner type/API defects; implemented the recommendation home with real highlight cards; removed confirmed-trip deletion from React and rejected confirmed cancellation in the service; synchronized endpoint/UI catalogs and documentation.
+- AI output accepted/changed/rejected: Accepted scoped Member 3 changes. Kept Flutter planner parity marked planned because no Flutter planner screens/routes existed. Kept existing planner tests unchanged where they encode the previous `/planner` form behavior pending explicit approval to revise them.
+- Verification/evidence: Coastal Planner tests passed (106/106); backend build passed; React production build and lint passed; endpoint catalog and UI integration validation passed. Full React test run hit Node memory limits, and focused legacy planner tests expect the old `/planner` form. Live peer-service data, Flutter parity and G07 Agentic AI runtime remain pending.
+

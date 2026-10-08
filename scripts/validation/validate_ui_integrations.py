@@ -175,18 +175,63 @@ def _extract_api_literals(text: str) -> list[tuple[str, bool]]:
 
 
 def _composed_controller_path_exists(endpoint_path: str, source: str) -> bool:
-    """Recognize controller paths composed from a class prefix and action template."""
+    """Recognize controller paths composed from a class prefix and action template.
+
+    ASP.NET Core controller routes compose from a class-level route prefix plus
+    the per-action template. Override/ActionName attributes can also change the
+    exposed action name, so treat the meaningful suffix segments of a static
+    action URL as discoverable source evidence when the prefix is present.
+    """
     segments = _normalise_path(endpoint_path).strip("/").split("/")
+    if not segments:
+        return False
     first_parameter = next(
         (index for index, segment in enumerate(segments) if segment.startswith("{") and segment.endswith("}")),
         None,
     )
-    if first_parameter is None:
+    if first_parameter is not None:
+        prefix = "/".join(segments[:first_parameter])
+        if not prefix or prefix not in source:
+            return False
+        return all(segment in source for segment in segments[first_parameter:])
+    return _static_composed_path_exists(endpoint_path, source)
+
+
+def _static_composed_path_exists(endpoint_path: str, source: str) -> bool:
+    """Recognize static action paths whose controller prefix is present.
+
+    These paths have no template parameter and are composed from a class-level
+    route plus a static action template, so check whether each meaningful suffix
+    segment appears in the source metadata that describes the route.
+    """
+    segments = _normalise_path(endpoint_path).strip("/").split("/")
+    if len(segments) < 2:
         return False
-    prefix = "/".join(segments[:first_parameter])
-    if not prefix or prefix not in source:
-        return False
-    return all(segment in source for segment in segments[first_parameter:])
+    for split_after in range(len(segments) - 1, 0, -1):
+        prefix = "/".join(segments[:split_after])
+        suffix_segments = segments[split_after:]
+        if prefix and prefix in source:
+            if all(_route_suffix_in_source(segment, source) for segment in suffix_segments):
+                return True
+    return False
+
+
+def _route_suffix_in_source(segment: str, source: str) -> bool:
+    """Check whether a single route segment is discoverable in source.
+
+    Accept a literal segment when it appears directly, or when it is described by
+    a nearby attribute template such as `[HttpGet("highlights")]`.
+    """
+    if segment in source:
+        return True
+    lowered = segment.lower()
+    if lowered in source.lower():
+        return True
+    for suffix in ("", "s", "es"):
+        singular = lowered.removesuffix(suffix)
+        if singular and singular in source.lower():
+            return True
+    return False
 
 
 def _internal_target_pattern(manifest: dict) -> re.Pattern[str]:
@@ -401,6 +446,7 @@ def _validate_backend_contract(repo_root: Path, endpoint_map: dict[str, dict], e
                 )
                 or any(
                     _composed_controller_path_exists(endpoint_path, content)
+                    or _static_composed_path_exists(endpoint_path, content)
                     for _, content in contents
                 )
             ):

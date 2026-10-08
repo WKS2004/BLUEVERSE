@@ -11,6 +11,11 @@ wildlife context. Users can save a named trip, add a suggestion to an existing
 trip, browse saved trips, edit notes and schedules, reorder or remove stops,
 review current conditions and inspect history, and confirm deletion.
 
+The React `/planner` route is the public recommendation home with current
+highlight cards and a `Plan a trip` action. `/planner/plan` is the protected
+planning form. Draft trips can be edited or cancelled; confirmed trips cannot
+be edited or cancelled.
+
 Optimistic updates use `concurrencyVersion`. Stable item IDs survive reorder
 and note edits. Changing a stop's schedule resets its previous condition
 evidence to `UNKNOWN`. Reordering uses temporary unused order values inside a

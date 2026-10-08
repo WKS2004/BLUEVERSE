@@ -512,15 +512,6 @@ function Trip() {
                 </>
               )}
 
-              {trip?.status === 'Confirmed' && (
-                <button
-                  disabled={busy}
-                  className="mt-8 min-h-11 rounded-full px-2 text-sm font-semibold text-coast-muted underline underline-offset-4 focus-visible:outline-2"
-                  onClick={() => confirmDelete.current?.showModal()}
-                >
-                  Delete this trip
-                </button>
-              )}
             </aside>
           </div>
 

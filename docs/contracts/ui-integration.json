@@ -140,8 +140,7 @@
         "planner-itineraries-list",
         "planner-itineraries-get",
         "planner-itineraries-update",
-        "planner-itineraries-confirm",
-        "planner-recommendations-highlights"
+        "planner-itineraries-confirm"
       ]
     },
     {
@@ -158,11 +157,11 @@
         "status": "planned"
       },
       "apiRefs": [
+        "planner-recommendations-highlights",
         "planner-recommendations-create",
         "planner-recommendations-get",
         "planner-workflows-get",
-        "planner-biodiversity-predictions",
-        "planner-catalogue"
+        "planner-biodiversity-predictions"
       ]
     },
     {
@@ -327,12 +326,29 @@
         "planner-itineraries-get",
         "planner-itineraries-update",
         "planner-itineraries-delete",
+        "planner-itineraries-confirm",
         "planner-itineraries-reevaluate",
         "planner-itineraries-history"
       ]
     }
   ],
   "endpoints": [
+    {
+      "id": "planner-recommendations-highlights",
+      "method": "GET",
+      "path": "/api/planner/recommendations/highlights",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "GetHighlights"
+    },
+    {
+      "id": "planner-itineraries-confirm",
+      "method": "POST",
+      "path": "/api/planner/itineraries/{itineraryId:guid}/confirm",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "ConfirmItinerary"
+    },
     {
       "id": "auth-register",
       "method": "POST",

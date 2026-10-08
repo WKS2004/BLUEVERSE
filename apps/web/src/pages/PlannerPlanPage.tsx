@@ -6,21 +6,17 @@ import { useAuthSession } from '../features/auth/authSession'
 import { hasAllPermissions } from '../features/authorization/permissions'
 
 import {
-  confirmItinerary,
   createItinerary,
   createRecommendations,
   getPlannerCatalogue,
-  getRecommendationHighlights,
-  listItineraries,
-  getItinerary,
-  updateItinerary,
   type Itinerary,
-  type ItineraryItem,
+  type ItineraryItemInput,
   type PlannerCatalogue,
   type RecommendationCandidate,
   type RecommendationResult,
 } from '../features/planner/plannerApi'
-import { dateTime, plannerError, utcTime, validatePlanningWindow, wallTime } from '../features/planner/plannerPresentation'
+import { dateTime, plannerError, utcTime, validatePlanningWindow } from '../features/planner/plannerPresentation'
+import { authEntryHrefFor } from '../features/auth/authNavigation'
 
 
 export default function PlannerPlanPage() {
@@ -32,7 +28,6 @@ export default function PlannerPlanPage() {
     </div>
   )
 }
-
 function PlannerPlan() {
   return (
     <>
@@ -48,7 +43,6 @@ function TripPlanContent() {
   const navigate = useNavigate()
   const { user, status } = useAuthSession()
   const [catalogue, setCatalogue] = useState<PlannerCatalogue | null>(null)
-  const [loading, setLoading] = useState(true)
   const [reload, setReload] = useState(0)
   const [destinationId, setDestinationId] = useState('')
   const [activities, setActivities] = useState<string[]>([])
@@ -67,11 +61,10 @@ function TripPlanContent() {
   const [appendTo, setAppendTo] = useState('')
   const [tripPage, setTripPage] = useState(1)
   const [saving, setSaving] = useState(false)
-  const [draftTrip, setDraftTrip] = useState<Itinerary | null>(null)
   const [draftError, setDraftError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const saveDialog = useRef<HTMLDialogElement>(null)
-  const saveError = useRef<string | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   useEffect(() => {
     let current = true
@@ -79,22 +72,11 @@ function TripPlanContent() {
       if (!current) return
       setCatalogue(value as PlannerCatalogue)
       setError(null)
-    }).catch(cause => { if (current) setError(plannerError(cause)) }).finally(() => { if (current) setLoading(false) })
+    }).catch(cause => { if (current) setError(plannerError(cause)) })
     return () => { current = false }
   }, [reload])
 
   const destination = catalogue?.destinations.find(d => d.destinationId === destinationId)
-  const [highlights, setHighlights] = useState<(typeof catalogue)['destinations'][number]['activities'][number][]>([])
-
-  useEffect(() => {
-    let current = true
-    getRecommendationHighlights().then(highlights => {
-      if (!current) return
-      setHighlights(highlights.length ? [] : [])
-    }).catch(() => { if (current) setHighlights([]) }).finally(() => {})
-    return () => { current = false }
-  }, [])
-
   async function submit(event: React.FormEvent) {
     event.preventDefault()
     if (busy) return
@@ -119,18 +101,11 @@ function TripPlanContent() {
         includeBiodiversityContext: biodiversity,
       })
       setResult(suggestions)
+      const firstCandidate = suggestions.candidates[0] ?? null
+      setSelected(firstCandidate)
+      setTripTitle(firstCandidate?.title ?? '')
       setNotice(null)
     } catch (cause) { setError(plannerError(cause)) } finally { setBusy(false) }
-  }
-
-  function choose(candidate: RecommendationCandidate) {
-    setSelected(candidate)
-    setTripTitle(candidate.title)
-    setTripNotes('')
-    setSaveError(null)
-    setAppendTo('')
-    setSavedTrips(null)
-    saveDialog.current?.showModal()
   }
 
   async function loadSavedTrips(page = 1) {
@@ -151,7 +126,7 @@ function TripPlanContent() {
     try {
       if (appendTo) {
         const previous = await getItinerary(appendTo)
-        const extra: ItineraryItem = {
+        const extra: ItineraryItemInput = {
           destinationId: selected.destinationId,
           activityId: selected.activityId,
           offeringId: selected.offeringId,
@@ -197,23 +172,9 @@ function TripPlanContent() {
       navigate(`/planner/itineraries/${encodeURIComponent(trip.itineraryId)}`)
     } catch (cause) {
       setDraftError(plannerError(cause))
-      saveError.current = plannerError(cause)
+      setSaveError(plannerError(cause))
     } finally {
       setSaving(false)
-    }
-  }
-
-  async function confirmItinerary(itineraryId: string) {
-    if (busy) return
-    setBusy(true)
-    setNotice(null)
-    try {
-      const updated = await confirmItineraryApi(itineraryId)
-      navigate(`/planner/itineraries/${encodeURIComponent(updated.itineraryId)}`)
-    } catch (cause) {
-      setDraftError(plannerError(cause))
-    } finally {
-      setBusy(false)
     }
   }
 
@@ -449,7 +410,7 @@ function TripPlanContent() {
           <h3 className="text-lg font-bold">Destinations aren’t available right now.</h3>
           <p className="mt-2 text-sm leading-6 text-coast-muted">{catalogue.message ?? 'Please try again shortly.'}</p>
           <div className="mt-5 flex flex-wrap gap-3">
-            <button className={secondaryButton} onClick={() => { setLoading(true); setReload(n => n + 1) }}>
+            <button className={secondaryButton} onClick={() => { setReload(n => n + 1) }}>
               Try again
             </button>
             {hasAllPermissions(user, ['planner.itineraries.manage']) && (
@@ -537,7 +498,7 @@ function TripPlanContent() {
             </div>
           )}
 
-          {saveError.current && <p role="alert" className="mt-4 text-sm text-amber-900">{saveError.current}</p>}
+          {saveError && <p role="alert" className="mt-4 text-sm text-amber-900">{saveError}</p>}
 
           <div className="mt-6 flex flex-wrap gap-3">
             <button disabled={busy || !tripTitle.trim()} className={primaryButton} type="submit">
@@ -621,7 +582,6 @@ async function getItinerary(id: string): Promise<Itinerary> {
   }
   return payload as Itinerary
 }
-
 async function updateItinerary(id: string, input: {
   title: string
   description: string | null
@@ -629,7 +589,7 @@ async function updateItinerary(id: string, input: {
   concurrencyVersion: number
   startsAt: string
   endsAt: string
-  items: ItineraryItem[]
+  items: ItineraryItemInput[]
   recommendationId?: string
 }): Promise<Itinerary> {
   const response = await fetch(`/api/planner/itineraries/${encodeURIComponent(id)}`, {
@@ -659,29 +619,3 @@ async function updateItinerary(id: string, input: {
   return payload as Itinerary
 }
 
-async function confirmItineraryApi(id: string): Promise<Itinerary> {
-  const response = await fetch(`/api/planner/itineraries/${encodeURIComponent(id)}/confirm`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { Accept: 'application/json' },
-    signal: AbortSignal.timeout(20000),
-  })
-  if (!response.ok) {
-    const text = await response.text()
-    let detail = null
-    try {
-      const payload = JSON.parse(text)
-      if (typeof payload === 'object' && payload !== null && 'detail' in payload && typeof payload.detail === 'string') {
-        detail = payload.detail
-      }
-    } catch {
-      // ignore malformed responses
-    }
-    throw new Error(detail ?? 'We couldn’t confirm that trip just now. Please try again.')
-  }
-  const payload = (await response.json()) as unknown
-  if (!payload || typeof payload !== 'object' || !('itineraryId' in payload)) {
-    throw new Error('We couldn’t read the confirmed trip just now. Please try again.')
-  }
-  return payload as Itinerary
-}

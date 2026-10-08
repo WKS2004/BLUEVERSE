@@ -175,7 +175,7 @@ export type ItineraryInput = {
   timeZone?: string
 }
 
-export type Itinerary = ItineraryInput & {
+export type Itinerary = Omit<ItineraryInput, 'items'> & {
   itineraryId: string
   ownerUserId: string
   concurrencyVersion: number
@@ -314,7 +314,7 @@ function isPrediction(value: unknown): boolean {
   )
 }
 
-function isHighlight(value: unknown): boolean {
+export function isHighlight(value: unknown): value is RecommendationHighlight {
   return (
     object(value) &&
     typeof value.id === 'string' &&
@@ -545,8 +545,13 @@ export function getRecommendationHighlights(): Promise<RecommendationHighlight[]
       signal: AbortSignal.timeout(15000),
     })
   )
-  const checkedPromise = requestPromise.then(value => checked(value, v => Array.isArray(v) && v.every(isHighlight)))
-  plannerHighlightsCache.set('highlights', checkedPromise.catch(() => checkedPromise))
+  const checkedPromise: Promise<RecommendationHighlight[]> = requestPromise.then(value => {
+    if (!Array.isArray(value) || !value.every(isHighlight)) {
+      throw new PlannerApiError(502, 'We couldn’t read the coastal highlights. Please try again.')
+    }
+    return value
+  })
+  plannerHighlightsCache.set('highlights', checkedPromise)
   return checkedPromise
 }
 

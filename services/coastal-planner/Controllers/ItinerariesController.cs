@@ -24,7 +24,7 @@ public class ItinerariesController : ControllerBase
         return Guid.TryParse(userIdStr, out userId) && userId != Guid.Empty;
     }
 
-    [HttpPost("confirm")]
+    [HttpPost("{itineraryId:guid}/confirm")]
     [HasPermission("planner.itineraries.manage")]
     public async Task<ActionResult<ItineraryDto>> ConfirmItinerary(
         [FromRoute] Guid itineraryId,
@@ -45,12 +45,6 @@ public class ItinerariesController : ControllerBase
         }
 
         return Ok(result);
-    }
-
-    private bool TryGetUserId(out Guid userId)
-    {
-        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
-        return Guid.TryParse(userIdStr, out userId) && userId != Guid.Empty;
     }
 
     [HttpPost]
@@ -160,19 +154,26 @@ public class ItinerariesController : ControllerBase
     {
         if (!TryGetUserId(out var userId)) return Unauthorized();
 
-        var success = await _plannerService.DeleteItineraryAsync(itineraryId, userId, ct);
-        if (!success)
+        try
         {
-            return NotFound(new ProblemDetails
+            var success = await _plannerService.DeleteItineraryAsync(itineraryId, userId, ct);
+            if (!success)
             {
-                Type = "https://tools.ietf.org/html/rfc7807",
-                Title = "Itinerary not found",
-                Status = StatusCodes.Status404NotFound,
-                Detail = $"Itinerary {itineraryId} not found."
-            });
-        }
+                return NotFound(new ProblemDetails
+                {
+                    Type = "https://tools.ietf.org/html/rfc7807",
+                    Title = "Itinerary not found",
+                    Status = StatusCodes.Status404NotFound,
+                    Detail = $"Itinerary {itineraryId} not found."
+                });
+            }
 
-        return NoContent();
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new ProblemDetails { Title = "Trip cannot be cancelled", Status = StatusCodes.Status409Conflict, Detail = ex.Message });
+        }
     }
 
     [HttpPost("{itineraryId:guid}/re-evaluations")]

@@ -1,3 +1,5 @@
+using Blueverse.CoastalPlanner.Data.Entities;
+
 namespace Blueverse.CoastalPlanner.Models.Dtos;
 
 public record RecommendationRequestDto(
@@ -74,7 +76,7 @@ public record ItineraryDto(
     int ConcurrencyVersion,
     DateTime CreatedAt,
     DateTime UpdatedAt,
-    ItineraryStatus Status,
+    string Status,
     List<ItineraryItemDto> Items,
     string TimeZone = "Asia/Colombo"
 );
@@ -181,8 +183,8 @@ public record RecommendationHighlightDto(
     string[] UncertaintyNotes,
     DateTime GeneratedAt,
     string Outcome,
-    int ItemCount,
-    RecommendationHighlightDto WithRecommendationId(Guid? value) => this with { RecommendationId = value });
+    int ItemCount
+);
 
 public record BiodiversityPredictionDto(
     Guid DestinationId,

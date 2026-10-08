@@ -47,12 +47,4 @@ export function validatePlanningWindow(startsAt: string, endsAt: string, hours: 
   return null
 }
 
-export function getRecommendationHighlights(): Promise<RecommendationHighlight[]> {
-  return import('./plannerApi').then(m => m.getRecommendationHighlights())
-}
-
-export { RecommendationHighlight }
-
-export function isHighlight(value: unknown): value is RecommendationHighlight {
-  return import('./plannerApi').then(m => m.isHighlight(value))
-}
+export type { RecommendationHighlight }

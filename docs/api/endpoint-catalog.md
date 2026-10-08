@@ -11,6 +11,7 @@ the smaller shared-client workflow contract.
 
 | Client | Route | Workflow | Use |
 |---|---|---|---|
+| react | `/planner/plan` | `planner-plan` | Authenticated coastal planner workflow for creating and confirming a trip. Anonymous visitors are redirected to sign in when they try to plan a trip; the recommendations page remains publicly visible. |
 | react | `/` | `foundation-home` | Introduces BLUEVERSE's coastal purpose and restores the signed-in account. Profile and dashboard links are available from the shared account menu; account switching is kept there rather than presented as a home session-management section. |
 | react | `/signin` | `auth-session-management` | Sign-in route for the React client. Uses the public Auth API and preserves a safe post-sign-in destination. |
 | react | `/signup` | `auth-registration` | Account creation route for the React client. Registration opens Profile after the new account is signed in. |
@@ -33,7 +34,7 @@ the smaller shared-client workflow contract.
 | react | `/500` | `server-error-recovery` | Explains the temporary interruption between the shared header and footer, provides retry and home actions, and keeps implementation details hidden. |
 | flutter | `/404` | `not-found-recovery` | Explains the missing page in coastal language and routes users back to the home page. |
 | flutter | `/500` | `server-error-recovery` | Explains the temporary interruption, provides retry and home actions, and keeps implementation details hidden. |
-| react | `/planner` | `planner-recommendations` | Renders the shared planner workflow for signed-in accounts; signed-out visitors are redirected to sign in. |
+| react | `/planner` | `planner-recommendations` | Publicly visible recommendations entry point. Planning actions require sign-in and the planner.recommendations.create permission. |
 | flutter | `/planner` | `planner-recommendations` | Implement and verify this screen before cross-platform acceptance. |
 | react | `/planner/recommendations/:recommendationId` | `planner-recommendation-result` | Revisit a caller-owned search and save or append a suggested experience. |
 | react | `/planner/saved` | `planner-saved-trips` | Paginated personal saved trips and recovery states. |
@@ -41,6 +42,7 @@ the smaller shared-client workflow contract.
 | flutter | `/planner/recommendations/:recommendationId` | `planner-recommendation-result` | Implement and verify Flutter parity before component acceptance. |
 | flutter | `/planner/saved` | `planner-saved-trips` | Implement and verify Flutter parity before component acceptance. |
 | flutter | `/planner/itineraries/:itineraryId` | `planner-trip-management` | Implement and verify Flutter parity before component acceptance. |
+| flutter | `/planner/plan` | `planner-plan` | Implement and verify Flutter parity before component acceptance. |
 
 ## Gateway and server routes
 
@@ -99,32 +101,34 @@ the smaller shared-client workflow contract.
 | `POST` | `/api/auth/roles` | `permission:all(auth.role.read,auth.role.create)` | Creates a role when the caller has both role-read and role-create permission. Supports authorized role administration. |
 | `PUT` | `/api/auth/roles/{id:guid}` | `permission:all(auth.role.read,auth.role.update)` | Updates role details when the caller has both role-read and role-update permission. Supports authorized role administration. |
 | `DELETE` | `/api/auth/roles/{id:guid}` | `permission:all(auth.role.read,auth.role.delete)` | Deletes an eligible non-system role when the caller has both role-read and role-delete permission. Supports authorized role administration. |
-| `POST` | `/api/auth/roles/{id:guid}/permissions` | `permission:all(auth.role.read,auth.role.update,auth.permission.read)` | Replaces a non-system roleâ€™s permission set. Requires role read, role update and permission catalogue read together; system-role grants remain protected. Role editors can grant or remove permissions from eligible non-system roles. The Auth service checks the callerâ€™s current role assignments and invalidates affected user sessions. |
+| `POST` | `/api/auth/roles/{id:guid}/permissions` | `permission:all(auth.role.read,auth.role.update,auth.permission.read)` | Replaces a non-system role's permission set. Requires role read, role update and permission catalogue read together; system-role grants remain protected. Role editors can grant or remove permissions from eligible non-system roles. The Auth service checks the caller's current role assignments and invalidates affected user sessions. |
 | `GET` | `/api/auth/users` | `permission:auth.user.read` | Lists users for authorized administration callers. Supports user administration and authorization inspection. |
 | `GET` | `/api/auth/users/{id:guid}` | `permission:auth.user.read` | Returns one user by identifier. Supports authorized user administration detail views. |
 | `POST` | `/api/auth/users` | `permission:all(auth.user.read,auth.user.create)` | Creates an account with user read and user create grants together; assigning initial roles also requires role read and any applicable system-role grant. Supports authorized user administration. |
 | `PUT` | `/api/auth/users/{id:guid}` | `permission:all(auth.user.read,auth.user.update)` | Updates account details, active state or password with user read and user update grants together. Supports authorized user administration. |
 | `DELETE` | `/api/auth/users/{id:guid}` | `permission:all(auth.user.read,auth.user.delete)` | Deletes an account with user read and user delete grants together, subject to protected system-role rules. Supports authorized user administration; a protected account's assigned system role names are included in the deletion rejection. |
-| `POST` | `/api/auth/users/{id:guid}/roles` | `permission:all(auth.user.read,auth.user.update,auth.role.read)` | Replaces an accountâ€™s roles with user read, user update and role read grants together; system-role changes require the dedicated grant. Authorized user editors can add or remove user roles; the service checks current caller grants, system-role constraints and invalidates the affected account sessions. |
+| `POST` | `/api/auth/users/{id:guid}/roles` | `permission:all(auth.user.read,auth.user.update,auth.role.read)` | Replaces an account's roles with user read, user update and role read grants together; system-role changes require the dedicated grant. Authorized user editors can add or remove user roles; the service checks current caller grants, system-role constraints and invalidates the affected account sessions. |
 
 ### coastal-planner
 
 | Method | Path | Authorization | Purpose and use |
 |---|---|---|---|
-| `GET` | `/api/planner/health` | `anonymous` | Reports Coastal Planner service and database readiness. Used by the exec-form .NET Docker readiness probe, API startup dependency and gateway diagnostics; missing peers do not prevent readiness. |
-| `GET` | `/api/planner/swagger/{documentName}/swagger.json` | `anonymous` | Returns the Coastal Planner OpenAPI document through the public API gateway. Used by the unified Swagger UI and contract inspection without exposing the internal service host. |
+| `GET` | `/api/planner/recommendations/highlights` | `anonymous` | Public coastal highlight cards drawn from the catalogue and recent confirmed trips. Provides the curated highlight cards shown on the public coastal planner home page and used by the planning page for signed-in visitors. |
+| `POST` | `/api/planner/itineraries/{itineraryId:guid}/confirm` | `permission:planner.itineraries.manage` | Confirm a caller-owned draft itinerary so it can be processed. Changes a draft trip to confirmed. Used by the trip detail page and the planning page when the user confirms a newly created trip. |
 | `POST` | `/api/planner/recommendations` | `permission:planner.recommendations.create` | Submit coastal preferences and generate candidates from validated catalogue, marine, and operations evidence. Fits verified offering intervals and experience levels; records MATCHES_FOUND, NO_MATCHES or DEPENDENCIES_UNAVAILABLE within a 40-second budget. |
 | `GET` | `/api/planner/recommendations/{recommendationId:guid}` | `permission:planner.recommendations.read` | Retrieve recommendation candidate details, suitability, and evidence. Retrieves the candidates and peer status notes for a recommendation session. |
-| `GET` | `/api/planner/workflows/{workflowId:guid}` | `permission:planner.workflows.read` | Get status and lifecycle of a planning workflow. Reads owner-scoped business lifecycle separately from private AI dependency availability and NOT_STARTED execution before accepted G07. |
-| `POST` | `/api/planner/itineraries` | `permission:planner.itineraries.manage` | Create a user-owned saved itinerary. Saves an owner itinerary with time zones; an optional recommendationId validates new selections against the owner snapshot and 15-minute lifetime. |
-| `GET` | `/api/planner/itineraries` | `permission:planner.itineraries.manage` | List the caller's saved itineraries. Returns paginated itineraries owned by the calling user. |
-| `GET` | `/api/planner/itineraries/{itineraryId:guid}` | `permission:planner.itineraries.manage` | Retrieve a specific itinerary with ordered items. Gets details of an itinerary owned by the authenticated caller. |
-| `PUT` | `/api/planner/itineraries/{itineraryId:guid}` | `permission:planner.itineraries.manage` | Update itinerary details, reorder items, or adjust dates. Preserves stop identity while editing and reordering; checks concurrencyVersion, rejects overlapping/duplicate stops and resets stale evidence after schedule changes. |
-| `DELETE` | `/api/planner/itineraries/{itineraryId:guid}` | `permission:planner.itineraries.manage` | Delete a caller-owned itinerary. Removes an itinerary owned by the authenticated caller. |
-| `POST` | `/api/planner/itineraries/{itineraryId:guid}/re-evaluations` | `permission:planner.itineraries.manage` | Evaluate existing itinerary against current marine suitability, availability, and operational restrictions. Atomically records previous/current evidence, review snapshot and a new optimistic version; HasChanges and RequiresReview have separate meanings. |
 | `GET` | `/api/planner/biodiversity/predictions` | `permission:planner.biodiversity.read` | Query validated biodiversity prediction context for a canonical destination/location. Returns validated ML prediction context consumed by Experience Catalogue (Member 1). |
-| `GET` | `/api/planner/catalogue` | `permission:planner.recommendations.create` | Returns named destination and activity choices from the canonical experience catalogue. Clients select names; canonical IDs remain inside requests. An absent or invalid source returns UNAVAILABLE without invented destinations. |
+| `GET` | `/api/planner/workflows/{workflowId:guid}` | `permission:planner.workflows.read` | Get status and lifecycle of a planning workflow. Reads owner-scoped business lifecycle separately from private AI dependency availability and NOT_STARTED execution before accepted G07. |
+| `POST` | `/api/planner/itineraries` | `permission:planner.itineraries.manage` | Create a user-owned saved itinerary. Saves an owner itinerary with time zones; an optional recommendationId validates new selections against the owner snapshot and 15-minute lifetime. New itineraries can be created as drafts or confirmed at creation time. |
+| `GET` | `/api/planner/itineraries` | `permission:planner.itineraries.manage` | List the caller's saved itineraries. Returns paginated itineraries owned by the calling user. Used by the saved trips page and by the planning page when appending to an existing trip. |
 | `GET` | `/api/planner/itineraries/{itineraryId:guid}/re-evaluations` | `permission:planner.itineraries.manage` | Returns the latest 20 persisted condition review snapshots for a caller-owned trip. Shows previous/current evidence, review actions and timestamps without changing selected experiences. |
+| `GET` | `/api/planner/itineraries/{itineraryId:guid}` | `permission:planner.itineraries.manage` | Retrieve a specific itinerary with ordered items. Gets details of an itinerary owned by the authenticated caller. |
+| `GET` | `/api/planner/catalogue` | `permission:planner.recommendations.create` | Returns named destination and activity choices from the canonical experience catalogue. Clients select names; canonical IDs remain inside requests. An absent or invalid source returns UNAVAILABLE without invented destinations. The protected dedicated planning page reads this endpoint. |
+| `PUT` | `/api/planner/itineraries/{itineraryId:guid}` | `permission:planner.itineraries.manage` | Update editable itinerary details, reorder items, or adjust dates. Preserves stop identity while editing and reordering; checks concurrencyVersion, rejects overlapping/duplicate stops and resets stale evidence after schedule changes. Confirmed trips cannot be edited. |
+| `DELETE` | `/api/planner/itineraries/{itineraryId:guid}` | `permission:planner.itineraries.manage` | Delete a caller-owned itinerary. Removes a caller-owned draft itinerary. Confirmed trips cannot be cancelled. |
+| `POST` | `/api/planner/itineraries/{itineraryId:guid}/re-evaluations` | `permission:planner.itineraries.manage` | Evaluate existing itinerary against current marine suitability, availability, and operational restrictions. Atomically records previous/current evidence, review snapshot and a new optimistic version; HasChanges and RequiresReview have separate meanings. Available for both draft and confirmed itineraries. |
+| `GET` | `/api/planner/health` | `anonymous` | Reports Coastal Planner service and database readiness. Used by the exec-form .NET Docker readiness probe, API startup dependency and gateway diagnostics; missing peers do not prevent readiness. |
+| `GET` | `/api/planner/swagger/{documentName}/swagger.json` | `anonymous` | Returns the Coastal Planner OpenAPI document through the public API gateway. Used by the unified Swagger UI and contract inspection without exposing the internal service host. |
 
 ## Test host only
 

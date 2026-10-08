@@ -9,7 +9,7 @@ namespace Blueverse.CoastalPlanner.Controllers;
 public sealed class CatalogueController(IPlannerCatalogueClient catalogue) : ControllerBase
 {
     [HttpGet]
-    [AllowAnonymous]
+    [HasPermission("planner.recommendations.create")]
     public async Task<ActionResult<PlannerCatalogueResult>> GetCatalogue(CancellationToken ct) =>
         Ok(await catalogue.GetDestinationsAsync(ct));
 }
