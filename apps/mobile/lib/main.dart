@@ -12,6 +12,8 @@ import 'ui/feedback/blueverse_error_screen.dart';
 import 'ui/feedback/blueverse_loading_screen.dart';
 import 'ui/feedback/loading_screen_controller.dart';
 import 'ui/onboarding_screen.dart';
+import 'ui/planner_screens.dart';
+import 'data/services/planner_api_service.dart';
 
 void main() {
   ErrorWidget.builder = blueverseUnexpectedErrorWidget;
@@ -105,6 +107,19 @@ class _MyAppState extends State<MyApp> {
         '/signup': (_) => AuthRegistrationScreen(viewModel: _authViewModel),
         '/profile': (_) => AuthProfileScreen(viewModel: _authViewModel),
         '/dashboard': (_) => AuthDashboardScreen(viewModel: _authViewModel),
+        '/planner': (_) => PlannerHomeScreen(api: PlannerApiService()),
+        '/planner/plan': (context) => PlannerPlanScreen(
+          user: _authViewModel.user,
+          api: PlannerApiService(),
+          routeArguments: ModalRoute.of(context)?.settings.arguments,
+        ),
+        '/planner/saved': (_) =>
+            PlannerSavedTripsScreen(api: PlannerApiService()),
+        '/planner/itinerary': (context) => PlannerItineraryScreen(
+          api: PlannerApiService(),
+          itineraryId:
+              ModalRoute.of(context)?.settings.arguments as String? ?? '',
+        ),
         '/admin': (_) => AuthAdminLandingScreen(viewModel: _authViewModel),
         '/admin/permissions': (_) => AuthAdminScreen(
           viewModel: _authViewModel,

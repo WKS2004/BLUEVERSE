@@ -278,9 +278,9 @@
       "route": "/planner",
       "source": "apps/mobile/lib/main.dart",
       "workflowId": "planner-recommendations",
-      "status": "planned",
-      "description": "Reserved parity route. The Flutter API client exists; the planner screen is not implemented.",
-      "usage": "Implement and verify this screen before cross-platform acceptance."
+      "status": "implemented",
+      "description": "Flutter recommendation home with public coastal highlights and a Plan a trip action.",
+      "usage": "Shows current public highlights through the public API and opens the protected planning form."
     },
     {
       "id": "react-planner-result",
@@ -328,19 +328,19 @@
       "route": "/planner/saved",
       "source": "apps/mobile/lib/main.dart",
       "workflowId": "planner-saved-trips",
-      "status": "planned",
-      "description": "Reserved parity route; Flutter screen is not implemented.",
-      "usage": "Implement and verify Flutter parity before component acceptance."
+      "status": "implemented",
+      "description": "Flutter saved-trip list with Draft and Confirmed lifecycle labels.",
+      "usage": "Lists caller-owned trips through the public API."
     },
     {
       "id": "flutter-planner-trip",
       "client": "flutter",
-      "route": "/planner/itineraries/:itineraryId",
+      "route": "/planner/itinerary",
       "source": "apps/mobile/lib/main.dart",
       "workflowId": "planner-trip-management",
-      "status": "planned",
-      "description": "Reserved parity route; Flutter screen is not implemented.",
-      "usage": "Implement and verify Flutter parity before component acceptance."
+      "status": "implemented",
+      "description": "Flutter trip detail with draft edit/delete/confirm actions and confirmed-trip condition review.",
+      "usage": "Loads caller-owned trip details from the public API and exposes lifecycle actions allowed for the current trip state."
     },
     {
       "id": "flutter-planner-plan",
@@ -348,9 +348,9 @@
       "route": "/planner/plan",
       "source": "apps/mobile/lib/main.dart",
       "workflowId": "planner-plan",
-      "status": "planned",
-      "description": "Reserved Flutter parity route; the mobile planner screen is not implemented.",
-      "usage": "Implement and verify Flutter parity before component acceptance."
+      "status": "implemented",
+      "description": "Flutter planning form with destination, activity, local date/time selection, recommendations and draft save.",
+      "usage": "Creates recommendations and saves selected experiences as caller-owned draft trips through the public API."
     }
   ],
   "gatewayRoutes": [
@@ -515,8 +515,8 @@
       "operationId": "GetHighlights",
       "status": "implemented",
       "auth": "anonymous",
-      "description": "Public coastal highlight cards drawn from the catalogue and recent confirmed trips.",
-      "usage": "Provides the curated highlight cards shown on the public coastal planner home page and used by the planning page for signed-in visitors.",
+      "description": "Public coastal highlight cards derived from current destination, experience offering, marine suitability, and operational-status data. Returns 503 when required catalogue or offering data is unavailable; returns an empty list when available data has no eligible highlights. Partial cards include uncertainty notes when some destination data is unavailable.",
+      "usage": "Provides curated highlight cards for the public coastal planner home page. Clients can distinguish a genuine empty result from unavailable peer-service data and display a retryable unavailable state.",
       "source": "services/coastal-planner/Controllers/RecommendationsController.cs",
       "uiWorkflowIds": [
         "planner-recommendations"

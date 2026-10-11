@@ -5,8 +5,8 @@ import assert from 'node:assert/strict'
 import { after, afterEach, test } from 'node:test'
 import { act, cleanup, closeWebTestServer, createElement, fireEvent, jsonResponse, loadWebModule,
   makeAuthSessionValue, makeAuthUser, renderInApp, resetTestBrowser, screen, waitFor } from '../../testSupport/reactTestHarness.js'
-const [{ default: PlannerPage }, { default: SavedTripsPage }, { default: ItineraryPage }, { Routes, Route }] = await Promise.all([
-  loadWebModule('/src/pages/PlannerPage.tsx'), loadWebModule('/src/pages/SavedTripsPage.tsx'), loadWebModule('/src/pages/ItineraryPage.tsx'), import('react-router')])
+const [{ default: PlannerPage }, { default: PlannerPlanPage }, { default: SavedTripsPage }, { default: ItineraryPage }, { Routes, Route }] = await Promise.all([
+  loadWebModule('/src/pages/PlannerPage.tsx'), loadWebModule('/src/pages/PlannerPlanPage.tsx'), loadWebModule('/src/pages/SavedTripsPage.tsx'), loadWebModule('/src/pages/ItineraryPage.tsx'), import('react-router')])
 const D = '3fa85f64-5717-4562-b3fc-2c963f66afa6', A = '4fa85f64-5717-4562-b3fc-2c963f66afa7', R = '5fa85f64-5717-4562-b3fc-2c963f66afa8', I = '6fa85f64-5717-4562-b3fc-2c963f66afa9'
 const permissions = ['planner.recommendations.create', 'planner.recommendations.read', 'planner.itineraries.manage', 'planner.workflows.read', 'planner.biodiversity.read']
 const start = new Date(Date.now() + 86400000).toISOString(), end = new Date(Date.parse(start) + 4 * 3600000).toISOString()
@@ -14,7 +14,7 @@ const options = { status: 'AVAILABLE', message: null, destinations: [{ destinati
 const candidate = { destinationId: D, activityId: A, offeringId: A, title: 'A morning in the lagoon', scheduledStart: start, scheduledEnd: end,
   availabilityStatus: 'AVAILABLE', suitability: { status: 'SUITABLE', marineConditionTime: start, safetyProfileId: D }, operationalStatus: 'OPEN', biodiversityContext: null, fitScore: .95, reasons: ['Published and available.', 'Marine conditions match the activity.'], timeZone: 'Asia/Colombo' }
 const recommendations = { recommendationId: R, workflowId: I, status: 'COMPLETED', generatedAt: new Date().toISOString(), candidates: [candidate], excludedCandidatesCount: 0, uncertaintyNotes: [] }
-const trip = { itineraryId: I, ownerUserId: D, title: 'Mirissa morning', description: 'Pack reef-safe sunscreen', startsAt: start, endsAt: end, timeZone: 'Asia/Colombo', concurrencyVersion: 1, createdAt: start, updatedAt: start,
+const trip = { itineraryId: I, ownerUserId: D, title: 'Mirissa morning', description: 'Pack reef-safe sunscreen', startsAt: start, endsAt: end, timeZone: 'Asia/Colombo', concurrencyVersion: 1, createdAt: start, updatedAt: start, status: 'Draft',
   items: [{ ...candidate, itemId: A, itineraryId: I, orderIndex: 0, lastSuitabilityStatus: 'UNKNOWN', lastAvailabilityStatus: 'UNKNOWN', lastOperationalStatus: 'UNKNOWN', advisoryNote: null }] }
 const evaluation = { evaluationId: R, itineraryId: I, evaluatedAt: start, hasChanges: true, requiresReview: true, concurrencyVersion: 2, summary: 'Review local guidance.', items: [{ itemId: A, previousAvailability: 'UNKNOWN', previousSuitability: 'UNKNOWN', previousOperationalStatus: 'UNKNOWN', currentAvailability: 'AVAILABLE', currentSuitability: 'CAUTION', currentOperationalStatus: 'OPEN', suggestedAction: 'REVIEW_CONDITIONS', advisoryMessage: 'Check the wind', marineConditionTime: start }] }
 const originalFetch = globalThis.fetch
@@ -28,14 +28,16 @@ function install(overrides = {}) {
     [`GET /api/planner/itineraries/${I}`]: trip, [`GET /api/planner/itineraries/${I}/re-evaluations`]: [], ...overrides }
   globalThis.fetch = async (input, init = {}) => {
     calls.push({ input, init })
-    const route = routes[`${init.method ?? 'GET'} ${input}`]
+    const key = `${init.method ?? 'GET'} ${input}`
+    const route = routes[key]
     assert.notEqual(route, undefined, `Unexpected public request: ${input}`)
     return typeof route === 'function' ? route(input, init) : jsonResponse(route)
   }
   return calls
 }
-function render(path = '/planner', auth = {}) {
+function render(path = '/planner/plan', auth = {}) {
   renderInApp(createElement(Routes, null,
+    createElement(Route, { path: '/planner/plan', element: createElement(PlannerPlanPage) }),
     createElement(Route, { path: '/planner', element: createElement(PlannerPage) }),
     createElement(Route, { path: '/planner/recommendations/:recommendationId', element: createElement(PlannerPage) }),
     createElement(Route, { path: '/planner/saved', element: createElement(SavedTripsPage) }),
@@ -54,17 +56,33 @@ function submit() { fireEvent.click(screen.getByRole('button', { name: /Find my 
 
 test('WEB-PLANNER-UI-001 signed-out and checking states do not make planner requests', () => {
   const calls = install()
-  render('/planner', { status: 'signed-out', user: null })
+  render('/planner/plan', { status: 'signed-out', user: null })
   assert.ok(screen.getByRole('heading', { name: 'Sign in to plan with the coast.' }))
   assert.equal(screen.queryByLabelText('Destination'), null)
-  cleanup(); render('/planner', { status: 'checking', user: null })
+  cleanup(); render('/planner/plan', { status: 'checking', user: null })
   assert.equal(screen.queryByLabelText('Destination'), null); assert.equal(calls.length, 0)
+})
+test('WEB-PLANNER-UI-000 recommendation home shows highlights and links to planning', async () => {
+  install({ 'GET /api/planner/recommendations/highlights': [{ id: R, title: 'Lagoon morning', destinationId: D, destinationName: 'Mirissa', activityId: A, activityName: 'Guided snorkelling', startsAt: start, endsAt: end, timeZone: 'Asia/Colombo', availabilityStatus: 'AVAILABLE', suitabilityStatus: 'SUITABLE', operationalStatus: 'OPEN', offeringId: A, fitScore: .9, recommendationId: null, uncertaintyNotes: [], generatedAt: start, outcome: 'MATCHES_FOUND', itemCount: 1 }] })
+  render('/planner')
+  await screen.findByRole('heading', { name: 'Coastal days to inspire you.' })
+  assert.ok(screen.getByText('Lagoon morning'))
+  assert.equal(screen.getAllByRole('link', { name: /Plan a trip/ })[0].getAttribute('href'), '/planner/plan')
+  assert.equal(screen.queryByRole('link', { name: 'Saved trips' }), null)
+  assert.equal(screen.queryByLabelText('Destination'), null)
+})
+test('WEB-PLANNER-UI-027 recommendation empty and failed states offer recovery', async () => {
+  install({ 'GET /api/planner/recommendations/highlights': [] }); render('/planner')
+  await screen.findByRole('heading', { name: 'No current coastal ideas.' }); assert.ok(screen.getByRole('button', { name: 'Try again' }))
+  cleanup(); install({ 'GET /api/planner/recommendations/highlights': () => jsonResponse({ detail: 'Offline' }, 503) }); render('/planner')
+  await screen.findByRole('alert'); assert.ok(screen.getByRole('button', { name: 'Try again' }))
 })
 test('WEB-PLANNER-UI-002 named choices have labeled defaults and no UUID text fields', async () => {
   install(); render(); await ready()
   assert.equal(document.getElementById('planner-destination').tagName, 'SELECT')
   assert.ok(screen.getByRole('option', { name: 'Mirissa · Southern coast' }))
   assert.equal(document.getElementById('planner-duration').value, '4')
+  assert.ok(screen.getByRole('option', { name: 'Steady · 4 hours' }))
   assert.equal(screen.getByLabelText('Your experience level').value, 'INTERMEDIATE')
   assert.equal(screen.getByLabelText(/Include wildlife context/).checked, true)
   assert.equal(document.querySelector('input[placeholder*="3fa85"]'), null)
@@ -85,9 +103,10 @@ test('WEB-PLANNER-UI-005 end before start is rejected', async () => {
   install(); render(); await ready(); fill(); set('planner-ends', document.getElementById('planner-starts').value); submit()
   assert.match(screen.getByRole('alert').textContent, /end of your trip must be after/)
 })
-test('WEB-PLANNER-UI-006 fractional, negative and too-long durations are rejected', async () => {
-  const calls = install(); render(); await ready(); fill()
-  for (const hours of ['0', '-1', '1.5', '9']) { set('planner-duration', hours); submit(); assert.match(screen.getByRole('alert').textContent, /whole number of hours/) }
+test('WEB-PLANNER-UI-006 configured pace duration is constrained by the chosen trip window', async () => {
+  const calls = install(); render(); await ready(); fill(); set('planner-ends', `${document.getElementById('planner-starts').value.slice(0, 11)}11:00`)
+  set('planner-duration', '8'); submit(); assert.match(screen.getByRole('alert').textContent, /whole number of hours that fits within your trip/)
+  assert.ok(screen.getByRole('option', { name: 'Relaxed · 2 hours' })); assert.ok(screen.getByRole('option', { name: 'Full day · 8 hours' }))
   assert.equal(calls.length, 1)
 })
 test('WEB-PLANNER-UI-007 past dates and dates beyond the planning horizon are rejected', async () => {
@@ -103,7 +122,7 @@ test('WEB-PLANNER-UI-008 activities are selected by name and sent as canonical I
   const body = JSON.parse(calls.find(c => c.init.method === 'POST').init.body)
   assert.deepEqual(body.preferredActivityIds, [A]); assert.equal(body.targetDestinationId, D)
   assert.match(body.startsAt, /T03:30:00.000Z$/)
-  assert.match(screen.getByTestId('router-location').textContent, new RegExp(R))
+  assert.equal(screen.getByTestId('router-location').textContent, '/planner/plan')
 })
 test('WEB-PLANNER-UI-009 result evidence, cautions and uncertainty remain visible', async () => {
   install({ [`GET /api/planner/recommendations/${R}`]: { ...recommendations, candidates: [{ ...candidate, suitability: { ...candidate.suitability, status: 'CAUTION' } }], uncertaintyNotes: ['Wildlife context unavailable.'] } })
@@ -156,7 +175,7 @@ test('WEB-PLANNER-UI-016 experience level and wildlife opt-out are submitted fai
   assert.equal(body.experienceLevel, 'BEGINNER'); assert.equal(body.includeBiodiversityContext, false)
 })
 test('WEB-PLANNER-UI-017 permission denial prevents catalogue requests and hides save actions', async () => {
-  const calls = install(); render('/planner', { user: makeAuthUser({ permissions: [] }) })
+  const calls = install(); render('/planner/plan', { user: makeAuthUser({ permissions: [] }) })
   assert.ok(screen.getByRole('heading', { name: 'Coastal planning access' })); assert.equal(calls.length, 0)
   cleanup(); render(`/planner/recommendations/${R}`, { user: makeAuthUser({ permissions: ['planner.recommendations.read'] }) })
   await screen.findByRole('heading', { name: candidate.title }); assert.equal(screen.queryByRole('button', { name: /Plan around this experience/ }), null)
@@ -165,14 +184,15 @@ test('WEB-PLANNER-UI-018 save uses a named trip and the owner recommendation ref
   const calls = install({ 'POST /api/planner/itineraries': trip }); render(`/planner/recommendations/${R}`)
   await screen.findByRole('heading', { name: candidate.title }); fireEvent.click(screen.getByRole('button', { name: /Plan around this experience/ }))
   fireEvent.change(screen.getByLabelText('Trip name'), { target: { value: 'Mirissa morning' } }); fireEvent.click(screen.getByRole('button', { name: 'Save my trip' }))
-  await screen.findByRole('heading', { name: trip.title }); const body = JSON.parse(calls.find(c => c.init.method === 'POST').init.body)
+  await screen.findByRole('heading', { name: trip.title }); assert.ok(screen.getByText('Draft')); assert.ok(screen.getByRole('button', { name: 'Edit trip' })); assert.ok(screen.getByRole('button', { name: 'Cancel this draft' })); const body = JSON.parse(calls.find(c => c.init.method === 'POST').init.body)
   assert.equal(body.recommendationId, R); assert.equal(body.title, 'Mirissa morning'); assert.equal(body.items[0].offeringId, A)
 })
 test('WEB-PLANNER-UI-019 saved trips show empty recovery and owner trip links', async () => {
   install({ 'GET /api/planner/itineraries?page=1&pageSize=20': [] }); render('/planner/saved')
-  await screen.findByRole('heading', { name: 'Your first coastal day awaits.' }); assert.ok(screen.getByRole('link', { name: 'Find a coastal experience' }))
-  cleanup(); install({ 'GET /api/planner/itineraries?page=1&pageSize=20': [trip] }); render('/planner/saved')
-  await screen.findByRole('heading', { name: trip.title }); assert.equal(screen.getByRole('link', { name: 'Open this trip' }).getAttribute('href'), `/planner/itineraries/${I}`)
+  await screen.findByRole('heading', { name: 'Your first coastal day awaits.' }); assert.equal(screen.getByRole('link', { name: 'Find a coastal experience' }).getAttribute('href'), '/planner/plan')
+  cleanup(); install({ 'GET /api/planner/itineraries?page=1&pageSize=20': [trip, { ...trip, itineraryId: R, title: 'Confirmed coast day', status: 'Confirmed' }] }); render('/planner/saved')
+  await screen.findByRole('heading', { name: trip.title }); assert.ok(screen.getAllByRole('link', { name: 'Open this trip' }).some(link => link.getAttribute('href') === `/planner/itineraries/${I}`))
+  assert.ok(screen.getByText('Draft')); assert.ok(screen.getByText('Confirmed')); assert.equal(screen.queryByRole('button', { name: /edit|cancel|remove/i }), null)
 })
 test('WEB-PLANNER-UI-020 editing preserves identity and sends optimistic version; conflicts keep the draft', async () => {
   const calls = install({ [`PUT /api/planner/itineraries/${I}`]: () => jsonResponse({ detail: 'Conflict' }, 409) })
@@ -182,8 +202,9 @@ test('WEB-PLANNER-UI-020 editing preserves identity and sends optimistic version
   const body = JSON.parse(calls.find(c => c.init.method === 'PUT').init.body); assert.equal(body.items[0].itemId, A); assert.equal(body.concurrencyVersion, 1)
 })
 test('WEB-PLANNER-UI-021 condition reviews show previous evidence and preserve selected times', async () => {
-  install({ [`POST /api/planner/itineraries/${I}/re-evaluations`]: evaluation })
+  install({ [`GET /api/planner/itineraries/${I}`]: { ...trip, status: 'Confirmed' }, [`POST /api/planner/itineraries/${I}/re-evaluations`]: evaluation })
   render(`/planner/itineraries/${I}`); await screen.findByRole('heading', { name: trip.title }); fireEvent.click(screen.getByRole('button', { name: 'Review current conditions' }))
+  assert.ok(screen.getByText('Confirmed')); assert.equal(screen.queryByRole('button', { name: 'Edit trip' }), null); assert.equal(screen.queryByRole('button', { name: 'Cancel this draft' }), null)
   await screen.findByText(/Your chosen experiences and times have been kept/); assert.ok(screen.getByText(/Not verified → Review caution/))
   assert.ok(screen.getByText('Review local guidance before proceeding.'))
 })
@@ -193,13 +214,24 @@ test('WEB-PLANNER-UI-022 removing a stop supports undo before persistence', asyn
   await screen.findByText('A little room in your day.'); fireEvent.click(screen.getByRole('button', { name: 'Undo removal' }))
   assert.ok(screen.getByRole('heading', { name: candidate.title })); assert.equal(calls.filter(c => c.init.method === 'PUT').length, 0)
 })
-test('WEB-PLANNER-UI-023 deleting a trip requires a named confirmation', async () => {
+test('WEB-PLANNER-UI-023 cancelling a draft requires a named confirmation', async () => {
   const calls = install({ [`DELETE /api/planner/itineraries/${I}`]: () => new Response(null, { status: 204 }), 'GET /api/planner/itineraries?page=1&pageSize=20': [] })
-  render(`/planner/itineraries/${I}`); await screen.findByRole('heading', { name: trip.title }); fireEvent.click(screen.getByRole('button', { name: 'Delete this trip' }))
-  assert.ok(screen.getByRole('heading', { name: 'Delete this saved trip?' })); assert.equal(calls.filter(c => c.init.method === 'DELETE').length, 0)
-  fireEvent.click(screen.getByRole('button', { name: 'Keep my trip' })); assert.equal(calls.filter(c => c.init.method === 'DELETE').length, 0)
-  fireEvent.click(screen.getByRole('button', { name: 'Delete this trip' })); fireEvent.click(screen.getByRole('button', { name: 'Delete trip' }))
+  render(`/planner/itineraries/${I}`); await screen.findByRole('heading', { name: trip.title }); fireEvent.click(screen.getByRole('button', { name: 'Cancel this draft' }))
+  assert.ok(screen.getByRole('heading', { name: 'Cancel this draft?' })); assert.equal(calls.filter(c => c.init.method === 'DELETE').length, 0)
+  fireEvent.click(screen.getByRole('button', { name: 'Keep draft' })); assert.equal(calls.filter(c => c.init.method === 'DELETE').length, 0)
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel this draft' })); fireEvent.click(screen.getByRole('button', { name: 'Cancel draft' }))
   await screen.findByRole('heading', { name: 'Your first coastal day awaits.' }); assert.equal(calls.filter(c => c.init.method === 'DELETE').length, 1)
+})
+
+test('WEB-PLANNER-UI-026 confirming a draft warns and leaves confirmed trip read-only', async () => {
+  const calls = install({ [`POST /api/planner/itineraries/${I}/confirm`]: { ...trip, status: 'Confirmed' } })
+  render(`/planner/itineraries/${I}`); await screen.findByRole('heading', { name: trip.title })
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm this trip' }))
+  assert.ok(screen.getByText(/can no longer be edited or cancelled/)); assert.equal(calls.filter(c => c.input.endsWith('/confirm')).length, 0)
+  fireEvent.click(screen.getByRole('button', { name: 'Keep as draft' })); assert.equal(calls.filter(c => c.input.endsWith('/confirm')).length, 0)
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm this trip' })); fireEvent.click(screen.getByRole('button', { name: 'Confirm trip' }))
+  await screen.findByText('Confirmed'); assert.equal(screen.queryByRole('button', { name: 'Edit trip' }), null); assert.equal(screen.queryByRole('button', { name: 'Cancel this draft' }), null)
+  assert.ok(screen.getByRole('button', { name: 'Review current conditions' }))
 })
 
 test('WEB-PLANNER-UI-024 adding a suggestion to an existing trip preserves identity and sends the current version', async () => {

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import PlannerLayout, { field, primaryButton, secondaryButton } from '../features/planner/PlannerLayout'
-import AccountAreaNavigation from '../components/account/AccountAreaNavigation'
 import { useAuthSession } from '../features/auth/authSession'
 import { hasAllPermissions } from '../features/authorization/permissions'
 
@@ -18,6 +17,20 @@ import {
 import { dateTime, plannerError, utcTime, validatePlanningWindow } from '../features/planner/plannerPresentation'
 import { authEntryHrefFor } from '../features/auth/authNavigation'
 
+const PLANNER_FORM_FIELDS = [
+  { name: 'destination', label: 'Destination', type: 'select', required: true, optionsSource: 'destinations', validation: 'required' },
+  { name: 'activities', label: 'What would you like to do?', type: 'multi-select', required: false, optionsSource: 'destinationActivities', validation: 'optional' },
+  { name: 'starts', label: 'Trip starts', type: 'datetime-local', required: true, optionsSource: null, validation: 'trip-window' },
+  { name: 'ends', label: 'Trip ends', type: 'datetime-local', required: true, optionsSource: null, validation: 'trip-window' },
+  { name: 'duration', label: 'Time for an experience', type: 'select', required: true, optionsSource: 'paceOptions', validation: 'duration-hours' },
+  { name: 'experience', label: 'Your experience level', type: 'select', required: true, optionsSource: 'experienceLevels', validation: 'valid-option' },
+  { name: 'biodiversity', label: 'Include wildlife context', type: 'checkbox', required: false, optionsSource: null, validation: 'optional' },
+  { name: 'tripTitle', label: 'Trip name', type: 'text', required: true, optionsSource: null, validation: 'max-150' },
+  { name: 'tripNotes', label: 'Your notes', type: 'textarea', required: false, optionsSource: null, validation: 'max-500' },
+] as const
+const PACE_OPTIONS = [{ value: '2', label: 'Relaxed · 2 hours' }, { value: '4', label: 'Steady · 4 hours' }, { value: '8', label: 'Full day · 8 hours' }]
+const EXPERIENCE_OPTIONS = [{ value: 'BEGINNER', label: 'Beginner' }, { value: 'INTERMEDIATE', label: 'Intermediate' }, { value: 'ADVANCED', label: 'Advanced' }]
+
 
 export default function PlannerPlanPage() {
   return (
@@ -31,7 +44,6 @@ export default function PlannerPlanPage() {
 function PlannerPlan() {
   return (
     <>
-      <AccountAreaNavigation active="planner" />
       <main className="mx-auto min-h-[70vh] max-w-[90rem] flex-1 grid grid-cols-1 gap-6 px-4 py-6 sm:px-8 sm:py-10 lg:grid-cols-[15rem_minmax(0,1fr)] lg:items-start lg:gap-8 lg:px-6 lg:py-0">
         <TripPlanContent />
       </main>
@@ -41,11 +53,14 @@ function PlannerPlan() {
 
 function TripPlanContent() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user, status } = useAuthSession()
   const [catalogue, setCatalogue] = useState<PlannerCatalogue | null>(null)
+  const [catalogueLoading, setCatalogueLoading] = useState(true)
+  const [catalogueError, setCatalogueError] = useState<string | null>(null)
   const [reload, setReload] = useState(0)
-  const [destinationId, setDestinationId] = useState('')
-  const [activities, setActivities] = useState<string[]>([])
+  const [destinationId, setDestinationId] = useState(searchParams.get('destinationId') ?? '')
+  const [activities, setActivities] = useState<string[]>(searchParams.get('activityId') ? [searchParams.get('activityId')!] : [])
   const [starts, setStarts] = useState('')
   const [ends, setEnds] = useState('')
   const [duration, setDuration] = useState('4')
@@ -72,11 +87,28 @@ function TripPlanContent() {
       if (!current) return
       setCatalogue(value as PlannerCatalogue)
       setError(null)
-    }).catch(cause => { if (current) setError(plannerError(cause)) })
+    }).catch(cause => { if (current) setCatalogueError(plannerError(cause)) })
+      .finally(() => { if (current) setCatalogueLoading(false) })
     return () => { current = false }
   }, [reload])
 
   const destination = catalogue?.destinations.find(d => d.destinationId === destinationId)
+  function renderConfiguredField(name: (typeof PLANNER_FORM_FIELDS)[number]['name']) {
+    const config = PLANNER_FORM_FIELDS.find(item => item.name === name)!
+    if (config.type === 'select' && config.optionsSource === 'destinations') return <label key={config.name} htmlFor="planner-destination" className="block text-sm font-bold">{config.label}<select id="planner-destination" data-validation={config.validation} required={config.required} className={field} value={destinationId} onChange={e => { setDestinationId(e.target.value); setActivities([]); setResult(null); setSelected(null) }}><option value="">Choose your stretch of coast</option>{catalogue?.destinations.map(d => <option key={d.destinationId} value={d.destinationId}>{d.name} · {d.region}</option>)}</select></label>
+    if (config.type === 'multi-select') return destination ? <fieldset key={config.name} className="mt-7"><legend className="text-sm font-bold">{config.label} <span className="font-normal text-coast-muted">Optional</span></legend><p className="mt-2 text-xs text-coast-muted">Leave these open to discover everything that fits.</p><div className="mt-3 flex flex-wrap gap-2">{destination.activities.map(activity => <label key={activity.activityId} className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm transition ${activities.includes(activity.activityId) ? 'border-coast-deep bg-coast-sage font-bold text-coast-deep' : 'border-coast-line hover:border-coast-teal'}`}><input type="checkbox" className="accent-coast-deep" checked={activities.includes(activity.activityId)} onChange={e => setActivities(a => e.target.checked ? [...a, activity.activityId] : a.filter(id => id !== activity.activityId))} />{activity.name}</label>)}</div></fieldset> : null
+    if (config.type === 'datetime-local') return <label key={config.name} className="text-sm font-semibold" htmlFor={`planner-${config.name}`}>{config.label}<input aria-describedby="planner-zone" data-validation={config.validation} required={config.required} disabled={!destination} id={`planner-${config.name}`} className={field} type="datetime-local" value={config.name === 'starts' ? starts : ends} onChange={e => config.name === 'starts' ? setStarts(e.target.value) : setEnds(e.target.value)} /></label>
+    if (config.type === 'select') {
+      const choices = config.optionsSource === 'paceOptions' ? PACE_OPTIONS : EXPERIENCE_OPTIONS
+      const value = config.name === 'duration' ? duration : experience
+      const update = config.name === 'duration' ? setDuration : setExperience
+      return <label key={config.name} className="text-sm font-bold" htmlFor={`planner-${config.name === 'duration' ? 'duration' : 'experience'}`}>{config.label}<select id={`planner-${config.name === 'duration' ? 'duration' : 'experience'}`} data-validation={config.validation} required={config.required} className={field} value={value} onChange={e => update(e.target.value)}>{choices.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+    }
+    if (config.type === 'checkbox') return <label key={config.name} className="mt-7 flex cursor-pointer items-start gap-3 rounded-2xl bg-coast-paper p-4 text-sm"><input className="mt-1 h-4 w-4 accent-coast-deep" type="checkbox" checked={biodiversity} onChange={e => setBiodiversity(e.target.checked)} /><span><span className="block font-bold">{config.label}</span><span className="mt-1 block leading-6 text-coast-muted">Optional sourced predictions, when available. Wildlife sightings are never guaranteed.</span></span></label>
+    if (config.name === 'tripTitle') return <label key={config.name} htmlFor="save-trip-name" className="mt-6 block text-sm font-bold">{config.label}<input id="save-trip-name" data-validation={config.validation} required={config.required} disabled={Boolean(appendTo)} maxLength={150} className={field} value={tripTitle} onChange={e => setTripTitle(e.target.value)} /></label>
+    if (config.name === 'tripNotes') return <label key={config.name} htmlFor="save-trip-notes" className="mt-4 block text-sm font-bold">{config.label} <span className="font-normal text-coast-muted">Optional</span><textarea id="save-trip-notes" data-validation={config.validation} required={config.required} maxLength={500} className={`${field} min-h-24 resize-y`} value={tripNotes} onChange={e => setTripNotes(e.target.value)} /></label>
+    return null
+  }
   async function submit(event: React.FormEvent) {
     event.preventDefault()
     if (busy) return
@@ -89,6 +121,7 @@ function TripPlanContent() {
     const hours = Number(duration)
     const problem = validatePlanningWindow(startsAt, endsAt, hours)
     if (problem) { setError(problem); return }
+    const selectedActivities = activities.filter(activityId => destination.activities.some(activity => activity.activityId === activityId))
     setBusy(true)
     try {
       const suggestions = await createRecommendations({
@@ -96,9 +129,10 @@ function TripPlanContent() {
         startsAt,
         endsAt,
         durationHours: hours,
-        preferredActivityIds: activities,
+        preferredActivityIds: selectedActivities,
         experienceLevel: experience,
         includeBiodiversityContext: biodiversity,
+        timeZone: destination.timeZone,
       })
       setResult(suggestions)
       const firstCandidate = suggestions.candidates[0] ?? null
@@ -111,7 +145,7 @@ function TripPlanContent() {
   async function loadSavedTrips(page = 1) {
     setBusy(true)
     try {
-      setSavedTrips(await listItineraries(page))
+      setSavedTrips((await listItineraries(page)).filter(trip => trip.status === 'Draft'))
       setTripPage(page)
       setSaveError(null)
     } catch (cause) { setSaveError(plannerError(cause)) } finally { setBusy(false) }
@@ -186,14 +220,6 @@ function TripPlanContent() {
           <h1 className="mt-3 font-display text-4xl tracking-tight sm:text-5xl">Build your trip.</h1>
           <p className="mt-4 max-w-xl leading-7 text-coast-muted">Choose a place, a window of time, and the experiences you want. Draft your plan first, then confirm it when it is ready to be processed.</p>
         </div>
-        <div className="flex flex-wrap gap-3">
-          {hasAllPermissions(user, ['planner.itineraries.manage']) && (
-            <Link to="/planner/saved" className={secondaryButton}>Saved trips</Link>
-          )}
-          {hasAllPermissions(user, ['planner.recommendations.create']) && (
-            <Link to="/planner" className={primaryButton}>Back to recommendations</Link>
-          )}
-        </div>
       </div>
 
       {error && <div role="alert" className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">{error}</div>}
@@ -217,7 +243,11 @@ function TripPlanContent() {
           <p className="mt-3 max-w-xl text-coast-muted">Ask an administrator to give your account coastal planning access. Your account and profile are still available.</p>
           <Link to="/profile" className={`${secondaryButton} mt-6`}>Back to your profile</Link>
         </section>
-      ) : catalogue && catalogue.status === 'AVAILABLE' && catalogue.destinations.length > 0 && destination ? (
+      ) : catalogueLoading ? (
+        <p aria-live="polite" className="py-16 text-coast-muted">Preparing your coastal planner…</p>
+      ) : catalogueError ? (
+        <section role="alert" className="rounded-2xl bg-coast-sage p-6"><h2 className="text-lg font-bold">We couldn’t load destinations.</h2><p className="mt-2 text-sm leading-6 text-coast-muted">{catalogueError}</p><button className={`${secondaryButton} mt-5`} onClick={() => { setCatalogueLoading(true); setCatalogueError(null); setReload(n => n + 1) }}>Try again</button></section>
+      ) : catalogue && catalogue.status === 'AVAILABLE' && catalogue.destinations.length > 0 ? (
         <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
           <section className="rounded-3xl border border-coast-line bg-white p-6 sm:p-9">
             <div className="mb-8">
@@ -227,57 +257,8 @@ function TripPlanContent() {
             </div>
 
             <form onSubmit={submit} noValidate>
-              <label htmlFor="planner-destination" className="block text-sm font-bold">
-                Destination
-                <select
-                  id="planner-destination"
-                  className={field}
-                  value={destinationId}
-                  onChange={e => { setDestinationId(e.target.value); setActivities([]); setResult(null); setSelected(null) }}
-                >
-                  <option value="">Choose your stretch of coast</option>
-                  {catalogue.destinations.map(d => (
-                    <option key={d.destinationId} value={d.destinationId}>
-                      {d.name} · {d.region}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              {destination && (
-                <fieldset className="mt-7">
-                  <legend className="text-sm font-bold">
-                    What would you like to do? <span className="font-normal text-coast-muted">Optional</span>
-                  </legend>
-                  <p className="mt-2 text-xs text-coast-muted">Leave these open to discover everything that fits.</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {destination.activities.map(activity => (
-                      <label
-                        key={activity.activityId}
-                        className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm transition ${
-                          activities.includes(activity.activityId)
-                            ? 'border-coast-deep bg-coast-sage font-bold text-coast-deep'
-                            : 'border-coast-line hover:border-coast-teal'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          className="accent-coast-deep"
-                          checked={activities.includes(activity.activityId)}
-                          onChange={e =>
-                            setActivities(a =>
-                              e.target.checked
-                                ? [...a, activity.activityId]
-                                : a.filter(id => id !== activity.activityId)
-                            )
-                          }
-                        />
-                        {activity.name}
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
-              )}
+              {renderConfiguredField('destination')}
+              {renderConfiguredField('activities')}
 
               <fieldset className="mt-8">
                 <legend className="text-sm font-bold">When do you have time?</legend>
@@ -285,74 +266,15 @@ function TripPlanContent() {
                   {destination ? `All times here are local to your destination (${destination.timeZone}).` : 'Choose a destination first. Times will use its local time zone.'}
                 </p>
                 <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                  <label className="text-sm font-semibold" htmlFor="planner-starts">
-                    Trip starts
-                    <input
-                      aria-describedby="planner-zone"
-                      disabled={!destination}
-                      id="planner-starts"
-                      className={field}
-                      type="datetime-local"
-                      value={starts}
-                      onChange={e => setStarts(e.target.value)}
-                    />
-                  </label>
-                  <label className="text-sm font-semibold" htmlFor="planner-ends">
-                    Trip ends
-                    <input
-                      aria-describedby="planner-zone"
-                      disabled={!destination}
-                      id="planner-ends"
-                      className={field}
-                      type="datetime-local"
-                      value={ends}
-                      onChange={e => setEnds(e.target.value)}
-                    />
-                  </label>
+                  {PLANNER_FORM_FIELDS.filter(config => config.type === 'datetime-local').map(config => renderConfiguredField(config.name))}
                 </div>
               </fieldset>
 
               <div className="mt-7 grid gap-4 sm:grid-cols-2">
-                <label className="text-sm font-bold" htmlFor="planner-duration">
-                  Hours for an experience
-                  <input
-                    id="planner-duration"
-                    className={field}
-                    type="number"
-                    min="1"
-                    max="720"
-                    step="1"
-                    value={duration}
-                    onChange={e => setDuration(e.target.value)}
-                  />
-                </label>
-                <label className="text-sm font-bold" htmlFor="planner-experience">
-                  Your experience level
-                  <select
-                    id="planner-experience"
-                    className={field}
-                    value={experience}
-                    onChange={e => setExperience(e.target.value)}
-                  >
-                    <option value="BEGINNER">Beginner</option>
-                    <option value="INTERMEDIATE">Intermediate</option>
-                    <option value="ADVANCED">Advanced</option>
-                  </select>
-                </label>
+                {PLANNER_FORM_FIELDS.filter(config => config.name === 'duration' || config.name === 'experience').map(config => renderConfiguredField(config.name))}
               </div>
 
-              <label className="mt-7 flex cursor-pointer items-start gap-3 rounded-2xl bg-coast-paper p-4 text-sm">
-                <input
-                  className="mt-1 h-4 w-4 accent-coast-deep"
-                  type="checkbox"
-                  checked={biodiversity}
-                  onChange={e => setBiodiversity(e.target.checked)}
-                />
-                <span>
-                  <span className="block font-bold">Include wildlife context</span>
-                  <span className="mt-1 block leading-6 text-coast-muted">Optional sourced predictions, when available. Wildlife sightings are never guaranteed.</span>
-                </span>
-              </label>
+              {PLANNER_FORM_FIELDS.filter(config => config.type === 'checkbox').map(config => renderConfiguredField(config.name))}
 
               <button disabled={busy} className={`${primaryButton} mt-8 w-full sm:w-auto`} type="submit">
                 {busy ? 'Finding experiences…' : 'Find my coastal day'}
@@ -410,7 +332,7 @@ function TripPlanContent() {
           <h3 className="text-lg font-bold">Destinations aren’t available right now.</h3>
           <p className="mt-2 text-sm leading-6 text-coast-muted">{catalogue.message ?? 'Please try again shortly.'}</p>
           <div className="mt-5 flex flex-wrap gap-3">
-            <button className={secondaryButton} onClick={() => { setReload(n => n + 1) }}>
+            <button className={secondaryButton} onClick={() => { setCatalogueLoading(true); setReload(n => n + 1) }}>
               Try again
             </button>
             {hasAllPermissions(user, ['planner.itineraries.manage']) && (
@@ -431,29 +353,7 @@ function TripPlanContent() {
             Save a private trip to edit and review later. Draft plans can be updated; confirmed plans are processed and cannot be edited.
           </p>
 
-          <label htmlFor="save-trip-name" className="mt-6 block text-sm font-bold">
-            Trip name
-            <input
-              id="save-trip-name"
-              required
-              disabled={Boolean(appendTo)}
-              maxLength={150}
-              className={field}
-              value={tripTitle}
-              onChange={e => setTripTitle(e.target.value)}
-            />
-          </label>
-
-          <label htmlFor="save-trip-notes" className="mt-4 block text-sm font-bold">
-            Your notes <span className="font-normal text-coast-muted">Optional</span>
-            <textarea
-              id="save-trip-notes"
-              maxLength={500}
-              className={`${field} min-h-24 resize-y`}
-              value={tripNotes}
-              onChange={e => setTripNotes(e.target.value)}
-            />
-          </label>
+          {PLANNER_FORM_FIELDS.filter(config => config.name === 'tripTitle' || config.name === 'tripNotes').map(config => renderConfiguredField(config.name))}
 
           {savedTrips === null ? (
             <button disabled={busy} className={`${secondaryButton} mt-5`} type="button" onClick={() => loadSavedTrips()}>

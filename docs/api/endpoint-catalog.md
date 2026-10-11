@@ -35,14 +35,14 @@ the smaller shared-client workflow contract.
 | flutter | `/404` | `not-found-recovery` | Explains the missing page in coastal language and routes users back to the home page. |
 | flutter | `/500` | `server-error-recovery` | Explains the temporary interruption, provides retry and home actions, and keeps implementation details hidden. |
 | react | `/planner` | `planner-recommendations` | Publicly visible recommendations entry point. Planning actions require sign-in and the planner.recommendations.create permission. |
-| flutter | `/planner` | `planner-recommendations` | Implement and verify this screen before cross-platform acceptance. |
+| flutter | `/planner` | `planner-recommendations` | Shows current public highlights through the public API and opens the protected planning form. |
 | react | `/planner/recommendations/:recommendationId` | `planner-recommendation-result` | Revisit a caller-owned search and save or append a suggested experience. |
 | react | `/planner/saved` | `planner-saved-trips` | Paginated personal saved trips and recovery states. |
 | react | `/planner/itineraries/:itineraryId` | `planner-trip-management` | Edit, reorder, remove and reschedule stops; delete a trip; review conditions and read its history. |
 | flutter | `/planner/recommendations/:recommendationId` | `planner-recommendation-result` | Implement and verify Flutter parity before component acceptance. |
-| flutter | `/planner/saved` | `planner-saved-trips` | Implement and verify Flutter parity before component acceptance. |
-| flutter | `/planner/itineraries/:itineraryId` | `planner-trip-management` | Implement and verify Flutter parity before component acceptance. |
-| flutter | `/planner/plan` | `planner-plan` | Implement and verify Flutter parity before component acceptance. |
+| flutter | `/planner/saved` | `planner-saved-trips` | Lists caller-owned trips through the public API. |
+| flutter | `/planner/itinerary` | `planner-trip-management` | Loads caller-owned trip details from the public API and exposes lifecycle actions allowed for the current trip state. |
+| flutter | `/planner/plan` | `planner-plan` | Creates recommendations and saves selected experiences as caller-owned draft trips through the public API. |
 
 ## Gateway and server routes
 
@@ -113,7 +113,7 @@ the smaller shared-client workflow contract.
 
 | Method | Path | Authorization | Purpose and use |
 |---|---|---|---|
-| `GET` | `/api/planner/recommendations/highlights` | `anonymous` | Public coastal highlight cards drawn from the catalogue and recent confirmed trips. Provides the curated highlight cards shown on the public coastal planner home page and used by the planning page for signed-in visitors. |
+| `GET` | `/api/planner/recommendations/highlights` | `anonymous` | Public coastal highlight cards derived from current destination, experience offering, marine suitability, and operational-status data. Returns 503 when required catalogue or offering data is unavailable; returns an empty list when available data has no eligible highlights. Partial cards include uncertainty notes when some destination data is unavailable. Provides curated highlight cards for the public coastal planner home page. Clients can distinguish a genuine empty result from unavailable peer-service data and display a retryable unavailable state. |
 | `POST` | `/api/planner/itineraries/{itineraryId:guid}/confirm` | `permission:planner.itineraries.manage` | Confirm a caller-owned draft itinerary so it can be processed. Changes a draft trip to confirmed. Used by the trip detail page and the planning page when the user confirms a newly created trip. |
 | `POST` | `/api/planner/recommendations` | `permission:planner.recommendations.create` | Submit coastal preferences and generate candidates from validated catalogue, marine, and operations evidence. Fits verified offering intervals and experience levels; records MATCHES_FOUND, NO_MATCHES or DEPENDENCIES_UNAVAILABLE within a 40-second budget. |
 | `GET` | `/api/planner/recommendations/{recommendationId:guid}` | `permission:planner.recommendations.read` | Retrieve recommendation candidate details, suitability, and evidence. Retrieves the candidates and peer status notes for a recommendation session. |

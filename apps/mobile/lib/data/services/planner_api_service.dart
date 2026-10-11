@@ -38,12 +38,172 @@ class PlannerApiService {
   final ApiGatewayConfig _gateway;
   Uri? _preferredBaseUri;
 
+  Future<PlannerCatalogue> catalogue() async {
+    final response = await _request(
+      '/api/planner/catalogue',
+      (uri) async => _transport.get(uri, headers: await _authHeaders()),
+    );
+    return _decode(response, PlannerCatalogue.fromJson);
+  }
+
+  Future<List<PlannerHighlight>> highlights() async {
+    final response = await _request(
+      '/api/planner/recommendations/highlights',
+      (uri) async => _transport.get(uri, headers: await _authHeaders()),
+    );
+    _ensureSuccess(response);
+    final decoded = jsonDecode(response.body);
+    if (decoded is! List) {
+      throw const FormatException('The highlights response is not a list.');
+    }
+    return decoded
+        .whereType<Map>()
+        .map(
+          (item) => PlannerHighlight.fromJson(Map<String, dynamic>.from(item)),
+        )
+        .toList(growable: false);
+  }
+
+  Future<List<PlannerItinerary>> itineraries() async {
+    final response = await _request(
+      '/api/planner/itineraries?page=1&pageSize=20',
+      (uri) async => _transport.get(uri, headers: await _authHeaders()),
+    );
+    _ensureSuccess(response);
+    final decoded = jsonDecode(response.body);
+    if (decoded is! List) {
+      throw const FormatException('The trips response is not a list.');
+    }
+    return decoded
+        .whereType<Map>()
+        .map(
+          (item) => PlannerItinerary.fromJson(Map<String, dynamic>.from(item)),
+        )
+        .toList(growable: false);
+  }
+
+  Future<PlannerItinerary> itinerary(String id) async {
+    final response = await _request(
+      '/api/planner/itineraries/${Uri.encodeComponent(id)}',
+      (uri) async => _transport.get(uri, headers: await _authHeaders()),
+    );
+    return _decode(response, PlannerItinerary.fromJson);
+  }
+
+  Future<PlannerItinerary> confirmItinerary(String id) async {
+    final response = await _request(
+      '/api/planner/itineraries/${Uri.encodeComponent(id)}/confirm',
+      (uri) async => _transport.post(uri, headers: await _authHeaders()),
+    );
+    return _decode(response, PlannerItinerary.fromJson);
+  }
+
+  Future<void> deleteItinerary(String id) async {
+    final response = await _request(
+      '/api/planner/itineraries/${Uri.encodeComponent(id)}',
+      (uri) async => _transport.delete(uri, headers: await _authHeaders()),
+    );
+    _ensureSuccess(response);
+  }
+
+  Future<Map<String, dynamic>> reEvaluateItinerary(String id) async {
+    final response = await _request(
+      '/api/planner/itineraries/${Uri.encodeComponent(id)}/re-evaluations',
+      (uri) async => _transport.post(
+        uri,
+        headers: await _authHeaders(),
+        body: jsonEncode({'reEvaluationMode': 'FULL_ASSESSMENT'}),
+      ),
+    );
+    _ensureSuccess(response);
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map) {
+      throw const FormatException(
+        'The condition review response is not an object.',
+      );
+    }
+    return Map<String, dynamic>.from(decoded);
+  }
+
+  Future<PlannerItinerary> updateItinerary(
+    PlannerItinerary trip, {
+    required String title,
+    required String description,
+  }) async {
+    final response = await _request(
+      '/api/planner/itineraries/${Uri.encodeComponent(trip.id)}',
+      (uri) async => _transport.put(
+        uri,
+        headers: await _authHeaders(),
+        body: jsonEncode({
+          'title': title,
+          'description': description.isEmpty ? null : description,
+          'startsAt': trip.startsAt,
+          'endsAt': trip.endsAt,
+          'concurrencyVersion': trip.concurrencyVersion,
+          'timeZone': trip.timeZone,
+          'items': trip.items
+              .asMap()
+              .entries
+              .map(
+                (entry) => {
+                  'destinationId': entry.value.destinationId,
+                  'activityId': entry.value.activityId,
+                  'offeringId': entry.value.offeringId,
+                  'title': entry.value.title,
+                  'orderIndex': entry.key,
+                  'scheduledStart': entry.value.startsAt,
+                  'scheduledEnd': entry.value.endsAt,
+                  'timeZone': entry.value.timeZone,
+                },
+              )
+              .toList(),
+        }),
+      ),
+    );
+    return _decode(response, PlannerItinerary.fromJson);
+  }
+
+  Future<PlannerItinerary> saveDraft({
+    required String title,
+    required PlannerCandidate candidate,
+  }) async {
+    final response = await _request(
+      '/api/planner/itineraries',
+      (uri) async => _transport.post(
+        uri,
+        headers: await _authHeaders(),
+        body: jsonEncode({
+          'title': title,
+          'description': null,
+          'startsAt': candidate.scheduledStart,
+          'endsAt': candidate.scheduledEnd,
+          'items': [
+            {
+              'destinationId': candidate.destinationId,
+              'activityId': candidate.activityId,
+              'offeringId': candidate.offeringId,
+              'title': candidate.title,
+              'orderIndex': 0,
+              'scheduledStart': candidate.scheduledStart,
+              'scheduledEnd': candidate.scheduledEnd,
+              'timeZone': candidate.timeZone,
+            },
+          ],
+          'timeZone': candidate.timeZone,
+        }),
+      ),
+    );
+    return _decode(response, PlannerItinerary.fromJson);
+  }
+
   Future<PlannerRecommendationResult> createRecommendations({
     required String targetDestinationId,
     required DateTime startsAt,
     required DateTime endsAt,
     required int durationHours,
     required List<String> preferredActivityIds,
+    required String timeZone,
     String? experienceLevel,
     bool includeBiodiversityContext = true,
   }) async {
@@ -54,8 +214,9 @@ class PlannerApiService {
         headers: await _authHeaders(),
         body: jsonEncode({
           'targetDestinationId': targetDestinationId,
-          'startsAt': startsAt.toUtc().toIso8601String(),
-          'endsAt': endsAt.toUtc().toIso8601String(),
+          'startsAt': _wallTime(startsAt),
+          'endsAt': _wallTime(endsAt),
+          'timeZone': timeZone,
           'durationHours': durationHours,
           'preferredActivityIds': preferredActivityIds,
           'experienceLevel': experienceLevel,
@@ -65,6 +226,9 @@ class PlannerApiService {
     );
     return _decode(response, PlannerRecommendationResult.fromJson);
   }
+
+  String _wallTime(DateTime value) =>
+      '${value.year.toString().padLeft(4, '0')}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}T${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}:00';
 
   Future<PlannerRecommendationResult> recommendation(
     String recommendationId,
@@ -91,10 +255,12 @@ class PlannerApiService {
     final response = await _request(
       '/api/planner/biodiversity/predictions',
       (uri) async => _transport.get(
-        uri.replace(queryParameters: {
-          'destinationId': destinationId,
-          'activityId': ?activityId,
-        }),
+        uri.replace(
+          queryParameters: {
+            'destinationId': destinationId,
+            'activityId': ?activityId,
+          },
+        ),
         headers: await _authHeaders(),
       ),
     );

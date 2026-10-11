@@ -77,7 +77,7 @@ export type RecommendationHighlight = {
   activityId: string
   activityName: string
   offeringId: string | null
-  fitScore: number
+  fitScore: number | null
   suitabilityStatus: string
   availabilityStatus: string
   operationalStatus: string
@@ -86,6 +86,7 @@ export type RecommendationHighlight = {
   generatedAt: string
   outcome: string
   itemCount: number
+  evidenceCheckedAt?: string | null
 }
 
 export class PlannerApiError extends Error {
@@ -327,16 +328,14 @@ export function isHighlight(value: unknown): value is RecommendationHighlight {
     typeof value.activityId === 'string' &&
     typeof value.activityName === 'string' &&
     (value.offeringId === null || typeof value.offeringId === 'string') &&
-    typeof value.fitScore === 'number' &&
-    Number.isFinite(value.fitScore) &&
-    value.fitScore >= 0 &&
-    value.fitScore <= 1 &&
+    (value.fitScore === null || (typeof value.fitScore === 'number' && Number.isFinite(value.fitScore) && value.fitScore >= 0 && value.fitScore <= 1)) &&
     typeof value.suitabilityStatus === 'string' &&
     typeof value.availabilityStatus === 'string' &&
     typeof value.operationalStatus === 'string' &&
     (value.recommendationId === null || typeof value.recommendationId === 'string') &&
     textList(value.uncertaintyNotes) &&
     instant(value.generatedAt) &&
+    optionalInstant(value.evidenceCheckedAt) &&
     typeof value.outcome === 'string' &&
     typeof value.itemCount === 'number' &&
     Number.isInteger(value.itemCount)
@@ -551,8 +550,15 @@ export function getRecommendationHighlights(): Promise<RecommendationHighlight[]
     }
     return value
   })
-  plannerHighlightsCache.set('highlights', checkedPromise)
-  return checkedPromise
+  const inFlight = checkedPromise.then(value => {
+    if (plannerHighlightsCache.get('highlights') === inFlight) plannerHighlightsCache.delete('highlights')
+    return value
+  }, cause => {
+    if (plannerHighlightsCache.get('highlights') === inFlight) plannerHighlightsCache.delete('highlights')
+    throw cause
+  })
+  plannerHighlightsCache.set('highlights', inFlight)
+  return inFlight
 }
 
 export type RecommendationPreferences = {
@@ -563,6 +569,7 @@ export type RecommendationPreferences = {
   preferredActivityIds: string[]
   experienceLevel: string | null
   includeBiodiversityContext: boolean
+  timeZone?: string
 }
 
 export function createRecommendations(preferences: RecommendationPreferences): Promise<RecommendationResult> {
@@ -581,6 +588,7 @@ export function createRecommendations(preferences: RecommendationPreferences): P
           preferredActivityIds: preferences.preferredActivityIds,
           experienceLevel: preferences.experienceLevel,
           includeBiodiversityContext: preferences.includeBiodiversityContext,
+          ...(preferences.timeZone ? { timeZone: preferences.timeZone } : {}),
         }),
       })
     ),

@@ -3,6 +3,231 @@
 /// client stays in lockstep with the shared contract.
 library;
 
+class PlannerCatalogue {
+  const PlannerCatalogue({
+    required this.status,
+    required this.destinations,
+    this.message,
+  });
+
+  final String status;
+  final List<PlannerDestination> destinations;
+  final String? message;
+
+  factory PlannerCatalogue.fromJson(Map<String, dynamic> json) =>
+      PlannerCatalogue(
+        status: json['status'] as String,
+        message: json['message'] as String?,
+        destinations: (json['destinations'] as List<dynamic>)
+            .whereType<Map>()
+            .map(
+              (item) =>
+                  PlannerDestination.fromJson(Map<String, dynamic>.from(item)),
+            )
+            .toList(growable: false),
+      );
+}
+
+class PlannerDestination {
+  const PlannerDestination({
+    required this.id,
+    required this.name,
+    required this.region,
+    required this.timeZone,
+    required this.activities,
+  });
+
+  final String id;
+  final String name;
+  final String region;
+  final String timeZone;
+  final List<PlannerActivity> activities;
+
+  factory PlannerDestination.fromJson(Map<String, dynamic> json) =>
+      PlannerDestination(
+        id: json['destinationId'] as String,
+        name: json['name'] as String,
+        region: json['region'] as String,
+        timeZone: json['timeZone'] as String,
+        activities: (json['activities'] as List<dynamic>)
+            .whereType<Map>()
+            .map(
+              (item) =>
+                  PlannerActivity.fromJson(Map<String, dynamic>.from(item)),
+            )
+            .toList(growable: false),
+      );
+}
+
+class PlannerActivity {
+  const PlannerActivity({required this.id, required this.name});
+  final String id;
+  final String name;
+  factory PlannerActivity.fromJson(Map<String, dynamic> json) =>
+      PlannerActivity(
+        id: json['activityId'] as String,
+        name: json['name'] as String,
+      );
+}
+
+class PlannerHighlight {
+  const PlannerHighlight({
+    required this.id,
+    required this.title,
+    required this.destinationId,
+    required this.destinationName,
+    required this.activityId,
+    required this.activityName,
+    required this.startsAt,
+    required this.endsAt,
+    required this.startsAtLocal,
+    required this.endsAtLocal,
+    required this.timeZone,
+    required this.availabilityStatus,
+    required this.suitabilityStatus,
+    required this.operationalStatus,
+    this.evidenceCheckedAt,
+    this.uncertaintyNotes = const [],
+  });
+  final String id;
+  final String title;
+  final String destinationId;
+  final String destinationName;
+  final String activityId;
+  final String activityName;
+  final String startsAt;
+  final String endsAt;
+  final String startsAtLocal;
+  final String endsAtLocal;
+  final String timeZone;
+  final String availabilityStatus;
+  final String suitabilityStatus;
+  final String operationalStatus;
+  final String? evidenceCheckedAt;
+  final List<String> uncertaintyNotes;
+
+  factory PlannerHighlight.fromJson(Map<String, dynamic> json) =>
+      PlannerHighlight(
+        id: json['id'] as String,
+        title: json['title'] as String,
+        destinationId: json['destinationId'] as String,
+        destinationName: json['destinationName'] as String,
+        activityId: json['activityId'] as String,
+        activityName: json['activityName'] as String,
+        startsAt: json['startsAt'] as String,
+        endsAt: json['endsAt'] as String,
+        startsAtLocal:
+            json['startsAtLocal'] as String? ?? json['startsAt'] as String,
+        endsAtLocal: json['endsAtLocal'] as String? ?? json['endsAt'] as String,
+        timeZone: json['timeZone'] as String,
+        availabilityStatus: json['availabilityStatus'] as String,
+        suitabilityStatus: json['suitabilityStatus'] as String,
+        operationalStatus: json['operationalStatus'] as String,
+        evidenceCheckedAt: json['evidenceCheckedAt'] as String?,
+        uncertaintyNotes: (json['uncertaintyNotes'] as List? ?? const [])
+            .whereType<String>()
+            .toList(growable: false),
+      );
+}
+
+class PlannerItinerary {
+  const PlannerItinerary({
+    required this.id,
+    required this.title,
+    required this.status,
+    required this.startsAt,
+    required this.endsAt,
+    required this.startsAtLocal,
+    required this.endsAtLocal,
+    required this.timeZone,
+    required this.description,
+    required this.concurrencyVersion,
+    required this.items,
+  });
+  final String id;
+  final String title;
+  final String status;
+  final String startsAt;
+  final String endsAt;
+  final String startsAtLocal;
+  final String endsAtLocal;
+  final String timeZone;
+  final String? description;
+  final int concurrencyVersion;
+  final List<PlannerItineraryItem> items;
+
+  factory PlannerItinerary.fromJson(Map<String, dynamic> json) =>
+      PlannerItinerary(
+        id: json['itineraryId'] as String,
+        title: json['title'] as String,
+        status: json['status'] as String,
+        startsAt: json['startsAt'] as String,
+        endsAt: json['endsAt'] as String,
+        startsAtLocal:
+            json['startsAtLocal'] as String? ?? json['startsAt'] as String,
+        endsAtLocal: json['endsAtLocal'] as String? ?? json['endsAt'] as String,
+        timeZone: json['timeZone'] as String? ?? 'Asia/Colombo',
+        description: json['description'] as String?,
+        concurrencyVersion: json['concurrencyVersion'] as int? ?? 0,
+        items: (json['items'] as List? ?? const [])
+            .whereType<Map>()
+            .map(
+              (item) => PlannerItineraryItem.fromJson(
+                Map<String, dynamic>.from(item),
+              ),
+            )
+            .toList(growable: false),
+      );
+}
+
+class PlannerItineraryItem {
+  const PlannerItineraryItem({
+    required this.title,
+    required this.destinationId,
+    required this.activityId,
+    required this.offeringId,
+    required this.startsAt,
+    required this.endsAt,
+    required this.startsAtLocal,
+    required this.endsAtLocal,
+    required this.timeZone,
+    required this.suitability,
+    required this.availability,
+    required this.operations,
+  });
+  final String title,
+      destinationId,
+      activityId,
+      startsAt,
+      endsAt,
+      startsAtLocal,
+      endsAtLocal,
+      timeZone,
+      suitability,
+      availability,
+      operations;
+  final String? offeringId;
+  factory PlannerItineraryItem.fromJson(Map<String, dynamic> json) =>
+      PlannerItineraryItem(
+        title: json['title'] as String,
+        destinationId: json['destinationId'] as String,
+        activityId: json['activityId'] as String,
+        offeringId: json['offeringId'] as String?,
+        startsAt: json['scheduledStart'] as String,
+        endsAt: json['scheduledEnd'] as String,
+        startsAtLocal:
+            json['scheduledStartLocal'] as String? ??
+            json['scheduledStart'] as String,
+        endsAtLocal:
+            json['scheduledEndLocal'] as String? ??
+            json['scheduledEnd'] as String,
+        timeZone: json['timeZone'] as String? ?? 'Asia/Colombo',
+        suitability: json['lastSuitabilityStatus'] as String? ?? 'UNKNOWN',
+        availability: json['lastAvailabilityStatus'] as String? ?? 'UNKNOWN',
+        operations: json['lastOperationalStatus'] as String? ?? 'UNKNOWN',
+      );
+}
+
 class PlannerRecommendationResult {
   const PlannerRecommendationResult({
     required this.recommendationId,
@@ -30,7 +255,10 @@ class PlannerRecommendationResult {
       generatedAt: json['generatedAt'] as String,
       candidates: (json['candidates'] as List<dynamic>)
           .whereType<Map>()
-          .map((item) => PlannerCandidate.fromJson(Map<String, dynamic>.from(item)))
+          .map(
+            (item) =>
+                PlannerCandidate.fromJson(Map<String, dynamic>.from(item)),
+          )
           .toList(growable: false),
       excludedCandidatesCount: json['excludedCandidatesCount'] as int,
       uncertaintyNotes: (json['uncertaintyNotes'] as List<dynamic>)
@@ -43,6 +271,7 @@ class PlannerRecommendationResult {
 class PlannerCandidate {
   const PlannerCandidate({
     required this.destinationId,
+    required this.timeZone,
     required this.activityId,
     required this.offeringId,
     required this.title,
@@ -57,6 +286,7 @@ class PlannerCandidate {
   });
 
   final String destinationId;
+  final String timeZone;
   final String activityId;
   final String? offeringId;
   final String title;
@@ -72,6 +302,7 @@ class PlannerCandidate {
   factory PlannerCandidate.fromJson(Map<String, dynamic> json) {
     return PlannerCandidate(
       destinationId: json['destinationId'] as String,
+      timeZone: json['timeZone'] as String? ?? 'Asia/Colombo',
       activityId: json['activityId'] as String,
       offeringId: json['offeringId'] as String?,
       title: json['title'] as String,
@@ -85,14 +316,12 @@ class PlannerCandidate {
       biodiversityContext: json['biodiversityContext'] == null
           ? null
           : PlannerBiodiversityContext.fromJson(
-              Map<String, dynamic>.from(
-                json['biodiversityContext'] as Map,
-              ),
+              Map<String, dynamic>.from(json['biodiversityContext'] as Map),
             ),
       fitScore: (json['fitScore'] as num).toDouble(),
-      reasons: (json['reasons'] as List<dynamic>)
-          .whereType<String>()
-          .toList(growable: false),
+      reasons: (json['reasons'] as List<dynamic>).whereType<String>().toList(
+        growable: false,
+      ),
     );
   }
 }
@@ -203,8 +432,9 @@ class PlannerBiodiversityPrediction {
       predictedSpecies: (json['predictedSpecies'] as List<dynamic>)
           .whereType<Map>()
           .map(
-            (item) =>
-                PlannerPredictedSpecies.fromJson(Map<String, dynamic>.from(item)),
+            (item) => PlannerPredictedSpecies.fromJson(
+              Map<String, dynamic>.from(item),
+            ),
           )
           .toList(growable: false),
       modelMetadata: json['modelMetadata'] == null

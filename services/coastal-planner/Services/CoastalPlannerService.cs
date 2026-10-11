@@ -833,7 +833,9 @@ public partial class CoastalPlannerService : ICoastalPlannerService
             LastOperationalStatus: item.LastOperationalStatus,
             AdvisoryNote: item.AdvisoryNote,
             TimeZone: item.TimeZone,
-            FitScore: item.FitScore)).ToList();
+            FitScore: item.FitScore,
+            ScheduledStartLocal: FormatLocalTime(item.ScheduledStartUtc, item.TimeZone),
+            ScheduledEndLocal: FormatLocalTime(item.ScheduledEndUtc, item.TimeZone))).ToList();
 
         var featuredActivityTitle = featuredActivityId.HasValue
             ? items.FirstOrDefault(item => item.ActivityId == featuredActivityId)?.Title
@@ -851,8 +853,28 @@ public partial class CoastalPlannerService : ICoastalPlannerService
             UpdatedAt: i.UpdatedAtUtc,
             Status: i.Status,
             Items: items,
-            TimeZone: i.TimeZone
+            TimeZone: i.TimeZone,
+            StartsAtLocal: FormatLocalTime(i.StartsAtUtc, i.TimeZone),
+            EndsAtLocal: FormatLocalTime(i.EndsAtUtc, i.TimeZone)
         );
+    }
+
+    private static string FormatLocalTime(DateTime utc, string timeZone)
+    {
+        try
+        {
+            var zone = TimeZoneInfo.FindSystemTimeZoneById(timeZone);
+            var local = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), zone);
+            return local.ToString("yyyy-MM-dd'T'HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            return DateTime.SpecifyKind(utc, DateTimeKind.Utc).ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", System.Globalization.CultureInfo.InvariantCulture);
+        }
+        catch (InvalidTimeZoneException)
+        {
+            return DateTime.SpecifyKind(utc, DateTimeKind.Utc).ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", System.Globalization.CultureInfo.InvariantCulture);
+        }
     }
 
     private static void ValidateRecommendationRequest(RecommendationRequestDto request, Guid? userId)

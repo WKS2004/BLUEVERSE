@@ -119,7 +119,7 @@
     {
       "id": "planner-plan",
       "status": "in_progress",
-      "description": "Dedicated coastal trip planning page: pick a destination, time window, experience level and optional wildlife context, generate recommendation candidates, then save or append a trip as a draft or confirmed itinerary. React implemented; Flutter parity is pending.",
+      "description": "Choose a destination, local time window, activities, duration and experience level; review sourced recommendations and save a draft. Web and mobile planning flows are implemented.",
       "web": {
         "route": "/planner/plan",
         "source": "apps/web/src/app/routes.tsx",
@@ -128,7 +128,7 @@
       "mobile": {
         "route": "/planner/plan",
         "source": "apps/mobile/lib/main.dart",
-        "status": "planned"
+        "status": "implemented"
       },
       "apiRefs": [
         "planner-catalogue",
@@ -146,7 +146,7 @@
     {
       "id": "planner-recommendations",
       "status": "in_progress",
-      "description": "React uses named catalogue choices, local destination time, optional activities and safe recommendation evidence. Flutter screen parity and live member-service contracts remain pending.",
+      "description": "Coastal inspiration page with verified availability, marine suitability and operational evidence, plus a route into trip planning. Web and mobile pages are implemented.",
       "web": {
         "route": "/planner",
         "source": "apps/web/src/app/routes.tsx"
@@ -154,7 +154,7 @@
       "mobile": {
         "route": "/planner",
         "source": "apps/mobile/lib/main.dart",
-        "status": "planned"
+        "status": "implemented"
       },
       "apiRefs": [
         "planner-recommendations-highlights",
@@ -293,7 +293,7 @@
     {
       "id": "planner-saved-trips",
       "status": "in_progress",
-      "description": "Paginated personal saved trips and recovery states. React implemented; Flutter parity is pending.",
+      "description": "Personal saved trips with Draft or Confirmed state and trip details. Web and mobile list routes are implemented.",
       "web": {
         "route": "/planner/saved",
         "source": "apps/web/src/app/routes.tsx",
@@ -302,7 +302,7 @@
       "mobile": {
         "route": "/planner/saved",
         "source": "apps/mobile/lib/main.dart",
-        "status": "planned"
+        "status": "implemented"
       },
       "apiRefs": [
         "planner-itineraries-list"
@@ -311,16 +311,16 @@
     {
       "id": "planner-trip-management",
       "status": "in_progress",
-      "description": "Edit, reorder, remove and reschedule stops; delete a trip; review conditions and read its history. React implemented; Flutter parity is pending.",
+      "description": "Trip detail, draft edit/delete/confirm, confirmed-trip condition review, and read-only confirmed details. Web supports full itinerary editing; mobile supports draft title/notes, lifecycle actions and condition review.",
       "web": {
         "route": "/planner/itineraries/:itineraryId",
         "source": "apps/web/src/app/routes.tsx",
         "status": "implemented"
       },
       "mobile": {
-        "route": "/planner/itineraries/:itineraryId",
+        "route": "/planner/itinerary",
         "source": "apps/mobile/lib/main.dart",
-        "status": "planned"
+        "status": "implemented"
       },
       "apiRefs": [
         "planner-itineraries-get",

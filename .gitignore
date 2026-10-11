@@ -69,3 +69,5 @@ local/
 docs/ai/private/
 
 blobs/
+*.log
+PLANNER_DIAGNOSIS.md

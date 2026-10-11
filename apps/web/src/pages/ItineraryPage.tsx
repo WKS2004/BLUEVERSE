@@ -40,6 +40,7 @@ function Trip() {
   const [retry, setRetry] = useState(0)
   const [removed, setRemoved] = useState<{ item: ItineraryItem; index: number } | null>(null)
   const confirmDelete = useRef<HTMLDialogElement>(null)
+  const confirmTrip = useRef<HTMLDialogElement>(null)
 
   const zone = trip?.timeZone ?? 'Asia/Colombo'
   const editing = Boolean(draft)
@@ -138,6 +139,19 @@ function Trip() {
     }
   }
 
+  async function confirmDraft() {
+    if (busy || trip?.status !== 'Draft') return
+    setBusy(true)
+    setError(null)
+    try {
+      const updated = await confirmItinerary(itineraryId)
+      setTrip(updated)
+      setDraft(null)
+      confirmTrip.current?.close()
+      setNotice('Your trip has been confirmed. It can no longer be edited or cancelled.')
+    } catch (cause) { setError(plannerError(cause)) } finally { setBusy(false) }
+  }
+
   function move(index: number, direction: number) {
     if (!draft) return
     const items = [...draft.items]
@@ -209,6 +223,7 @@ function Trip() {
               <h1 className="mt-3 max-w-3xl font-display text-4xl tracking-tight sm:text-5xl">
                 {trip?.title}
               </h1>
+              <span className="mt-3 inline-flex rounded-full bg-coast-sage px-3 py-1 text-xs font-bold text-coast-deep">{trip?.status}</span>
               <p className="mt-4 leading-7 text-coast-muted">
                 {dateTime(current.startsAt, zone)} – {dateTime(current.endsAt, zone)} · {current.items.length} experiences
               </p>
@@ -456,8 +471,8 @@ function Trip() {
                 </section>
               )}
 
-              {!draft && hasAllPermissions(user, ['planner.recommendations.create']) && (
-                <Link className={`${secondaryButton} mt-6`} to="/planner">
+              {trip?.status === 'Draft' && !draft && hasAllPermissions(user, ['planner.recommendations.create']) && (
+                <Link className={`${secondaryButton} mt-6`} to="/planner/plan">
                   Find another experience
                 </Link>
               )}
@@ -487,25 +502,12 @@ function Trip() {
                     className="mt-8 min-h-11 rounded-full px-2 text-sm font-semibold text-coast-muted underline underline-offset-4 focus-visible:outline-2"
                     onClick={() => confirmDelete.current?.showModal()}
                   >
-                    Delete this trip
+                    Cancel this draft
                   </button>
                   <button
                     disabled={busy || Boolean(draft)}
                     className="mt-8 min-h-11 rounded-full px-2 text-sm font-semibold text-coast-muted underline underline-offset-4 focus-visible:outline-2"
-                    onClick={async () => {
-                      if (busy) return
-                      setBusy(true)
-                      try {
-                        const updated = await confirmItinerary(itineraryId)
-                        setTrip(updated)
-                        setDraft(null)
-                        setNotice('Your trip has been confirmed. It can no longer be edited from here.')
-                      } catch (cause) {
-                        setError(plannerError(cause))
-                      } finally {
-                        setBusy(false)
-                      }
-                    }}
+                    onClick={() => confirmTrip.current?.showModal()}
                   >
                     Confirm this trip
                   </button>
@@ -518,7 +520,7 @@ function Trip() {
           <section className="mt-12 border-t border-coast-line pt-9">
             <h2 className="font-display text-2xl">Condition review history</h2>
             <p className="mt-3 text-sm text-coast-muted">
-              Each review keeps a snapshot. Your selected experiences and times stay yours to change.
+              {trip?.status === 'Confirmed' ? 'Each review keeps a snapshot. Confirmed trips remain read-only.' : 'Each review keeps a snapshot. Your selected experiences and times stay yours to change.'}
             </p>
             {historyError && (
               <p role="alert" className="mt-4 text-sm text-amber-900">
@@ -585,22 +587,27 @@ function Trip() {
         aria-labelledby="delete-title"
         className="m-auto w-[calc(100%-2rem)] max-w-md rounded-3xl bg-white p-7 text-coast-ink backdrop:bg-coast-ink/40"
       >
-        <h2 id="delete-title" className="font-display text-2xl">Delete this saved trip?</h2>
+        <h2 id="delete-title" className="font-display text-2xl">Cancel this draft?</h2>
         <p className="mt-3 text-sm leading-7 text-coast-muted">
           “{trip?.title}” and its condition review history will be removed. This cannot be undone.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <button className={primaryButton} disabled={busy} onClick={removeTrip}>
-            Delete trip
+            Cancel draft
           </button>
           <button
             className={secondaryButton}
             disabled={busy}
             onClick={() => confirmDelete.current?.close()}
           >
-            Keep my trip
+            Keep draft
           </button>
         </div>
+      </dialog>
+      <dialog ref={confirmTrip} aria-labelledby="confirm-trip-title" className="m-auto w-[calc(100%-2rem)] max-w-md rounded-3xl bg-white p-7 text-coast-ink backdrop:bg-coast-ink/40">
+        <h2 id="confirm-trip-title" className="font-display text-2xl">Confirm this trip?</h2>
+        <p className="mt-3 text-sm leading-7 text-coast-muted">Once confirmed, “{trip?.title}” can no longer be edited or cancelled.</p>
+        <div className="mt-6 flex flex-wrap gap-3"><button className={primaryButton} disabled={busy} onClick={confirmDraft}>{busy ? 'Confirming…' : 'Confirm trip'}</button><button className={secondaryButton} disabled={busy} onClick={() => confirmTrip.current?.close()}>Keep as draft</button></div>
       </dialog>
     </>
   )

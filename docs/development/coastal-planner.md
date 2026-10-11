@@ -97,10 +97,12 @@ is separate from `aiDependencyStatus` and `aiExecutionStatus`; the latter
 remains `NOT_STARTED`. The future health path is a proposed private contract,
 not an implemented AI endpoint.
 
-Flutter planner routes are reserved in the UI registry and remain planned.
-The whole workflow is marked `in_progress`; equal-client capability and G00/G07
-acceptance must be completed before claiming release readiness. This branch
-does not implement the other owners' services or mark their gates accepted.
+Flutter now provides planner home, planning and saved-trip routes through the
+same public API contract. Recommendation-result and itinerary-detail routes
+remain planned. The whole workflow is marked `in_progress`; equal-client
+capability and G00/G07 acceptance must be completed before claiming release
+readiness. This branch does not implement the other owners' services or mark
+their gates accepted.
 
 ## Verification commands
 

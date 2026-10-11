@@ -9,7 +9,8 @@ public record RecommendationRequestDto(
     int DurationHours,
     List<Guid>? PreferredActivityIds,
     string? ExperienceLevel,
-    bool IncludeBiodiversityContext = true
+    bool IncludeBiodiversityContext = true,
+    string TimeZone = "Asia/Colombo"
 );
 
 public record RecommendationCandidateDto(
@@ -78,7 +79,9 @@ public record ItineraryDto(
     DateTime UpdatedAt,
     string Status,
     List<ItineraryItemDto> Items,
-    string TimeZone = "Asia/Colombo"
+    string TimeZone = "Asia/Colombo",
+    string? StartsAtLocal = null,
+    string? EndsAtLocal = null
 );
 
 public record ItineraryItemDto(
@@ -96,7 +99,9 @@ public record ItineraryItemDto(
     string LastOperationalStatus,
     string? AdvisoryNote,
     string TimeZone = "Asia/Colombo",
-    double FitScore = 0
+    double FitScore = 0,
+    string? ScheduledStartLocal = null,
+    string? ScheduledEndLocal = null
 );
 
 public record CreateItineraryRequestDto(
@@ -175,7 +180,7 @@ public record RecommendationHighlightDto(
     Guid ActivityId,
     string ActivityName,
     Guid? OfferingId,
-    double FitScore,
+    double? FitScore,
     string SuitabilityStatus,
     string AvailabilityStatus,
     string OperationalStatus,
@@ -183,7 +188,10 @@ public record RecommendationHighlightDto(
     string[] UncertaintyNotes,
     DateTime GeneratedAt,
     string Outcome,
-    int ItemCount
+    int ItemCount,
+    DateTime? EvidenceCheckedAt = null,
+    string? StartsAtLocal = null,
+    string? EndsAtLocal = null
 );
 
 public record BiodiversityPredictionDto(
