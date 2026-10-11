@@ -157,28 +157,13 @@ class _MyAppState extends State<MyApp> {
                   initialRecordId: uri.queryParameters['id'],
                   fromLogs: uri.queryParameters['origin'] == 'logs',
                 );
-          final direction = alerts ? 1.0 : -1.0;
+          // Coastal Operations animates its content below fixed navigation.
+          // A route-wide slide would also move the shared chrome.
           return PageRouteBuilder<void>(
             settings: settings,
-            transitionDuration: const Duration(milliseconds: 260),
-            reverseTransitionDuration: const Duration(milliseconds: 180),
+            transitionDuration: Duration.zero,
+            reverseTransitionDuration: Duration.zero,
             pageBuilder: (_, _, _) => page,
-            transitionsBuilder: (_, animation, _, child) => FadeTransition(
-              opacity: animation,
-              child: SlideTransition(
-                position:
-                    Tween<Offset>(
-                      begin: Offset(direction * .035, 0),
-                      end: Offset.zero,
-                    ).animate(
-                      CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeOutCubic,
-                      ),
-                    ),
-                child: child,
-              ),
-            ),
           );
         }
         return null;

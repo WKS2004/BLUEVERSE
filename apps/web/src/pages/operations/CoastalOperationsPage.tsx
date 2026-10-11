@@ -8,6 +8,7 @@ import OperationsSearch from './OperationsSearch'
 import { AssessmentDraftForm, AlertDraftForm } from './OperationsDraftForms'
 import assessmentHero from '../../assets/coastal/assessment-hero.png'
 import alertsHero from '../../assets/coastal/alerts-hero.png'
+import OperationsHero from './OperationsHero'
 import OperationsIcon from './OperationsIcon'
 import { hasAllPermissions } from '../../features/authorization/permissions'
 import type { AuthUser } from '../../features/auth/auth'
@@ -445,24 +446,27 @@ function CoastalOperationsWorkspace({ user, section, origin }: { user: AuthUser 
 
   const page = <div className="flex min-h-screen flex-col bg-coast-paper font-sans text-coast-ink" id="top">
     <SiteHeader active="operations" />
-    <main className="mx-auto grid w-full max-w-[90rem] flex-1 grid-cols-1 content-start gap-y-5 px-0 pt-0 pb-6 lg:grid-cols-[15rem_minmax(0,1fr)] lg:items-start lg:gap-x-8 lg:gap-y-0 lg:px-6 lg:pb-0">
+    <main className="mx-auto grid w-full max-w-[90rem] flex-1 grid-cols-1 content-start overflow-x-clip gap-y-5 px-0 pt-0 pb-6 lg:grid-cols-[15rem_minmax(0,1fr)] lg:items-start lg:gap-x-8 lg:gap-y-0 lg:px-6 lg:pb-0">
       {!focused && <nav aria-label="Coastal record sections" className="sticky top-[76px] z-20 flex gap-3 border-b border-coast-line bg-coast-paper px-4 py-3 backdrop-blur sm:px-8 lg:col-start-2 lg:row-start-1 lg:px-0">
-          {coastalNavigationLinks(user).filter((item) => item.label !== 'Logs').map((item) => <Link key={item.href} onClick={(event) => { if (event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) document.documentElement.dataset.coastalDirection = item.label === 'Alerts' ? 'forward' : 'back' }} aria-current={(section === 'alerts' ? item.label === 'Alerts' : item.label === 'Assessments') ? 'page' : undefined} className={`min-h-11 rounded-full px-5 py-3 font-bold ${(section === 'alerts' ? item.label === 'Alerts' : item.label === 'Assessments') ? 'bg-coast-deep text-white' : 'border border-coast-line'}`} to={item.href}>{item.label}</Link>)}
+          {coastalNavigationLinks(user).filter((item) => item.label !== 'Logs').map((item) => <Link key={item.href} onClick={(event) => { if (event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && (section === 'alerts' ? item.label !== 'Alerts' : item.label !== 'Assessments')) document.documentElement.dataset.coastalDirection = item.label === 'Alerts' ? 'forward' : 'back' }} aria-current={(section === 'alerts' ? item.label === 'Alerts' : item.label === 'Assessments') ? 'page' : undefined} className={`min-h-11 rounded-full px-5 py-3 font-bold ${(section === 'alerts' ? item.label === 'Alerts' : item.label === 'Assessments') ? 'bg-coast-deep text-white' : 'border border-coast-line'}`} to={item.href}>{item.label}</Link>)}
         </nav>}
       <AccountAreaNavigation active="operations" className={`order-2 px-4 sm:px-8 lg:order-none lg:col-start-1 lg:row-start-1 ${focused ? 'lg:row-span-1' : 'lg:row-span-2'}`} />
       <div className={`coastal-section-panel order-3 min-w-0 scroll-mt-24 px-4 sm:px-8 lg:order-none lg:col-start-2 lg:px-0 ${focused ? 'lg:row-start-1' : 'lg:row-start-2 lg:pt-5'}`} data-coastal-direction={document.documentElement.dataset.coastalDirection} onAnimationEnd={(event) => { if (event.target === event.currentTarget) delete document.documentElement.dataset.coastalDirection }} ref={workspaceRef}>
         {!focused && <>
-        <div className="grid gap-5"><section aria-labelledby="operations-title" className="relative isolate overflow-hidden rounded-[2rem] bg-coast-deep text-white shadow-sm">
-          <img alt={section === 'alerts' ? 'A coastal steward guiding visitors toward a beach access path' : 'Coastal field workers inspecting a beach access path and dune vegetation'} className="absolute inset-0 -z-20 h-full w-full object-cover opacity-60" src={section === 'alerts' ? alertsHero : assessmentHero} />
-          <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-r from-coast-deep via-coast-deep/90 to-coast-deep/35" />
-          <div className="max-w-3xl px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
-            <p className="text-[11px] font-extrabold tracking-[0.18em] text-coast-glass">COASTAL CARE</p>
-            <h1 className="mt-3 font-display text-4xl leading-tight tracking-[-0.05em] sm:text-5xl" id="operations-title">{section === 'alerts' ? 'Clear updates. Safer coastal days.' : 'Look after the places we share.'}</h1>
-            <p className="mt-4 max-w-2xl text-sm leading-6 text-white/85 sm:text-base sm:leading-7">{section === 'alerts' ? 'Prepare a clear notice, choose who should see it, and publish when the details are ready. Follow each update through resolution.' : 'Start with a coastal review draft. Gather evidence, publish it for assessment, and follow the recommendation and human review when available.'}</p>
-          </div>
-        </section></div>
-
-
+        <header className="mb-6">
+          <p className="text-[10px] font-extrabold tracking-[0.18em] text-coast-blue">COASTAL OPERATIONS MANAGEMENT</p>
+          <h1 className="mt-2 font-display text-3xl leading-tight font-bold tracking-[-0.04em] sm:text-4xl">Manage Coastal Operations</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-coast-muted">Review coastal places, gather field evidence and keep advisories clear for the people who need them.</p>
+        </header>
+        <OperationsHero
+          id="operations-title"
+          image={section === 'alerts' ? alertsHero : assessmentHero}
+          imageAlt={section === 'alerts' ? 'A coastal steward guiding visitors toward a beach access path' : 'Coastal field workers inspecting a beach access path and dune vegetation'}
+          label={section === 'alerts' ? 'COASTAL ADVISORIES & ALERTS' : 'COASTAL ASSESSMENTS'}
+          title={section === 'alerts' ? 'Clear updates. Safer coastal days.' : 'Look after the places we share.'}
+          description={section === 'alerts' ? 'Prepare a clear notice, choose who should see it, and publish when the details are ready. Follow each update through resolution.' : 'Start with a coastal review draft. Gather evidence, publish it for assessment, and follow the recommendation and human review when available.'}
+          context={section === 'alerts' ? 'Coastal notices · Audience, publication and resolution' : 'Coastal reviews · Field evidence and human review'}
+        />
         </>}
         {focused && <div className="mb-6">
           <button className="mb-5 inline-flex min-h-11 items-center gap-2 rounded-full px-3 text-sm font-bold text-coast-deep hover:bg-coast-sage focus-visible:outline-2 focus-visible:outline-coast-blue" disabled={busy} onClick={backToList} type="button"><OperationsIcon name="back" />Back to {origin === 'logs' ? 'Logs' : backToAlerts ? 'Alerts' : 'Assessments'}</button>

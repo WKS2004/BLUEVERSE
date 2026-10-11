@@ -241,6 +241,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.getTopLeft(find.text('Assessment logs')), before);
       await tester.ensureVisible(find.text('Review beach access'));
+      // Approved frame wait: the taller hero requires scroll layout before tap.
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Review beach access'));
       await tester.pumpAndSettle();
       expect(find.text('Back to Logs'), findsOneWidget);

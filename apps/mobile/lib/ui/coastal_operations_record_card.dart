@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/models/coastal_operations_models.dart';
+import 'blueverse_theme.dart';
 
 String coastalRecordTime(String value) {
   final time = DateTime.tryParse(value)?.toLocal();
@@ -60,57 +61,92 @@ class CoastalOperationsRecordCard extends StatelessWidget {
         ? assessment.objective
         : assessment.title;
     final content = Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Wrap(
+            spacing: 10,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _label(assessment?.targetType ?? alert!.targetType),
-                      style: Theme.of(context).textTheme.labelSmall,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(title, style: Theme.of(context).textTheme.titleLarge),
-                  ],
+              Text(
+                _label(assessment?.targetType ?? alert!.targetType),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: BlueversePalette.coastMuted,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-              Chip(
-                label: Text(
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: BlueversePalette.coastSand,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
                   _label(assessment?.workflowStatus ?? alert!.lifecycle),
+                  style: const TextStyle(
+                    color: BlueversePalette.coastDeep,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: BlueversePalette.coastInk,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (assessment != null && assessment.objective != title)
+            Text(
+              assessment.objective,
+              style: const TextStyle(
+                color: BlueversePalette.coastMuted,
+                height: 1.5,
+              ),
+            ),
           if (alert != null) ...[
-            Text(alert.description),
+            Text(alert.description, style: const TextStyle(height: 1.5)),
+            const SizedBox(height: 8),
             Text(
               '${_label(alert.severity)} · ${alert.visibility == 'PUBLIC' ? 'For coastal visitors' : 'Operations team'}',
             ),
           ],
-          const SizedBox(height: 8),
+          const Divider(height: 28, color: BlueversePalette.coastLine),
           Text(
             'ID: $id\n${assessment != null ? 'Period:' : 'Valid'} ${coastalRecordTime(assessment?.periodStartsAt ?? alert!.validFrom)} – ${coastalRecordTime(assessment?.periodEndsAt ?? alert!.validUntil)}\nCreated ${coastalRecordTime(assessment?.createdAt ?? alert!.createdAt)}\nUpdated ${coastalRecordTime(assessment?.updatedAt ?? alert!.updatedAt)}',
             style: Theme.of(context).textTheme.bodySmall,
           ),
           if (onOpen != null)
             const Padding(
-              padding: EdgeInsets.only(top: 8),
-              child: Text('Open details →'),
+              padding: EdgeInsets.only(top: 14),
+              child: Text(
+                'Open details →',
+                style: TextStyle(
+                  color: BlueversePalette.coastDeep,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
         ],
       ),
     );
     return Card(
-      color: Colors.white,
+      color: BlueversePalette.coastPearl,
+      margin: const EdgeInsets.only(bottom: 14),
+      clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Theme.of(context).dividerColor),
+        borderRadius: BorderRadius.circular(22),
+        side: const BorderSide(color: BlueversePalette.coastLine),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -118,22 +154,25 @@ class CoastalOperationsRecordCard extends StatelessWidget {
           onOpen == null
               ? content
               : InkWell(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(22),
                   onTap: onOpen,
                   child: content,
                 ),
           if (actions != null)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
               child: actions!,
             ),
           if (onActivity != null)
             Align(
               alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: onActivity,
-                icon: const Icon(Icons.history),
-                label: const Text('View activity'),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                child: TextButton.icon(
+                  onPressed: onActivity,
+                  icon: const Icon(Icons.history),
+                  label: const Text('View activity'),
+                ),
               ),
             ),
         ],
@@ -163,11 +202,11 @@ class CoastalOperationsPagination extends StatelessWidget {
     runSpacing: 12,
     crossAxisAlignment: WrapCrossAlignment.center,
     children: [
-      Row(
-        mainAxisSize: MainAxisSize.min,
+      Wrap(
+        spacing: 12,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           Text('${assessments ? 'Assessments' : 'Alerts'} per page'),
-          const SizedBox(width: 12),
           DropdownButton<int>(
             value: size,
             items: [5, 10, 25, 50, 100]

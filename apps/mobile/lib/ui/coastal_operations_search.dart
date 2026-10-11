@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'blueverse_theme.dart';
+
 class CoastalOperationsSearch extends StatefulWidget {
   const CoastalOperationsSearch({
     required this.assessments,
@@ -163,130 +165,153 @@ class _CoastalOperationsSearchState extends State<CoastalOperationsSearch> {
             'Active',
             if (widget.canManage) 'History',
           ];
-    return Form(
-      key: _form,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            widget.assessments
-                ? 'Find your coastal reviews'
-                : 'Find your coastal updates',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: tabs
-                .map(
-                  (value) => ChoiceChip(
-                    label: Text(value),
-                    selected: _tab == value,
-                    onSelected: (_) {
-                      setState(() => _tab = value);
-                      _apply();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Material(
+        color: BlueversePalette.coastPearl,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+          side: const BorderSide(color: BlueversePalette.coastLine),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _form,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  widget.assessments
+                      ? 'Find your coastal reviews'
+                      : 'Find your coastal updates',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: tabs
+                      .map(
+                        (value) => ChoiceChip(
+                          label: Text(value),
+                          selected: _tab == value,
+                          onSelected: (_) {
+                            setState(() => _tab = value);
+                            _apply();
+                          },
+                        ),
+                      )
+                      .toList(),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _search,
+                  maxLength: 160,
+                  textInputAction: TextInputAction.search,
+                  onChanged: _schedule,
+                  onFieldSubmitted: (_) => _apply(),
+                  decoration: InputDecoration(
+                    labelText: 'Search records',
+                    hintText: widget.assessments
+                        ? 'Search the Assessments'
+                        : 'Search the Alerts',
+                    counterText: '',
+                    suffixIcon: IconButton(
+                      tooltip: 'Search',
+                      onPressed: _apply,
+                      icon: widget.loading
+                          ? Semantics(
+                              label: 'Searching records',
+                              liveRegion: true,
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            )
+                          : const Icon(Icons.search),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    Tooltip(
+                      message: 'Filters',
+                      child: TextButton.icon(
+                        onPressed: () => setState(() => _open = !_open),
+                        icon: Icon(_open ? Icons.expand_less : Icons.tune),
+                        label: const Text('Filters'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: BlueversePalette.coastDeep,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Reset filters',
+                      onPressed: _reset,
+                      icon: const Icon(Icons.restart_alt),
+                    ),
+                  ],
+                ),
+                if (_error != null)
+                  Semantics(
+                    liveRegion: true,
+                    child: Text(
+                      _error!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ),
+                if (_open) ...[
+                  const SizedBox(height: 16),
+                  _filter('Coastal record type', _targetType, const [
+                    'DESTINATION',
+                    'ACTIVITY',
+                    'OFFERING',
+                    'SESSION',
+                  ], (value) => _targetType = value),
+                  if (!widget.assessments) ...[
+                    const SizedBox(height: 12),
+                    _filter('Severity', _severity, const [
+                      'LOW',
+                      'MODERATE',
+                      'HIGH',
+                      'CRITICAL',
+                    ], (value) => _severity = value),
+                    if (widget.canManage) ...[
+                      const SizedBox(height: 12),
+                      _filter('Audience', _visibility, const [
+                        'PUBLIC',
+                        'OPERATIONS',
+                      ], (value) => _visibility = value),
+                    ],
+                  ],
+                  ExpansionTile(
+                    initiallyExpanded: _advanced,
+                    title: const Text('Advanced search'),
+                    onExpansionChanged: (value) {
+                      setState(() => _advanced = value);
+                      if (!value) _apply();
                     },
-                  ),
-                )
-                .toList(),
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _search,
-            maxLength: 160,
-            textInputAction: TextInputAction.search,
-            onChanged: _schedule,
-            onFieldSubmitted: (_) => _apply(),
-            decoration: InputDecoration(
-              labelText: 'Search records',
-              hintText: widget.assessments
-                  ? 'Search the Assessments'
-                  : 'Search the Alerts',
-              counterText: '',
-              suffixIcon: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    tooltip: 'Filters',
-                    isSelected: _open,
-                    onPressed: () => setState(() => _open = !_open),
-                    icon: const Icon(Icons.tune),
-                  ),
-                  IconButton(
-                    tooltip: 'Reset filters',
-                    onPressed: _reset,
-                    icon: const Icon(Icons.restart_alt),
-                  ),
-                  IconButton(
-                    tooltip: 'Search',
-                    onPressed: _apply,
-                    icon: widget.loading
-                        ? Semantics(
-                            label: 'Searching records',
-                            liveRegion: true,
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          )
-                        : const Icon(Icons.search),
+                    children: [
+                      _id(_recordId, 'Assessment or alert ID'),
+                      _id(_targetId, 'Coastal record ID'),
+                      const Text(
+                        'IDs appear beside titles and creation dates in search results.',
+                      ),
+                    ],
                   ),
                 ],
-              ),
+              ],
             ),
           ),
-          if (_error != null)
-            Semantics(
-              liveRegion: true,
-              child: Text(
-                _error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-            ),
-          if (_open) ...[
-            const SizedBox(height: 16),
-            _filter('Coastal record type', _targetType, const [
-              'DESTINATION',
-              'ACTIVITY',
-              'OFFERING',
-              'SESSION',
-            ], (value) => _targetType = value),
-            if (!widget.assessments) ...[
-              const SizedBox(height: 12),
-              _filter('Severity', _severity, const [
-                'LOW',
-                'MODERATE',
-                'HIGH',
-                'CRITICAL',
-              ], (value) => _severity = value),
-              if (widget.canManage) ...[
-                const SizedBox(height: 12),
-                _filter('Audience', _visibility, const [
-                  'PUBLIC',
-                  'OPERATIONS',
-                ], (value) => _visibility = value),
-              ],
-            ],
-            ExpansionTile(
-              initiallyExpanded: _advanced,
-              title: const Text('Advanced search'),
-              onExpansionChanged: (value) {
-                setState(() => _advanced = value);
-                if (!value) _apply();
-              },
-              children: [
-                _id(_recordId, 'Assessment or alert ID'),
-                _id(_targetId, 'Coastal record ID'),
-                const Text(
-                  'IDs appear beside titles and creation dates in search results.',
-                ),
-              ],
-            ),
-          ],
-          const SizedBox(height: 20),
-        ],
+        ),
       ),
     );
   }

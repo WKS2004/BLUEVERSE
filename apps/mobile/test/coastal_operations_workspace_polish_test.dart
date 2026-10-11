@@ -188,6 +188,8 @@ void main() {
       ]) {
         expect(find.text(action), findsNothing);
       }
+      await tester.ensureVisible(find.text('View activity'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('View activity'));
       await tester.pumpAndSettle();
       expect(find.byType(CoastalOperationsActivity), findsOneWidget);

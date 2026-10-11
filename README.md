@@ -418,6 +418,14 @@ isolates the phone from the laptop, use `adb reverse tcp:80 tcp:80` over USB.
 See [Mobile setup](apps/mobile/README.md) for the full device workflow and
 current limitations.
 
+On the Windows development workstation, Flutter's Gradle and Pub caches use
+`D:\WKS\FlutterBuildCache\gradle` and `D:\WKS\FlutterBuildCache\pub`.
+The [mobile cache setup](apps/mobile/README.md#windows-caches-on-a-second-drive)
+documents persistent user environment settings, build-only temporary files
+and reuse of cached dependencies. For USB testing, pass
+`--dart-define=BLUEVERSE_API_BASE_URL=http://127.0.0.1:80` after setting up
+`adb reverse tcp:80 tcp:80`.
+
 ## CI
 
 GitHub Actions contains separate source, test, contract, repository-policy

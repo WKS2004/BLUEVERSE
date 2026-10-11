@@ -398,6 +398,8 @@ void main() {
       await tester.pump();
       expect(find.text('Coastal review'), findsOneWidget);
       expect(find.bySemanticsLabel('Searching records'), findsOneWidget);
+      await tester.ensureVisible(find.byTooltip('Reset filters'));
+      await tester.pump();
       await tester.tap(find.byTooltip('Reset filters'));
       await tester.pumpAndSettle();
       pending.complete(

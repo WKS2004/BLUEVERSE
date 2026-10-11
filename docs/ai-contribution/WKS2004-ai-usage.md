@@ -2323,3 +2323,170 @@ push was made.
   results. Asset, intent and prompt: `apps/web/src/assets/coastal/operations-logs-hero.webp`
   and `docs/v1/coastal-operations-record-navigation-and-audit.md`. No commit or
   push was made.
+
+## 2026-10-11 — Coastal Operations React section introductions
+
+- Date/time or time range: 2026-10-11 16:58 (Asia/Colombo; completion record)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, React/Vite, Docker and in-app browser
+- AI Model: GPT-6
+- Summary of the user's request: Improve the Coastal Operations React section
+  tops using the supplied experience/biodiversity screenshots, keep current
+  tab styles, and retain appropriate existing hero images or add scoped images.
+- Summary of what the AI Agent did: Added page introductions and a shared
+  photo-above-light-card hero to Assessment, Alert and Logs list views. Kept
+  existing photos, pill tabs, sticky placement and workflow controls. Logs hero
+  labels follow the selected category. Updated the existing UI registrations,
+  web README and current presentation documentation; added three new component
+  cases without modifying existing tests. Identity was confirmed by the user.
+- AI output accepted/changed/rejected: Retained coastal fieldwork, visitor-
+  guidance and shared field-note images. Replaced the dark text-over-photo
+  presentation with the requested light editorial layout. Preserved tab styles
+  and current header-adjacent placement. No new image assets were needed.
+- Verification/evidence: All 38 Coastal Operations component cases passed with
+  test concurrency set to one, including `WEB-OPS-HERO-001` through `003`.
+  Full web lint and production build passed. UI integration and endpoint catalog
+  checks passed; all 35 validator cases passed using a writable temporary folder.
+  Initial concurrent Node checks exhausted local process memory; serial checks
+  passed. Initial validator fixtures hit sandbox temporary-folder permissions;
+  a writable temporary folder resolved them without changing tests. The Docker
+  rebuild stalled during dependency installation and was cancelled; the verified
+  local production build was copied into the existing local frontend container.
+  Browser review confirmed all three section images and both Logs category
+  labels at desktop and 390 px widths, with no page horizontal overflow. Current
+  live record reads displayed a session-refresh/sign-in message, so live data
+  acceptance is not claimed. Saved preview: `coastal-operations-assessments.png`
+  in the task visualization directory. `git diff --check` passed. No commit or
+  push was made.
+
+## 2026-10-11 — Bidirectional Coastal Operations tab animation
+
+- Date/time or time range: 2026-10-11 17:10 (Asia/Colombo; completion record)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, React/Vite, Docker and in-app browser
+- AI Model: GPT-6
+- Summary of the user's request: Animate switching between Assessments and
+  Alerts in both directions, and between Assessment Logs and Alert Logs in
+  both directions.
+- Summary of what the AI Agent did: Extended the directional slide-and-fade
+  to 420 ms and 2 rem, animated the full Logs content column including its hero,
+  kept the category panel from receiving a second nested animation, prevented
+  active-section clicks from setting a new transition direction, and clipped
+  transient horizontal motion overflow. Preserved tab styles and all public
+  routes/actions. Added two new navigation regression cases, updated existing
+  workflow descriptions and presentation documentation, and refreshed the local
+  frontend with the verified production build.
+- AI output accepted/changed/rejected: Accepted the directional transition,
+  stationary chrome/tabs and reduced-motion behavior. Kept the existing Logs
+  hero DOM after regression evidence showed that remounting the entire column
+  broke its category-label continuity. Existing test files were preserved.
+- Verification/evidence: All 40 Coastal Operations component tests passed.
+  The six transition/sticky-navigation cases passed again after the overflow
+  fix. Full web lint and production build, UI integration and endpoint catalog
+  validators, and `git diff --check` passed. Browser computed styles confirmed
+  repeated forward/back animation names and 0.42 s durations for both tab pairs,
+  no header/tab/nested record animation, and animation=none with reduced-motion
+  emulation. The temporary preference and viewport overrides were reset.
+  At 390 px viewport width, both forward section and Logs transitions kept
+  document content width equal to the 375 px client width after clipping.
+  New cases: `WEB-OPS-MOTION-001` and `002`. Screenshot:
+  `coastal-operations-transitions.png` in the task visualization directory.
+  No commit or push was made.
+
+
+## 2026-10-11 — Rebuild Flutter Coastal Operations
+
+- Date/time: 2026-10-11 23:20 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: Codex desktop; Flutter/Dart, Gradle and local Python validators
+- AI Model: GPT-6
+- Summary of the user's request: Fully re-implement the Flutter mobile Coastal
+  Operations component, carrying forward the coastal presentation and transitions
+  requested for the React experience.
+- Summary of what the AI Agent did: Rebuilt the native workspace presentation for
+  Assessments, Alerts and Logs, shared responsive introductions and light hero
+  cards, pinned accessible navigation, directional content entrances, record
+  cards, grouped full-page forms, readable details/search/activity, and generic
+  save recovery. Reused suitable bundled photos and preserved the public API
+  service, models, grants, draft/publication/evidence workflows, route intent,
+  server cursor paging, Logs read-only behavior and pre-G07 disconnected context.
+  Added 21 rebuild regression cases and updated the mobile README, workflow
+  registry and mobile experience documentation. Generated local widget previews
+  and built an ARM64 Android debug APK without changing platform configuration.
+- AI output accepted/changed/rejected: Accepted the rebuilt native presentation
+  and retained domain/API implementation. Changed narrow metadata layout and
+  removed repeated legacy objective/title copy after review. Replaced route-wide
+  motion with content-only entry that honors reduced motion. With explicit user
+  approval, added only visibility/frame waits to four existing test files;
+  existing assertions were preserved. Rejected an indefinite universal build
+  wait on external downloads; an offline diagnosis identified the uncached
+  x86-64 engine and the cached ARM64 build succeeded instead.
+- Verification/evidence: `flutter pub get`, final `flutter analyze` and Dart
+  formatting passed. The complete mobile suite passed 143 tests before the last
+  small presentation refinement; 28 focused rebuild/navigation checks passed
+  after the context-date layout change, and the added save-failure/retry case
+  plus final font-loaded phone previews passed. Rebuild tests cover 320/390/768
+  layouts, doubled text, narrow read-only details, forms, fixed tabs, both
+  transition directions, query persistence, reduced motion and denied access.
+  UI integration validation, all 35 validator tests, endpoint catalog validation
+  and `git diff --check` passed. Gradle offline ARM64 `assembleDebug` succeeded;
+  the fresh `apps/mobile/build/app/outputs/flutter-apk/app-debug.apk` contains
+  `lib/arm64-v8a/libflutter.so` and the Dart bundle. Universal Android packaging
+  remains unverified because its x86-64 engine download stalled and was absent
+  from cache. The connected phone was not authorized for USB debugging, so no
+  device installation/camera/gallery verification was performed. Preview and
+  full-suite output are in the task visualization directory. No commit or push
+  was made.
+
+## 2026-10-11 — Recheck Flutter on Android and verify D: build caches
+
+- Date/time or time range: 2026-10-11 23:51 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Flutter/Dart, Gradle, Android Debug Bridge,
+  Docker Desktop and repository validators
+- AI Model: GPT-6
+- Summary of the user's request: Verify that the rebuilt Flutter Coastal
+  Operations implementation works, remove the old C: Gradle cache, and use the
+  existing `D:\WKS\FlutterBuildCache` caches because of disk-space constraints.
+- Summary of what the AI Agent did: Confirmed persistent user Gradle and Pub
+  settings already target D:, verified no package references point to C:,
+  resolved packages offline, reran the complete mobile suite and static checks,
+  and built the current ARM64 debug APK offline. Checked the usual and other
+  likely C: Gradle directories; they were already absent, so nothing was
+  deleted. Used D: temporary files for the verification commands. Started the
+  local Docker gateway, installed and launched the APK on the now-authorized
+  Android 16 phone, and checked signed-in collections, both navigation
+  directions, pinned scrolling tabs, live empty states and both create forms.
+  Corrected a shared description that referred only to assessments. Rebuilt
+  and reinstalled the final APK, checked cold-launch account restoration, and
+  documented cache setup, the explicit USB gateway command and validation.
+- AI output accepted/changed/rejected: Accepted reuse of the existing D:
+  caches after successful offline resolution/builds. Changed the workspace
+  wording to coastal records. Retained the established API and permission
+  implementation and all existing test assertions. Rejected unnecessary
+  cache deletion because the old C: locations were absent; no universal cache
+  reset or package upgrades were performed. The user entered credentials on
+  the phone; no credentials were requested or recorded.
+- Verification/evidence: The final `flutter test test --concurrency=1` passed
+  all 144 tests; `flutter analyze` found no issues. Formatting, UI integration
+  validation, endpoint catalogue validation and `git diff --check` passed.
+  `flutter pub get --offline` preserved the lockfile. Final ARM64 offline
+  `assembleDebug` succeeded in 12 seconds with 189 tasks up to date; the APK
+  contains the ARM64 Flutter engine and Dart bundle. Device installation,
+  signed-in navigation, forms and cold launch passed with no Flutter/Android
+  crash errors in the app process log. Gateway, API, Auth and Coastal
+  Operations readiness checks passed. The live lists were empty; no domain
+  records were created or changed, and populated records/camera/gallery were
+  not tested on the device. The x86-64 engine JAR remains uncached, so offline
+  universal/emulator packaging is unverified. Verification logs are under
+  `D:\WKS\FlutterBuildCache\temp`; screenshots are in the task visualization
+  directory. See `docs/v1/coastal-operations-mobile-reimplementation.md` and
+  the root/mobile READMEs. No commit or push was made.

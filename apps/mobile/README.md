@@ -1,6 +1,15 @@
 # BLUEVERSE Mobile
 
-The [2026-10-02 navigation/activity contract](../../docs/v1/coastal-operations-record-navigation-and-audit.md) updates all collections to 500 ms live search, fixed category tabs above scrolling content and shared white record cards. Assessments/Alerts per page offers 5/10/25/50/100 server cursor pages. Logs opens full record details/actions. Named create/edit query routes restore current saved data after refresh; unsaved inputs are not persisted. Activity shows verified names/roles/time and before/after values; old missing snapshots stay explicit.
+The [2026-10-11 Coastal Operations rebuild](../../docs/v1/coastal-operations-mobile-reimplementation.md)
+refreshes Assessments, Alerts, Logs, record cards, forms, details, search and
+activity with native responsive layouts. Light photo-over-copy hero cards reuse
+the bundled coastal photographs. Pinned section/category tabs sit above a
+420 ms directional content transition that respects reduced motion. Full-page
+forms group related fields, record metadata wraps at large text sizes, and
+Logs retains read-only details and scoped activity. Existing public API
+permissions, publication, evidence and cursor workflows are preserved.
+
+The [2026-10-02 navigation/activity contract](../../docs/v1/coastal-operations-record-navigation-and-audit.md) updates all collections to 500 ms live search, fixed category tabs above scrolling content and shared white record cards. Assessments/Alerts per page offers 5/10/25/50/100 server cursor pages. Logs opens full read-only record details and activity. Named create/edit query routes restore current saved data after refresh; unsaved inputs are not persisted. Activity shows verified names/roles/time and before/after values; old missing snapshots stay explicit.
 The [focused workspace follow-up](../../docs/v1/coastal-operations-focused-workspaces.md) supplies distinct hero photographs and compact search beneath workspace actions. The latest contract supersedes its debounce interval. Reads retain records with a local spinner; full details/forms preserve shared chrome and Back. Existing public API permissions apply; published authored content remains read only and cancellation confirmations use red styling.
 
 Coastal Operations offers `/operations/assessments` and `/operations/alerts`,
@@ -29,7 +38,7 @@ may vary without assigning a stakeholder group to this client.
 
 `lib/main.dart` registers `/signin`, `/signup`, `/profile`, `/dashboard`,
 `/admin`, `/admin/permissions`, `/admin/roles`, `/admin/users`,
-`/operations/assessments`, `/operations/alerts`, `/404` and `/500`;
+`/operations/assessments`, `/operations/alerts`, `/operations/logs`, `/404` and `/500`;
 the launch screen is `/` and restores the saved account before showing
 onboarding.
 
@@ -62,6 +71,35 @@ flutter analyze
 flutter test
 flutter run
 ```
+
+### Windows caches on a second drive
+
+For this workstation, retain the existing caches in
+`D:\WKS\FlutterBuildCache`. Set both the current PowerShell session and the
+user environment so new terminals use the same directories:
+
+```powershell
+$env:GRADLE_USER_HOME = 'D:\WKS\FlutterBuildCache\gradle'
+$env:PUB_CACHE = 'D:\WKS\FlutterBuildCache\pub'
+[Environment]::SetEnvironmentVariable('GRADLE_USER_HOME', $env:GRADLE_USER_HOME, 'User')
+[Environment]::SetEnvironmentVariable('PUB_CACHE', $env:PUB_CACHE, 'User')
+New-Item -ItemType Directory -Force -Path $env:GRADLE_USER_HOME, $env:PUB_CACHE,
+  'D:\WKS\FlutterBuildCache\temp' | Out-Null
+$env:TEMP = 'D:\WKS\FlutterBuildCache\temp'
+$env:TMP = $env:TEMP
+flutter pub get --offline
+```
+
+Restart an already open IDE to pick up the user environment. `TEMP` and `TMP`
+above apply only to that shell and its build processes. Project build outputs
+remain under `apps/mobile/build` on D:, and the Flutter SDK keeps its own cache
+under its installation directory. Gradle and Pub select dependencies by
+version; existing cache entries do not need to be erased for this UI rebuild.
+An offline build requires every dependency for the selected Android ABI to be
+cached. If an artifact is missing, run the same build with network access to
+populate the D: cache rather than deleting it. Only remove an old C: Gradle
+directory after confirming the D: configuration and stopping builds that use
+the old directory.
 
 The Flutter project includes generated platform folders for Android, iOS,
 Linux, macOS, Windows and web. Platform-specific release configuration should
@@ -106,12 +144,13 @@ address, use the attached USB device with an ADB reverse tunnel:
 
 ```bash
 adb reverse tcp:80 tcp:80
-flutter run
+flutter run --dart-define=BLUEVERSE_API_BASE_URL=http://127.0.0.1:80
 ```
 
-The client tries `127.0.0.1:80` only as this final USB-reverse fallback when no
-explicit `BLUEVERSE_API_BASE_URL` was embedded. It does not make Android
-`localhost` the normal network target.
+This explicit USB address avoids waiting for the environment-specific Android
+fallback. The reverse tunnel must be reapplied after reconnecting the device.
+The client also tries `127.0.0.1:80` as its final fallback when no explicit
+`BLUEVERSE_API_BASE_URL` was embedded.
 
 The Auth adapter stores the server-issued device ID, device proof key,
 short-lived access token and rotating refresh token in platform secure storage.

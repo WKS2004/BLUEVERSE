@@ -179,6 +179,8 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(requestCount, 0);
+        await tester.ensureVisible(find.text('New assessment'));
+        await tester.pumpAndSettle();
         await tester.tap(find.text('New assessment'));
         await tester.pumpAndSettle();
         FocusManager.instance.primaryFocus?.unfocus();

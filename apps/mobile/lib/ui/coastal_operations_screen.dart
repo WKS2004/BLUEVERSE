@@ -11,6 +11,7 @@ import 'coastal_operations_search.dart';
 import 'coastal_operations_draft_forms.dart';
 import 'coastal_operations_activity.dart';
 import 'coastal_operations_record_card.dart';
+import 'coastal_operations_presentation.dart';
 import 'auth_view_model.dart';
 import 'blueverse_theme.dart';
 import 'feedback/loading_screen_controller.dart';
@@ -534,9 +535,7 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
     );
   }
 
-  Widget _navigation() => Wrap(
-    spacing: 12,
-    runSpacing: 8,
+  Widget _navigation() => CoastalOperationsNavigation(
     children: [
       if (CoastalOperationsPermissions.hasAssessmentAccess(_permissions))
         TextButton(
@@ -1131,6 +1130,15 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: _StatusPill(
+                value:
+                    detail?.assessment.workflowStatus ??
+                    assessment.workflowStatus,
+              ),
+            ),
+            const SizedBox(height: 16),
             if (detailError != null)
               _NoticeBox(text: detailError, error: true)
             else if (detail == null)
@@ -1263,13 +1271,13 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                     dense: true,
                     contentPadding: EdgeInsets.zero,
                     title: Text(_dependencyLabel(dependency.service)),
-                    subtitle: Text(_humanize(dependency.status)),
-                    trailing: dependency.checkedAt == null
-                        ? null
-                        : Text(
-                            _formatDate(dependency.checkedAt!),
-                            style: Theme.of(context).textTheme.labelSmall,
-                          ),
+                    subtitle: Text(
+                      [
+                        _humanize(dependency.status),
+                        if (dependency.checkedAt != null)
+                          'Checked ${_formatDate(dependency.checkedAt!)}',
+                      ].join('\n'),
+                    ),
                   ),
                 ),
               ],
@@ -1306,13 +1314,14 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
               ],
               if (_canReadEvidence || _canUploadEvidence) ...[
                 const SizedBox(height: 16),
-                Row(
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    Expanded(
-                      child: Text(
-                        'Evidence',
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
+                    Text(
+                      'Evidence',
+                      style: Theme.of(context).textTheme.titleSmall,
                     ),
                     if (!widget.fromLogs &&
                         _canUploadEvidence &&
@@ -1528,35 +1537,34 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                _StatusPill(value: alert.lifecycle),
+                const SizedBox(height: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _humanize(alert.targetType),
+                      style: Theme.of(context).textTheme.labelSmall,
+                    ),
+                    const SizedBox(height: 6),
+                    if (focused)
                       Text(
-                        _humanize(alert.targetType),
-                        style: Theme.of(context).textTheme.labelSmall,
-                      ),
-                      const SizedBox(height: 6),
-                      if (focused)
-                        Text(
+                        alert.title,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      )
+                    else
+                      TextButton(
+                        onPressed: () => _openAlertDetails(alert),
+                        child: Text(
                           alert.title,
                           style: Theme.of(context).textTheme.titleMedium,
-                        )
-                      else
-                        TextButton(
-                          onPressed: () => _openAlertDetails(alert),
-                          child: Text(
-                            alert.title,
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
                         ),
-                    ],
-                  ),
+                      ),
+                  ],
                 ),
-                _StatusPill(value: alert.lifecycle),
               ],
             ),
             const SizedBox(height: 10),
@@ -1656,7 +1664,11 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
         final user = widget.viewModel.user;
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Coastal operations'),
+            title: const Text(
+              'Coastal operations',
+              overflow: TextOverflow.ellipsis,
+            ),
+            titleTextStyle: Theme.of(context).textTheme.titleMedium,
             actions: [
               AuthAccountSwitcher(viewModel: widget.viewModel),
               AuthAdminNavigationMenu(viewModel: widget.viewModel),
@@ -1683,9 +1695,19 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                           children: [
                             Offstage(
                               offstage: _focused,
-                              child: _buildWorkspace(context),
+                              child: CoastalOperationsEntrance(
+                                forward:
+                                    widget.section ==
+                                    CoastalOperationsSection.alerts,
+                                child: _buildWorkspace(context),
+                              ),
                             ),
-                            if (_focused) _focusedWorkspace(context),
+                            if (_focused)
+                              CoastalOperationsEntrance(
+                                key: const ValueKey('focused-workspace'),
+                                forward: true,
+                                child: _focusedWorkspace(context),
+                              ),
                           ],
                         ),
                       ),
@@ -1724,69 +1746,84 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                   ? 'Advisory details'
                   : 'Assessment details');
     return ListView(
-      padding: const EdgeInsets.all(24),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: EdgeInsets.symmetric(
+        horizontal: MediaQuery.sizeOf(context).width < 600 ? 16 : 32,
+        vertical: 24,
+      ),
       children: [
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: _backToList,
-            icon: const Icon(Icons.arrow_back),
-            label: Text('Back to $name'),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Focus(
-          autofocus: true,
-          child: Semantics(
-            header: true,
-            child: Text(
-              title,
-              style: Theme.of(context).textTheme.headlineMedium,
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 900),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: _backToList,
+                    icon: const Icon(Icons.arrow_back),
+                    label: Text('Back to $name'),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Focus(
+                  autofocus: true,
+                  child: Semantics(
+                    header: true,
+                    child: Text(
+                      title,
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                if (_notice != null)
+                  _NoticeBox(text: _notice!, error: _noticeIsError),
+                if (_restoreBusy) const LinearProgressIndicator(),
+                if (_restoreError != null)
+                  _NoticeBox(text: _restoreError!, error: true),
+                if (_formAssessments != null)
+                  CoastalDraftDialog(
+                    key: ValueKey(
+                      'form:$_formAssessments:${_editingAssessment?.assessmentId}:${_editingAlert?.alertId}',
+                    ),
+                    apiService: widget.apiService,
+                    assessments: _formAssessments!,
+                    assessment: _editingAssessment,
+                    alert: _editingAlert,
+                    embedded: true,
+                    onSaved: _draftSaved,
+                    onCancel: _backToList,
+                  )
+                else if (_selectedAssessment != null) ...[
+                  Text(
+                    widget.fromLogs
+                        ? 'Review this retained assessment and its coastal context. Its fields are read-only in this view.'
+                        : 'Review the saved purpose and coastal context here. Choose Edit draft when you are ready to change an unpublished assessment.',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(_selectedAssessment!.objective),
+                  _assessmentDetails(_selectedAssessment!),
+                ] else if (_alertDetailError != null)
+                  _NoticeBox(text: _alertDetailError!, error: true)
+                else if (_alertDetailLoading)
+                  const LinearProgressIndicator()
+                else if (_selectedAlert != null) ...[
+                  Text(
+                    widget.fromLogs
+                        ? 'Review this retained advisory as saved; records opened from Logs are read-only.'
+                        : 'Review the audience, dates and coastal link here. Choose Edit draft before changing an unpublished advisory.',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  _alertCard(_selectedAlert!, focused: true),
+                ],
+              ],
             ),
           ),
         ),
-        const SizedBox(height: 20),
-        if (_notice != null) _NoticeBox(text: _notice!, error: _noticeIsError),
-        if (_restoreBusy) const LinearProgressIndicator(),
-        if (_restoreError != null)
-          _NoticeBox(text: _restoreError!, error: true),
-        if (_formAssessments != null)
-          CoastalDraftDialog(
-            key: ValueKey(
-              'form:$_formAssessments:${_editingAssessment?.assessmentId}:${_editingAlert?.alertId}',
-            ),
-            apiService: widget.apiService,
-            assessments: _formAssessments!,
-            assessment: _editingAssessment,
-            alert: _editingAlert,
-            embedded: true,
-            onSaved: _draftSaved,
-            onCancel: _backToList,
-          )
-        else if (_selectedAssessment != null) ...[
-          Text(
-            widget.fromLogs
-                ? 'Review this retained assessment and its coastal context. Its fields are read-only in this view.'
-                : 'Review the saved purpose and coastal context here. Choose Edit draft when you are ready to change an unpublished assessment.',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 12),
-          Text(_selectedAssessment!.objective),
-          _assessmentDetails(_selectedAssessment!),
-        ] else if (_alertDetailError != null)
-          _NoticeBox(text: _alertDetailError!, error: true)
-        else if (_alertDetailLoading)
-          const LinearProgressIndicator()
-        else if (_selectedAlert != null) ...[
-          Text(
-            widget.fromLogs
-                ? 'Review this retained advisory as saved; records opened from Logs are read-only.'
-                : 'Review the audience, dates and coastal link here. Choose Edit draft before changing an unpublished advisory.',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 12),
-          _alertCard(_selectedAlert!, focused: true),
-        ],
       ],
     );
   }
@@ -1795,7 +1832,14 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
     return RefreshIndicator(
       onRefresh: _loadData,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
+        physics: const AlwaysScrollableScrollPhysics(),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: EdgeInsets.fromLTRB(
+          MediaQuery.sizeOf(context).width < 600 ? 16 : 32,
+          24,
+          MediaQuery.sizeOf(context).width < 600 ? 16 : 32,
+          40,
+        ),
         children: [
           Center(
             child: ConstrainedBox(
@@ -1803,6 +1847,16 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  CoastalOperationsIntroduction(
+                    title: widget.section == CoastalOperationsSection.all
+                        ? 'Care for the coast'
+                        : _showAssessments
+                        ? 'Manage coastal assessments'
+                        : 'Manage coastal alerts',
+                    description: _showAssessments
+                        ? 'Gather field observations, keep your evidence together and follow each coastal review.'
+                        : 'Keep coastal visitors and your team informed with timely, clear advisories.',
+                  ),
                   _hero(context),
                   if (_notice != null) ...[
                     const SizedBox(height: 14),
@@ -1821,7 +1875,7 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
                   ),
                   const SizedBox(height: 6),
                   const Text(
-                    'Review coastal assessments, follow important context, and share updates with the right people.',
+                    'Review coastal records, follow important context, and share updates with the right people.',
                     style: TextStyle(height: 1.45),
                   ),
                   const SizedBox(height: 14),
@@ -1913,85 +1967,12 @@ class _CoastalOperationsScreenState extends State<CoastalOperationsScreen> {
     );
   }
 
-  Widget _hero(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(26),
-      child: SizedBox(
-        height: 238,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.asset(
-              _showAssessments
-                  ? 'assets/coastal/onboarding/assessment-hero.png'
-                  : 'assets/coastal/onboarding/alerts-hero.png',
-              semanticLabel: _showAssessments
-                  ? 'Coastal field workers inspecting a beach access path'
-                  : 'A coastal steward guiding visitors toward a safe path',
-              fit: BoxFit.cover,
-              alignment: Alignment.center,
-              errorBuilder: (_, _, _) => const ColoredBox(
-                color: BlueversePalette.coastDeep,
-                child: Icon(Icons.waves, color: Colors.white54, size: 88),
-              ),
-            ),
-            const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [
-                    Color(0xE6205C79),
-                    Color(0xB0205C79),
-                    Color(0x55205C79),
-                  ],
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(22),
-              child: Align(
-                alignment: Alignment.bottomLeft,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'COASTAL CARE',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: BlueversePalette.coastGlass,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      widget.section == CoastalOperationsSection.alerts
-                          ? 'Clear updates. Safer coastal days.'
-                          : 'Look after the places we share.',
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            height: 1.1,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      widget.section == CoastalOperationsSection.alerts
-                          ? 'Prepare a clear notice, choose its audience, and follow it through publication and resolution.'
-                          : 'Gather evidence in a draft, publish it for assessment, and follow the recommendation and human review when available.',
-                      style: TextStyle(color: Colors.white, height: 1.35),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _hero(BuildContext context) => CoastalOperationsHero(
+    assessments: _showAssessments,
+    count: _loading
+        ? null
+        : (_showAssessments ? _assessments.length : _alerts.length),
+  );
 }
 
 class _StatusPill extends StatelessWidget {

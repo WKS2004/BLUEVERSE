@@ -14,6 +14,7 @@ import OperationsRecordCard from './OperationsRecordCard'
 import OperationsPagination from './OperationsPagination'
 import OperationsActivity from './OperationsActivity'
 import logsHero from '../../assets/coastal/operations-logs-hero.webp'
+import OperationsHero from './OperationsHero'
 
 function LogsWorkspace({ user }: { user: AuthUser | null }) {
   const [view, setView] = useSearchParams()
@@ -63,23 +64,30 @@ function LogsWorkspace({ user }: { user: AuthUser | null }) {
   if (['create', 'edit', 'detail'].includes(view.get('view') || '')) return <CoastalOperationsPage section={view.get('kind') === 'alerts' ? 'alerts' : 'assessments'} origin="logs" />
   return <div className="flex min-h-screen flex-col bg-coast-paper font-sans text-coast-ink">
     <SiteHeader active="operations" />
-    <main className="mx-auto grid w-full max-w-[90rem] flex-1 grid-cols-1 content-start gap-y-5 px-0 pt-0 pb-6 lg:grid-cols-[15rem_minmax(0,1fr)] lg:items-start lg:gap-x-8 lg:gap-y-0 lg:px-6 lg:pb-0">
+    <main className="mx-auto grid w-full max-w-[90rem] flex-1 grid-cols-1 content-start overflow-x-clip gap-y-5 px-0 pt-0 pb-6 lg:grid-cols-[15rem_minmax(0,1fr)] lg:items-start lg:gap-x-8 lg:gap-y-0 lg:px-6 lg:pb-0">
       {allowed && <div aria-label="Log record category" className="sticky top-[76px] z-20 flex flex-wrap gap-3 border-b border-coast-line bg-coast-paper px-4 py-3 backdrop-blur sm:px-8 lg:col-start-2 lg:row-start-1 lg:px-0">
             {assessmentsAllowed && <button aria-pressed={kind === 'assessments'} className={`min-h-11 rounded-full px-5 font-bold ${kind === 'assessments' ? 'bg-coast-deep text-white' : 'border border-coast-line'}`} onClick={() => switchKind('assessments')} type="button">Assessment logs</button>}
             {alertsAllowed && <button aria-pressed={kind === 'alerts'} className={`min-h-11 rounded-full px-5 font-bold ${kind === 'alerts' ? 'bg-coast-deep text-white' : 'border border-coast-line'}`} onClick={() => switchKind('alerts')} type="button">Alert logs</button>}
           </div>}
       <AccountAreaNavigation active="operations" className={`order-2 px-4 sm:px-8 lg:order-none lg:col-start-1 lg:row-start-1 ${allowed ? 'lg:row-span-2' : 'lg:row-span-1'}`} />
-      <div className={`order-3 min-w-0 px-4 sm:px-8 lg:order-none lg:px-0 lg:col-start-2 ${allowed ? 'lg:row-start-2' : 'lg:row-start-1'}`}>
+      <div data-coastal-direction={categoryDirection} className={`coastal-log-panel order-3 min-w-0 px-4 sm:px-8 lg:order-none lg:px-0 lg:col-start-2 ${allowed ? 'lg:row-start-2' : 'lg:row-start-1'}`}>
         {!allowed ? <p role="alert">Your permissions do not allow access to Coastal Operations logs.</p> : <>
-          <section aria-labelledby="operations-logs-title" className="relative isolate mb-5 mt-6 overflow-hidden rounded-[2rem] bg-coast-deep text-white shadow-sm">
-            <img alt="Coastal stewards comparing shoreline maps and field notes at a table" className="absolute inset-0 -z-20 h-full w-full object-cover opacity-60" src={logsHero} />
-            <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-r from-coast-deep via-coast-deep/90 to-coast-deep/35" />
-            <div className="max-w-3xl px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
-              <p className="text-[11px] font-extrabold tracking-[0.18em] text-coast-glass">COASTAL OPERATIONS · ACTIVITY</p>
-              <h1 className="mt-3 font-display text-4xl leading-tight tracking-[-0.05em] sm:text-5xl" id="operations-logs-title">Every coastal decision, accounted for.</h1>
-              <p className="mt-4 max-w-2xl text-sm leading-6 text-white/85 sm:text-base sm:leading-7">Follow the history of assessment drafts, published reviews and advisories—who changed them and when.</p>
-            </div>
-          </section>
+          <header className="mt-5 mb-6">
+            <p className="text-[10px] font-extrabold tracking-[0.18em] text-coast-blue">COASTAL OPERATIONS HISTORY</p>
+            <h1 className="mt-2 font-display text-3xl leading-tight font-bold tracking-[-0.04em] sm:text-4xl">Coastal Operations Logs</h1>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-coast-muted">Revisit coastal reviews and advisories, with a clear record of the changes made along the way.</p>
+          </header>
+          <div className="mb-6">
+            <OperationsHero
+              id="operations-logs-title"
+              image={logsHero}
+              imageAlt="Coastal stewards comparing shoreline maps and field notes at a table"
+              label={kind === 'assessments' ? 'COASTAL ASSESSMENT LOGS' : 'COASTAL ALERT LOGS'}
+              title="Every coastal decision, accounted for."
+              description="Follow the history of assessment drafts, published reviews and advisories—who changed them and when."
+              context={kind === 'assessments' ? 'Assessment history · Saved reviews and recorded changes' : 'Advisory history · Coastal notices and recorded changes'}
+            />
+          </div>
           <section key={kind} aria-label="Coastal Operations logs" data-coastal-direction={categoryDirection} className="coastal-category-panel rounded-3xl border border-coast-line bg-coast-pearl p-5 sm:p-8">
             <OperationsSearch key={kind} kind={kind} canManage loading={loading} onChange={(value) => { setQuery(value); resetPage() }} />
             {error && <p className="mb-4 text-sm text-red-900" role="alert">{error} <button className="underline" onClick={() => { beginRead(); setRetry((value) => value + 1) }} type="button">Retry logs</button></p>}

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../data/models/coastal_operations_models.dart';
 import '../data/services/coastal_operations_api_service.dart';
 import 'feedback/loading_screen_controller.dart';
+import 'coastal_operations_presentation.dart';
+import 'blueverse_theme.dart';
 
 String _offsetLabel(int? minutes) {
   if (minutes == null) return '';
@@ -240,6 +242,12 @@ class _CoastalDraftDialogState extends State<CoastalDraftDialog> {
       }
     } on CoastalOperationsApiException catch (error) {
       if (mounted) setState(() => _error = error.message);
+    } on Object {
+      if (mounted) {
+        setState(
+          () => _error = 'The draft could not be saved. Your entries are still here; please retry.',
+        );
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -342,6 +350,7 @@ class _CoastalDraftDialogState extends State<CoastalDraftDialog> {
                     ),
                 ],
                 const SizedBox(height: 14),
+                const CoastalOperationsFormSection(title: 'Draft overview'),
                 TextFormField(
                   controller: _title,
                   maxLength: 160,
@@ -354,6 +363,7 @@ class _CoastalDraftDialogState extends State<CoastalDraftDialog> {
                       ? 'Add a clear title.'
                       : null,
                 ),
+                const CoastalOperationsFormSection(title: 'Coastal links'),
                 _select(
                   'Coastal record type',
                   _targetType,
@@ -430,6 +440,9 @@ class _CoastalDraftDialogState extends State<CoastalDraftDialog> {
                             }
                           },
                   ),
+                  const CoastalOperationsFormSection(
+                    title: 'Audience & urgency',
+                  ),
                   _select(
                     'Severity',
                     _severity,
@@ -461,7 +474,10 @@ class _CoastalDraftDialogState extends State<CoastalDraftDialog> {
                     (value) => _visibility = value,
                   ),
                 ],
-                if (options != null)
+                if (options != null) ...[
+                  const CoastalOperationsFormSection(
+                    title: 'Dates & time zone',
+                  ),
                   _select(
                     'Time zone',
                     _zoneId,
@@ -479,6 +495,7 @@ class _CoastalDraftDialogState extends State<CoastalDraftDialog> {
                         .toList(),
                     (value) => _zoneId = value,
                   ),
+                ],
                 const Padding(
                   padding: EdgeInsets.only(top: 8),
                   child: Text(
@@ -491,6 +508,11 @@ class _CoastalDraftDialogState extends State<CoastalDraftDialog> {
                 ),
                 _date(widget.assessments ? 'Ends at' : 'Valid until', _end),
                 const SizedBox(height: 14),
+                CoastalOperationsFormSection(
+                  title: widget.assessments
+                      ? 'Review purpose'
+                      : 'Coastal notice',
+                ),
                 TextFormField(
                   controller: _content,
                   maxLines: 4,
@@ -545,13 +567,23 @@ class _CoastalDraftDialogState extends State<CoastalDraftDialog> {
       ],
     );
     if (!widget.embedded) return dialog;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        dialog.content!,
-        const SizedBox(height: 16),
-        Wrap(spacing: 12, runSpacing: 8, children: dialog.actions!),
-      ],
+    return Material(
+      color: BlueversePalette.coastPearl,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(22),
+        side: const BorderSide(color: BlueversePalette.coastLine),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            dialog.content!,
+            const SizedBox(height: 16),
+            Wrap(spacing: 12, runSpacing: 8, children: dialog.actions!),
+          ],
+        ),
+      ),
     );
   }
 }

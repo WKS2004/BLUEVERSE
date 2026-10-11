@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'coastal_operations_record_card.dart';
+import 'blueverse_theme.dart';
 import '../data/models/coastal_operations_models.dart';
 import '../data/services/coastal_operations_api_service.dart';
 
@@ -87,9 +88,14 @@ class _CoastalOperationsActivityState extends State<CoastalOperationsActivity> {
               ),
             ],
           ),
-          const Text(
-            'Draft changes, publication and decisions, newest first. Times use your local time zone.',
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Draft changes, publication and decisions, newest first. Times use your local time zone.',
+              style: TextStyle(color: BlueversePalette.coastMuted, height: 1.5),
+            ),
           ),
+          const SizedBox(height: 16),
           if (_error != null) Text(_error!, semanticsLabel: _error),
           if (_error != null)
             TextButton(
@@ -103,63 +109,72 @@ class _CoastalOperationsActivityState extends State<CoastalOperationsActivity> {
                 if (!_busy && _error == null && _items.isEmpty)
                   const ListTile(title: Text('No activity recorded yet.')),
                 for (final item in _items)
-                  ExpansionTile(
-                    title: Text(
-                      item.summary ??
-                          _actions[item.action] ??
-                          item.action.toLowerCase().replaceAll('_', ' '),
+                  Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    color: BlueversePalette.coastPearl,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      side: const BorderSide(color: BlueversePalette.coastLine),
                     ),
-                    subtitle: Text(
-                      [
-                        if (!widget.showReference)
-                          '${item.actorName ?? (item.actorId == '00000000-0000-0000-0000-000000000000' ? 'System' : 'Team member (name not recorded)')} · ${item.actorRoles.isEmpty ? 'Role not recorded' : item.actorRoles.join(', ')}',
-                        DateTime.tryParse(item.createdAt)
-                                ?.toLocal()
-                                .toString() ??
-                            item.createdAt,
-                      ].join('\n'),
-                    ),
-                    children: [
-                      if (item.recordTitle != null) Text(item.recordTitle!),
-                      if (item.changes.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.all(12),
-                          child: Text(
-                            'Field details were not recorded for this event.',
-                          ),
-                        ),
-                      for (final change in item.changes)
-                        ListTile(
-                          title: Text(_field(change.field)),
-                          subtitle: SelectableText(
-                            'Before: ${_value(change.before, change.field)}\nAfter: ${_value(change.after, change.field)}',
-                          ),
-                        ),
-                      if (widget.showReference)
-                        Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(12),
+                    clipBehavior: Clip.antiAlias,
+                    child: ExpansionTile(
+                      expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
+                      shape: const Border(),
+                      collapsedShape: const Border(),
+                      title: Text(
+                        item.summary ??
+                            _actions[item.action] ??
+                            item.action.toLowerCase().replaceAll('_', ' '),
+                      ),
+                      subtitle: Text(
+                        [
+                          if (!widget.showReference)
+                            '${item.actorName ?? (item.actorId == '00000000-0000-0000-0000-000000000000' ? 'System' : 'Team member (name not recorded)')} · ${item.actorRoles.isEmpty ? 'Role not recorded' : item.actorRoles.join(', ')}',
+                          coastalRecordTime(item.createdAt),
+                        ].join('\n'),
+                      ),
+                      children: [
+                        if (item.recordTitle != null) Text(item.recordTitle!),
+                        if (item.changes.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: Text(
+                              'Field details were not recorded for this event.',
                             ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text('Reference details'),
-                                  const SizedBox(height: 4),
-                                  const Text('Correlation reference'),
-                                  SelectableText(item.correlationId),
-                                ],
+                          ),
+                        for (final change in item.changes)
+                          ListTile(
+                            title: Text(_field(change.field)),
+                            subtitle: SelectableText(
+                              'Before: ${_value(change.before, change.field)}\nAfter: ${_value(change.after, change.field)}',
+                            ),
+                          ),
+                        if (widget.showReference)
+                          Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('Reference details'),
+                                    const SizedBox(height: 4),
+                                    const Text('Correlation reference'),
+                                    SelectableText(item.correlationId),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
                 if (_cursor != null)
                   TextButton(

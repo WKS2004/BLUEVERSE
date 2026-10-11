@@ -7,6 +7,15 @@ Coastal Operations offers `/operations/assessments` and `/operations/alerts`,
 with permission-aware route/lifecycle tabs, server search/filters, pagination,
 coastal hero imagery and scoped activity timelines. Publication semantics and
 equal mobile capability follow the [shared contract](../../docs/v1/coastal-operations-publication-and-ui.md).
+Assessment, Alert and Logs list views introduce the workspace above a wide
+coastal photograph and light editorial hero card, using the existing section
+images. The current sticky pill tabs retain their styling and placement;
+focused forms/details continue to replace the introduction and hero. Logs
+labels reflect the selected assessment or alert category.
+Assessment/Alert and Assessment Logs/Alert Logs switches use a directional
+420 ms slide-and-fade on the content column, including the hero and records.
+The header, account rail and tab row stay fixed; reduced-motion preferences
+disable these transitions.
 The [record experience follow-up](../../docs/v1/coastal-operations-record-experience.md)
 places the hero above title search (all types by default), removes the bottom
 lookup and header menu, and adds titled drafts, named associations and one

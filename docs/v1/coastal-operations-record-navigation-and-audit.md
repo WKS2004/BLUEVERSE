@@ -159,3 +159,34 @@ wide panoramic framing with open space on the left for copy; no interface,
 logos, legible writing or watermark.” The generated PNG was converted to WebP
 for the app asset. `WEB-OPS-LOGS-004` checks the contextual image, accessible
 description and placement above search/results.
+
+### React Coastal Operations section introductions — 2026-10-11
+
+Assessment, Alert and Logs list views now follow the supplied coastal
+experience references: a page introduction followed by a wide photograph
+above a light bordered card containing a section label, heading, description
+and quiet workflow context. The existing photos remain appropriate to coastal
+inspection, visitor guidance and record history and are reused without new
+assets. Photo subjects stay visible without the previous dark text overlay.
+The pill tabs retain their current styling, sticky placement and narrow-screen
+order directly below the shared header. Logs labels follow the selected
+assessment/alert category. Focused forms and record details still replace the
+introduction and hero; workflow actions, permissions and API routes are
+unchanged. This is a React presentation change; mobile workflow coverage is
+unchanged. `WEB-OPS-HERO-001`–`003` cover section context, accessible image and
+heading order, retained tabs, empty collections and Logs category switching.
+
+### React tab transitions — 2026-10-11
+
+Both Assessment/Alert and Assessment Logs/Alert Logs tab pairs use a 420 ms
+directional slide-and-fade: entering Alerts moves in from the right, and
+returning to Assessments moves in from the left. The content column, including
+its introduction, hero and records, moves together. Shared header, account
+navigation and tab styling remain stationary. Logs keeps its existing hero DOM
+and changes the animation direction on each category switch, preserving image
+continuity. Repeated forward/back switches replay; clicking the active tab does
+not start another transition. The CSS reduced-motion media query disables
+movement for people who request it. `WEB-OPS-MOTION-001` and `002` exercise
+repeated navigation, the full content scope and active-tab behavior.
+The main layout clips horizontal animation overflow so forward slides do not
+create a temporary horizontal scrollbar at phone widths.

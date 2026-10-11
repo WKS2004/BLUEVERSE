@@ -7,6 +7,8 @@ import 'auth_view_model.dart';
 import 'coastal_operations_activity.dart';
 import 'coastal_operations_search.dart';
 import 'coastal_operations_record_card.dart';
+import 'coastal_operations_presentation.dart';
+import 'blueverse_theme.dart';
 import '../data/models/coastal_operations_models.dart';
 
 class CoastalOperationsLogsScreen extends StatefulWidget {
@@ -161,7 +163,11 @@ class _LogsState extends State<CoastalOperationsLogsScreen> {
     listenable: widget.viewModel,
     builder: (context, _) => Scaffold(
       appBar: AppBar(
-        title: const Text('Coastal Operations logs'),
+        title: const Text(
+          'Coastal Operations logs',
+          overflow: TextOverflow.ellipsis,
+        ),
+        titleTextStyle: Theme.of(context).textTheme.titleMedium,
         actions: [
           AuthAccountSwitcher(viewModel: widget.viewModel),
           AuthAdminNavigationMenu(viewModel: widget.viewModel),
@@ -175,8 +181,7 @@ class _LogsState extends State<CoastalOperationsLogsScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            Wrap(
-              spacing: 12,
+            CoastalOperationsNavigation(
               children: [
                 if (CoastalOperationsPermissions.hasAssessmentAccess(_grants))
                   TextButton(
@@ -229,122 +234,174 @@ class _LogsState extends State<CoastalOperationsLogsScreen> {
                         'Your permissions do not allow access to Coastal Operations logs.',
                       ),
                     )
-                  : ListView(
-                      controller: _scroll,
-                      padding: const EdgeInsets.all(20),
-                      children: [
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Follow retained drafts, published records and inactive records through their recorded activity.',
-                        ),
-                        const SizedBox(height: 20),
-                        CoastalOperationsSearch(
-                          key: ValueKey('$_scope:$_assessments'),
-                          assessments: _assessments,
-                          canManage: true,
-                          loading: _loading,
-                          onApply: (query) {
-                            setState(() {
-                              _query = query;
-                              _resetPage();
-                            });
-                            _load();
-                          },
-                        ),
-                        if (_error != null) ...[
-                          Text(
-                            _error!,
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.error,
-                            ),
+                  : CoastalOperationsEntrance(
+                      forward: !_assessments,
+                      child: RefreshIndicator(
+                        onRefresh: _load,
+                        child: ListView(
+                          controller: _scroll,
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          keyboardDismissBehavior:
+                              ScrollViewKeyboardDismissBehavior.onDrag,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: MediaQuery.sizeOf(context).width < 600
+                                ? 16
+                                : 32,
+                            vertical: 24,
                           ),
-                          TextButton(
-                            onPressed: _loading ? null : _load,
-                            child: const Text('Retry logs'),
-                          ),
-                        ],
-                        if (!_loading && _error == null && _records.isEmpty)
-                          Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _assessments
-                                      ? 'No assessments to show yet'
-                                      : 'No advisories to show',
-                                  style: Theme.of(context).textTheme.titleLarge,
+                          children: [
+                            Center(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 900,
                                 ),
-                                Text(
-                                  _assessments
-                                      ? 'Saved drafts and submitted reviews will appear here.'
-                                      : 'Active public updates and your proposed drafts will appear here.',
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    CoastalOperationsIntroduction(
+                                      title: _assessments
+                                          ? 'Revisit coastal assessments'
+                                          : 'Revisit coastal alerts',
+                                      description: 'Revisit saved coastal records and the activity behind each change.',
+                                    ),
+                                    CoastalOperationsHero(
+                                      assessments: _assessments,
+                                      logs: true,
+                                      count: _loading ? null : _records.length,
+                                    ),
+                                    const SizedBox(height: 28),
+                                    CoastalOperationsSearch(
+                                      key: ValueKey('$_scope:$_assessments'),
+                                      assessments: _assessments,
+                                      canManage: true,
+                                      loading: _loading,
+                                      onApply: (query) {
+                                        setState(() {
+                                          _query = query;
+                                          _resetPage();
+                                        });
+                                        _load();
+                                      },
+                                    ),
+                                    if (_error != null) ...[
+                                      Semantics(
+                                        liveRegion: true,
+                                        child: Text(
+                                          _error!,
+                                          style: TextStyle(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .error,
+                                          ),
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: _loading ? null : _load,
+                                        child: const Text('Retry logs'),
+                                      ),
+                                    ],
+                                    if (!_loading &&
+                                        _error == null &&
+                                        _records.isEmpty)
+                                      Card(
+                                        color: BlueversePalette.coastPearl,
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(20),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                _assessments
+                                                    ? 'No assessments to show yet'
+                                                    : 'No advisories to show',
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .titleLarge,
+                                              ),
+                                              Text(
+                                                _assessments
+                                                    ? 'Saved drafts and submitted reviews will appear here.'
+                                                    : 'Active public updates and your proposed drafts will appear here.',
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    for (final record in _records)
+                                      CoastalOperationsRecordCard(
+                                        record: record,
+                                        onOpen: () {
+                                          final id = record is CoastalAssessment
+                                              ? record.assessmentId
+                                              : (record as CoastalAlert)
+                                                    .alertId;
+                                          Navigator.pushNamed(
+                                            context,
+                                            Uri(
+                                              path: _assessments
+                                                  ? '/operations/assessments'
+                                                  : '/operations/alerts',
+                                              queryParameters: {
+                                                'view': 'detail',
+                                                'id': id,
+                                                'origin': 'logs',
+                                              },
+                                            ).toString(),
+                                          ).then((_) {
+                                            if (mounted) _load();
+                                          });
+                                        },
+                                        onActivity: () => _activity(
+                                          record is CoastalAssessment
+                                              ? record.assessmentId
+                                              : (record as CoastalAlert)
+                                                    .alertId,
+                                        ),
+                                      ),
+                                    const Divider(height: 32),
+                                    CoastalOperationsPagination(
+                                      assessments: _assessments,
+                                      size: _size,
+                                      count: _records.length,
+                                      page: _page,
+                                      onSize: (value) {
+                                        setState(() {
+                                          _size = value;
+                                          _resetPage();
+                                        });
+                                        _load();
+                                      },
+                                      previous: _loading || _page == 0
+                                          ? null
+                                          : () {
+                                              setState(() => _page--);
+                                              _load();
+                                            },
+                                      next:
+                                          _loading ||
+                                              _next == null ||
+                                              _error != null
+                                          ? null
+                                          : () {
+                                              setState(() {
+                                                _cursors = [
+                                                  ..._cursors.take(_page + 1),
+                                                  _next,
+                                                ];
+                                                _page++;
+                                              });
+                                              _load();
+                                            },
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
-                        for (final record in _records)
-                          CoastalOperationsRecordCard(
-                            record: record,
-                            onOpen: () {
-                              final id = record is CoastalAssessment
-                                  ? record.assessmentId
-                                  : (record as CoastalAlert).alertId;
-                              Navigator.pushNamed(
-                                context,
-                                Uri(
-                                  path: _assessments
-                                      ? '/operations/assessments'
-                                      : '/operations/alerts',
-                                  queryParameters: {
-                                    'view': 'detail',
-                                    'id': id,
-                                    'origin': 'logs',
-                                  },
-                                ).toString(),
-                              ).then((_) {
-                                if (mounted) _load();
-                              });
-                            },
-                            onActivity: () => _activity(
-                              record is CoastalAssessment
-                                  ? record.assessmentId
-                                  : (record as CoastalAlert).alertId,
-                            ),
-                          ),
-                        const Divider(height: 32),
-                        CoastalOperationsPagination(
-                          assessments: _assessments,
-                          size: _size,
-                          count: _records.length,
-                          page: _page,
-                          onSize: (value) {
-                            setState(() {
-                              _size = value;
-                              _resetPage();
-                            });
-                            _load();
-                          },
-                          previous: _loading || _page == 0
-                              ? null
-                              : () {
-                                  setState(() => _page--);
-                                  _load();
-                                },
-                          next: _loading || _next == null || _error != null
-                              ? null
-                              : () {
-                                  setState(() {
-                                    _cursors = [
-                                      ..._cursors.take(_page + 1),
-                                      _next,
-                                    ];
-                                    _page++;
-                                  });
-                                  _load();
-                                },
+                          ],
                         ),
-                      ],
+                      ),
                     ),
             ),
             const Padding(
