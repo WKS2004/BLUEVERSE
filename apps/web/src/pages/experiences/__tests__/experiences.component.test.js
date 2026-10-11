@@ -191,30 +191,6 @@ const mockAvailabilityEvaluation = {
   evaluatedAt: '2026-09-27T12:00:00Z',
 }
 
-const mockDependenciesStatus = {
-  serviceName: 'experience-biodiversity',
-  evaluatedAt: '2026-09-27T12:00:00Z',
-  allHealthy: true,
-  dependencies: [
-    {
-      serviceName: 'marine-safety',
-      endpoint: 'http://marine-safety:5002/health',
-      responded: true,
-      latencyMs: 18,
-      status: 'Healthy',
-      checkedAt: '2026-09-27T12:00:00Z',
-    },
-    {
-      serviceName: 'biodiversity-ml',
-      endpoint: 'http://biodiversity-ml:5003/health',
-      responded: true,
-      latencyMs: 25,
-      status: 'Healthy',
-      checkedAt: '2026-09-27T12:00:00Z',
-    },
-  ],
-}
-
 // -------------------------------------------------------------
 // WEB-EXP-001: Experiences Discovery Page
 // -------------------------------------------------------------
@@ -558,7 +534,7 @@ test('WEB-EXP-008 favourites page displays sign-in banner when visitor is not si
 // -------------------------------------------------------------
 // WEB-EXP-009: Catalogue Management & Pre-Flight Audits
 // -------------------------------------------------------------
-test('WEB-EXP-009 catalogue management renders curation workspace and microservice diagnostics (ui-integration: experience-catalogue-management)', async () => {
+test('WEB-EXP-009 catalogue management renders the curation workspace without a diagnostics tab (ui-integration: experience-catalogue-management)', async () => {
   globalThis.fetch = async (input) => {
     const url = String(input)
     if (url.includes('/publication-evaluations')) {
@@ -567,18 +543,6 @@ test('WEB-EXP-009 catalogue management renders curation workspace and microservi
         eligibleStatus: 'PUBLISHED',
         validationErrors: [],
         warnings: [],
-      })
-    }
-    if (url.includes('/dependencies/status')) {
-      return jsonResponse(mockDependenciesStatus)
-    }
-    if (url.includes('/agent/context')) {
-      return jsonResponse({
-        agentName: 'CoastalOperationsAgent',
-        status: 'not_connected',
-        detail: 'Pre-G07 integration seam. AI agents not connected.',
-        plannedTools: ['evaluate_safety', 'schedule_patrol'],
-        checkedAt: '2026-09-27T12:00:00Z',
       })
     }
     if (url.includes('/api/experiences/destinations')) {
@@ -612,18 +576,8 @@ test('WEB-EXP-009 catalogue management renders curation workspace and microservi
   // Destination listed in table
   assert.ok(await screen.findByText('Mirissa Bay'))
 
-  // Switch to Dependencies & Agent Seam tab
-  const diagTab = screen.getByRole('button', { name: /Dependencies & Agent Seam/i })
-  await userEvent.setup().click(diagTab)
-
-  // Verify microservice dependencies status
-  assert.ok(await screen.findByText(/Peer Microservices Health/i))
-  assert.ok(screen.getByText('marine-safety'))
-  assert.ok(screen.getByText('biodiversity-ml'))
-
-  // Verify Agent Seam reporting
-  assert.ok(screen.getByText(/Agentic AI Pre-G07 Seam/i))
-  assert.ok(screen.getByText(/CoastalOperationsAgent/i))
+  assert.equal(screen.queryByRole('button', { name: /Dependencies & Agent Seam/i }), null)
+  assert.equal(screen.queryByText(/Agentic AI Pre-G07 Seam/i), null)
 })
 
 // -------------------------------------------------------------
@@ -859,8 +813,9 @@ test('WEB-EXP-010 discovery hub renders interactive coastal map and searches pla
     await user.type(searchInput, 'm')
     await user.click(screen.getByRole('button', { name: /^Search$/i }))
     const shortQueryError = await screen.findByText(/Enter at least 2 characters/i)
-    assert.ok(screen.getByTestId('map-place-search-card').contains(shortQueryError))
-    assert.equal(screen.getAllByRole('alert').length, 1)
+    const placeSearchCard = screen.getByTestId('map-place-search-card')
+    assert.ok(placeSearchCard.contains(shortQueryError))
+    assert.equal(placeSearchCard.querySelectorAll('[role="alert"]').length, 1)
 
     await user.clear(searchInput)
     await user.type(searchInput, 'mirissa')

@@ -1,5 +1,29 @@
 # Ushan Srinuka — AI Usage Contributions
 
+## 2026-10-11 — CI workflow failure fixes across clients and test reporting
+
+- Date/time or time range: 2026-10-11 23:40 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-6
+- Summary of the user's request: Investigate and fix six reported CI workflow failures across UI integration validation, React tests, Flutter analysis, and Auth tests.
+- Summary of what the AI Agent did:
+  - Made JUnit parsing tolerate ANSI escapes and XML-illegal control characters while preserving test failures, and added a regression test.
+  - Serialized the React CI test command to avoid concurrent Vite cache initialization races.
+  - Aligned the experience API's 403 fallback text with its request-contract assertion.
+  - Updated the approved Auth seeder permission-count expectation from 12 to 14.
+  - Updated the approved catalogue test to reflect the shared no-diagnostics-tab contract and scoped the approved short-query alert assertion to the place-search card.
+  - Confirmed the API endpoint references and removed mobile import are already present in the checked-out source and contracts.
+- AI output accepted/changed/rejected: Accepted the parser, workflow, API fallback, and approved test corrections. No endpoint catalog or UI integration contract edits were needed because both already declare the reported endpoints.
+- Verification/evidence:
+  - `python scripts/validation/validate_ui_integrations.py`: passed.
+  - `python .agents/scripts/validate_endpoint_catalog.py`: passed (72 endpoints, 32 routes).
+  - `.github/scripts/tests/test_report_test_metrics.py`: 4 tests passed.
+  - `apps/web/src/pages/experiences/__tests__/experiences.component.test.js`: 15 tests passed.
+  - Full web-suite rerun did not produce results in the local shell; local Auth `dotnet test` aborted after VSTest could not connect to its test host, and local Flutter analysis produced no output. CI’s reported mobile import is absent from the current file.
+
 ## 2026-10-04 — Experience & Biodiversity Flutter Mobile implementation and comprehensive test suite validation
 
 - Date/time or time range: 2026-10-04 19:35 +05:30 (Asia/Colombo)

@@ -129,7 +129,9 @@ failure; an entirely empty foundation suite is reported as zero tests until
 that implementation exists.
 
 `.github/scripts/report_test_metrics.py` parses JUnit, TRX and Flutter machine
-results. Flutter output is normalized across the nested current protocol, the
+results. JUnit parsing removes terminal color escapes and XML-illegal control
+characters from reporter output while preserving test outcomes. Flutter output
+is normalized across the nested current protocol, the
 legacy top-level `test`/`testID` protocol and line-delimited JSON lines that
 contain arrays of events. Empty or missing error fields are safe and do not
 crash the final failure report. Use `--require-results` when a real test suite
