@@ -420,7 +420,7 @@ test('WEB-EXP-005 destination detail handles not found response gracefully (ui-i
 test('WEB-EXP-006 offering detail evaluates live availability and displays schedule slots (ui-integration: experience-offering-detail)', async () => {
   let availabilityRequested = false
 
-  globalThis.fetch = async (input, init) => {
+  globalThis.fetch = async (input) => {
     const url = String(input)
     if (url.includes('/schedules')) {
       return jsonResponse([mockSchedule])
@@ -559,7 +559,7 @@ test('WEB-EXP-009 catalogue management renders the curation workspace without a 
 
   // Test manager role view (canManage = true)
   renderInApp(createElement(CatalogueManagementPage), {
-    path: '/experiences/manage/destinations',
+    path: `/experiences/manage/destinations?editDestination=${mockDestination.id}`,
     auth: makeAuthSessionValue({
       status: 'signed-in',
       user: makeAuthUser({
@@ -575,6 +575,8 @@ test('WEB-EXP-009 catalogue management renders the curation workspace without a 
 
   // Destination listed in table
   assert.ok(await screen.findByText('Mirissa Bay'))
+  assert.ok(await screen.findByRole('heading', { name: 'Edit Destination' }))
+  assert.ok(screen.getByDisplayValue('Mirissa Bay'))
 
   assert.equal(screen.queryByRole('button', { name: /Dependencies & Agent Seam/i }), null)
   assert.equal(screen.queryByText(/Agentic AI Pre-G07 Seam/i), null)

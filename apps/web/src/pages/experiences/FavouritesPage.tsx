@@ -16,20 +16,18 @@ export default function FavouritesPage() {
 
   const [favourites, setFavourites] = useState<FavouriteDto[]>([])
   const [filterType, setFilterType] = useState<string>('ALL')
-  const [loading, setLoading] = useState(true)
+  const [loadedUserId, setLoadedUserId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [actionMessage, setActionMessage] = useState<string | null>(null)
+  const loading = status === 'checking' || Boolean(user && loadedUserId !== user.id)
 
   useEffect(() => {
     if (status === 'checking') return
-    if (!user) {
-      setLoading(false)
-      return
-    }
+    if (!user) return
 
+    const userId = user.id
     let isMounted = true
     async function loadFavs() {
-      setLoading(true)
       setError(null)
       try {
         const data = await getUserFavourites()
@@ -39,7 +37,7 @@ export default function FavouritesPage() {
           setError(err instanceof Error ? err.message : 'Unable to load saved coastal wishlist.')
         }
       } finally {
-        if (isMounted) setLoading(false)
+        if (isMounted) setLoadedUserId(userId)
       }
     }
 

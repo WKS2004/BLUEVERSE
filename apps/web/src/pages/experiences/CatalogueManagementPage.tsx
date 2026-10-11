@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import AccountAreaNavigation from '../../components/account/AccountAreaNavigation'
 import SiteFooter from '../../components/layout/SiteFooter'
@@ -290,7 +290,8 @@ export default function CatalogueManagementPage() {
   const [evalResult, setEvalResult] = useState<PublicationEvaluationResponse | null>(null)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loadedSearch, setLoadedSearch] = useState<string | null>(null)
+  const loading = loadedSearch !== location.search
 
   useEffect(() => () => {
     if (tabNavigationTimer.current !== null) window.clearTimeout(tabNavigationTimer.current)
@@ -317,33 +318,78 @@ export default function CatalogueManagementPage() {
     )
   }, [activeTab, location.hash, location.pathname, location.search, navigate])
 
-  useEffect(() => {
-    loadAll()
+  const startEditDestination = useCallback((dest: DestinationDto) => {
+    setEditingDest(dest)
+    setEditDestName(dest.name)
+    setEditDestSlug(dest.slug || '')
+    setEditDestRegion(dest.region || '')
+    setEditDestDesc(dest.description || '')
+    setEditDestLat(String(dest.latitude))
+    setEditDestLon(String(dest.longitude))
   }, [])
 
-  async function loadAll() {
-    setLoading(true)
-    try {
-      const [dRes, aRes, oRes] = await Promise.all([
-        getDestinations({ pageSize: 50 }),
-        getActivities({ pageSize: 50 }),
-        getOfferings({ pageSize: 50 }),
-      ])
-      const destItems = Array.isArray(dRes) ? dRes : (dRes?.items ?? [])
-      const actItems = Array.isArray(aRes) ? aRes : (aRes?.items ?? [])
-      const offItems = Array.isArray(oRes) ? oRes : (oRes?.items ?? [])
+  const startEditOffering = useCallback((off: OfferingDto) => {
+    setEditingOff(off)
+    setEditOffTitle(off.title)
+    setEditOffPrice(off.price != null ? String(off.price) : '')
+    setEditOffDuration(off.durationMinutes != null ? String(off.durationMinutes) : '')
+    setEditOffCapacity(off.maxCapacity != null ? String(off.maxCapacity) : '')
+    setEditOffDesc(off.description || '')
+  }, [])
 
-      setDestinations(destItems)
-      setActivities(actItems)
-      setOfferings(offItems)
-      if (destItems.length > 0 && !newOffDestId) setNewOffDestId(destItems[0].id)
-      if (actItems.length > 0 && !newOffActId) setNewOffActId(actItems[0].id)
-    } catch (err: unknown) {
-      setErrorMessage(err instanceof Error ? err.message : "We couldn't load experience details. Please try again.")
-    } finally {
-      setLoading(false)
+  const fetchCatalogue = useCallback(async () => {
+    const [dRes, aRes, oRes] = await Promise.all([
+      getDestinations({ pageSize: 50 }),
+      getActivities({ pageSize: 50 }),
+      getOfferings({ pageSize: 50 }),
+    ])
+
+    return {
+      destItems: Array.isArray(dRes) ? dRes : (dRes?.items ?? []),
+      actItems: Array.isArray(aRes) ? aRes : (aRes?.items ?? []),
+      offItems: Array.isArray(oRes) ? oRes : (oRes?.items ?? []),
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    let isMounted = true
+    const requestedSearch = location.search
+
+    fetchCatalogue()
+      .then(({ destItems, actItems, offItems }) => {
+        if (!isMounted) return
+
+        setDestinations(destItems)
+        setActivities(actItems)
+        setOfferings(offItems)
+        if (destItems.length > 0) setNewOffDestId((current) => current || destItems[0].id)
+        if (actItems.length > 0) setNewOffActId((current) => current || actItems[0].id)
+
+        const searchParams = new URLSearchParams(requestedSearch)
+        const editDestId = searchParams.get('editDestination')
+        const editOffId = searchParams.get('editOffering')
+
+        if (editDestId) {
+          const target = destItems.find((destination) => destination.id === editDestId)
+          if (target) startEditDestination(target)
+        } else if (editOffId) {
+          const target = offItems.find((offering) => offering.id === editOffId)
+          if (target) startEditOffering(target)
+        }
+      })
+      .catch((err: unknown) => {
+        if (isMounted) {
+          setErrorMessage(err instanceof Error ? err.message : "We couldn't load experience details. Please try again.")
+        }
+      })
+      .finally(() => {
+        if (isMounted) setLoadedSearch(requestedSearch)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [fetchCatalogue, location.search, startEditDestination, startEditOffering])
 
   // Load schedules when an offering is selected
   useEffect(() => {
@@ -528,16 +574,6 @@ export default function CatalogueManagementPage() {
   }
 
   // Destination Edit & Delete Handlers
-  function startEditDestination(dest: DestinationDto) {
-    setEditingDest(dest)
-    setEditDestName(dest.name)
-    setEditDestSlug(dest.slug || '')
-    setEditDestRegion(dest.region || '')
-    setEditDestDesc(dest.description || '')
-    setEditDestLat(String(dest.latitude))
-    setEditDestLon(String(dest.longitude))
-  }
-
   async function handleUpdateDestination(e: React.FormEvent) {
     e.preventDefault()
     if (!editingDest) return
@@ -616,15 +652,6 @@ export default function CatalogueManagementPage() {
   }
 
   // Offering Edit & Delete Handlers
-  function startEditOffering(off: OfferingDto) {
-    setEditingOff(off)
-    setEditOffTitle(off.title)
-    setEditOffPrice(off.price != null ? String(off.price) : '')
-    setEditOffDuration(off.durationMinutes != null ? String(off.durationMinutes) : '')
-    setEditOffCapacity(off.maxCapacity != null ? String(off.maxCapacity) : '')
-    setEditOffDesc(off.description || '')
-  }
-
   async function handleUpdateOffering(e: React.FormEvent) {
     e.preventDefault()
     if (!editingOff) return
@@ -661,25 +688,6 @@ export default function CatalogueManagementPage() {
       setErrorMessage(err instanceof Error ? err.message : 'Offering deletion failed.')
     }
   }
-
-  // Handle URL query parameters for direct edit deep links
-  useEffect(() => {
-    const searchParams = new URLSearchParams(location.search)
-    const editDestId = searchParams.get('editDestination')
-    const editOffId = searchParams.get('editOffering')
-
-    if (editDestId && destinations.length > 0) {
-      const target = destinations.find((d) => d.id === editDestId)
-      if (target) {
-        startEditDestination(target)
-      }
-    } else if (editOffId && offerings.length > 0) {
-      const target = offerings.find((o) => o.id === editOffId)
-      if (target) {
-        startEditOffering(target)
-      }
-    }
-  }, [location.search, destinations, offerings])
 
   return (
     <div className="flex min-h-screen flex-col bg-coast-paper font-sans text-coast-ink" id="top">
