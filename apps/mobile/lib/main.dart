@@ -13,6 +13,7 @@ import 'ui/blueverse_theme.dart';
 import 'ui/experiences/catalogue_management_screen.dart';
 import 'ui/experiences/destination_detail_screen.dart';
 import 'ui/experiences/experience_view_model.dart';
+import 'ui/experiences/experience_detail_scope.dart';
 import 'ui/experiences/experiences_discovery_screen.dart';
 import 'ui/experiences/favourites_screen.dart';
 import 'ui/experiences/offering_detail_screen.dart';
@@ -43,11 +44,16 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
+    final authApi = AuthApiService();
     _authViewModel = AuthViewModel(
-      repository: AuthRepository(apiService: AuthApiService()),
+      repository: AuthRepository(apiService: authApi),
     )..addListener(_handleSessionChange);
     _experienceViewModel = ExperienceViewModel(
-      repository: ExperienceRepository(apiService: ExperienceApiService()),
+      repository: ExperienceRepository(
+        apiService: ExperienceApiService(
+          accessTokenProvider: authApi.accessTokenForRequest,
+        ),
+      ),
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _authViewModel.restore();
@@ -169,10 +175,14 @@ class _MyAppState extends State<MyApp> {
               segments[1] == 'destinations') {
             return MaterialPageRoute(
               settings: settings,
-              builder: (_) => DestinationDetailScreen(
-                destinationId: segments[2],
-                viewModel: _experienceViewModel,
-                authViewModel: _authViewModel,
+              builder: (_) => ExperienceDetailScope(
+                parent: _experienceViewModel,
+                auth: _authViewModel,
+                builder: (detailModel) => DestinationDetailScreen(
+                  destinationId: segments[2],
+                  viewModel: detailModel,
+                  authViewModel: _authViewModel,
+                ),
               ),
             );
           }
@@ -181,10 +191,14 @@ class _MyAppState extends State<MyApp> {
               segments[1] == 'offerings') {
             return MaterialPageRoute(
               settings: settings,
-              builder: (_) => OfferingDetailScreen(
-                offeringId: segments[2],
-                viewModel: _experienceViewModel,
-                authViewModel: _authViewModel,
+              builder: (_) => ExperienceDetailScope(
+                parent: _experienceViewModel,
+                auth: _authViewModel,
+                builder: (detailModel) => OfferingDetailScreen(
+                  offeringId: segments[2],
+                  viewModel: detailModel,
+                  authViewModel: _authViewModel,
+                ),
               ),
             );
           }

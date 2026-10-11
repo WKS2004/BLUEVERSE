@@ -4,6 +4,7 @@ import '../../data/models/experience_models.dart';
 import '../auth_view_model.dart';
 import '../blueverse_theme.dart';
 import 'experience_view_model.dart';
+import 'experience_widgets.dart';
 
 class DestinationDetailScreen extends StatefulWidget {
   const DestinationDetailScreen({
@@ -27,6 +28,7 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       widget.viewModel.loadDestinationDetail(widget.destinationId);
       if (widget.authViewModel?.user != null) {
         widget.viewModel.loadFavourites();
@@ -45,7 +47,7 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
         if (vm.isLoadingDestination && dest == null) {
           return Scaffold(
             appBar: AppBar(title: const Text('Loading Destination...')),
-            body: const Center(child: CircularProgressIndicator()),
+            body: const ExperienceLoading(),
           );
         }
 
@@ -115,6 +117,10 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
                     'Experiences at this destination could not be loaded. Use the refresh button to try again.',
                     isError: true,
                   ),
+                if (vm.isLoadingDestinationContext)
+                  const ExperienceNotice(
+                    'Loading local conditions and experiences…',
+                  ),
                 // Header Card
                 Card(
                   shape: RoundedRectangleBorder(
@@ -133,14 +139,15 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
                               color: BlueversePalette.coastDeep,
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              dest.region ?? 'Coastal Region',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: BlueversePalette.coastDeep,
+                            Expanded(
+                              child: Text(
+                                dest.region ?? 'Coastal Region',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: BlueversePalette.coastDeep,
+                                ),
                               ),
                             ),
-                            const Spacer(),
                             Chip(
                               label: Text(dest.status),
                               backgroundColor: dest.status == 'PUBLISHED'
@@ -287,7 +294,9 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
+                          Wrap(
+                            spacing: 8,
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
                               Icon(
                                 Icons.warning_amber_rounded,
@@ -311,7 +320,12 @@ class _DestinationDetailScreenState extends State<DestinationDetailScreen> {
                           ),
                           const SizedBox(height: 6),
                           if (vm.destinationAdvisories!.advisories.isEmpty)
-                            const Text('No active advisories were returned.'),
+                            Text(
+                              vm.destinationAdvisories!.responded &&
+                                      !vm.destinationAdvisories!.fallbackUsed
+                                  ? 'No active advisories were returned.'
+                                  : 'Advisories are unavailable. Check local guidance before setting out.',
+                            ),
                           ...vm.destinationAdvisories!.advisories.map(
                             (adv) => Padding(
                               padding: const EdgeInsets.symmetric(vertical: 4),

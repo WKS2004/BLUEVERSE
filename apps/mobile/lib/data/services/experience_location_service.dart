@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 
@@ -23,7 +24,7 @@ class ExperienceLocationException implements Exception {
 }
 
 abstract interface class ExperienceLocationProvider {
-  Future<ExperienceCoordinates> getApproximateCurrentLocation();
+  Future<ExperienceCoordinates> getCurrentLocation();
 }
 
 class GeolocatorExperienceLocationProvider
@@ -31,7 +32,7 @@ class GeolocatorExperienceLocationProvider
   const GeolocatorExperienceLocationProvider();
 
   @override
-  Future<ExperienceCoordinates> getApproximateCurrentLocation() async {
+  Future<ExperienceCoordinates> getCurrentLocation() async {
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
         throw const ExperienceLocationException(
@@ -41,6 +42,14 @@ class GeolocatorExperienceLocationProvider
 
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      } else if (defaultTargetPlatform == TargetPlatform.android &&
+          permission != LocationPermission.deniedForever &&
+          permission != LocationPermission.unableToDetermine &&
+          await Geolocator.getLocationAccuracy() ==
+              LocationAccuracyStatus.reduced) {
+        // Existing installs may have only coarse access. Offer Android's
+        // precise permission choice on this explicit location action.
         permission = await Geolocator.requestPermission();
       }
 
@@ -58,13 +67,18 @@ class GeolocatorExperienceLocationProvider
 
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.low,
-          timeLimit: Duration(seconds: 10),
+          accuracy: LocationAccuracy.best,
+          timeLimit: Duration(seconds: 30),
         ),
       );
-      if (!position.latitude.isFinite || !position.longitude.isFinite) {
+      if (!position.latitude.isFinite ||
+          !position.longitude.isFinite ||
+          position.latitude < -90 ||
+          position.latitude > 90 ||
+          position.longitude < -180 ||
+          position.longitude > 180) {
         throw const ExperienceLocationException(
-          'Your approximate location could not be read. Search for a coastal place instead.',
+          'Your current location could not be read. Search for a coastal place instead.',
         );
       }
 
@@ -84,7 +98,7 @@ class GeolocatorExperienceLocationProvider
       );
     } on TimeoutException {
       throw const ExperienceLocationException(
-        'Getting your approximate location took too long. Search for a coastal place instead.',
+        'Getting your current location took too long. Search for a coastal place instead.',
       );
     } on MissingPluginException {
       throw const ExperienceLocationException(

@@ -360,16 +360,36 @@ For Flutter on an Android emulator, explicitly pass the laptop gateway as
 `http://10.0.2.2:80` with
 `--dart-define=BLUEVERSE_API_BASE_URL=http://10.0.2.2:80`. A physical Android
 device must use the laptop's current Wi-Fi/LAN address with the same
-compile-time setting. The explicit value overrides the checked-in,
-environment-specific Android fallback; do not rely on that fallback for a
-device run. The current mobile resolver accepts local HTTP on port `80` only,
+compile-time setting. The default Android gateway is the standard emulator
+host `10.0.2.2:80`; an explicit value overrides it for physical-device runs. The current mobile resolver accepts local HTTP on port `80` only,
 so a deployment HTTPS configuration remains future work. The Flutter
 resolver also has a fixed port-80 limit; changing `BLUEVERSE_HTTP_PORT` does
 not update the mobile client's accepted port. Keep the gateway on port 80 for
 Flutter or update the resolver before changing that setting. If managed Wi-Fi
 isolates the phone from the laptop, use `adb reverse tcp:80 tcp:80` over USB.
 See [Mobile setup](apps/mobile/README.md) for the full device workflow and
-current limitations.
+current limitations. Kotlin incremental compilation is disabled in the mobile
+Gradle configuration to avoid cache errors across Windows drive roots; keep
+space available for Gradle, Pub and temporary compiler output.
+
+For Windows builds using a relocated Flutter cache, initialize each PowerShell
+terminal from the repository root before running Flutter:
+
+```powershell
+. .\scripts\Windows\powershell\initialize-flutter-cache.ps1 -CacheRoot D:\WKS\FlutterBuildCache
+Set-Location apps\mobile
+flutter pub get
+```
+
+This reuses the existing D: Gradle and Pub caches and redirects temporary
+compiler files to D: for that terminal. Already-open processes may not inherit
+saved user environment settings. See [Android build caches](apps/mobile/README.md#android-build-caches)
+for verification commands and the USB-device launch command.
+
+On Android, select **Precise** when using the coastal map location control for
+the most accurate device fix. Existing installs can enable **Use precise
+location** in the app's Location permission settings. See the
+[mobile permission guide](apps/mobile/README.md#android-location-permission).
 
 ## CI
 

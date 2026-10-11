@@ -24,6 +24,8 @@ class ExperienceApiService {
     http.Client? client,
     AuthCredentialStore? storage,
     ApiGatewayConfig? gateway,
+    this.accessTokenProvider,
+    this.requestTimeout = const Duration(seconds: 12),
   }) : _transport = client ?? http.Client(),
        _storage = storage ?? const SecureAuthCredentialStore(),
        _gateway = gateway ?? const ApiGatewayConfig();
@@ -34,6 +36,8 @@ class ExperienceApiService {
   final http.Client _transport;
   final AuthCredentialStore _storage;
   final ApiGatewayConfig _gateway;
+  final Duration requestTimeout;
+  final Future<String?> Function()? accessTokenProvider;
   Uri? _preferredBaseUri;
 
   static const _jsonHeaders = {
@@ -88,6 +92,7 @@ class ExperienceApiService {
         headers: await _authHeaders(),
         body: jsonEncode(request.toJson()),
       ),
+      retrySafe: false,
     );
     return _decode(response, DestinationDto.fromJson);
   }
@@ -103,6 +108,7 @@ class ExperienceApiService {
         headers: await _authHeaders(),
         body: jsonEncode(request.toJson()),
       ),
+      retrySafe: false,
     );
     return _decode(response, DestinationDto.fromJson);
   }
@@ -111,6 +117,7 @@ class ExperienceApiService {
     final response = await _request(
       '/api/experiences/destinations/${Uri.encodeComponent(id)}',
       (uri) async => _transport.delete(uri, headers: await _authHeaders()),
+      retrySafe: false,
     );
     _ensureSuccess(response);
   }
@@ -126,6 +133,7 @@ class ExperienceApiService {
         headers: await _authHeaders(),
         body: jsonEncode({'status': status}),
       ),
+      retrySafe: false,
     );
     return _decode(response, PublicationEvaluationResponse.fromJson);
   }
@@ -141,6 +149,7 @@ class ExperienceApiService {
         headers: await _authHeaders(),
         body: jsonEncode({'status': status}),
       ),
+      retrySafe: false,
     );
     return _decode(response, DestinationDto.fromJson);
   }
@@ -237,6 +246,7 @@ class ExperienceApiService {
         headers: await _authHeaders(),
         body: jsonEncode(request.toJson()),
       ),
+      retrySafe: false,
     );
     return _decode(response, ActivityDto.fromJson);
   }
@@ -252,6 +262,7 @@ class ExperienceApiService {
         headers: await _authHeaders(),
         body: jsonEncode(request.toJson()),
       ),
+      retrySafe: false,
     );
     return _decode(response, ActivityDto.fromJson);
   }
@@ -260,6 +271,7 @@ class ExperienceApiService {
     final response = await _request(
       '/api/experiences/activities/${Uri.encodeComponent(id)}',
       (uri) async => _transport.delete(uri, headers: await _authHeaders()),
+      retrySafe: false,
     );
     _ensureSuccess(response);
   }
@@ -275,6 +287,7 @@ class ExperienceApiService {
         headers: await _authHeaders(),
         body: jsonEncode({'status': status}),
       ),
+      retrySafe: false,
     );
     return _decode(response, PublicationEvaluationResponse.fromJson);
   }
@@ -290,6 +303,7 @@ class ExperienceApiService {
         headers: await _authHeaders(),
         body: jsonEncode({'status': status}),
       ),
+      retrySafe: false,
     );
     return _decode(response, ActivityDto.fromJson);
   }
@@ -340,6 +354,7 @@ class ExperienceApiService {
         headers: await _authHeaders(),
         body: jsonEncode(request.toJson()),
       ),
+      retrySafe: false,
     );
     return _decode(response, OfferingDto.fromJson);
   }
@@ -355,6 +370,7 @@ class ExperienceApiService {
         headers: await _authHeaders(),
         body: jsonEncode(request.toJson()),
       ),
+      retrySafe: false,
     );
     return _decode(response, OfferingDto.fromJson);
   }
@@ -363,6 +379,7 @@ class ExperienceApiService {
     final response = await _request(
       '/api/experiences/offerings/${Uri.encodeComponent(id)}',
       (uri) async => _transport.delete(uri, headers: await _authHeaders()),
+      retrySafe: false,
     );
     _ensureSuccess(response);
   }
@@ -378,6 +395,7 @@ class ExperienceApiService {
         headers: await _authHeaders(),
         body: jsonEncode({'status': status}),
       ),
+      retrySafe: false,
     );
     return _decode(response, PublicationEvaluationResponse.fromJson);
   }
@@ -393,6 +411,7 @@ class ExperienceApiService {
         headers: await _authHeaders(),
         body: jsonEncode({'status': status}),
       ),
+      retrySafe: false,
     );
     return _decode(response, OfferingDto.fromJson);
   }
@@ -428,6 +447,7 @@ class ExperienceApiService {
         headers: await _authHeaders(),
         body: jsonEncode(request.toJson()),
       ),
+      retrySafe: false,
     );
     return _decode(response, ScheduleDto.fromJson);
   }
@@ -444,6 +464,7 @@ class ExperienceApiService {
         headers: await _authHeaders(),
         body: jsonEncode(request.toJson()),
       ),
+      retrySafe: false,
     );
     return _decode(response, ScheduleDto.fromJson);
   }
@@ -452,6 +473,7 @@ class ExperienceApiService {
     final response = await _request(
       '/api/experiences/offerings/${Uri.encodeComponent(id)}/schedules/${Uri.encodeComponent(scheduleId)}',
       (uri) async => _transport.delete(uri, headers: await _authHeaders()),
+      retrySafe: false,
     );
     _ensureSuccess(response);
   }
@@ -468,6 +490,7 @@ class ExperienceApiService {
         headers: await _authHeaders(),
         body: jsonEncode(request.toJson()),
       ),
+      retrySafe: false,
     );
     return _decode(response, AvailabilityEvaluationResponse.fromJson);
   }
@@ -488,6 +511,7 @@ class ExperienceApiService {
     final response = await _request(
       '/api/experiences/favourites/${Uri.encodeComponent(targetType)}/${Uri.encodeComponent(targetId)}',
       (uri) async => _transport.put(uri, headers: await _authHeaders()),
+      retrySafe: false,
     );
     return _decode(response, FavouriteDto.fromJson);
   }
@@ -496,6 +520,7 @@ class ExperienceApiService {
     final response = await _request(
       '/api/experiences/favourites/${Uri.encodeComponent(targetType)}/${Uri.encodeComponent(targetId)}',
       (uri) async => _transport.delete(uri, headers: await _authHeaders()),
+      retrySafe: false,
     );
     _ensureSuccess(response);
   }
@@ -563,14 +588,21 @@ class ExperienceApiService {
   // ----------------- Internal Helpers -----------------
 
   Future<Map<String, String>> _authHeaders() async {
+    final provider = accessTokenProvider;
+    if (provider != null) {
+      final token = await provider();
+      return {
+        ..._jsonHeaders,
+        if (token != null && token.isNotEmpty)
+          HttpHeaders.authorizationHeader: 'Bearer $token',
+      };
+    }
     final activeAccountId = await _storage.read(_activeAccountIdKey);
     final scopedToken = activeAccountId == null
         ? null
         : await _storage.read('$_accessTokenKey.$activeAccountId');
     final legacyToken = await _storage.read(_accessTokenKey);
-    final token = activeAccountId == null
-        ? legacyToken
-        : (scopedToken ?? legacyToken);
+    final token = activeAccountId == null ? legacyToken : scopedToken;
 
     return {
       ..._jsonHeaders,
@@ -630,22 +662,25 @@ class ExperienceApiService {
     String path,
     Future<http.Response> Function(Uri uri) request, {
     Map<String, String>? queryParameters,
+    bool retrySafe = true,
   }) async {
     final candidates = _orderedBaseUris();
+    // A timeout does not prove a mutation failed on the server. Never replay
+    // a write against another gateway; the caller must reconcile and retry.
     for (final baseUri in candidates) {
       try {
         var targetUri = _gateway.endpoint(baseUri, path);
         if (queryParameters != null && queryParameters.isNotEmpty) {
           targetUri = targetUri.replace(queryParameters: queryParameters);
         }
-        final response = await request(targetUri)
-            .timeout(const Duration(seconds: 4));
+        final response = await request(targetUri).timeout(requestTimeout);
         _preferredBaseUri = baseUri;
         return response;
       } on Object catch (error) {
         if (!_isConnectivityError(error)) {
           rethrow;
         }
+        if (!retrySafe) break;
       }
     }
 

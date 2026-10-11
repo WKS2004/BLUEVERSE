@@ -606,12 +606,18 @@ class FocalSpeciesPredictionDto {
   final String? primaryThreats;
 
   factory FocalSpeciesPredictionDto.fromJson(Map<String, dynamic> json) {
+    final probability = json['occurrenceProbability'];
+    if (probability is! num ||
+        !probability.isFinite ||
+        probability < 0 ||
+        probability > 1) {
+      throw const FormatException('Invalid species probability.');
+    }
     return FocalSpeciesPredictionDto(
       speciesName: json['speciesName'] as String? ?? '',
       scientificName: json['scientificName'] as String? ?? '',
       conservationStatus: json['conservationStatus'] as String? ?? '',
-      occurrenceProbability:
-          (json['occurrenceProbability'] as num?)?.toDouble() ?? 0.0,
+      occurrenceProbability: probability.toDouble(),
       habitatSuitability: json['habitatSuitability'] as String?,
       primaryThreats: json['primaryThreats'] as String?,
     );
@@ -925,10 +931,22 @@ class MapSearchResultItemDto {
   final String? country;
 
   factory MapSearchResultItemDto.fromJson(Map<String, dynamic> json) {
+    final latitude = json['latitude'];
+    final longitude = json['longitude'];
+    if (latitude is! num ||
+        longitude is! num ||
+        !latitude.isFinite ||
+        !longitude.isFinite ||
+        latitude < -90 ||
+        latitude > 90 ||
+        longitude < -180 ||
+        longitude > 180) {
+      throw const FormatException('Invalid map coordinates.');
+    }
     return MapSearchResultItemDto(
       displayName: json['displayName'] as String? ?? '',
-      latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
-      longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
+      latitude: latitude.toDouble(),
+      longitude: longitude.toDouble(),
       type: json['type'] as String?,
       category: json['category'] as String?,
       region: json['region'] as String?,
@@ -1174,16 +1192,31 @@ class PagedResult<T> {
     Map<String, dynamic> json,
     T Function(Map<String, dynamic>) fromJsonT,
   ) {
+    final total = json['total'];
+    final page = json['page'];
+    final pageSize = json['pageSize'];
+    final items = json['items'];
+    if (total is! int ||
+        total < 0 ||
+        page is! int ||
+        page < 1 ||
+        pageSize is! int ||
+        pageSize < 1 ||
+        items is! List) {
+      throw const FormatException('Invalid paged experience response.');
+    }
     return PagedResult(
-      total: json['total'] as int? ?? 0,
-      page: json['page'] as int? ?? 1,
-      pageSize: json['pageSize'] as int? ?? 0,
-      items:
-          (json['items'] as List?)
-              ?.whereType<Map>()
-              .map((item) => fromJsonT(Map<String, dynamic>.from(item)))
-              .toList() ??
-          const [],
+      total: total,
+      page: page,
+      pageSize: pageSize,
+      items: List.unmodifiable(
+        items.map((item) {
+          if (item is! Map) {
+            throw const FormatException('Invalid experience list item.');
+          }
+          return fromJsonT(Map<String, dynamic>.from(item));
+        }),
+      ),
     );
   }
 }

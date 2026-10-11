@@ -8,6 +8,7 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 
 import '../../data/models/experience_models.dart';
 import '../../data/services/experience_location_service.dart';
+import 'experience_widgets.dart';
 
 @immutable
 class ExperienceMapViewport {
@@ -60,6 +61,7 @@ class _ExperienceCoastalMapState extends State<ExperienceCoastalMap> {
   bool _mapHasRendered = false;
   bool _didAutoCenterForDestinations = false;
   String? _loadError;
+  Future<void> _markerUpdates = Future<void>.value();
 
   List<DestinationDto> get _locatedDestinations =>
       widget.destinations.where(_hasUsableCoordinates).toList(growable: false);
@@ -99,6 +101,7 @@ class _ExperienceCoastalMapState extends State<ExperienceCoastalMap> {
         oldWidget.config.availableStyles[oldWidget.config.defaultStyle] !=
             widget.config.availableStyles[widget.config.defaultStyle];
     if (styleChanged) {
+      _controller?.onCircleTapped.remove(_onCircleTapped);
       _controller = null;
       _styleReady = false;
       _mapHasRendered = false;
@@ -121,21 +124,23 @@ class _ExperienceCoastalMapState extends State<ExperienceCoastalMap> {
         oldWidget.focusIsCurrentLocation != widget.focusIsCurrentLocation;
     if ((oldSignature != _destinationSignature || focusChanged) &&
         _styleReady) {
-      unawaited(_syncDestinationMarkers());
+      unawaited(_updateMarkers());
     }
     if (focusChanged && widget.focusLocation != null && _styleReady) {
-      unawaited(_focusMapOnLocation(widget.focusLocation!));
+      unawaited(_safeCamera(() => _focusMapOnLocation(widget.focusLocation!)));
     } else if (_viewportChanged(oldWidget.viewport, widget.viewport) &&
         widget.viewport != null &&
         widget.focusLocation == null &&
         _styleReady) {
-      unawaited(_focusMapOnViewport(widget.viewport!));
+      unawaited(_safeCamera(() => _focusMapOnViewport(widget.viewport!)));
     }
   }
 
   @override
   void dispose() {
     _loadTimer?.cancel();
+    _controller?.onCircleTapped.remove(_onCircleTapped);
+    _controller = null;
     super.dispose();
   }
 
@@ -180,20 +185,7 @@ class _ExperienceCoastalMapState extends State<ExperienceCoastalMap> {
             scaleControlEnabled: true,
             scaleControlUnit: ScaleControlUnit.metric,
           ),
-          if (!_styleReady && _loadError == null)
-            const ColoredBox(
-              color: Color(0xFFF3F7F5),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 12),
-                    Text('Loading coastal map…'),
-                  ],
-                ),
-              ),
-            ),
+          if (!_styleReady && _loadError == null) const ExperienceLoading(),
           if (_loadError case final message?)
             ColoredBox(
               color: const Color(0xFFF3F7F5),
@@ -268,6 +260,7 @@ class _ExperienceCoastalMapState extends State<ExperienceCoastalMap> {
   }
 
   void _onMapIdle() {
+    if (!_styleReady) return;
     _mapHasRendered = true;
     _loadTimer?.cancel();
   }
@@ -281,16 +274,46 @@ class _ExperienceCoastalMapState extends State<ExperienceCoastalMap> {
 
   Future<void> _onStyleLoaded() async {
     try {
-      await _syncDestinationMarkers();
-      if (!mounted) return;
+      final controller = _controller;
+      await _updateMarkers();
+      if (!mounted || controller != _controller || _loadError != null) return;
       setState(() {
         _styleReady = true;
         _loadError = null;
       });
+      _onMapIdle();
+      if (widget.focusLocation != null) {
+        await _safeCamera(() => _focusMapOnLocation(widget.focusLocation!));
+      }
     } catch (_) {
       _showLoadError(
         'Map tiles could not be loaded. Check your connection and retry.',
       );
+    }
+  }
+
+  Future<void> _updateMarkers() {
+    final controller = _controller;
+    _markerUpdates = _markerUpdates.then((_) async {
+      if (!mounted || controller == null || controller != _controller) return;
+      try {
+        await _syncDestinationMarkers();
+      } catch (_) {
+        if (mounted && controller == _controller) {
+          _showLoadError('Map markers could not be updated. Retry the map.');
+        }
+      }
+    });
+    return _markerUpdates;
+  }
+
+  Future<void> _safeCamera(Future<void> Function() operation) async {
+    try {
+      await operation();
+    } catch (_) {
+      if (mounted) {
+        _showLoadError('The map could not move to this place. Retry the map.');
+      }
     }
   }
 
@@ -300,6 +323,7 @@ class _ExperienceCoastalMapState extends State<ExperienceCoastalMap> {
 
     final destinations = _locatedDestinations;
     await controller.clearCircles();
+    if (!mounted || controller != _controller) return;
     final circles = destinations
         .map(
           (destination) => CircleOptions(
@@ -331,7 +355,11 @@ class _ExperienceCoastalMapState extends State<ExperienceCoastalMap> {
     }
     if (circles.isNotEmpty) await controller.addCircles(circles, circleData);
 
-    if (!_didAutoCenterForDestinations && destinations.isNotEmpty) {
+    if (!mounted || controller != _controller) return;
+    if (!_didAutoCenterForDestinations &&
+        destinations.isNotEmpty &&
+        widget.focusLocation == null &&
+        widget.viewport == null) {
       await controller.animateCamera(
         CameraUpdate.newCameraPosition(_initialCameraPosition(destinations)),
       );
@@ -457,6 +485,7 @@ class _ExperienceCoastalMapState extends State<ExperienceCoastalMap> {
 
   void _retryMap() {
     setState(() {
+      _controller?.onCircleTapped.remove(_onCircleTapped);
       _controller = null;
       _styleReady = false;
       _mapHasRendered = false;

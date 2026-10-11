@@ -58,93 +58,106 @@ class _OfferingScheduleManagerDialogState
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('Departure times for ${widget.offering.title}'),
-      content: SizedBox(
-        width: 520,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxHeight: 460),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (_errorMessage != null) _notice(_errorMessage!, isError: true),
-              if (_successMessage != null)
-                _notice(_successMessage!, isError: false),
-              if (_isLoading)
-                const Expanded(
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              else if (_schedules.isEmpty)
-                const Expanded(
-                  child: Center(
-                    child: Text('No departure times have been added yet.'),
-                  ),
-                )
-              else
-                Expanded(
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: _schedules.length,
-                    separatorBuilder: (_, _) => const Divider(height: 1),
-                    itemBuilder: (context, index) {
-                      final schedule = _schedules[index];
-                      return ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(
-                          ExperienceTimeZone.format(
-                            schedule.startsAt,
-                            schedule.timeZoneId,
+    return PopScope(
+      canPop: !_isSaving,
+      child: AlertDialog(
+        title: Text('Departure times for ${widget.offering.title}'),
+        content: SizedBox(
+          width: 520,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 460),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (_errorMessage != null)
+                  _notice(_errorMessage!, isError: true),
+                if (_successMessage != null)
+                  _notice(_successMessage!, isError: false),
+                if (_isLoading)
+                  const Expanded(
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else if (_schedules.isEmpty)
+                  const Expanded(
+                    child: Center(
+                      child: Text('No departure times have been added yet.'),
+                    ),
+                  )
+                else
+                  Expanded(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: _schedules.length,
+                      separatorBuilder: (_, _) => const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        final schedule = _schedules[index];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                ExperienceTimeZone.format(
+                                  schedule.startsAt,
+                                  schedule.timeZoneId,
+                                ),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                'Ends ${ExperienceTimeZone.format(schedule.endsAt, schedule.timeZoneId)} • ${schedule.isActive ? 'Active' : 'Paused'}',
+                              ),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 4,
+                                children: [
+                                  TextButton.icon(
+                                    icon: const Icon(Icons.edit_outlined),
+                                    label: const Text('Edit departure time'),
+                                    onPressed: _isSaving
+                                        ? null
+                                        : () => _editSchedule(schedule),
+                                  ),
+                                  TextButton.icon(
+                                    icon: const Icon(Icons.delete_outline),
+                                    label: const Text('Remove departure time'),
+                                    onPressed: _isSaving
+                                        ? null
+                                        : () => _deleteSchedule(schedule),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                        ),
-                        subtitle: Text(
-                          'Ends ${ExperienceTimeZone.format(schedule.endsAt, schedule.timeZoneId)} • ${schedule.isActive ? 'Active' : 'Paused'}',
-                        ),
-                        trailing: Wrap(
-                          spacing: 0,
-                          children: [
-                            IconButton(
-                              tooltip: 'Edit departure time',
-                              icon: const Icon(Icons.edit_outlined),
-                              onPressed: _isSaving
-                                  ? null
-                                  : () => _editSchedule(schedule),
-                            ),
-                            IconButton(
-                              tooltip: 'Remove departure time',
-                              icon: const Icon(Icons.delete_outline),
-                              onPressed: _isSaving
-                                  ? null
-                                  : () => _deleteSchedule(schedule),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: _isSaving ? null : _addSchedule,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add departure time'),
                 ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: _isSaving ? null : _addSchedule,
-                icon: const Icon(Icons.add),
-                label: const Text('Add departure time'),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
+        actions: [
+          TextButton(
+            onPressed: _isSaving ? null : () => Navigator.pop(context),
+            child: const Text('Done'),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Done'),
-        ),
-      ],
     );
   }
 
   Future<void> _addSchedule() async {
     final window = await _pickWindow();
-    if (window == null) return;
+    if (window == null || !mounted || _isSaving) return;
     setState(() {
       _isSaving = true;
       _errorMessage = null;
@@ -187,7 +200,7 @@ class _OfferingScheduleManagerDialogState
       return;
     }
     final window = await _pickWindow(schedule: schedule);
-    if (window == null) return;
+    if (window == null || !mounted || _isSaving) return;
     setState(() {
       _isSaving = true;
       _errorMessage = null;

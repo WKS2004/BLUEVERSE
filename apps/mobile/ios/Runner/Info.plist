@@ -27,7 +27,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>BLUEVERSE uses your approximate location only when you tap Near Me to find coastal destinations nearby.</string>
+	<string>BLUEVERSE uses your location only when you tap Near Me or the map location button to find nearby coastal destinations. Enable Precise Location for the most accurate result.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

@@ -5,6 +5,7 @@ import '../../data/services/experience_time_zone.dart';
 import '../auth_view_model.dart';
 import '../blueverse_theme.dart';
 import 'experience_view_model.dart';
+import 'experience_widgets.dart';
 
 class OfferingDetailScreen extends StatefulWidget {
   const OfferingDetailScreen({
@@ -33,6 +34,7 @@ class _OfferingDetailScreenState extends State<OfferingDetailScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       widget.viewModel.loadOfferingDetail(widget.offeringId);
       if (widget.authViewModel?.user != null) {
         widget.viewModel.loadFavourites();
@@ -50,7 +52,7 @@ class _OfferingDetailScreenState extends State<OfferingDetailScreen> {
         if (vm.isLoadingOffering && offering == null) {
           return Scaffold(
             appBar: AppBar(title: const Text('Loading experience…')),
-            body: const Center(child: CircularProgressIndicator()),
+            body: const ExperienceLoading(),
           );
         }
         if (offering == null) {
@@ -126,7 +128,9 @@ class _OfferingDetailScreenState extends State<OfferingDetailScreen> {
                       ?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                if (vm.offeringSchedulesError != null)
+                if (vm.isLoadingOfferingSchedules)
+                  const ExperienceNotice('Loading departure times…')
+                else if (vm.offeringSchedulesError != null)
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -156,7 +160,8 @@ class _OfferingDetailScreenState extends State<OfferingDetailScreen> {
                     (schedule) => _buildScheduleCard(vm, offering, schedule),
                   ),
                 const SizedBox(height: 16),
-                _buildAvailabilityCard(vm, offering, activeSchedules),
+                if (!vm.isLoadingOfferingSchedules)
+                  _buildAvailabilityCard(vm, offering, activeSchedules),
               ],
             ),
           ),
@@ -320,24 +325,21 @@ class _OfferingDetailScreenState extends State<OfferingDetailScreen> {
                 'Choose a time in Sri Lanka Standard Time (Asia/Colombo).',
               ),
               const SizedBox(height: 8),
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
                 children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.calendar_month),
-                      label: Text(_formatDate(_selectedDate)),
-                      onPressed: _pickDate,
-                    ),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.calendar_month),
+                    label: Text(_formatDate(_selectedDate)),
+                    onPressed: _pickDate,
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.schedule),
-                      label: Text(
-                        '${MaterialLocalizations.of(context).formatTimeOfDay(_startTime)}–${MaterialLocalizations.of(context).formatTimeOfDay(_endTime)}',
-                      ),
-                      onPressed: _pickTimes,
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.schedule),
+                    label: Text(
+                      '${MaterialLocalizations.of(context).formatTimeOfDay(_startTime)}–${MaterialLocalizations.of(context).formatTimeOfDay(_endTime)}',
                     ),
+                    onPressed: _pickTimes,
                   ),
                 ],
               ),
@@ -486,7 +488,7 @@ class _OfferingDetailScreenState extends State<OfferingDetailScreen> {
       firstDate: firstDate,
       lastDate: firstDate.add(const Duration(days: 365)),
     );
-    if (picked != null) setState(() => _selectedDate = picked);
+    if (picked != null && mounted) setState(() => _selectedDate = picked);
   }
 
   Future<void> _pickTimes() async {

@@ -174,8 +174,12 @@ accepting the map feature contract.
 | `experience-catalogue-management` | `/experiences/manage` | `/experiences/manage` | Equivalent authorized catalogue and schedule management |
 | `experience-favourites` | `/experiences/saved` | `/experiences/favourites` | View, save and remove caller-owned targets |
 
-For this member's mobile proposal, approximate device location is requested only
-after the user taps **Near Me**. The coordinates are used for the public nearby
+Per Ushan's revised location requirement on 2026-10-10, the mobile proposal
+requests precise foreground location only after the user taps **Near Me** or
+the map location button. Android declares fine/coarse permissions, requests
+the best available accuracy, and retains manual discovery if permission is
+denied or the user selects approximate access. Background tracking remains
+excluded. The coordinates are used for the public nearby
 API request and are not persisted by the client; manual place search and list
 browsing remain available when permission is denied or location is unavailable.
 Both Coastal Maps use the registered `GET /api/experiences/map/config`
@@ -214,6 +218,47 @@ authorized business workflow status rather than changing `GET /api/health`.
 owners, status vocabulary, request correlation, retryability, and actor/
 permission propagation over a mutually authenticated private service channel.
 The exact internal transport and trust mechanism remain a shared G00 decision.
+
+### Flutter implementation follow-up — 2026-10-10
+
+The rebuilt Flutter client preserves the public API and permission contracts.
+Discovery and management consume all pages rather than silently stopping at
+50 records; partial refresh failures keep usable sections visible. The native
+map remains mounted during tab switches and nearby refreshes, and touch gestures
+inside it pan/zoom the map. Coast presets, explicit current-location controls,
+selected destinations and nearby cards match the React workflow outcomes.
+Destination and offering routes isolate request state, with core data independent
+of optional peer context and schedules. Management uses item-specific publication
+review, consistent authoring actions, duplicate-save guards and schedule controls.
+Account changes discard private list responses and saved-place state. Read failover
+is retained; timed-out writes are not replayed automatically. Tab selection is
+retained for the current app session, not persisted across process restarts.
+
+These implementation changes do not accept shared G00 decisions or G07. Provider
+review, physical-device evidence and the existing production transport work remain
+subject to the recorded gates and acceptance criteria.
+
+Resumed Android checks on 2026-10-10 now provide Redmi evidence for real tiles,
+marker/place selection, map pan/tab retention, approximate location and
+management/schedule reads. Transitive precise/background location permissions
+are removed from the Android merge, and expiring native sessions renew through
+the existing public Auth contract with concurrent-refresh/account guards.
+See `docs/testing/experience-mobile-rebuild.md` for the 141-test run and limits;
+this evidence does not accept provider licensing or shared G00/G07 decisions.
+
+Ushan subsequently requested precise foreground location on 2026-10-10. That
+request supersedes the earlier coarse-only mobile configuration: fine/coarse
+permissions are declared, the explicit location action uses best accuracy,
+and Android users control the Precise choice. Background permission remains
+excluded. Management's scrollable tab strip also explicitly aligns to the
+start so it has no Material 3 leading offset.
+
+Final Redmi verification confirmed the precision upgrade, fine/coarse grants,
+current-location centering, aligned management tabs, live place search and map
+camera retention. The owner confirmed native pinch zoom after reauthorizing USB
+debugging following a laptop restart. The updated Flutter suite passed all 152
+tests; detailed evidence and remaining release/provider scope are recorded in
+`docs/testing/experience-mobile-rebuild.md`. These checks do not accept G00/G07.
 
 ## 6. Decisions deliberately deferred
 

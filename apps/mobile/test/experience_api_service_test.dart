@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:mobile/data/models/experience_models.dart';
-import 'package:mobile/data/services/api_gateway_config.dart';
 import 'package:mobile/data/services/auth_credential_store.dart';
 import 'package:mobile/data/services/experience_api_service.dart';
 

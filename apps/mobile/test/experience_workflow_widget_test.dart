@@ -9,6 +9,7 @@ import 'package:mobile/data/models/experience_models.dart';
 import 'package:mobile/data/repositories/experience_repository.dart';
 import 'package:mobile/data/services/auth_credential_store.dart';
 import 'package:mobile/data/services/experience_api_service.dart';
+import 'package:mobile/data/services/experience_location_service.dart';
 import 'package:mobile/ui/auth_view_model.dart';
 import 'package:mobile/ui/experiences/catalogue_management_screen.dart';
 import 'package:mobile/ui/experiences/destination_detail_screen.dart';
@@ -29,6 +30,12 @@ class TestCredentialStore implements AuthCredentialStore {
   Future<void> delete(String key) async => values.remove(key);
 }
 
+class _TestLocation implements ExperienceLocationProvider {
+  @override
+  Future<ExperienceCoordinates> getCurrentLocation() async =>
+      const ExperienceCoordinates(latitude: 5.9482, longitude: 80.4716);
+}
+
 ExperienceViewModel createTestViewModel({
   List<DestinationDto>? destinations,
   List<OfferingDto>? offerings,
@@ -38,6 +45,13 @@ ExperienceViewModel createTestViewModel({
 }) {
   final client = MockClient((request) async {
     final path = request.url.path;
+    if (request.url.queryParameters['status'] != null &&
+        request.url.queryParameters['status'] != 'PUBLISHED') {
+      return http.Response(
+        '{"total":0,"page":1,"pageSize":100,"items":[]}',
+        200,
+      );
+    }
 
     if (path == '/api/experiences/destinations' && request.method == 'GET') {
       return http.Response('''
@@ -113,6 +127,15 @@ ExperienceViewModel createTestViewModel({
         ''', 200);
     }
 
+    if (path == '/api/experiences/map/search') {
+      return http.Response(
+        '{"query":"Mirissa","results":[{"displayName":"Mirissa","latitude":5.9482,"longitude":80.4716}],"source":"test","fallback":false,"retrievedAt":"2026-10-10T00:00:00Z"}',
+        200,
+      );
+    }
+    if (path == '/api/experiences/nearby') {
+      return http.Response('{"results":[],"radiusMeters":50000}', 200);
+    }
     if (path == '/api/experiences/map/config') {
       return http.Response('''
         {
@@ -311,6 +334,7 @@ ExperienceViewModel createTestViewModel({
     storage: TestCredentialStore(),
   );
   return ExperienceViewModel(
+    locationProvider: _TestLocation(),
     repository: ExperienceRepository(apiService: apiService),
   );
 }
@@ -330,7 +354,32 @@ class _TestMapLibrePlatform extends MapLibrePlatform {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+Future<void> reveal(
+  WidgetTester tester,
+  Finder target, {
+  double delta = 220,
+}) async {
+  await tester.scrollUntilVisible(
+    target,
+    delta,
+    scrollable: find
+        .byWidgetPredicate(
+          (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
+        )
+        .first,
+  );
+  await tester.pumpAndSettle();
+}
+
 void main() {
+  late MapLibrePlatform Function() originalMapFactory;
+  setUp(() {
+    originalMapFactory = MapLibrePlatform.createInstance;
+    MapLibrePlatform.createInstance = _TestMapLibrePlatform.new;
+  });
+  tearDown(() {
+    MapLibrePlatform.createInstance = originalMapFactory;
+  });
   group('MOB-EXP Experience Discovery and Exploration Workflow Tests', () {
     testWidgets(
       'MOB-EXP-001 discovery screen renders destinations and offerings cards',
@@ -344,9 +393,16 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Coastal Experiences'), findsOneWidget);
+        await reveal(tester, find.text('Mirissa Coastal Haven'));
         expect(find.text('Mirissa Coastal Haven'), findsOneWidget);
+        await reveal(tester, find.text('Sunrise Blue Whale Safari'));
         expect(find.text('Sunrise Blue Whale Safari'), findsOneWidget);
-        expect(find.text('LKR 12500 / person'), findsOneWidget);
+        expect(find.textContaining('LKR 12500 / person'), findsOneWidget);
+        await reveal(
+          tester,
+          find.byKey(const Key('input-experience-search')),
+          delta: -220,
+        );
         expect(
           find.byKey(const Key('input-experience-search')),
           findsOneWidget,
@@ -357,18 +413,6 @@ void main() {
     testWidgets(
       'MOB-EXP-002 coastal map tab uses fetched map config and nearby triggers',
       (tester) async {
-        final originalTargetPlatform = debugDefaultTargetPlatformOverride;
-        debugDefaultTargetPlatformOverride = TargetPlatform.android;
-        addTearDown(
-          () => debugDefaultTargetPlatformOverride = originalTargetPlatform,
-        );
-
-        final originalMapPlatformFactory = MapLibrePlatform.createInstance;
-        MapLibrePlatform.createInstance = _TestMapLibrePlatform.new;
-        addTearDown(
-          () => MapLibrePlatform.createInstance = originalMapPlatformFactory,
-        );
-
         final vm = createTestViewModel();
         addTearDown(vm.dispose);
 
@@ -384,6 +428,10 @@ void main() {
         expect(
           vm.mapConfig?.availableStyles['liberty'],
           'https://tiles.openfreemap.org/styles/liberty',
+        );
+        await reveal(
+          tester,
+          find.text('© OpenFreeMap contributors, © OpenStreetMap contributors'),
         );
         expect(
           find.text('© OpenFreeMap contributors, © OpenStreetMap contributors'),
@@ -408,6 +456,7 @@ void main() {
         final destinationChip = find.byKey(
           const Key('chip-map-destination-dest-mirissa'),
         );
+        await reveal(tester, destinationChip);
         expect(destinationChip, findsOneWidget);
         await tester.ensureVisible(destinationChip);
         await tester.tap(destinationChip);
@@ -425,10 +474,8 @@ void main() {
           findsOneWidget,
         );
         expect(find.text('All Coastlines'), findsOneWidget);
-        expect(
-          find.byKey(const Key('btn-refresh-map-nearby')),
-          findsOneWidget,
-        );
+        expect(find.byKey(const Key('btn-refresh-map-nearby')), findsOneWidget);
+        await reveal(tester, find.text('Nearby coastal destinations'));
         expect(find.text('Nearby coastal destinations'), findsOneWidget);
         expect(find.byKey(const Key('input-map-place-search')), findsOneWidget);
       },
@@ -454,8 +501,9 @@ void main() {
         expect(find.text('Live Marine Conditions'), findsOneWidget);
         expect(find.text('0.8 m'), findsOneWidget);
         expect(find.text('Calm Waters'), findsOneWidget);
-        expect(find.text('Biodiversity & Conservation'), findsOneWidget);
-        expect(find.textContaining('Balaenoptera musculus'), findsOneWidget);
+        expect(find.text('Biodiversity context'), findsOneWidget);
+        expect(find.text('Blue Whale (Balaenoptera musculus)'), findsOneWidget);
+        expect(find.text('Balaenoptera musculus'), findsOneWidget);
       },
     );
 
@@ -476,9 +524,9 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Sunrise Blue Whale Safari'), findsNWidgets(2));
-        expect(find.text('Upcoming Schedule Windows (1)'), findsOneWidget);
+        expect(find.text('Departure times (1)'), findsOneWidget);
 
-        final evalBtn = find.byKey(const Key('btn-evaluate-availability'));
+        final evalBtn = find.text('Check this time');
         expect(evalBtn, findsOneWidget);
 
         await tester.ensureVisible(evalBtn);
@@ -491,7 +539,7 @@ void main() {
           find.byKey(const Key('box-availability-result')),
           findsOneWidget,
         );
-        expect(find.text('Available for Booking'), findsOneWidget);
+        expect(find.text('Availability confirmed'), findsOneWidget);
       },
     );
 
@@ -537,8 +585,8 @@ void main() {
         expect(find.text('Manage Coastal Experiences'), findsOneWidget);
         expect(find.text('Destinations'), findsOneWidget);
         expect(find.text('Activities'), findsOneWidget);
-        expect(find.text('Offerings'), findsOneWidget);
-        expect(find.text('Diagnostics & Seam'), findsOneWidget);
+        expect(find.text('Offerings & Schedules'), findsOneWidget);
+        expect(find.text('Diagnostics & Seam'), findsNothing);
         expect(
           find.byKey(const Key('btn-create-destination-dialog')),
           findsOneWidget,
@@ -558,6 +606,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final searchInput = find.byKey(const Key('input-experience-search'));
+        await reveal(tester, searchInput);
         expect(searchInput, findsOneWidget);
 
         await tester.enterText(searchInput, 'Coral');
@@ -579,6 +628,7 @@ void main() {
 
         // Tap on a Category chip via ChoiceChip
         final marineChoiceChip = find.widgetWithText(ChoiceChip, 'Marine Life');
+        await reveal(tester, marineChoiceChip);
         expect(marineChoiceChip, findsOneWidget);
         await tester.tap(marineChoiceChip);
         await tester.pumpAndSettle();
@@ -609,6 +659,7 @@ void main() {
 
         // Trigger "Near Me"
         final nearMeBtn = find.text('Near Me');
+        await reveal(tester, nearMeBtn);
         expect(nearMeBtn, findsOneWidget);
         await tester.tap(nearMeBtn);
         await tester.pumpAndSettle();
@@ -789,8 +840,8 @@ void main() {
           find.byKey(const Key('box-availability-result')),
           findsOneWidget,
         );
-        expect(find.text('Status: UNAVAILABLE'), findsOneWidget);
-        expect(find.textContaining('HIGH_SWELL_WARNING'), findsOneWidget);
+        expect(find.text('This time is unavailable'), findsOneWidget);
+        expect(find.textContaining('High Swell Warning'), findsOneWidget);
       },
     );
 
@@ -900,7 +951,9 @@ void main() {
 
         expect(find.text('Experience Management Restricted'), findsOneWidget);
         expect(
-          find.textContaining('Editing destinations, activities, and offerings requires'),
+          find.textContaining(
+            'Editing destinations, activities, and offerings requires',
+          ),
           findsOneWidget,
         );
         expect(
@@ -937,6 +990,7 @@ void main() {
         final createBtn = find.byKey(
           const Key('btn-create-destination-dialog'),
         );
+        await reveal(tester, createBtn);
         expect(createBtn, findsOneWidget);
         await tester.tap(createBtn);
         await tester.pumpAndSettle();

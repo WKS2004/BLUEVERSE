@@ -25,6 +25,7 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       if (widget.authViewModel == null || widget.authViewModel!.user != null) {
         widget.viewModel.loadFavourites();
       } else {
@@ -284,12 +285,18 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
                                       color: Colors.red,
                                     ),
                                     tooltip: 'Remove from Wishlist',
-                                    onPressed: () {
-                                      vm.toggleFavourite(
-                                        fav.targetType,
-                                        fav.targetId,
-                                      );
-                                    },
+                                    onPressed:
+                                        vm.isFavouriteActionInProgress(
+                                          fav.targetType,
+                                          fav.targetId,
+                                        )
+                                        ? null
+                                        : () {
+                                            vm.toggleFavourite(
+                                              fav.targetType,
+                                              fav.targetId,
+                                            );
+                                          },
                                   ),
                                   onTap: () {
                                     if (isDest) {
@@ -298,7 +305,9 @@ class _FavouritesScreenState extends State<FavouritesScreen> {
                                         '/experiences/destinations/${fav.targetId}',
                                       );
                                     } else if (isActivity) {
+                                      vm.discoveryTab = 0;
                                       vm.updateFilters(
+                                        region: '',
                                         query: '',
                                         category: '',
                                         activityId: fav.targetId,

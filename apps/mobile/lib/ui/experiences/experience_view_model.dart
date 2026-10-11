@@ -98,6 +98,33 @@ class ExperienceViewModel extends ChangeNotifier {
   int _favouritesLoadRequestId = 0;
   int _favouriteMutationRevision = 0;
   int _managementCatalogRequestId = 0;
+  bool _disposed = false;
+  int discoveryTab = 0;
+  int managementTab = 0;
+  bool isLoadingDestinationContext = false;
+  bool isLoadingOfferingSchedules = false;
+  List<DestinationDto> mapDestinations = const [];
+
+  @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    ++_discoveryRequestId;
+    ++_placeSearchRequestId;
+    ++_mapConfigRequestId;
+    ++_nearbyRequestId;
+    ++_destinationRequestId;
+    ++_offeringRequestId;
+    ++_availabilityRequestId;
+    ++_managementCatalogRequestId;
+    ++_favouritesLoadRequestId;
+    ++_userScopeRevision;
+    super.dispose();
+  }
 
   bool isFavourite(String targetType, String targetId) {
     final normType = targetType.toUpperCase();
@@ -112,7 +139,8 @@ class ExperienceViewModel extends ChangeNotifier {
   DestinationDto? get selectedMapDestination {
     final selectedId = selectedMapDestinationId;
     if (selectedId == null) return null;
-    for (final destination in destinations) {
+    for (final destination
+        in mapDestinations.isEmpty ? destinations : mapDestinations) {
       if (destination.id == selectedId) return destination;
     }
     return null;
@@ -164,6 +192,15 @@ class ExperienceViewModel extends ChangeNotifier {
               !selectedActivityIds.contains(offering.activityId)) {
             return false;
           }
+          if (selectedRegion.isNotEmpty &&
+              !(mapDestinations.isEmpty ? destinations : mapDestinations).any(
+                (d) =>
+                    d.id == offering.destinationId &&
+                    (d.region ?? '').toLowerCase() ==
+                        selectedRegion.toLowerCase(),
+              )) {
+            return false;
+          }
           if (query.isEmpty) return true;
           return <String?>[
             offering.title,
@@ -203,45 +240,55 @@ class ExperienceViewModel extends ChangeNotifier {
     notifyListeners();
 
     final results = await Future.wait<Object?>([
-      _safeCall(
-        () => repository.getDestinations(
+      _loadAllPages<DestinationDto>(
+        (page) => repository.getDestinations(
           query: searchQuery.trim().isNotEmpty ? searchQuery.trim() : null,
           region: selectedRegion.isNotEmpty ? selectedRegion : null,
+          page: page,
           pageSize: 50,
         ),
       ),
-      _safeCall(() => repository.getActivities(pageSize: 50)),
-      _safeCall(() => repository.getOfferings(pageSize: 50)),
+      _loadAllPages<ActivityDto>(
+        (page) => repository.getActivities(page: page, pageSize: 50),
+      ),
+      _loadAllPages<OfferingDto>(
+        (page) => repository.getOfferings(page: page, pageSize: 50),
+      ),
       if (loadFavs) _safeCall(repository.getUserFavourites),
     ]);
 
     if (requestId != _discoveryRequestId) return;
 
-    final destinationResult =
-        results[0] as _LoadResult<PagedResult<DestinationDto>>;
-    final activityResult = results[1] as _LoadResult<PagedResult<ActivityDto>>;
-    final offeringResult = results[2] as _LoadResult<PagedResult<OfferingDto>>;
+    final destinationResult = results[0] as _LoadResult<List<DestinationDto>>;
+    final activityResult = results[1] as _LoadResult<List<ActivityDto>>;
+    final offeringResult = results[2] as _LoadResult<List<OfferingDto>>;
     final coreErrors = <String>[];
 
     if (destinationResult.value != null) {
-      destinations = destinationResult.value!.items;
+      destinations = destinationResult.value!;
+      if (searchQuery.trim().isEmpty && selectedRegion.isEmpty) {
+        mapDestinations = destinations;
+      }
     } else {
       destinationsErrorMessage = destinationResult.error;
       coreErrors.add('destinations');
     }
     if (activityResult.value != null) {
-      activities = activityResult.value!.items;
+      activities = activityResult.value!;
     } else {
       activitiesErrorMessage = activityResult.error;
       coreErrors.add('activities');
     }
     if (offeringResult.value != null) {
-      offerings = offeringResult.value!.items;
+      offerings = offeringResult.value!;
     } else {
       offeringsErrorMessage = offeringResult.error;
       coreErrors.add('offerings');
     }
 
+    destinationsErrorMessage = destinationResult.error;
+    activitiesErrorMessage = activityResult.error;
+    offeringsErrorMessage = offeringResult.error;
     if (loadFavs && userScopeRevision == _userScopeRevision) {
       final favouritesResult = results[3] as _LoadResult<List<FavouriteDto>>;
       if (favouriteMutationRevision != _favouriteMutationRevision) {
@@ -358,19 +405,22 @@ class ExperienceViewModel extends ChangeNotifier {
         .toList(growable: false);
 
     if (destinationLoads.isNotEmpty) {
-      managementDestinations = destinationLoads
-          .expand((result) => result.value!)
-          .toList(growable: false);
+      managementDestinations = <String, DestinationDto>{
+        for (final item in destinationLoads.expand((result) => result.value!))
+          item.id: item,
+      }.values.toList(growable: false);
     }
     if (activityLoads.isNotEmpty) {
-      managementActivities = activityLoads
-          .expand((result) => result.value!)
-          .toList(growable: false);
+      managementActivities = <String, ActivityDto>{
+        for (final item in activityLoads.expand((result) => result.value!))
+          item.id: item,
+      }.values.toList(growable: false);
     }
     if (offeringLoads.isNotEmpty) {
-      managementOfferings = offeringLoads
-          .expand((result) => result.value!)
-          .toList(growable: false);
+      managementOfferings = <String, OfferingDto>{
+        for (final item in offeringLoads.expand((result) => result.value!))
+          item.id: item,
+      }.values.toList(growable: false);
     }
 
     final allStatesFailed = stateWasMissing.every((missing) => missing);
@@ -471,14 +521,17 @@ class ExperienceViewModel extends ChangeNotifier {
     double? longitude,
     double radiusMeters = 50000,
     String? centerLabel,
+    bool isCurrentLocation = false,
   }) async {
     final requestId = ++_nearbyRequestId;
     isGettingCurrentLocation = false;
     if (latitude != null && longitude != null) {
-      _setMapFocus(latitude, longitude, isCurrentLocation: false);
+      _setMapFocus(latitude, longitude, isCurrentLocation: isCurrentLocation);
       if (centerLabel != null) selectedMapLocationName = centerLabel;
     }
     nearbyErrorMessage = null;
+    nearbyExperiences = null;
+    nearbyCenterLabel = centerLabel;
     isLoadingNearby = true;
     notifyListeners();
 
@@ -507,20 +560,25 @@ class ExperienceViewModel extends ChangeNotifier {
   Future<void> fetchNearbyFromCurrentLocation({
     double radiusMeters = 50000,
   }) async {
+    if (isGettingCurrentLocation) return;
     final requestId = ++_nearbyRequestId;
+    nearbyExperiences = null;
+    nearbyCenterLabel = null;
     ++_placeSearchRequestId;
     isSearchingPlaces = false;
+    placeSearchResults = const [];
+    placeSearchErrorMessage = null;
     nearbyErrorMessage = null;
     isGettingCurrentLocation = true;
     isLoadingNearby = true;
     notifyListeners();
 
     try {
-      final location = await _locationProvider.getApproximateCurrentLocation();
+      final location = await _locationProvider.getCurrentLocation();
       if (requestId != _nearbyRequestId) return;
       if (!_hasUsableCoordinates(location.latitude, location.longitude)) {
         throw const ExperienceLocationException(
-          'Your approximate location could not be read. Search for a coastal place instead.',
+          'Your current location could not be read. Search for a coastal place instead.',
         );
       }
       _setMapFocus(
@@ -528,7 +586,7 @@ class ExperienceViewModel extends ChangeNotifier {
         location.longitude,
         isCurrentLocation: true,
       );
-      selectedMapLocationName = 'Your approximate location';
+      selectedMapLocationName = 'Your current location';
       selectedMapDestinationId = null;
       isGettingCurrentLocation = false;
       notifyListeners();
@@ -542,7 +600,7 @@ class ExperienceViewModel extends ChangeNotifier {
       if (requestId != _nearbyRequestId) return;
       if (result.value != null) {
         nearbyExperiences = result.value;
-        nearbyCenterLabel = 'your approximate location';
+        nearbyCenterLabel = 'your current location';
         if (nearbyExperiences!.results.isEmpty) {
           nearbyErrorMessage = 'No destinations were found within 50 km. Try searching another coastal place.';
         }
@@ -555,7 +613,7 @@ class ExperienceViewModel extends ChangeNotifier {
       }
     } on Object {
       if (requestId == _nearbyRequestId) {
-        nearbyErrorMessage = 'Your approximate location could not be used. Search for a coastal place instead.';
+        nearbyErrorMessage = 'Your current location could not be used. Search for a coastal place instead.';
       }
     } finally {
       if (requestId == _nearbyRequestId) {
@@ -579,7 +637,8 @@ class ExperienceViewModel extends ChangeNotifier {
 
   void selectMapDestination(String destinationId) {
     DestinationDto? destination;
-    for (final candidate in destinations) {
+    for (final candidate
+        in mapDestinations.isEmpty ? destinations : mapDestinations) {
       if (candidate.id == destinationId) {
         destination = candidate;
         break;
@@ -610,6 +669,8 @@ class ExperienceViewModel extends ChangeNotifier {
   }
 
   void clearMapSelection() {
+    placeSearchResults = const [];
+    placeSearchErrorMessage = null;
     ++_nearbyRequestId;
     ++_placeSearchRequestId;
     isSearchingPlaces = false;
@@ -693,6 +754,7 @@ class ExperienceViewModel extends ChangeNotifier {
   }
 
   Future<void> loadFavourites() async {
+    if (_disposed) return;
     final requestId = ++_favouritesLoadRequestId;
     final userScopeRevision = _userScopeRevision;
     final favouriteMutationRevision = _favouriteMutationRevision;
@@ -731,6 +793,12 @@ class ExperienceViewModel extends ChangeNotifier {
     favouriteActionErrorMessage = null;
     successMessage = null;
     _favouritesRequested = false;
+    ++_managementCatalogRequestId;
+    managementDestinations = const [];
+    managementActivities = const [];
+    managementOfferings = const [];
+    isLoadingManagementCatalog = false;
+    managementCatalogErrorMessage = null;
     notifyListeners();
   }
 
@@ -750,50 +818,65 @@ class ExperienceViewModel extends ChangeNotifier {
     destinationOfferingsErrorMessage = null;
     notifyListeners();
 
-    final results = await Future.wait<Object?>([
-      _safeCall(() => repository.getDestinationById(destinationId)),
-      _safeCall(
-        () =>
-            repository.getOfferings(destinationId: destinationId, pageSize: 50),
-      ),
-      _safeCall(() => repository.getDestinationMarineConditions(destinationId)),
+    isLoadingDestinationContext = true;
+    // Optional peers must never delay the destination itself. Every completion
+    // is scoped to this request, so an older detail cannot replace a newer one.
+    final context = Future.wait<void>([
+      _loadAllPages<OfferingDto>(
+        (page) => repository.getOfferings(
+          destinationId: destinationId,
+          page: page,
+          pageSize: 50,
+        ),
+      ).then((result) {
+        if (requestId != _destinationRequestId) return;
+        destinationOfferings = result.value ?? const [];
+        destinationOfferingsErrorMessage = result.error;
+        notifyListeners();
+      }),
+      _safeCall(() => repository.getDestinationMarineConditions(destinationId))
+          .then((result) {
+            if (requestId != _destinationRequestId) return;
+            destinationMarine = result.value;
+            destinationMarineError = result.error;
+            notifyListeners();
+          }),
       _safeCall(
         () => repository.getDestinationOperationalAdvisories(destinationId),
-      ),
-      _safeCall(() => repository.getDestinationBiodiversity(destinationId)),
+      ).then((result) {
+        if (requestId != _destinationRequestId) return;
+        destinationAdvisories = result.value;
+        destinationAdvisoriesError = result.error;
+        notifyListeners();
+      }),
+      _safeCall(() => repository.getDestinationBiodiversity(destinationId))
+          .then((result) {
+            if (requestId != _destinationRequestId) return;
+            destinationBiodiversity = result.value;
+            destinationBiodiversityError = result.error;
+            notifyListeners();
+          }),
     ]);
+    final destination = await _safeCall(
+      () => repository.getDestinationById(destinationId),
+    );
     if (requestId != _destinationRequestId) return;
-
-    final destination = results[0] as _LoadResult<DestinationDto>;
-    final destinationOfferingResult =
-        results[1] as _LoadResult<PagedResult<OfferingDto>>;
-    final marine = results[2] as _LoadResult<MarineConditionsContextDto>;
-    final advisories =
-        results[3] as _LoadResult<OperationalAdvisoriesResponseDto>;
-    final biodiversity =
-        results[4] as _LoadResult<BiodiversityContextResponseDto>;
-
-    if (destination.value != null) {
-      selectedDestination = destination.value;
-    } else {
-      errorMessage = destination.error;
-    }
-    destinationOfferings = destinationOfferingResult.value?.items ?? const [];
-    destinationOfferingsErrorMessage = destinationOfferingResult.error;
-    destinationMarine = marine.value;
-    destinationMarineError = marine.error;
-    destinationAdvisories = advisories.value;
-    destinationAdvisoriesError = advisories.error;
-    destinationBiodiversity = biodiversity.value;
-    destinationBiodiversityError = biodiversity.error;
-
+    selectedDestination = destination.value;
+    errorMessage = destination.error;
     isLoadingDestination = false;
+    notifyListeners();
+    await context;
+    if (requestId != _destinationRequestId) return;
+    isLoadingDestinationContext = false;
     notifyListeners();
   }
 
   Future<void> loadOfferingDetail(String offeringId) async {
     final requestId = ++_offeringRequestId;
+    ++_availabilityRequestId;
+    isEvaluatingAvailability = false;
     isLoadingOffering = true;
+    isLoadingOfferingSchedules = true;
     errorMessage = null;
     selectedOffering = null;
     offeringSchedules = const [];
@@ -801,21 +884,24 @@ class ExperienceViewModel extends ChangeNotifier {
     availabilityResult = null;
     availabilityErrorMessage = null;
     notifyListeners();
-
-    final results = await Future.wait<Object?>([
-      _safeCall(() => repository.getOfferingById(offeringId)),
-      _safeCall(() => repository.getOfferingSchedules(offeringId)),
-    ]);
+    final schedules =
+        _safeCall(() => repository.getOfferingSchedules(offeringId))
+            .then((result) {
+              if (requestId != _offeringRequestId) return;
+              offeringSchedules = result.value ?? const [];
+              offeringSchedulesError = result.error;
+              isLoadingOfferingSchedules = false;
+              notifyListeners();
+            });
+    final offering = await _safeCall(
+      () => repository.getOfferingById(offeringId),
+    );
     if (requestId != _offeringRequestId) return;
-
-    final offering = results[0] as _LoadResult<OfferingDto>;
-    final schedules = results[1] as _LoadResult<List<ScheduleDto>>;
     selectedOffering = offering.value;
     errorMessage = offering.error;
-    offeringSchedules = schedules.value ?? const [];
-    offeringSchedulesError = schedules.error;
     isLoadingOffering = false;
     notifyListeners();
+    await schedules;
   }
 
   Future<void> evaluateOfferingAvailability({
@@ -861,12 +947,15 @@ class ExperienceViewModel extends ChangeNotifier {
     bool refreshCatalog = false,
     bool refreshManagementCatalog = true,
   }) async {
+    if (isPerformingCatalogueAction || _disposed) return null;
+    final userRevision = _userScopeRevision;
     isPerformingCatalogueAction = true;
     errorMessage = null;
     successMessage = null;
     notifyListeners();
     try {
       final result = await operation();
+      if (_disposed || userRevision != _userScopeRevision) return null;
       successMessage = successText;
       if (refreshCatalog) {
         await loadDiscoveryData(loadFavs: _favouritesRequested);
@@ -876,6 +965,7 @@ class ExperienceViewModel extends ChangeNotifier {
       }
       return result;
     } on Object catch (error) {
+      if (_disposed || userRevision != _userScopeRevision) return null;
       errorMessage = _friendlyError(error);
       return null;
     } finally {
@@ -908,6 +998,7 @@ class ExperienceViewModel extends ChangeNotifier {
     var total = 0;
 
     for (var page = 1; page <= maxPages; page++) {
+      if (_disposed) return const _LoadResult(error: 'The screen was closed.');
       final result = await _safeCall(() => loadPage(page));
       final pageResult = result.value;
       if (pageResult == null) {
@@ -924,6 +1015,12 @@ class ExperienceViewModel extends ChangeNotifier {
           error: items.length < total
               ? 'The experience list is incomplete. Refresh and try again.'
               : null,
+        );
+      }
+      if (pageResult.page != page || pageResult.total < 0) {
+        return _LoadResult<List<T>>(
+          value: items.isEmpty ? null : items,
+          error: 'The experience list is incomplete. Refresh and try again.',
         );
       }
       items.addAll(pageResult.items);
