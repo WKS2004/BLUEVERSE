@@ -67,6 +67,8 @@ builder.Services.AddDbContext<CoastalPlannerDbContext>(options =>
             errorCodesToAdd: null)));
 
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
+builder.Services.AddSingleton<BiodiversityCircuitBreaker>();
 builder.Services.AddTransient<PeerRequestContextHandler>();
 builder.Services.AddHttpClient<IPeerServicesClient, PeerServicesClient>().AddHttpMessageHandler<PeerRequestContextHandler>();
 builder.Services.AddHttpClient<IPlannerCatalogueClient, PlannerCatalogueClient>().AddHttpMessageHandler<PeerRequestContextHandler>();

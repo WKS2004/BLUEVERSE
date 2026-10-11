@@ -252,9 +252,12 @@ after grants change to obtain updated permission claims.
 
 The optional `EXPERIENCE_CATALOGUE_URL`, `MARINE_CONDITIONS_URL`,
 `COASTAL_OPERATIONS_URL` and `BIODIVERSITY_ML_URL` settings identify private
-peer services. Defaults use Docker service names, but those peer services are
-not supplied by this branch. Without them, `/planner` shows that destinations
-are unavailable and provides retry and saved-trip navigation. Recommendations
+peer services. Other peer services are not supplied by this branch. The
+synthetic IT3091 fake runs only with the `dev` Compose profile; it does not
+represent the real provider. The local `.env.example` points the planner to
+that fake for development. Real ML URL, key, enabled flag, and expected model
+version remain environment-configured. Without destination data,
+`/planner` shows a recoverable unavailable state. Recommendations
 require verifiable offering schedules, marine suitability and operations
 evidence. Connect compatible owner services to enable genuine suggestions;
 see [the peer contract](docs/development/coastal-planner.md).
@@ -288,8 +291,8 @@ Validate the environment and build/start the Compose deployment:
 
 ```bash
 docker compose --env-file .env config --quiet
-docker compose build
-docker compose up -d
+  docker compose --profile dev build
+  docker compose --profile dev up -d
 docker compose ps
 ```
 
@@ -298,7 +301,7 @@ Auth and planner Dockerfiles reuse NuGet packages across builds with
 BuildKit cache mounts and restore project dependencies before copying source.
 Source-only edits retain the restore layer; package changes still run restore.
 To build and run in the foreground while watching logs, use
-`docker compose up --build`. Auth waits for PostgreSQL to become healthy, applies its
+  `docker compose --profile dev up --build`. Auth waits for PostgreSQL to become healthy, applies its
 migrations and seeds the configured administrator account.
 Coastal Planner applies its own migrations and uses an exec-form .NET
 healthcheck, compatible with the minimal DHI runtime. The API waits for

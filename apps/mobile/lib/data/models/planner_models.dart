@@ -409,40 +409,92 @@ class PlannerWorkflowStatus {
 
 class PlannerBiodiversityPrediction {
   const PlannerBiodiversityPrediction({
+    required this.contractVersion,
     required this.destinationId,
     required this.activityId,
     required this.status,
+    required this.message,
+    required this.uncertaintyText,
+    required this.provenance,
     required this.predictedSpecies,
     required this.modelMetadata,
     required this.limitations,
   });
 
+  final int contractVersion;
   final String destinationId;
   final String? activityId;
   final String status;
+  final String message;
+  final String? uncertaintyText;
+  final PlannerBiodiversityProvenance? provenance;
   final List<PlannerPredictedSpecies> predictedSpecies;
   final PlannerModelMetadata? modelMetadata;
   final String limitations;
 
   factory PlannerBiodiversityPrediction.fromJson(Map<String, dynamic> json) {
+    const messages = {
+      'available': 'Wildlife context is available. A prediction does not guarantee a sighting.',
+      'not_requested': 'Wildlife context was not requested.',
+      'unavailable': 'Wildlife predictions are temporarily unavailable. Please try again later.',
+      'invalid': 'Wildlife predictions could not be verified for this location.',
+      'stale': 'The wildlife prediction is out of date. Request a fresh result.',
+    };
+    final rawStatus = (json['status'] as String? ?? '').toLowerCase();
+    final versionValue = json['contractVersion'];
+    final version = versionValue is num ? versionValue.toInt() : -1;
+    final rawMetadata = json['modelMetadata'];
+    final rawProvenance = json['provenance'];
+    final metadataVersion = rawMetadata is Map ? rawMetadata['modelVersion'] : null;
+    final provenanceVersion = rawProvenance is Map ? rawProvenance['modelVersion'] : null;
+    final metadataTimestamp = rawMetadata is Map ? rawMetadata['inferenceTimestamp'] : null;
+    final provenanceTimestamp = rawProvenance is Map ? rawProvenance['inferenceTimestamp'] : null;
+    final provider = rawProvenance is Map ? rawProvenance['provider'] : null;
+    final availableHasProvenance = metadataVersion is String &&
+        metadataVersion.isNotEmpty &&
+        provenanceVersion == metadataVersion &&
+        metadataTimestamp is String &&
+        DateTime.tryParse(metadataTimestamp) != null &&
+        provenanceTimestamp is String &&
+        DateTime.tryParse(provenanceTimestamp) != null &&
+        provider is String &&
+        provider.isNotEmpty;
+    final knownStatus = messages.containsKey(rawStatus) &&
+        version == 1 &&
+        (rawStatus != 'available' || availableHasProvenance);
+    final status = knownStatus ? rawStatus : 'unavailable';
     return PlannerBiodiversityPrediction(
+      contractVersion: 1,
       destinationId: json['destinationId'] as String,
       activityId: json['activityId'] as String?,
-      status: json['status'] as String,
-      predictedSpecies: (json['predictedSpecies'] as List<dynamic>)
-          .whereType<Map>()
-          .map(
-            (item) => PlannerPredictedSpecies.fromJson(
-              Map<String, dynamic>.from(item),
+      status: status,
+      message: status == 'available' && json['message'] is String
+          ? json['message'] as String
+          : messages[status]!,
+      uncertaintyText: status == 'available' ? json['uncertaintyText'] as String? : null,
+      provenance: !knownStatus || json['provenance'] == null || status != 'available'
+          ? null
+          : PlannerBiodiversityProvenance.fromJson(
+              Map<String, dynamic>.from(json['provenance'] as Map),
             ),
-          )
-          .toList(growable: false),
-      modelMetadata: json['modelMetadata'] == null
+      predictedSpecies: status == 'available'
+          ? (json['predictedSpecies'] as List<dynamic>)
+              .whereType<Map>()
+              .map(
+                (item) => PlannerPredictedSpecies.fromJson(
+                  Map<String, dynamic>.from(item),
+                ),
+              )
+              .toList(growable: false)
+          : const [],
+      modelMetadata: status != 'available' || json['modelMetadata'] == null
           ? null
           : PlannerModelMetadata.fromJson(
               Map<String, dynamic>.from(json['modelMetadata'] as Map),
             ),
-      limitations: json['limitations'] as String,
+      limitations: status == 'available' && json['limitations'] is String
+          ? json['limitations'] as String
+          : messages[status]!,
     );
   }
 }
@@ -454,6 +506,7 @@ class PlannerPredictedSpecies {
     required this.commonName,
     required this.habitatSuitability,
     required this.confidenceLevel,
+    this.uncertaintyText,
   });
 
   final String speciesId;
@@ -461,6 +514,7 @@ class PlannerPredictedSpecies {
   final String commonName;
   final double habitatSuitability;
   final String confidenceLevel;
+  final String? uncertaintyText;
 
   factory PlannerPredictedSpecies.fromJson(Map<String, dynamic> json) {
     return PlannerPredictedSpecies(
@@ -469,8 +523,26 @@ class PlannerPredictedSpecies {
       commonName: json['commonName'] as String,
       habitatSuitability: (json['habitatSuitability'] as num).toDouble(),
       confidenceLevel: json['confidenceLevel'] as String,
+      uncertaintyText: json['uncertaintyText'] as String?,
     );
   }
+}
+
+class PlannerBiodiversityProvenance {
+  const PlannerBiodiversityProvenance({
+    required this.provider,
+    required this.modelVersion,
+    required this.inferenceTimestamp,
+  });
+  final String provider;
+  final String? modelVersion;
+  final String? inferenceTimestamp;
+  factory PlannerBiodiversityProvenance.fromJson(Map<String, dynamic> json) =>
+      PlannerBiodiversityProvenance(
+        provider: json['provider'] as String,
+        modelVersion: json['modelVersion'] as String?,
+        inferenceTimestamp: json['inferenceTimestamp'] as String?,
+      );
 }
 
 class PlannerModelMetadata {

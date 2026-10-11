@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Blueverse.CoastalPlanner.Integration;
 
 public record PeerCatalogueItem(
@@ -36,8 +38,18 @@ public record PeerBiodiversityInferenceResponse(
     string Status,
     List<PeerSpeciesInference>? Species,
     string? ModelVersion,
-    DateTime? Timestamp,
-    string? Limitations
+    [property: JsonPropertyName("inferenceTimestampUtc")] DateTime? Timestamp,
+    string? Limitations,
+    int ContractVersion = 1,
+    string? UncertaintyText = null,
+    string? Provider = null
+);
+
+public record BiodiversityInferenceRequest(
+    int ContractVersion,
+    Guid DestinationId,
+    Guid? ActivityId,
+    DateTime RequestedAtUtc
 );
 
 public record PeerSpeciesInference(
@@ -45,7 +57,8 @@ public record PeerSpeciesInference(
     string ScientificName,
     string CommonName,
     double HabitatSuitability,
-    string ConfidenceLevel
+    string ConfidenceLevel,
+    string? UncertaintyText = null
 );
 
 public interface IPeerServicesClient

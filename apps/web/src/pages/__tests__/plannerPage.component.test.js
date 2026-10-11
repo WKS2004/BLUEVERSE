@@ -157,16 +157,16 @@ test('WEB-PLANNER-UI-013 workflow inspection uses the public route and reports f
   fireEvent.click(screen.getByRole('button', { name: 'View search status' })); await screen.findByText('Please retry this search.')
 })
 test('WEB-PLANNER-UI-014 optional biodiversity shows metadata without claiming a sighting', async () => {
-  install({ [`GET /api/planner/biodiversity/predictions?destinationId=${D}&activityId=${A}`]: { destinationId: D, activityId: A, status: 'AVAILABLE', predictedSpecies: [{ speciesId: R, commonName: 'Green turtle', scientificName: 'Chelonia mydas', habitatSuitability: .8, confidenceLevel: 'HIGH' }], modelMetadata: { modelVersion: 'fixture-v1', inferenceTimestamp: start }, limitations: 'Not a guaranteed sighting.' } })
+  install({ [`GET /api/planner/biodiversity/predictions?destinationId=${D}&activityId=${A}`]: { contractVersion: 1, destinationId: D, activityId: A, status: 'AVAILABLE', message: 'Wildlife context is available. A prediction does not guarantee a sighting.', predictedSpecies: [{ speciesId: R, commonName: 'Green turtle', scientificName: 'Chelonia mydas', habitatSuitability: .8, confidenceLevel: 'HIGH' }], modelMetadata: { modelVersion: 'fixture-v1', inferenceTimestamp: start }, provenance: { provider: 'test-provider', modelVersion: 'fixture-v1', inferenceTimestamp: start }, limitations: 'Not a guaranteed sighting.' } })
   render(`/planner/recommendations/${R}`); await screen.findByRole('heading', { name: candidate.title })
   fireEvent.click(screen.getByText('Conditions & wildlife context')); fireEvent.click(screen.getByRole('button', { name: 'Check wildlife context' }))
   await screen.findByText('Green turtle (Chelonia mydas)'); assert.ok(screen.getByText('Not a guaranteed sighting.')); assert.ok(screen.getByText(/Model fixture-v1/))
 })
 test('WEB-PLANNER-UI-015 unavailable and empty wildlife predictions remain honest', async () => {
-  install({ [`GET /api/planner/biodiversity/predictions?destinationId=${D}&activityId=${A}`]: { destinationId: D, activityId: A, status: 'UNAVAILABLE', predictedSpecies: [], modelMetadata: null, limitations: 'No current prediction.' } })
+  install({ [`GET /api/planner/biodiversity/predictions?destinationId=${D}&activityId=${A}`]: { contractVersion: 1, destinationId: D, activityId: A, status: 'UNAVAILABLE', predictedSpecies: [], modelMetadata: null, limitations: 'No current prediction.' } })
   render(`/planner/recommendations/${R}`); await screen.findByRole('heading', { name: candidate.title })
   fireEvent.click(screen.getByText('Conditions & wildlife context')); fireEvent.click(screen.getByRole('button', { name: 'Check wildlife context' }))
-  await screen.findByText('Wildlife predictions are unavailable right now.')
+  await screen.findByText('Wildlife predictions are temporarily unavailable. Please try again later.')
 })
 test('WEB-PLANNER-UI-016 experience level and wildlife opt-out are submitted faithfully', async () => {
   const calls = install({ 'POST /api/planner/recommendations': recommendations }); render(); await ready(); fill()

@@ -21,7 +21,7 @@ public sealed class PeerServicesClientExtendedTests
 
         Assert.False(responded);
         Assert.Empty(items);
-        Assert.Contains("endpoint URL is not configured", note, StringComparison.Ordinal);
+        Assert.Contains("endpoint has not responded", note, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -66,7 +66,7 @@ public sealed class PeerServicesClientExtendedTests
 
         Assert.False(responded);
         Assert.Null(result);
-        Assert.Contains("endpoint URL is not configured", note, StringComparison.Ordinal);
+        Assert.Contains("endpoint has not responded", note, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -155,7 +155,7 @@ public sealed class PeerServicesClientExtendedTests
 
         Assert.False(responded);
         Assert.Null(result);
-        Assert.Contains("endpoint URL is not configured", note, StringComparison.Ordinal);
+        Assert.Contains("endpoint has not responded", note, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -223,8 +223,8 @@ public sealed class PeerServicesClientExtendedTests
         var (result, responded, note) = await client.GetBiodiversityInferenceAsync(Guid.NewGuid(), null);
 
         Assert.False(responded);
-        Assert.Null(result);
-        Assert.Contains("endpoint URL is not configured", note, StringComparison.Ordinal);
+        Assert.Equal("unavailable", result!.Status);
+        Assert.Contains("temporarily unavailable", note, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -238,40 +238,43 @@ public sealed class PeerServicesClientExtendedTests
         var handler = new RecordingHandler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = JsonContent.Create(new PeerBiodiversityInferenceResponse(
-                destId, actId, "AVAILABLE",
+                destId, actId, "available",
                 [new PeerSpeciesInference(Guid.NewGuid(), "Scientific", "Common", 0.7, "HIGH")],
-                new string('V', 65), DateTime.UtcNow, null))
+                new string('V', 65), DateTime.UtcNow, "Fixture limitations", 1, null, "test-provider"))
         }));
         using var http = new HttpClient(handler);
         var client = CreateClient(http);
 
         var (result, responded, note) = await client.GetBiodiversityInferenceAsync(destId, actId);
 
-        Assert.False(responded);
-        Assert.Null(result);
-        Assert.Contains("invalid or unavailable inference", note, StringComparison.Ordinal);
+        Assert.True(responded);
+        Assert.Equal("invalid", result!.Status);
+        Assert.Empty(result.Species!);
+        Assert.Contains("could not be verified", note, StringComparison.Ordinal);
     }
 
     [Fact]
     [Trait("TestId", "PLANNER-PEER-BIO-003")]
-    public async Task Biodiversity_accepts_valid_response_and_appends_activity_id_when_provided()
+    public async Task Biodiversity_posts_a_minimal_versioned_request_and_accepts_valid_response()
     {
         HttpRequestMessage? captured = null;
+        string? capturedBody = null;
         var destId = Guid.NewGuid();
         var actId = Guid.NewGuid();
         var speciesId = Guid.NewGuid();
         var now = DateTime.UtcNow;
 
-        var handler = new RecordingHandler((req, _) =>
+        var handler = new RecordingHandler(async (req, _) =>
         {
             captured = req;
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            capturedBody = await req.Content!.ReadAsStringAsync();
+            return new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = JsonContent.Create(new PeerBiodiversityInferenceResponse(
-                    destId, actId, "AVAILABLE",
+                    destId, actId, "available",
                     [new PeerSpeciesInference(speciesId, "Scientific Name", "Common Name", 0.85, "HIGH")],
-                    "model-v1", now, "Limitations"))
-            });
+                    "model-v1", now, "Limitations", 1, null, "test-provider"))
+            };
         });
         using var http = new HttpClient(handler);
         var client = CreateClient(http);
@@ -280,13 +283,19 @@ public sealed class PeerServicesClientExtendedTests
 
         Assert.True(responded);
         Assert.NotNull(result);
-        Assert.Equal("AVAILABLE", result.Status);
+        Assert.Equal("available", result.Status);
         Assert.Equal(speciesId, result.Species?[0].SpeciesId);
         Assert.Null(note);
 
         Assert.NotNull(captured);
-        Assert.Contains($"destinationId={destId}", captured.RequestUri?.ToString(), StringComparison.Ordinal);
-        Assert.Contains($"activityId={actId}", captured.RequestUri?.ToString(), StringComparison.Ordinal);
+        Assert.Equal(HttpMethod.Post, captured.Method);
+        Assert.EndsWith("/v1/predictions", captured.RequestUri?.AbsolutePath, StringComparison.Ordinal);
+        Assert.True(captured.Headers.Contains("X-Correlation-ID"));
+        var requestBody = System.Text.Json.JsonSerializer.Deserialize<BiodiversityInferenceRequest>(capturedBody!,
+            new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+        Assert.Equal(1, requestBody!.ContractVersion);
+        Assert.Equal(destId, requestBody.DestinationId);
+        Assert.Equal(actId, requestBody.ActivityId);
     }
 
     [Fact]

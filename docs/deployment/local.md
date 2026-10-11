@@ -36,13 +36,13 @@ administrator account at startup.
 
 ```bash
 bash scripts/Unix/bash/sync-web-lockfile.sh
-docker compose build
+docker compose --profile dev build
 ```
 
 ## Start
 
 ```bash
-docker compose up -d
+docker compose --profile dev up -d
 ```
 
 ## Inspect

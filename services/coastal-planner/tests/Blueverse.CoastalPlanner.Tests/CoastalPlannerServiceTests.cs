@@ -5,6 +5,7 @@ using Blueverse.CoastalPlanner.Integration;
 using Blueverse.CoastalPlanner.Models.Dtos;
 using Blueverse.CoastalPlanner.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -119,10 +120,10 @@ public sealed class CoastalPlannerServiceTests
 
         var result = await planner.GetBiodiversityPredictionsAsync(destinationId, null);
 
-        Assert.Equal("UNAVAILABLE", result.Status);
+        Assert.Equal("unavailable", result.Status);
         Assert.Empty(result.PredictedSpecies);
         Assert.Null(result.ModelMetadata);
-        Assert.Contains("Biodiversity ML endpoint has not responded", result.Limitations, StringComparison.Ordinal);
+        Assert.Equal("Wildlife predictions are temporarily unavailable. Please try again later.", result.Limitations);
         Assert.Empty(await db.BiodiversityPredictions.ToListAsync());
     }
 
@@ -140,17 +141,17 @@ public sealed class CoastalPlannerServiceTests
             (
                 new PeerBiodiversityInferenceResponse(destinationId, activityId, "AVAILABLE",
                     [new PeerSpeciesInference(Guid.NewGuid(), "Chelonia mydas", "Green sea turtle", 0.84, "HIGH")],
-                    "model-1", timestamp, "Context only."),
+                    "model-1", timestamp, "Context only.", 1, null, "test-provider"),
                 true,
                 null
             )
         };
-        var planner = CreateService(db, peer);
+        var planner = CreateService(db, peer, "model-1");
 
         var first = await planner.GetBiodiversityPredictionsAsync(destinationId, activityId);
         var second = await planner.GetBiodiversityPredictionsAsync(destinationId, activityId);
 
-        Assert.Equal("AVAILABLE", first.Status);
+        Assert.Equal("available", first.Status);
         Assert.Equal("model-1", first.ModelMetadata?.ModelVersion);
         Assert.Equal(timestamp, first.ModelMetadata?.InferenceTimestamp);
         Assert.Equal(0.84, Assert.Single(first.PredictedSpecies).HabitatSuitability);
@@ -158,6 +159,87 @@ public sealed class CoastalPlannerServiceTests
         Assert.Equal(1, peer.BiodiversityCallCount);
         var cached = await db.BiodiversityPredictions.SingleAsync();
         Assert.Equal(timestamp.AddHours(6), cached.ExpiresAtUtc);
+    }
+
+    [Fact]
+    [Trait("TestId", "PLANNER-BIO-CACHE-004")]
+    public async Task Cached_prediction_from_another_model_version_is_not_reused()
+    {
+        await using var db = CreateDatabase();
+        var destinationId = Guid.NewGuid();
+        var activityId = Guid.NewGuid();
+        var oldTimestamp = DateTime.UtcNow.AddMinutes(-2);
+        db.BiodiversityPredictions.Add(new BiodiversityPredictionCache
+        {
+            PredictionId = Guid.NewGuid(),
+            DestinationId = destinationId,
+            ActivityId = activityId,
+            Status = "available",
+            SpeciesDataJson = JsonSerializer.Serialize(new[]
+            {
+                new PredictedSpeciesDto(Guid.NewGuid(), "Old species", "Old species", 0.2, "synthetic")
+            }),
+            ModelVersion = "model-1",
+            Provider = "test-provider",
+            InferenceTimestampUtc = oldTimestamp,
+            ExpiresAtUtc = oldTimestamp.AddHours(6),
+            Limitations = "Previous model result"
+        });
+        await db.SaveChangesAsync();
+        var peer = new TestPeerServicesClient
+        {
+            BiodiversityResult = (
+                new PeerBiodiversityInferenceResponse(destinationId, activityId, "AVAILABLE",
+                    [new PeerSpeciesInference(Guid.NewGuid(), "New species", "New species", 0.8, "synthetic")],
+                    "model-2", DateTime.UtcNow, "New model result", 1, null, "test-provider"), true, null)
+        };
+        var planner = CreateService(db, peer, "model-2");
+
+        var result = await planner.GetBiodiversityPredictionsAsync(destinationId, activityId);
+
+        Assert.Equal("available", result.Status);
+        Assert.Equal("model-2", result.ModelMetadata?.ModelVersion);
+        Assert.Equal("New species", Assert.Single(result.PredictedSpecies).CommonName);
+        Assert.Equal(1, peer.BiodiversityCallCount);
+    }
+
+    [Fact]
+    [Trait("TestId", "PLANNER-BIO-CACHE-005")]
+    public async Task Prediction_older_than_freshness_window_is_not_reused_even_if_cache_expiry_is_future()
+    {
+        await using var db = CreateDatabase();
+        var destinationId = Guid.NewGuid();
+        var activityId = Guid.NewGuid();
+        db.BiodiversityPredictions.Add(new BiodiversityPredictionCache
+        {
+            PredictionId = Guid.NewGuid(),
+            DestinationId = destinationId,
+            ActivityId = activityId,
+            Status = "available",
+            SpeciesDataJson = JsonSerializer.Serialize(new[]
+            {
+                new PredictedSpeciesDto(Guid.NewGuid(), "Old species", "Old species", 0.2, "synthetic")
+            }),
+            ModelVersion = "model-1",
+            Provider = "test-provider",
+            InferenceTimestampUtc = DateTime.UtcNow.AddHours(-7),
+            ExpiresAtUtc = DateTime.UtcNow.AddHours(1),
+            Limitations = "Old result"
+        });
+        await db.SaveChangesAsync();
+        var peer = new TestPeerServicesClient
+        {
+            BiodiversityResult = (
+                new PeerBiodiversityInferenceResponse(destinationId, activityId, "available",
+                    [new PeerSpeciesInference(Guid.NewGuid(), "Fresh species", "Fresh species", 0.8, "synthetic")],
+                    "model-1", DateTime.UtcNow, "Current result", 1, null, "test-provider"), true, null)
+        };
+        var planner = CreateService(db, peer, "model-1");
+
+        var result = await planner.GetBiodiversityPredictionsAsync(destinationId, activityId);
+
+        Assert.Equal("Fresh species", Assert.Single(result.PredictedSpecies).CommonName);
+        Assert.Equal(1, peer.BiodiversityCallCount);
     }
 
     [Fact]
@@ -182,7 +264,7 @@ public sealed class CoastalPlannerServiceTests
 
         var result = await planner.GetBiodiversityPredictionsAsync(destinationId, activityId);
 
-        Assert.Equal("UNAVAILABLE", result.Status);
+        Assert.Equal("invalid", result.Status);
         Assert.Empty(result.PredictedSpecies);
         Assert.Null(result.ModelMetadata);
         Assert.Empty(await db.BiodiversityPredictions.ToListAsync());
@@ -275,8 +357,13 @@ public sealed class CoastalPlannerServiceTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString("N"))
             .Options);
 
-    private static CoastalPlannerService CreateService(CoastalPlannerDbContext db, IPeerServicesClient peer) =>
-        new(db, peer, NullLogger<CoastalPlannerService>.Instance);
+    private static CoastalPlannerService CreateService(CoastalPlannerDbContext db, IPeerServicesClient peer,
+        string? expectedModelVersion = null) =>
+        new(db, peer, NullLogger<CoastalPlannerService>.Instance, configuration: new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["PeerServices:BiodiversityExpectedModelVersion"] = expectedModelVersion
+            }).Build());
 
     private static RecommendationRequestDto CreateRecommendationRequest(
         Guid? destinationId = null,

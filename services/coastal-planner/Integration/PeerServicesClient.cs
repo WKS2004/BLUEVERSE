@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Diagnostics;
 using System.Text.Json;
 
 namespace Blueverse.CoastalPlanner.Integration;
@@ -8,14 +9,17 @@ public sealed class PeerServicesClient : IPeerServicesClient
     private readonly HttpClient _http;
     private readonly IConfiguration _config;
     private readonly ILogger<PeerServicesClient> _logger;
+    private readonly BiodiversityCircuitBreaker _biodiversityCircuit;
     private readonly TimeSpan _timeout;
     private readonly int _retryCount;
 
-    public PeerServicesClient(HttpClient http, IConfiguration config, ILogger<PeerServicesClient> logger)
+    public PeerServicesClient(HttpClient http, IConfiguration config, ILogger<PeerServicesClient> logger,
+        BiodiversityCircuitBreaker? biodiversityCircuit = null)
     {
         _http = http;
         _config = config;
         _logger = logger;
+        _biodiversityCircuit = biodiversityCircuit ?? new BiodiversityCircuitBreaker(config, TimeProvider.System);
 
         var timeoutSeconds = config.GetValue<int?>("PeerServices:TimeoutSeconds") ?? 3;
         if (timeoutSeconds is < 1 or > 30)
@@ -145,43 +149,190 @@ public sealed class PeerServicesClient : IPeerServicesClient
         Guid? activityId,
         CancellationToken ct = default)
     {
-        var query = $"destinationId={Uri.EscapeDataString(destinationId.ToString())}";
-        if (activityId.HasValue)
+        var correlationId = Activity.Current?.TraceId.ToString() ?? Guid.NewGuid().ToString("N");
+        var enabled = _config.GetValue<bool?>("PeerServices:BiodiversityEnabled") ?? true;
+        if (!enabled)
         {
-            query += $"&activityId={Uri.EscapeDataString(activityId.Value.ToString())}";
+            return Outcome("not_requested", destinationId, activityId,
+                "Wildlife context was not requested.", correlationId);
         }
 
-        var url = BuildEndpoint(_config["PeerServices:BiodiversityMlUrl"], "predict", query);
+        if (destinationId == Guid.Empty || activityId == Guid.Empty)
+        {
+            return Outcome("invalid", destinationId, activityId,
+                "Wildlife context could not be checked for this location.", correlationId);
+        }
+
+        if (!_biodiversityCircuit.TryEnter(out var retryAfter))
+        {
+            _logger.LogInformation("Biodiversity inference outcome {Outcome}; correlation {CorrelationId}; retry after {RetryAfterMs} ms",
+                "unavailable", correlationId, (long)retryAfter.TotalMilliseconds);
+            return (null, false, "Biodiversity predictions are temporarily unavailable. Please try again later.");
+        }
+
+        var url = BuildEndpoint(_config["PeerServices:BiodiversityMlUrl"], "v1/predictions", string.Empty);
         if (url is null)
         {
-            return (null, false, UnavailableNote("Biodiversity ML", "endpoint URL is not configured"));
+            _biodiversityCircuit.RecordFailure();
+            return Outcome("unavailable", destinationId, activityId,
+                "Wildlife predictions are temporarily unavailable.", correlationId, responded: false);
         }
 
-        var (data, responded, note) = await ExecuteWithRetryAsync<PeerBiodiversityInferenceResponse>(
-            url, "Biodiversity ML", ct);
-        if (!responded || data is null)
+        var request = new BiodiversityInferenceRequest(1, destinationId, activityId, DateTime.UtcNow);
+        var maxAttempts = 2;
+        string? failureCategory = null;
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
-            _logger.LogWarning("Biodiversity ML endpoint is unavailable: {Reason}", note);
-            return (null, false, note);
+            ct.ThrowIfCancellationRequested();
+            try
+            {
+                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                timeout.CancelAfter(TimeSpan.FromSeconds(3));
+                using var requestMessage = new HttpRequestMessage(HttpMethod.Post, url)
+                {
+                    Content = JsonContent.Create(request)
+                };
+                requestMessage.Options.Set(PeerRequestContextHandler.DoNotForwardUserAuthorization, true);
+                requestMessage.Headers.TryAddWithoutValidation("X-Correlation-ID", correlationId);
+                var apiKey = _config["PeerServices:BiodiversityApiKey"];
+                if (!string.IsNullOrWhiteSpace(apiKey))
+                    requestMessage.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
+
+                using var response = await _http.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
+                if ((int)response.StatusCode is 400 or 404 or 422)
+                {
+                    _biodiversityCircuit.RecordSuccess();
+                    return Outcome("invalid", destinationId, activityId,
+                        "Wildlife predictions are not available for this location.", correlationId);
+                }
+
+                if ((int)response.StatusCode is 401 or 403 or 429)
+                {
+                    _biodiversityCircuit.RecordFailure();
+                    return Outcome("unavailable", destinationId, activityId,
+                        "Wildlife predictions are temporarily unavailable.", correlationId, responded: false);
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    failureCategory = $"http_{(int)response.StatusCode}";
+                    if ((int)response.StatusCode < 500 || attempt == maxAttempts) break;
+                    await Task.Delay(TimeSpan.FromMilliseconds(150), ct);
+                    continue;
+                }
+
+                PeerBiodiversityInferenceResponse? data;
+                try
+                {
+                    data = await response.Content.ReadFromJsonAsync<PeerBiodiversityInferenceResponse>(cancellationToken: timeout.Token);
+                }
+                catch (JsonException)
+                {
+                    _biodiversityCircuit.RecordFailure();
+                    return Outcome("invalid", destinationId, activityId,
+                        "The wildlife prediction response could not be verified.", correlationId);
+                }
+
+                if (data is null)
+                {
+                    _biodiversityCircuit.RecordFailure();
+                    return Outcome("invalid", destinationId, activityId,
+                        "The wildlife prediction response could not be verified.", correlationId);
+                }
+
+                var validation = ValidateBiodiversityResponse(data, destinationId, activityId, DateTime.UtcNow);
+                if (validation is not null)
+                {
+                    if (validation.Value.Status == "unavailable") _biodiversityCircuit.RecordSuccess();
+                    else _biodiversityCircuit.RecordFailure();
+                    var (status, message) = validation.Value;
+                    var invalidResult = status == "stale" ? data with { Status = status, Species = [] } : null;
+                    LogBiodiversityOutcome(status, correlationId);
+                    return invalidResult is null
+                        ? Outcome(status, destinationId, activityId, message, correlationId)
+                        : (invalidResult, true, message);
+                }
+
+                if (data.Status == "not_requested")
+                {
+                    _biodiversityCircuit.RecordSuccess();
+                    return Outcome("not_requested", destinationId, activityId,
+                        "Wildlife context was not requested.", correlationId);
+                }
+
+                _biodiversityCircuit.RecordSuccess();
+                LogBiodiversityOutcome("available", correlationId);
+                return (data, true, null);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (OperationCanceledException)
+            {
+                failureCategory = "timeout";
+            }
+            catch (HttpRequestException)
+            {
+                failureCategory = "connection_failure";
+            }
+
+            if (attempt < maxAttempts)
+                await Task.Delay(TimeSpan.FromMilliseconds(150), ct);
         }
 
-        if (data.DestinationId != destinationId || data.ActivityId != activityId ||
-            data.Status != "AVAILABLE" || string.IsNullOrWhiteSpace(data.ModelVersion) ||
-            data.ModelVersion.Length > 64 ||
-            data.Timestamp is null || data.Timestamp.Value.Kind != DateTimeKind.Utc ||
-            data.Timestamp.Value < DateTime.UtcNow.AddHours(-6) || data.Timestamp.Value > DateTime.UtcNow.AddMinutes(1) ||
-            data.Species is null || data.Species.Any(species =>
+        _biodiversityCircuit.RecordFailure();
+        _logger.LogInformation("Biodiversity inference outcome {Outcome}; failure category {FailureCategory}; correlation {CorrelationId}",
+            "unavailable", failureCategory ?? "unknown", correlationId);
+        return (null, false, "Wildlife predictions are temporarily unavailable. Please try again later.");
+    }
+
+    private (PeerBiodiversityInferenceResponse? Result, bool Responded, string? Note) Outcome(
+        string status, Guid destinationId, Guid? activityId, string message, string correlationId, bool responded = true)
+    {
+        LogBiodiversityOutcome(status, correlationId);
+        return (new PeerBiodiversityInferenceResponse(destinationId, activityId, status, [], null, null, message), responded, message);
+    }
+
+    private (string Status, string Message)? ValidateBiodiversityResponse(
+        PeerBiodiversityInferenceResponse data, Guid destinationId, Guid? activityId, DateTime now)
+    {
+        if (data.ContractVersion != 1 || data.DestinationId != destinationId || data.ActivityId != activityId)
+            return ("invalid", "The wildlife prediction response could not be verified.");
+
+        if (data.Status == "not_requested")
+            return null;
+        if (data.Status == "unavailable")
+            return ("unavailable", "Wildlife predictions are temporarily unavailable.");
+        if (data.Status != "available")
+            return ("invalid", "The wildlife prediction response could not be verified.");
+
+        if (data.Timestamp is null || data.Timestamp.Value.Kind != DateTimeKind.Utc)
+            return ("invalid", "The wildlife prediction response could not be verified.");
+        if (data.Timestamp.Value < now.AddHours(-6) || data.Timestamp.Value > now.AddMinutes(1))
+            return ("stale", "The wildlife prediction is no longer current. Request a fresh result.");
+        if (string.IsNullOrWhiteSpace(data.Provider) || data.Provider.Length > 100 ||
+            string.IsNullOrWhiteSpace(data.ModelVersion) || data.ModelVersion.Length > 64 ||
+            string.IsNullOrWhiteSpace(data.Limitations) || data.Limitations.Length > 4000 ||
+            (data.UncertaintyText?.Length ?? 0) > 1000 ||
+            data.Species is null || data.Species.Count > 100 || data.Species.Any(species =>
                 species is null || species.SpeciesId == Guid.Empty || string.IsNullOrWhiteSpace(species.ScientificName) ||
                 species.ScientificName.Length > 200 || string.IsNullOrWhiteSpace(species.CommonName) ||
                 species.CommonName.Length > 200 || !double.IsFinite(species.HabitatSuitability) ||
                 species.HabitatSuitability is < 0 or > 1 || string.IsNullOrWhiteSpace(species.ConfidenceLevel) ||
-                species.ConfidenceLevel.Length > 64))
+                species.ConfidenceLevel.Length > 64 || (species.UncertaintyText?.Length ?? 0) > 1000))
         {
-            return (null, false, "Biodiversity ML returned an invalid or unavailable inference; no prediction was cached.");
+            return ("invalid", "The wildlife prediction response could not be verified.");
         }
 
-        return (data, true, null);
+        var expectedVersion = _config["PeerServices:BiodiversityExpectedModelVersion"];
+        if (!string.IsNullOrWhiteSpace(expectedVersion) && !string.Equals(expectedVersion, data.ModelVersion, StringComparison.Ordinal))
+            return ("invalid", "The wildlife prediction uses an unsupported model version.");
+        return null;
     }
+
+    private void LogBiodiversityOutcome(string outcome, string correlationId) =>
+        _logger.LogInformation("Biodiversity inference outcome {Outcome}; correlation {CorrelationId}", outcome, correlationId);
 
     private async Task<(T? Data, bool Responded, string? Note)> ExecuteWithRetryAsync<T>(
         string url,

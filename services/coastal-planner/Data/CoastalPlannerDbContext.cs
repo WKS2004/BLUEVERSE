@@ -92,7 +92,7 @@ public class CoastalPlannerDbContext : DbContext
         modelBuilder.Entity<BiodiversityPredictionCache>(entity =>
         {
             entity.ToTable("biodiversity_predictions_cache");
-            entity.HasIndex(e => new { e.DestinationId, e.ActivityId });
+            entity.HasIndex(e => new { e.DestinationId, e.ActivityId, e.ModelVersion });
             entity.HasIndex(e => e.ExpiresAtUtc);
         });
     }

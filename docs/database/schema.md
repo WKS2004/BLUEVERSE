@@ -44,7 +44,7 @@ cross-service foreign keys to Auth or other components.
 | `recommendations` | Unique workflow ID, owner ID, destination, UTC window, duration, candidate snapshot and uncertainty-note snapshot; checks enforce a positive window and duration; indexed by owner. |
 | `itineraries` | Owner ID, title, optional description, UTC window, optimistic `ConcurrencyVersion`, and created/updated timestamps; check enforces end after start; indexed by owner and creation time. |
 | `itinerary_items` | Ordered destination/activity/offering reference, UTC schedule, last known availability/suitability/operations states, and advisory; cascades from its itinerary; unique `(ItineraryId, OrderIndex)` and checks enforce a non-negative order and positive schedule interval. New items begin as `UNKNOWN`. |
-| `biodiversity_predictions_cache` | Destination/activity, validated model/version, prediction timestamp, expiration, prediction snapshot and limitations; indexed by destination/activity and expiration. Only valid `AVAILABLE` inference responses are cached. |
+| `biodiversity_predictions_cache` | Destination/activity, validated provider and model/version, prediction timestamp, expiration, prediction snapshot, uncertainty text and limitations; indexed by destination/activity/model version. Cache lookup requires the configured expected model version; TTL is six hours pending provider approval. |
 | `itinerary_evaluations` | Evaluation ID, owning itinerary ID, UTC review time and structured result snapshot with previous/current evidence; indexed by itinerary/time; cascades from its itinerary. |
 
 `20261005163837_ItineraryReviewHistory` adds itinerary/item `TimeZone`

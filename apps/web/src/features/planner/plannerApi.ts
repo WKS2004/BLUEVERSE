@@ -52,15 +52,20 @@ export type WorkflowStatus = {
 }
 
 export type BiodiversityPrediction = {
+  contractVersion: 1
   destinationId: string
   activityId: string | null
-  status: string
+  status: 'available' | 'not_requested' | 'unavailable' | 'invalid' | 'stale'
+  message: string
+  uncertaintyText?: string | null
+  provenance?: { provider: string; modelVersion: string | null; inferenceTimestamp: string | null } | null
   predictedSpecies: {
     speciesId: string
     scientificName: string
     commonName: string
     habitatSuitability: number
     confidenceLevel: string
+    uncertaintyText?: string | null
   }[]
   modelMetadata: { modelVersion: string | null; inferenceTimestamp: string | null } | null
   limitations: string
@@ -293,11 +298,70 @@ function isRecommendations(value: unknown): boolean {
   )
 }
 
+const biodiversityMessages = {
+  available: 'Wildlife context is available. A prediction does not guarantee a sighting.',
+  not_requested: 'Wildlife context was not requested.',
+  unavailable: 'Wildlife predictions are temporarily unavailable. Please try again later.',
+  invalid: 'Wildlife predictions could not be verified for this location.',
+  stale: 'The wildlife prediction is out of date. Request a fresh result.',
+} as const
+
+function normalizePrediction(value: unknown): unknown {
+  if (!object(value)) return value
+  const status = typeof value.status === 'string' ? value.status.toLowerCase() : ''
+  const known = Object.hasOwn(biodiversityMessages, status)
+  let normalizedStatus = known ? status as keyof typeof biodiversityMessages : 'unavailable'
+  const metadata = object(value.modelMetadata) ? value.modelMetadata : null
+  const provenance = object(value.provenance) ? value.provenance : null
+  if (normalizedStatus === 'available' && (
+    !metadata || typeof metadata.modelVersion !== 'string' || !metadata.modelVersion || !instant(metadata.inferenceTimestamp) ||
+    !provenance || typeof provenance.provider !== 'string' || !provenance.provider ||
+    provenance.modelVersion !== metadata.modelVersion || !instant(provenance.inferenceTimestamp)
+  )) normalizedStatus = 'unavailable'
+  const available = normalizedStatus === 'available'
+  const contractVersion = value.contractVersion
+  if (contractVersion !== 1) return {
+    ...value,
+    contractVersion: 1,
+    status: 'unavailable',
+    message: biodiversityMessages.unavailable,
+    limitations: biodiversityMessages.unavailable,
+    uncertaintyText: null,
+    provenance: null,
+    predictedSpecies: [],
+    modelMetadata: null,
+  }
+  if (!known) return {
+    ...value,
+    contractVersion: 1,
+    status: 'unavailable',
+    message: biodiversityMessages.unavailable,
+    limitations: biodiversityMessages.unavailable,
+    uncertaintyText: null,
+    provenance: null,
+    predictedSpecies: [],
+    modelMetadata: null,
+  }
+  return {
+    ...value,
+    contractVersion: 1,
+    status: normalizedStatus,
+    message: available && typeof value.message === 'string' ? value.message : biodiversityMessages[normalizedStatus],
+    limitations: available && typeof value.limitations === 'string' ? value.limitations : biodiversityMessages[normalizedStatus],
+    uncertaintyText: available && typeof value.uncertaintyText === 'string' ? value.uncertaintyText : null,
+    predictedSpecies: available && Array.isArray(value.predictedSpecies) ? value.predictedSpecies : [],
+    modelMetadata: available ? value.modelMetadata : null,
+    provenance: available ? value.provenance : null,
+  }
+}
+
 function isPrediction(value: unknown): boolean {
   return (
     object(value) &&
+    value.contractVersion === 1 &&
     typeof value.destinationId === 'string' &&
-    ['AVAILABLE', 'UNAVAILABLE'].includes(String(value.status)) &&
+    ['available', 'not_requested', 'unavailable', 'invalid', 'stale'].includes(String(value.status)) &&
+    typeof value.message === 'string' &&
     typeof value.limitations === 'string' &&
     Array.isArray(value.predictedSpecies) &&
     value.predictedSpecies.every(
@@ -310,7 +374,7 @@ function isPrediction(value: unknown): boolean {
     ) &&
     (value.modelMetadata === null ||
       (object(value.modelMetadata) &&
-        typeof value.modelMetadata.modelVersion === 'string' &&
+        (typeof value.modelMetadata.modelVersion === 'string' || value.modelMetadata.modelVersion === null) &&
         instant(value.modelMetadata.inferenceTimestamp)))
   )
 }
@@ -634,13 +698,13 @@ export function getBiodiversityPredictions(destinationId: string, activityId: st
       ? `?destinationId=${encodeURIComponent(destinationId)}&activityId=${encodeURIComponent(activityId)}`
       : `?destinationId=${encodeURIComponent(destinationId)}`
   return checked(
-    request<BiodiversityPrediction>(() =>
+    request<unknown>(() =>
       fetch('/api/planner/biodiversity/predictions' + query, {
         credentials: 'include',
         headers: { Accept: 'application/json' },
         signal: AbortSignal.timeout(15000),
       })
-    ),
+    ).then(normalizePrediction),
     isPrediction
   )
 }// Interpret a user's wall clock in the destination's IANA time zone, independently

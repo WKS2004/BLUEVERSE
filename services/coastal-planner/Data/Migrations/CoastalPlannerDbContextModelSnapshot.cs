@@ -49,6 +49,11 @@ namespace Blueverse.CoastalPlanner.Data.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<string>("SpeciesDataJson")
                         .HasColumnType("text");
 
@@ -57,11 +62,14 @@ namespace Blueverse.CoastalPlanner.Data.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<string>("UncertaintyText")
+                        .HasColumnType("text");
+
                     b.HasKey("PredictionId");
 
                     b.HasIndex("ExpiresAtUtc");
 
-                    b.HasIndex("DestinationId", "ActivityId");
+                    b.HasIndex("DestinationId", "ActivityId", "ModelVersion");
 
                     b.ToTable("biodiversity_predictions_cache", "coastal_planner");
                 });
@@ -92,6 +100,13 @@ namespace Blueverse.CoastalPlanner.Data.Migrations
                     b.Property<DateTime>("StartsAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasDefaultValue("Draft");
+
                     b.Property<string>("TimeZone")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -116,6 +131,8 @@ namespace Blueverse.CoastalPlanner.Data.Migrations
                     b.ToTable("itineraries", "coastal_planner", t =>
                         {
                             t.HasCheckConstraint("CK_itineraries_date_range", "\"EndsAtUtc\" > \"StartsAtUtc\"");
+
+                            t.HasCheckConstraint("CK_itineraries_status", "\"Status\" IN ('Draft','Confirmed')");
                         });
                 });
 
@@ -157,6 +174,11 @@ namespace Blueverse.CoastalPlanner.Data.Migrations
 
                     b.Property<Guid>("DestinationId")
                         .HasColumnType("uuid");
+
+                    b.Property<double>("FitScore")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("double precision")
+                        .HasDefaultValue(0.0);
 
                     b.Property<Guid>("ItineraryId")
                         .HasColumnType("uuid");

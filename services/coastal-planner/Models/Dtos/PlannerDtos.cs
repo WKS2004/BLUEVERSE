@@ -200,7 +200,17 @@ public record BiodiversityPredictionDto(
     string Status,
     List<PredictedSpeciesDto> PredictedSpecies,
     ModelMetadataDto? ModelMetadata,
-    string Limitations
+    string Limitations,
+    int ContractVersion = 1,
+    string? Message = null,
+    string? UncertaintyText = null,
+    BiodiversityProvenanceDto? Provenance = null
+);
+
+public record BiodiversityProvenanceDto(
+    string Provider,
+    string? ModelVersion,
+    DateTime? InferenceTimestamp
 );
 
 public record PredictedSpeciesDto(
@@ -208,7 +218,8 @@ public record PredictedSpeciesDto(
     string ScientificName,
     string CommonName,
     double HabitatSuitability,
-    string ConfidenceLevel
+    string ConfidenceLevel,
+    string? UncertaintyText = null
 );
 
 public record ModelMetadataDto(

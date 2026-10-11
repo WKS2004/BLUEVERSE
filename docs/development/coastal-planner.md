@@ -70,7 +70,7 @@ correlation ID. They never expose private hostnames in client requests.
 | Member 1 offerings | `GET /api/experiences/catalogue?destinationId=...&activityIds=...` | Published available offerings with destination/activity/offering IDs, title, UTC `availableFrom`/`availableUntil`, UTC `checkedAt`, `timeZone`, and supported `experienceLevels`. Availability must have been checked within 15 minutes. |
 | Member 2 marine | `GET /api/marine/suitability?destinationId=...&activityId=...&start=...&end=...` | Matching IDs, deterministic status, UTC `conditionTimestamp`, safety profile ID for suitable/caution, and explicit `isFresh`. Member 2 owns profile freshness. |
 | Member 4 operations | `GET /api/operations/status?destinationId=...` | Matching destination and verified current operating status. Suspended, cancelled and completed operations exclude recommendations. |
-| Member 3 external ML | `GET /predict?destinationId=...&activityId=...` | Validated model version, UTC timestamp, matching IDs and species fields with finite suitability in 0–1. This optional context never overrides safety or availability. |
+| Member 3 external ML (proposal, unconfirmed) | `POST /v1/predictions` | Minimal canonical IDs; validated version, matching identity, provenance, UTC inference time and finite 0–1 values. Optional context never overrides safety or availability. See the IT3091 proposal and public v1 contract. |
 
 The selected experience fits the intersection of the user's window and the
 offering's interval. Its duration must fit entirely in that interval and its
@@ -82,8 +82,11 @@ peer calls have bounded retries and timeouts. Biodiversity failures produce
 explicit unavailable context and no fabricated species. Valid cache entries
 expire six hours after inference; corrupt entries are discarded.
 
-The four peer URL variables are documented in `.env.example`. Those services
-are absent from this branch's Compose stack. The planner remains healthy and
+The other peer URL variables are documented in `.env.example`; those owner
+services are absent from this branch's Compose stack. The synthetic IT3091 fake
+is available only with the Compose `dev` profile and is not evidence of a real
+provider. Configure the real provider URL, credential, enabled flag, and
+expected model version via local environment values. The planner remains healthy and
 saved-trip operations remain available without them; the destination form
 shows a recoverable unavailable state. A live happy-path integration with
 the owner services still needs their implementations and contract agreement.

@@ -198,3 +198,16 @@ This log records AI-assisted contributions for Adithya Gunawardana (`@AdithyaGun
 - AI output accepted/changed/rejected: Accepted the independent-component behavior; retained the existing bounded peer-service calls and no fabricated fallback data.
 - Verification/evidence: Coastal Planner tests passed (109/109); endpoint catalog validation passed (49 public endpoints, 32 frontend routes); `git diff --check` passed. Updated `services/coastal-planner/Controllers/RecommendationsController.cs`, `services/coastal-planner/tests/Blueverse.CoastalPlanner.Tests/PlannerHighlightsAvailabilityTests.cs`, and `docs/api/endpoint-catalog.json` with generated Markdown at `docs/api/endpoint-catalog.md`.
 
+## 2026-10-11 — Draft IT3091 biodiversity integration
+
+- Date/time or time range: 2026-10-11 18:05–18:28 (Asia/Colombo).
+- GitHub Username: `AdithyaGunawardana`
+- Team Member Name (actual): Adithya Gunawardana
+- Agent Name: Codex
+- Tool/App: Codex desktop
+- AI Model: GPT-6
+- Summary of the user's request: Draft an unconfirmed IT3091 contract and public client contract; implement a fake provider, harden the Coastal Planner adapter and clients, test status handling/cache/safety invariants, and record verification without coordinating with Member 1 or claiming G00 approval.
+- Summary of what the AI Agent did: Added the private contract proposal, versioned public contract and evidence note; created a switchable Node fake and dev Compose profile; hardened the .NET adapter with minimal requests, service credential isolation, strict validation, bounded retry/timeout, feature flag, circuit breaker, correlation/outcome logs, model-version cache key and provider provenance; aligned React and Flutter status fallbacks; added focused contract tests and cache migration.
+- AI output accepted/changed/rejected: Kept all provider wire details and model semantics explicitly unconfirmed. Revised neutral messages to fixed client-owned wording after a Flutter test exposed untrusted provider text. Changed the shared peer handler to preserve the ML service credential instead of forwarding the caller token for this request. No other member's documentation was changed.
+- Verification/evidence: Coastal Planner tests passed (125/125), React planner and biodiversity status tests passed (37/37), Flutter biodiversity status test passed (8/8), endpoint catalog/UI integration validation and `git diff --check` passed. Fake-only evidence and a placeholder for a future real IT3091 call are in `docs/v1/components/it3091-integration-evidence.md`; no real provider call or G00 approval is claimed.
+

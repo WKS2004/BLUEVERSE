@@ -105,6 +105,8 @@ class _PlannerPlanScreenState extends State<PlannerPlanScreen> {
   PlannerRecommendationResult? _result;
   final Set<String> _activityIds = {};
   final _title = TextEditingController();
+  final Map<String, PlannerBiodiversityPrediction> _wildlifePredictions = {};
+  final Set<String> _wildlifeLoading = {};
   DateTime? _starts, _ends;
   int _durationHours = 4;
   String? _experience;
@@ -116,6 +118,8 @@ class _PlannerPlanScreenState extends State<PlannerPlanScreen> {
       widget.user?.permissions.contains('planner.recommendations.create') ==
           true &&
       widget.user?.permissions.contains('planner.itineraries.manage') == true;
+  bool get _canReadWildlife =>
+      widget.user?.permissions.contains('planner.biodiversity.read') == true;
   @override
   void initState() {
     super.initState();
@@ -451,6 +455,31 @@ class _PlannerPlanScreenState extends State<PlannerPlanScreen> {
                                   'Wildlife note: ${candidate.biodiversityContext!.speciesName}',
                                 ),
                               ),
+                            if (_canReadWildlife) ...[
+                              const SizedBox(height: 8),
+                              OutlinedButton(
+                                onPressed: _wildlifeLoading.contains(
+                                  '${candidate.destinationId}:${candidate.activityId}',
+                                )
+                                    ? null
+                                    : () => _checkWildlife(candidate),
+                                child: Text(
+                                  _wildlifeLoading.contains(
+                                    '${candidate.destinationId}:${candidate.activityId}',
+                                  )
+                                      ? 'Checking wildlife context…'
+                                      : 'Check wildlife context',
+                                ),
+                              ),
+                              if (_wildlifePredictions.containsKey(
+                                '${candidate.destinationId}:${candidate.activityId}',
+                              ))
+                                _PlannerWildlifeResult(
+                                  prediction: _wildlifePredictions[
+                                    '${candidate.destinationId}:${candidate.activityId}'
+                                  ]!,
+                                ),
+                            ],
                             const SizedBox(height: 12),
                             TextField(
                               controller: _title,
@@ -472,6 +501,35 @@ class _PlannerPlanScreenState extends State<PlannerPlanScreen> {
               ],
             ),
     );
+  }
+
+  Future<void> _checkWildlife(PlannerCandidate candidate) async {
+    final key = '${candidate.destinationId}:${candidate.activityId}';
+    setState(() => _wildlifeLoading.add(key));
+    try {
+      final prediction = await widget.api.biodiversityPredictions(
+        destinationId: candidate.destinationId,
+        activityId: candidate.activityId,
+      );
+      if (mounted) setState(() => _wildlifePredictions[key] = prediction);
+    } on Object {
+      if (mounted) {
+        setState(() => _wildlifePredictions[key] = PlannerBiodiversityPrediction(
+          contractVersion: 1,
+          destinationId: candidate.destinationId,
+          activityId: candidate.activityId,
+          status: 'unavailable',
+          message: 'Wildlife predictions are temporarily unavailable. Please try again later.',
+          uncertaintyText: null,
+          provenance: null,
+          predictedSpecies: const [],
+          modelMetadata: null,
+          limitations: 'Wildlife predictions are temporarily unavailable. Please try again later.',
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _wildlifeLoading.remove(key));
+    }
   }
 
   Future<void> _pickDateTime(bool start) async {
@@ -506,6 +564,30 @@ class _PlannerPlanScreenState extends State<PlannerPlanScreen> {
       }
     });
   }
+}
+
+class _PlannerWildlifeResult extends StatelessWidget {
+  const _PlannerWildlifeResult({required this.prediction});
+  final PlannerBiodiversityPrediction prediction;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: 8),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(prediction.message),
+        if (prediction.status == 'available') ...[
+          for (final species in prediction.predictedSpecies)
+            Text('${species.commonName} (${species.scientificName})'),
+          if (prediction.uncertaintyText case final text?) Text(text),
+          if (prediction.modelMetadata?.inferenceTimestamp case final timestamp?)
+            Text('Prediction issued $timestamp · Model ${prediction.modelMetadata?.modelVersion ?? 'unknown'}'),
+        ],
+        if (prediction.status == 'available') Text(prediction.limitations),
+      ],
+    ),
+  );
 }
 
 class PlannerSavedTripsScreen extends StatelessWidget {

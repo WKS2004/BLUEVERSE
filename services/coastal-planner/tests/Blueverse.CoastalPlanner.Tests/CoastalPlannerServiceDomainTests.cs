@@ -416,7 +416,7 @@ public sealed class CoastalPlannerServiceDomainTests
             (
                 new PeerBiodiversityInferenceResponse(destinationId, activityId, "AVAILABLE",
                     [new PeerSpeciesInference(speciesId, "Dugong dugon", "Dugong", 0.91, "HIGH")],
-                    "model-v2", DateTime.UtcNow, "Contextual"),
+                    "model-v2", DateTime.UtcNow, "Contextual", 1, null, "test-provider"),
                 true,
                 null
             )
@@ -432,6 +432,40 @@ public sealed class CoastalPlannerServiceDomainTests
         Assert.Equal("Dugong dugon (Dugong)", candidate.BiodiversityContext.SpeciesName);
         Assert.Equal(0.91, candidate.BiodiversityContext.Probability);
         Assert.Equal("HIGH", candidate.BiodiversityContext.Uncertainty);
+    }
+
+    [Theory]
+    [InlineData("UNSUITABLE", "OPEN", "AVAILABLE", "PUBLISHED")]
+    [InlineData("SUITABLE", "TEMPORARILY_SUSPENDED", "AVAILABLE", "PUBLISHED")]
+    [InlineData("SUITABLE", "OPEN", "UNAVAILABLE", "PUBLISHED")]
+    [InlineData("SUITABLE", "OPEN", "AVAILABLE", "DRAFT")]
+    [Trait("TestId", "PLANNER-REC-BIO-SAFETY-001")]
+    public async Task Biodiversity_prediction_never_overrides_source_eligibility_or_safety(
+        string marineStatus, string operationalStatus, string availability, string publicationState)
+    {
+        await using var db = CreateDatabase();
+        var destinationId = Guid.NewGuid();
+        var activityId = Guid.NewGuid();
+        var startsAt = DateTime.UtcNow.AddDays(1);
+        var peer = new TestPeerServicesClient
+        {
+            CatalogueResult = ([Offering(destinationId, activityId, availability, publicationState)], true, null),
+            OperationsResult = (new PeerOperationStatusResponse(destinationId, operationalStatus, []), true, null),
+            MarineResult = (new PeerSuitabilityResponse(destinationId, activityId, marineStatus, startsAt,
+                marineStatus == "SUITABLE" ? Guid.NewGuid() : null, "Source decision", IsFresh: true), true, null),
+            BiodiversityResult = (
+                new PeerBiodiversityInferenceResponse(destinationId, activityId, "available",
+                    [new PeerSpeciesInference(Guid.NewGuid(), "Synthetic species", "Fixture", 1, "synthetic")],
+                    "model-v2", DateTime.UtcNow, "Fixture only"), true, null)
+        };
+        var service = CreateService(db, peer);
+        var request = new RecommendationRequestDto(destinationId, startsAt, startsAt.AddHours(4), 2,
+            [activityId], "INTERMEDIATE", IncludeBiodiversityContext: true);
+
+        var result = await service.GenerateRecommendationsAsync(request, Guid.NewGuid());
+
+        Assert.Empty(result.Candidates);
+        Assert.Equal(0, peer.BiodiversityCallCount);
     }
 
     [Fact]
@@ -555,7 +589,7 @@ public sealed class CoastalPlannerServiceDomainTests
         var service = CreateService(db, peer);
 
         var staleResult = await service.GetBiodiversityPredictionsAsync(destinationId, activityId);
-        Assert.Equal("UNAVAILABLE", staleResult.Status);
+        Assert.Equal("stale", staleResult.Status);
         Assert.Empty(staleResult.PredictedSpecies);
 
         // Species with empty GUID
@@ -568,7 +602,7 @@ public sealed class CoastalPlannerServiceDomainTests
             null
         );
         var emptySpeciesGuidResult = await service.GetBiodiversityPredictionsAsync(destinationId, activityId);
-        Assert.Equal("UNAVAILABLE", emptySpeciesGuidResult.Status);
+        Assert.Equal("invalid", emptySpeciesGuidResult.Status);
 
         // Model version exceeding 64 chars
         peer.BiodiversityResult =
@@ -580,7 +614,7 @@ public sealed class CoastalPlannerServiceDomainTests
             null
         );
         var longModelResult = await service.GetBiodiversityPredictionsAsync(destinationId, activityId);
-        Assert.Equal("UNAVAILABLE", longModelResult.Status);
+        Assert.Equal("invalid", longModelResult.Status);
     }
 
     private static CoastalPlannerDbContext CreateDatabase() => new(

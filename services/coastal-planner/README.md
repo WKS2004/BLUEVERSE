@@ -18,7 +18,7 @@ are being implemented:
 | Experience Catalogue | `GET /api/experiences/catalogue?destinationId={guid}&activityIds={comma-separated-guids}` | Published and available offering facts |
 | Marine Conditions | `GET /api/marine/suitability?destinationId={guid}&activityId={guid}&start={utc}&end={utc}` | Sourced, time-bound suitability |
 | Coastal Operations | `GET /api/operations/status?destinationId={guid}` | Current operating restrictions |
-| Biodiversity ML | `GET /predict?destinationId={guid}&activityId={guid}` | Optional contextual species prediction |
+| Biodiversity ML (proposal, unconfirmed) | `POST /v1/predictions` | Optional contextual inference from canonical IDs; no client call |
 
 Set the roots through `PeerServices:ExperienceCatalogueUrl`,
 `PeerServices:MarineConditionsUrl`, `PeerServices:CoastalOperationsUrl`, and
@@ -34,11 +34,23 @@ Request cancellation still cancels the planner request.
 Recommendations complete with an empty candidate list when required catalogue,
 marine, or operating evidence cannot be verified. The planner never invents
 an offering, availability, safety profile, suitability, or operating status.
-Biodiversity is optional: an outage returns `UNAVAILABLE`, no species and no
-model metadata, and is not cached. Peer health is excluded from service startup
+Biodiversity uses a dedicated 3-second timeout and at most one retry. It
+returns one of `available`, `not_requested`, `unavailable`, `invalid`, or
+`stale`; non-available results contain no species. Cache reads require a
+configured expected model version and match destination, activity, and model
+version. The six-hour TTL is inherited but remains unapproved by IT3091.
+Peer health is excluded from service startup
 and readiness; `/api/planner/health` reports only this service's database and
 migration readiness.
 
+The biodiversity provider wire proposal is in
+`docs/v1/components/it3091-biodiversity-contract-proposal.md`; all details are
+unconfirmed pending IT3091 and G00 approval. For local development, build and
+start with `docker compose --profile dev ...` to include the synthetic
+`it3091-fake` service. Set `IT3091_FAKE_BEHAVIOR` to `valid`, `timeout`, `5xx`,
+`malformed`, `wrong-identity`, `out-of-range`, `stale`, or
+`unsupported-location` to exercise outcomes. Real URL, key, enabled flag, and
+expected model version are environment-configured; never commit credentials.
 The adapter validates peer response identity and required fields. Confirm the
 proposed paths and payloads with the owning teams when their components are
 available; do not make missing peer services a Compose startup dependency.
@@ -83,10 +95,12 @@ dotnet test services/coastal-planner/tests/Blueverse.CoastalPlanner.Tests/Blueve
 See [the implementation and operations guide](../../docs/development/coastal-planner.md)
 for current routes, schedule/freshness requirements, permissions, durable review
 history, Docker setup, explicit PostgreSQL checks and pending owner contracts.
-Catalogue/marine/operations/ML services and Flutter planner screens are absent
-from this branch. Pre-G07 AI remains a non-executing private access seam.
+Catalogue/marine/operations services are absent from this branch. The fake ML
+service is synthetic and does not establish a real IT3091 integration.
+Pre-G07 AI remains a non-executing private access seam.
 
 The suite uses deterministic in-memory persistence for provider-independent
 application behavior and an HTTP test server for JWT permissions, owner
-scoping, and peer outage behavior. It does not substitute for PostgreSQL
+scoping, and peer outage behavior. The IT3091 fake contract tests start
+`fake-it3091/server.mjs` and require Node.js on `PATH`. It does not substitute for PostgreSQL
 migration, constraint, or concurrency evidence.

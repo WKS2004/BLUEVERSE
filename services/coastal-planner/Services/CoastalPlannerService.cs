@@ -13,17 +13,20 @@ public partial class CoastalPlannerService : ICoastalPlannerService
     private readonly IPeerServicesClient _peerClient;
     private readonly ILogger<CoastalPlannerService> _logger;
     private readonly IPlanningCoordinationClient? _coordinationClient;
+    private readonly IConfiguration _configuration;
 
     public CoastalPlannerService(
         CoastalPlannerDbContext db, 
         IPeerServicesClient peerClient,
         ILogger<CoastalPlannerService> logger,
-        IPlanningCoordinationClient? coordinationClient = null)
+        IPlanningCoordinationClient? coordinationClient = null,
+        IConfiguration? configuration = null)
     {
         _db = db;
         _peerClient = peerClient;
         _logger = logger;
         _coordinationClient = coordinationClient;
+        _configuration = configuration ?? new ConfigurationBuilder().Build();
     }
 
     public async Task<RecommendationResultDto> GenerateRecommendationsAsync(
@@ -149,8 +152,8 @@ public partial class CoastalPlannerService : ICoastalPlannerService
             if (request.IncludeBiodiversityContext)
             {
                 var bioResult = await GetBiodiversityPredictionsAsync(item.DestinationId, item.ActivityId, ct);
-                if (bioResult.Status != "AVAILABLE") AddNote(uncertaintyNotes, bioResult.Limitations);
-                if (bioResult.Status == "AVAILABLE" && bioResult.PredictedSpecies.FirstOrDefault() is { } topSpecies &&
+                if (bioResult.Status != "available") AddNote(uncertaintyNotes, bioResult.Limitations);
+                if (bioResult.Status == "available" && bioResult.PredictedSpecies.FirstOrDefault() is { } topSpecies &&
                     bioResult.ModelMetadata?.InferenceTimestamp is { } timestamp)
                 {
                     bioContext = new BiodiversityContextDto(
@@ -727,27 +730,35 @@ public partial class CoastalPlannerService : ICoastalPlannerService
         Guid? activityId, 
         CancellationToken ct = default)
     {
-        var cache = await _db.BiodiversityPredictions
-            .OrderByDescending(p => p.InferenceTimestampUtc)
-            .FirstOrDefaultAsync(p => p.DestinationId == destinationId && p.ActivityId == activityId && p.ExpiresAtUtc > DateTime.UtcNow, ct);
+        var expectedVersion = _configuration["PeerServices:BiodiversityExpectedModelVersion"];
+        var cache = string.IsNullOrWhiteSpace(expectedVersion)
+            ? null
+            : await _db.BiodiversityPredictions
+                .OrderByDescending(p => p.InferenceTimestampUtc)
+                .FirstOrDefaultAsync(p => p.DestinationId == destinationId && p.ActivityId == activityId &&
+                    p.ModelVersion == expectedVersion && p.ExpiresAtUtc > DateTime.UtcNow, ct);
 
         if (cache != null && !string.IsNullOrWhiteSpace(cache.SpeciesDataJson))
         {
             try
             {
             var species = JsonSerializer.Deserialize<List<PredictedSpeciesDto>>(cache.SpeciesDataJson);
-            if (cache.Status == "AVAILABLE" && cache.InferenceTimestampUtc >= DateTime.UtcNow.AddHours(-6) &&
+            if (cache.Status == "available" && cache.InferenceTimestampUtc >= DateTime.UtcNow.AddHours(-6) &&
                 cache.InferenceTimestampUtc <= DateTime.UtcNow.AddMinutes(1) && !string.IsNullOrWhiteSpace(cache.ModelVersion) &&
+                !string.IsNullOrWhiteSpace(cache.Provider) &&
                 species is not null && species.All(s => s is not null && s.SpeciesId != Guid.Empty &&
                     !string.IsNullOrWhiteSpace(s.ScientificName) && !string.IsNullOrWhiteSpace(s.CommonName) &&
                     double.IsFinite(s.HabitatSuitability) && s.HabitatSuitability is >= 0 and <= 1 &&
-                    !string.IsNullOrWhiteSpace(s.ConfidenceLevel))) return new BiodiversityPredictionDto(
+                    !string.IsNullOrWhiteSpace(s.ConfidenceLevel) && (s.UncertaintyText is null || s.UncertaintyText.Length <= 1000))) return new BiodiversityPredictionDto(
                 DestinationId: cache.DestinationId,
                 ActivityId: cache.ActivityId,
-                Status: cache.Status,
+                Status: "available",
                 PredictedSpecies: species,
                 ModelMetadata: new ModelMetadataDto(cache.ModelVersion, cache.InferenceTimestampUtc),
-                Limitations: cache.Limitations ?? "Contextual prediction only."
+                Limitations: cache.Limitations ?? "Limitations were not supplied by the inference service.",
+                Message: "Wildlife context is available. A prediction does not guarantee a sighting.",
+                UncertaintyText: cache.UncertaintyText,
+                Provenance: new BiodiversityProvenanceDto(cache.Provider, cache.ModelVersion, cache.InferenceTimestampUtc)
             );
             }
             catch (JsonException) { _logger.LogWarning("A cached biodiversity prediction was unreadable."); }
@@ -759,59 +770,102 @@ public partial class CoastalPlannerService : ICoastalPlannerService
         var (peerBio, bioResponded, bioNote) = await _peerClient.GetBiodiversityInferenceAsync(destinationId, activityId, ct);
 
         var now = DateTime.UtcNow;
-        if (!bioResponded || peerBio is null || peerBio.Timestamp is null || peerBio.DestinationId != destinationId || peerBio.ActivityId != activityId ||
-            string.IsNullOrWhiteSpace(peerBio.ModelVersion) || peerBio.ModelVersion.Length > 64 || peerBio.Status != "AVAILABLE" ||
-            peerBio.Species is null || peerBio.Species.Any(species =>
-                species is null || species.SpeciesId == Guid.Empty || string.IsNullOrWhiteSpace(species.ScientificName) ||
-                species.ScientificName.Length > 200 || string.IsNullOrWhiteSpace(species.CommonName) || species.CommonName.Length > 200 ||
-                !double.IsFinite(species.HabitatSuitability) ||
-                species.HabitatSuitability is < 0 or > 1 || string.IsNullOrWhiteSpace(species.ConfidenceLevel) || species.ConfidenceLevel.Length > 64) ||
-            peerBio.Timestamp.Value.Kind != DateTimeKind.Utc || peerBio.Timestamp.Value < now.AddHours(-6) ||
-            peerBio.Timestamp.Value > now.AddMinutes(1))
+        if (!bioResponded || peerBio is null)
         {
             _logger.LogWarning("Biodiversity inference is unavailable: {Note}", bioNote);
-            return new BiodiversityPredictionDto(
-                DestinationId: destinationId,
-                ActivityId: activityId,
-                Status: "UNAVAILABLE",
-                PredictedSpecies: [],
-                ModelMetadata: null,
-                Limitations: bioNote ?? "Biodiversity inference endpoint did not respond; no prediction is available.");
+            return BiodiversityUnavailable(destinationId, activityId, bioNote);
         }
 
-        var predictedSpecies = peerBio.Species?.Select(species => new PredictedSpeciesDto(
+        var normalizedStatus = peerBio.Status.ToLowerInvariant();
+        if (normalizedStatus is "not_requested" or "unavailable" or "invalid")
+            return BiodiversityUnavailable(destinationId, activityId,
+                peerBio.Limitations, normalizedStatus);
+        if (normalizedStatus == "stale")
+            return new BiodiversityPredictionDto(destinationId, activityId, "stale", [], null,
+                "The wildlife prediction is out of date. Request a fresh result.",
+                Message: "The wildlife prediction is out of date. Request a fresh result.");
+        if (normalizedStatus != "available" || peerBio.ContractVersion != 1 || peerBio.DestinationId != destinationId ||
+            peerBio.ActivityId != activityId || peerBio.Timestamp is null || peerBio.Timestamp.Value.Kind != DateTimeKind.Utc ||
+            peerBio.Timestamp.Value < now.AddHours(-6) || peerBio.Timestamp.Value > now.AddMinutes(1) ||
+            string.IsNullOrWhiteSpace(peerBio.Provider) || peerBio.Provider.Length > 100 ||
+            string.IsNullOrWhiteSpace(peerBio.ModelVersion) || peerBio.ModelVersion.Length > 64 ||
+            string.IsNullOrWhiteSpace(peerBio.Limitations) || peerBio.Limitations.Length > 4000 ||
+            (peerBio.UncertaintyText?.Length ?? 0) > 1000 ||
+            peerBio.Species is null || peerBio.Species.Count > 100 || peerBio.Species.Any(species =>
+                species is null || species.SpeciesId == Guid.Empty || string.IsNullOrWhiteSpace(species.ScientificName) ||
+                species.ScientificName.Length > 200 || string.IsNullOrWhiteSpace(species.CommonName) || species.CommonName.Length > 200 ||
+                !double.IsFinite(species.HabitatSuitability) || species.HabitatSuitability is < 0 or > 1 ||
+                string.IsNullOrWhiteSpace(species.ConfidenceLevel) || species.ConfidenceLevel.Length > 64 ||
+                (species.UncertaintyText?.Length ?? 0) > 1000))
+        {
+            var status = peerBio.Timestamp is not null && peerBio.Timestamp.Value.Kind == DateTimeKind.Utc &&
+                (peerBio.Timestamp.Value < now.AddHours(-6) || peerBio.Timestamp.Value > now.AddMinutes(1))
+                ? "stale" : "invalid";
+            return BiodiversityUnavailable(destinationId, activityId,
+                status == "stale" ? "The wildlife prediction is no longer current. Request a fresh result." :
+                    "The wildlife prediction response could not be verified.", status);
+        }
+
+        if (!string.IsNullOrWhiteSpace(expectedVersion) && !string.Equals(expectedVersion, peerBio.ModelVersion, StringComparison.Ordinal))
+            return BiodiversityUnavailable(destinationId, activityId,
+                "The wildlife prediction uses an unsupported model version.", "invalid");
+
+        var predictedSpecies = peerBio.Species.Select(species => new PredictedSpeciesDto(
             SpeciesId: species.SpeciesId,
             ScientificName: species.ScientificName,
             CommonName: species.CommonName,
             HabitatSuitability: species.HabitatSuitability,
-            ConfidenceLevel: species.ConfidenceLevel)).ToList() ?? [];
+            ConfidenceLevel: species.ConfidenceLevel,
+            UncertaintyText: species.UncertaintyText)).ToList();
         var modelVersion = peerBio.ModelVersion;
-        var limitations = peerBio.Limitations ?? "Contextual prediction only. Not a guarantee of wildlife sighting or site safety.";
+        var limitations = peerBio.Limitations!;
 
-        var newCache = new BiodiversityPredictionCache
+        if (!string.IsNullOrWhiteSpace(expectedVersion))
         {
-            PredictionId = Guid.NewGuid(),
-            DestinationId = destinationId,
-            ActivityId = activityId,
-            Status = peerBio.Status,
-            SpeciesDataJson = JsonSerializer.Serialize(predictedSpecies),
-            ModelVersion = modelVersion,
-            InferenceTimestampUtc = peerBio.Timestamp.Value,
-            ExpiresAtUtc = peerBio.Timestamp.Value.AddHours(6),
-            Limitations = limitations
-        };
-
-        _db.BiodiversityPredictions.Add(newCache);
-        await _db.SaveChangesAsync(ct);
+            var newCache = new BiodiversityPredictionCache
+            {
+                PredictionId = Guid.NewGuid(),
+                DestinationId = destinationId,
+                ActivityId = activityId,
+                Status = "available",
+                SpeciesDataJson = JsonSerializer.Serialize(predictedSpecies),
+                ModelVersion = modelVersion,
+                Provider = peerBio.Provider!,
+                InferenceTimestampUtc = peerBio.Timestamp.Value,
+                ExpiresAtUtc = peerBio.Timestamp.Value.AddHours(6),
+                Limitations = limitations,
+                UncertaintyText = peerBio.UncertaintyText
+            };
+            _db.BiodiversityPredictions.Add(newCache);
+            await _db.SaveChangesAsync(ct);
+        }
 
         return new BiodiversityPredictionDto(
             DestinationId: destinationId,
             ActivityId: activityId,
-            Status: peerBio.Status,
+            Status: "available",
             PredictedSpecies: predictedSpecies,
-            ModelMetadata: new ModelMetadataDto(modelVersion, newCache.InferenceTimestampUtc),
-            Limitations: limitations
+            ModelMetadata: new ModelMetadataDto(modelVersion, peerBio.Timestamp.Value),
+            Limitations: limitations,
+            Message: "Wildlife context is available. A prediction does not guarantee a sighting.",
+            UncertaintyText: peerBio.UncertaintyText,
+            Provenance: new BiodiversityProvenanceDto(peerBio.Provider!, modelVersion, peerBio.Timestamp.Value)
         );
+    }
+
+    private static BiodiversityPredictionDto BiodiversityUnavailable(Guid destinationId, Guid? activityId,
+        string? sourceMessage, string status = "unavailable")
+    {
+        var normalized = status is "not_requested" or "unavailable" or "invalid" or "stale" ? status : "unavailable";
+        var message = normalized switch
+        {
+            "not_requested" => "Wildlife context was not requested.",
+            "invalid" => "Wildlife predictions could not be verified for this location.",
+            "stale" => "The wildlife prediction is out of date. Request a fresh result.",
+            _ => "Wildlife predictions are temporarily unavailable. Please try again later."
+        };
+        return new BiodiversityPredictionDto(destinationId, activityId, normalized, [], null,
+            message, Message: message);
     }
 
     public IPeerServicesClient GetPeerClient() => _peerClient;

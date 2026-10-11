@@ -116,11 +116,14 @@ public sealed class PlannerApiAuthorizationTests(PlannerApiFactory factory) : IC
         using var allowedBiodiversity = await _client.SendAsync(allowedBiodiversityRequest);
         Assert.Equal(HttpStatusCode.OK, allowedBiodiversity.StatusCode);
         using var biodiversityJson = JsonDocument.Parse(await allowedBiodiversity.Content.ReadAsStringAsync());
-        Assert.Equal("UNAVAILABLE", biodiversityJson.RootElement.GetProperty("status").GetString());
+        Assert.Equal("unavailable", biodiversityJson.RootElement.GetProperty("status").GetString());
         Assert.Empty(biodiversityJson.RootElement.GetProperty("predictedSpecies").EnumerateArray());
         Assert.Equal(JsonValueKind.Null, biodiversityJson.RootElement.GetProperty("modelMetadata").ValueKind);
-        Assert.Contains("Biodiversity ML endpoint has not responded",
-            biodiversityJson.RootElement.GetProperty("limitations").GetString(), StringComparison.Ordinal);
+        Assert.Equal(1, biodiversityJson.RootElement.GetProperty("contractVersion").GetInt32());
+        Assert.Equal(biodiversityJson.RootElement.GetProperty("message").GetString(),
+            biodiversityJson.RootElement.GetProperty("limitations").GetString());
+        Assert.Contains("temporarily unavailable",
+            biodiversityJson.RootElement.GetProperty("message").GetString(), StringComparison.Ordinal);
     }
 
     [Fact]

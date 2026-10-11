@@ -1050,8 +1050,8 @@
       "operationId": "GetPredictions",
       "status": "implemented",
       "auth": "permission:planner.biodiversity.read",
-      "description": "Query validated biodiversity prediction context for a canonical destination/location.",
-      "usage": "Returns validated ML prediction context consumed by Experience Catalogue (Member 1).",
+      "description": "Return versioned, validated biodiversity context with the closed available/not_requested/unavailable/invalid/stale status set.",
+      "usage": "Clients call only this public route with planner.biodiversity.read; unknown statuses are unavailable, and optional ML context never changes safety, eligibility, availability, or operational decisions.",
       "source": "services/coastal-planner/Controllers/BiodiversityController.cs",
       "uiWorkflowIds": [
         "planner-recommendations",
