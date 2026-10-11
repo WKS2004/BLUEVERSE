@@ -57,8 +57,7 @@ class MarineRepository {
     timeUtc: timeUtc,
   );
 
-  /// Returns active profiles only. Read-only historical/archeological data is
-  /// owned by the backend and visible in the full profile list.
+  /// Returns all stored profile versions, including drafts and inactive history.
   Future<List<SafetyProfileDto>> currentProfiles() =>
       client.getSafetyProfiles();
 
@@ -130,37 +129,5 @@ class MarineRepository {
   Future<void> deactivateProfile(String id) =>
       client.deactivateSafetyProfile(id);
 
-  /// Reference activity identifiers owned by the backend service.
-  static const List<Map<String, dynamic>> _referenceActivities = [
-    {
-      'id': '33333333-3333-3333-3333-333333333301',
-      'name': 'Surfing',
-      'type': 'Surfing',
-    },
-    {
-      'id': '33333333-3333-3333-3333-333333333302',
-      'name': 'Snorkeling',
-      'type': 'Snorkeling',
-    },
-    {
-      'id': '33333333-3333-3333-3333-333333333303',
-      'name': 'Scuba Diving',
-      'type': 'Diving',
-    },
-    {
-      'id': '33333333-3333-3333-3333-333333333304',
-      'name': 'Whale and Dolphin Watching',
-      'type': 'BoatTour',
-    },
-    {
-      'id': '33333333-3333-3333-3333-333333333305',
-      'name': 'Coastal Boat Tour',
-      'type': 'BoatTour',
-    },
-  ];
-
-  /// Immutable service-owned activity reference rows. Only these IDs are used
-  /// by the client to target existing marine operations.
-  static List<Map<String, dynamic>> get referenceActivities =>
-      List.unmodifiable(_referenceActivities);
+  Future<List<Map<String, dynamic>>> activities() => client.getActivities();
 }

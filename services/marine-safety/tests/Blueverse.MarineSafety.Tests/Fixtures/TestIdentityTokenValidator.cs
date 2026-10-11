@@ -8,7 +8,7 @@ namespace Blueverse.MarineSafety.Tests.Fixtures;
 /// event. It mirrors the validation contract without claiming to verify the
 /// production Auth-table SQL or PostgreSQL provider behavior.
 /// </summary>
-public sealed class TestIdentityTokenValidator : IIdentityTokenValidator
+public sealed class TestIdentityTokenValidator
 {
     private readonly ConcurrentDictionary<Guid, UserState> _users = new();
     private readonly ConcurrentDictionary<Guid, SessionState> _sessions = new();

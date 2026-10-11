@@ -25,23 +25,12 @@ public interface IConditionService
         CancellationToken cancellationToken);
 }
 
-/// <summary>Marine activity reference-table management (full CRUD; delete is a deactivation).</summary>
+/// <summary>Read-only access to Member 1's published activity catalogue.</summary>
 public interface IActivityService
 {
-    /// <summary>Returns activity reference rows ordered by name, optionally filtered by active state.</summary>
     Task<IReadOnlyList<MarineActivityDto>> GetActivitiesAsync(bool? isActive, CancellationToken cancellationToken);
-
-    /// <summary>Returns one activity reference row by ID.</summary>
     Task<MarineActivityDto?> GetActivityAsync(Guid id, CancellationToken cancellationToken);
-
-    /// <summary>Creates an active activity reference row with a unique name.</summary>
-    Task<MarineActivityDto> CreateActivityAsync(CreateActivityDto dto, CancellationToken cancellationToken);
-
-    /// <summary>Renames or retypes an activity; the name stays unique.</summary>
-    Task<MarineActivityDto?> UpdateActivityAsync(Guid id, UpdateActivityDto dto, CancellationToken cancellationToken);
-
-    /// <summary>Deactivates an activity without deleting it (profile and assessment references survive).</summary>
-    Task<bool> DeactivateActivityAsync(Guid id, CancellationToken cancellationToken);
+    Task<MarineActivity?> ResolvePublishedAsync(Guid id, CancellationToken cancellationToken);
 }
 
 /// <summary>Deterministic suitability evaluation.</summary>
@@ -81,10 +70,33 @@ public interface ISafetyProfileService
 /// </summary>
 public static class MarineTime
 {
+    // One hour of headroom permits the provider query and forecast window.
+    public static readonly DateTime MinimumRequestedUtc = DateTime.SpecifyKind(DateTime.MinValue.AddHours(1), DateTimeKind.Utc);
+    public static readonly DateTime MaximumRequestedUtc = DateTime.SpecifyKind(DateTime.MaxValue.AddHours(-1), DateTimeKind.Utc);
+
+    public static DateTime RequireRequested(DateTime value)
+    {
+        var utc = ToUtc(value);
+        if (utc < MinimumRequestedUtc || utc > MaximumRequestedUtc)
+            throw new MarineTimeValidationException();
+        return utc;
+    }
+
+    public static (DateTime Earliest, DateTime Latest) ForecastWindow(DateTime requested)
+    {
+        var utc = RequireRequested(requested);
+        return (utc.AddMinutes(-30), utc.AddHours(1));
+    }
+
     public static DateTime ToUtc(DateTime value) => value.Kind switch
     {
         DateTimeKind.Utc => value,
         DateTimeKind.Local => value.ToUniversalTime(),
         _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
     };
+}
+
+public sealed class MarineTimeValidationException : Exception
+{
+    public MarineTimeValidationException() : base("Requested time must be between 0001-01-01T01:00:00Z and 9999-12-31T22:59:59.9999999Z.") { }
 }

@@ -211,6 +211,7 @@ public sealed class ConditionEndpointTests : IClassFixture<MarineSafetyWebApplic
     public async Task M2_COND_007_condition_data_cannot_be_modified_by_clients()
     {
         using var client = await CreateClientAsync();
+        client.DefaultRequestHeaders.Authorization = new("Bearer", ReaderToken());
 
         // No POST/PUT/DELETE exists for snapshots; unsafe verbs are rejected
         // by routing rather than mutating provider-derived data.

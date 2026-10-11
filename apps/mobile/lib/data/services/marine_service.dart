@@ -6,8 +6,7 @@ import '../../data/repositories/marine_repository.dart';
 /// Keeps widgets free of HTTP and repository details; it only coordinates
 /// the repository calls and propagates typed exceptions.
 class MarineService {
-  MarineService({required MarineRepository repository})
-    : _repository = repository;
+  MarineService({required this._repository});
 
   final MarineRepository _repository;
 
@@ -128,6 +127,5 @@ class MarineService {
   Future<void> deactivateProfile(String id) =>
       _repository.deactivateProfile(id);
 
-  List<Map<String, dynamic>> get referenceActivities =>
-      MarineRepository.referenceActivities;
+  Future<List<Map<String, dynamic>>> activities() => _repository.activities();
 }

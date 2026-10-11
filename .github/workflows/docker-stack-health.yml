@@ -52,7 +52,7 @@ jobs:
                 apps/web/*|infrastructure/docker/frontend/*|scripts/Unix/bash/sync-web-lockfile.sh|scripts/Windows/powershell/sync-web-lockfile.ps1)
                   needs_web=true
                   ;;
-                services/*|infrastructure/docker/*/*|.dockerignore|global.json)
+                services/*|infrastructure/contracts/*|infrastructure/docker/*/*|.dockerignore|global.json)
                   needs_backend=true
                   ;;
                 compose.yaml|docker-compose.yml)
@@ -194,6 +194,13 @@ jobs:
             exit 1
           fi
 
+          # Ephemeral signing keys for this isolated CI stack; never persist them.
+          JWT_SIGNING_KEY="$(openssl rand -hex 32)"
+          MARINE_ACTOR_SIGNING_KEY="$(openssl rand -hex 32)"
+          echo "::add-mask::$JWT_SIGNING_KEY"
+          echo "::add-mask::$MARINE_ACTOR_SIGNING_KEY"
+          export JWT_SIGNING_KEY MARINE_ACTOR_SIGNING_KEY
+
           if docker compose --file "$compose_file" config --quiet; then
             :
           else
@@ -274,7 +281,14 @@ jobs:
             show_compose_diagnostics "$status"
           fi
 
-          for swagger_path in /api/swagger /api/swagger/v1.json /api/auth/swagger/v1/swagger.json /api/experiences/openapi/v1.json; do
+          swagger_paths=(/api/swagger /api/swagger/v1.json /api/auth/swagger/v1/swagger.json)
+          if [[ -f services/experience-biodiversity/Program.cs ]]; then
+            swagger_paths+=(/api/experiences/openapi/v1.json)
+          fi
+          if [[ -f services/marine-safety/Program.cs ]]; then
+            swagger_paths+=(/api/marine/swagger/v1/swagger.json)
+          fi
+          for swagger_path in "${swagger_paths[@]}"; do
             if check_endpoint "$base_url$swagger_path"; then
               :
             else
@@ -322,6 +336,8 @@ jobs:
               public_route="$service_name"
               if [[ "$service_name" == "experience-biodiversity" ]]; then
                 public_route="experiences"
+              elif [[ "$service_name" == "marine-safety" ]]; then
+                public_route="marine"
               fi
 
               endpoint="$base_url/api/${public_route}/health"

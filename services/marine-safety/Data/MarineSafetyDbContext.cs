@@ -14,22 +14,17 @@ public class MarineSafetyDbContext : DbContext
     public DbSet<ConditionSnapshot> ConditionSnapshots => Set<ConditionSnapshot>();
     public DbSet<SuitabilityAssessmentRecord> SuitabilityAssessments => Set<SuitabilityAssessmentRecord>();
 
-    // Permission resolution runs through IdentityPermissionResolver using a
-    // read-only, parameterized query over the Auth-owned identity tables; it
-    // intentionally does not map identity entities into this context.
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // Locally-owned activity reference (placeholder for Member 1's
-        // canonical taxonomy; see MarineActivity). No FK to other services.
+        // Non-authoritative projection of Member 1 activities and preserved legacy labels.
         modelBuilder.Entity<MarineActivity>(entity =>
         {
             entity.HasKey(a => a.Id);
-            entity.HasIndex(a => a.Name).IsUnique();
+            entity.HasIndex(a => a.Name);
             entity.Property(a => a.Name).IsRequired().HasMaxLength(128);
-            entity.Property(a => a.ActivityType).IsRequired().HasMaxLength(64);
+            entity.Property(a => a.ActivityType).IsRequired().HasMaxLength(100);
             entity.Property(a => a.IsActive).IsRequired();
             entity.Property(a => a.CreatedAt).IsRequired();
         });

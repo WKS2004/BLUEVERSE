@@ -11,6 +11,7 @@ using Blueverse.MarineSafety.Authorization;
 using Blueverse.MarineSafety.Data;
 using Blueverse.MarineSafety.Providers;
 using Blueverse.MarineSafety.Services;
+using Blueverse.MarineSafety.Dtos;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,7 +39,7 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Use Authorization: Bearer {token}. Signed-in browser requests may also use the Auth-selected account session cookie."
+        Description = "Use an Auth bearer token at the public API gateway. The private service receives only the verified gateway actor context."
     });
     options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
     {
@@ -60,84 +61,43 @@ builder.Services.AddDbContext<MarineSafetyDbContext>(options =>
             maxRetryDelay: TimeSpan.FromSeconds(10),
             errorCodesToAdd: null)));
 
-// JWT validation uses the shared issuer/audience/signing key contract. Auth
-// session state is checked as well so revoked or stale tokens cannot reach
-// marine operations through the private service route.
-var secretKey = builder.Configuration["JWT_SIGNING_KEY"];
-if (string.IsNullOrWhiteSpace(secretKey))
+// The private service accepts only request-bound actor contexts issued by the public API.
+var actorKey = Blueverse.Contracts.MarineActorContext.ReadKey(builder.Configuration[Blueverse.Contracts.MarineActorContext.KeySetting]);
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
 {
-    throw new InvalidOperationException("JWT_SIGNING_KEY must be configured.");
-}
-
-var secretKeyBytes = Encoding.UTF8.GetBytes(secretKey);
-if (secretKeyBytes.Length < 32)
-{
-    throw new InvalidOperationException("JWT_SIGNING_KEY must be at least 32 UTF-8 bytes.");
-}
-
-var issuer = builder.Configuration["Jwt:Issuer"] ?? "Blueverse.Auth";
-var audience = builder.Configuration["Jwt:Audience"] ?? "Blueverse.Client";
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
-    options.SaveToken = false;
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(secretKeyBytes),
-        ValidateIssuer = true,
-        ValidIssuer = issuer,
-        ValidateAudience = true,
-        ValidAudience = audience,
-        ValidateLifetime = true,
-        ClockSkew = TimeSpan.FromMinutes(1),
-        ValidAlgorithms = [SecurityAlgorithms.HmacSha256]
-    };
+    options.TokenValidationParameters = Blueverse.Contracts.MarineActorContext.Validation(actorKey);
     options.Events = new JwtBearerEvents
     {
-        OnMessageReceived = MarineSafetyCookieTokenReader.OnMessageReceived,
+        OnMessageReceived = context =>
+        {
+            // No bearer or cookie fallback at the private service boundary.
+            var values = context.Request.Headers[Blueverse.Contracts.MarineActorContext.Header];
+            if (values.Count != 1 || string.IsNullOrWhiteSpace(values[0])) context.NoResult();
+            else context.Token = values[0];
+            return Task.CompletedTask;
+        },
         OnTokenValidated = async context =>
         {
-            var tokenValidator = context.HttpContext.RequestServices.GetRequiredService<IIdentityTokenValidator>();
-
-            var principal = context.Principal;
-            var subject = principal?.FindFirstValue(ClaimTypes.NameIdentifier)
-                ?? principal?.FindFirstValue(JwtRegisteredClaimNames.Sub);
-            if (!Guid.TryParse(subject, out var userId) ||
-                !int.TryParse(principal?.FindFirstValue("token_version"), out var tokenVersion) ||
-                !Guid.TryParse(principal?.FindFirstValue("session_id"), out var sessionId) ||
-                !int.TryParse(principal?.FindFirstValue("session_version"), out var sessionVersion))
-            {
-                context.Fail("The token identity or session claims are invalid.");
-                return;
-            }
-
-            var isCurrent = await tokenValidator.IsCurrentAsync(
-                userId,
-                tokenVersion,
-                sessionId,
-                sessionVersion,
-                context.HttpContext.RequestAborted);
-            if (!isCurrent)
-            {
-                context.Fail("The account or device session is no longer active.");
-            }
+            if (context.Principal is null || !await Blueverse.Contracts.MarineActorContext.MatchesAsync(
+                context.Principal, context.Request, context.HttpContext.RequestAborted))
+                context.Fail("Invalid gateway operation context.");
         }
     };
 });
-
 builder.Services.AddAuthorization();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<IPermissionResolver, IdentityPermissionResolver>();
+builder.Services.AddScoped<IPermissionResolver, GatewayPermissionResolver>();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
-builder.Services.AddScoped<IIdentityTokenValidator, IdentityTokenValidator>();
+builder.Services.AddHttpClient<IExperienceCatalogueClient, ExperienceCatalogueClient>(client =>
+{
+    var configured = builder.Configuration["EXPERIENCE_CATALOGUE_URL"] ?? "http://experience-biodiversity:8080";
+    if (Uri.TryCreate(configured.TrimEnd('/') + "/", UriKind.Absolute, out var address) &&
+        address.Scheme is "http" or "https" && string.IsNullOrEmpty(address.UserInfo) &&
+        string.IsNullOrEmpty(address.Query) && string.IsNullOrEmpty(address.Fragment))
+        client.BaseAddress = address;
+    client.Timeout = TimeSpan.FromSeconds(5);
+});
 
 // Provider configuration and typed HTTP clients for Open-Meteo.
 builder.Services.Configure<OpenMeteoOptions>(builder.Configuration.GetSection(OpenMeteoOptions.SectionName));
@@ -214,13 +174,21 @@ app.UseExceptionHandler(exceptionApp =>
     exceptionApp.Run(async context =>
     {
         var exception = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
-        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        var catalogueUnavailable = exception is CatalogueUnavailableException;
+        context.Response.StatusCode = catalogueUnavailable ? 503 : 500;
+        if (catalogueUnavailable) context.Response.Headers.RetryAfter = "5";
         context.Response.ContentType = "application/problem+json";
+        if (exception is CatalogueUnavailableException unavailable)
+        {
+            await context.Response.WriteAsJsonAsync(DependencyUnavailableProblemDetails.Catalogue(unavailable.Reason),
+                options: null, contentType: "application/problem+json", cancellationToken: context.RequestAborted);
+            return;
+        }
         await context.Response.WriteAsJsonAsync(new
         {
             type = "https://tools.ietf.org/html/rfc7807",
             title = "Marine Safety Service Error",
-            status = StatusCodes.Status500InternalServerError,
+            status = context.Response.StatusCode,
             detail = exception is null || !app.Environment.IsEnvironment("Testing")
                 ? "An unexpected error occurred processing your request."
                 : exception.Message

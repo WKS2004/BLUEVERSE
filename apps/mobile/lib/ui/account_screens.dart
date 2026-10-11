@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../data/models/auth_models.dart';
 import 'auth_view_model.dart';
+import 'marine/marine_permissions_guard.dart';
 
 const _coastInk = Color(0xFF18394C);
 const _coastDeep = Color(0xFF205C79);
@@ -94,6 +95,8 @@ class AuthAccountSwitcher extends StatelessWidget {
           Navigator.pushNamed(context, '/signin');
         } else if (value == 'add-register') {
           Navigator.pushNamed(context, '/signup');
+        } else if (value == 'marine') {
+          Navigator.pushNamed(context, '/marine/conditions');
         } else if (value.startsWith('switch:')) {
           final userId = value.substring('switch:'.length);
           if (userId != viewModel.user?.id) {
@@ -102,6 +105,11 @@ class AuthAccountSwitcher extends StatelessWidget {
         }
       },
       itemBuilder: (context) => [
+        if (hasMarineReadAccess(viewModel.user))
+          const PopupMenuItem<String>(
+            value: 'marine',
+            child: Text('Marine & safety'),
+          ),
         ...viewModel.accounts.map(
           (account) => PopupMenuItem<String>(
             value: 'switch:${account.id}',
@@ -758,11 +766,7 @@ class _ProfileDeleteAccountCard extends StatelessWidget {
     if (confirmed != true || !context.mounted) return;
     final deleted = await viewModel.deleteAccount();
     if (deleted && context.mounted && viewModel.user != null) {
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/dashboard',
-        (_) => false,
-      );
+      Navigator.pushNamedAndRemoveUntil(context, '/dashboard', (_) => false);
     }
   }
 
@@ -1037,6 +1041,22 @@ class _AuthDashboardScreenState extends State<AuthDashboardScreen> {
               ),
               const SizedBox(height: 16),
               const SizedBox(height: 28),
+              if (hasMarineReadAccess(user))
+                Card(
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.waves_outlined,
+                      color: _coastDeep,
+                    ),
+                    title: const Text('Marine & safety'),
+                    subtitle: const Text(
+                      'Coastal conditions, saved evidence and activity safety limits.',
+                    ),
+                    trailing: const Icon(Icons.arrow_forward),
+                    onTap: () =>
+                        Navigator.pushNamed(context, '/marine/conditions'),
+                  ),
+                ),
               Text(
                 'What’s ahead',
                 style: Theme.of(context).textTheme.titleLarge

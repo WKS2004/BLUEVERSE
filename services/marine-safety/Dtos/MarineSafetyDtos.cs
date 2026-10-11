@@ -108,16 +108,6 @@ public sealed record ConditionsDto(
     decimal? Rain,
     int? WeatherCode);
 
-/// <summary>Creates one marine activity reference row (locally-owned table).</summary>
-public sealed record CreateActivityDto(
-    [Required, StringLength(128, MinimumLength = 2)] string? Name,
-    [Required, StringLength(64, MinimumLength = 2)] string? ActivityType);
-
-/// <summary>Renames or retypes one marine activity; activity rows are never re-activated through this surface.</summary>
-public sealed record UpdateActivityDto(
-    [Required, StringLength(128, MinimumLength = 2)] string? Name,
-    [Required, StringLength(64, MinimumLength = 2)] string? ActivityType);
-
 /// <summary>One marine activity reference row with its active-state detail.</summary>
 public sealed record MarineActivityDto(
     Guid Id,

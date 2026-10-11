@@ -3,9 +3,10 @@
 FROM dhi.io/dotnet:10-sdk-alpine AS build
 
 ARG PROJECT_NAME=Blueverse.MarineSafety
-WORKDIR /src
+WORKDIR /src/services/marine-safety
 
 COPY services/marine-safety/ ./
+COPY infrastructure/contracts/ /src/infrastructure/contracts/
 
 RUN dotnet restore "${PROJECT_NAME}.csproj"
 RUN dotnet publish "${PROJECT_NAME}.csproj" \

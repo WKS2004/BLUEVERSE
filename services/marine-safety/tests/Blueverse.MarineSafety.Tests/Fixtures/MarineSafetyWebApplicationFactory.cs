@@ -29,6 +29,8 @@ public sealed class MarineSafetyWebApplicationFactory : WebApplicationFactory<Pr
         _databaseName = $"marine-safety-tests-{Guid.NewGuid():N}";
         _permissionResolver.Reset();
         _identityTokenValidator.Reset();
+        CatalogueUnavailable = false;
+        CatalogueOverride = null;
         using var scope = Services.CreateScope();
         var options = scope.ServiceProvider.GetRequiredService<DbContextOptions<MarineSafetyDbContext>>();
         using var oldContext = new MarineSafetyDbContext(options);
@@ -66,12 +68,14 @@ public sealed class MarineSafetyWebApplicationFactory : WebApplicationFactory<Pr
     {
         builder.UseEnvironment("Testing");
         builder.UseSetting("JWT_SIGNING_KEY", JwtSigningKey);
+        builder.UseSetting("MARINE_ACTOR_SIGNING_KEY", JwtSigningKey);
         builder.UseSetting("ConnectionStrings:DefaultConnection", "Host=testing;Database=testing");
         builder.ConfigureAppConfiguration((_, configuration) =>
         {
             configuration.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["JWT_SIGNING_KEY"] = JwtSigningKey,
+                ["MARINE_ACTOR_SIGNING_KEY"] = JwtSigningKey,
                 ["ConnectionStrings:DefaultConnection"] = "Host=testing;Database=testing",
                 ["OpenMeteo:FreshnessMaxAgeMinutes"] = "60"
             });
@@ -91,11 +95,26 @@ public sealed class MarineSafetyWebApplicationFactory : WebApplicationFactory<Pr
             // identity resolution with a deterministic test double.
             services.RemoveAll<IOpenMeteoClient>();
             services.AddSingleton<IOpenMeteoClient>(new ForwardingOpenMeteoClient(this));
-            services.RemoveAll<IPermissionResolver>();
-            services.AddSingleton<IPermissionResolver>(_permissionResolver);
-            services.RemoveAll<IIdentityTokenValidator>();
-            services.AddSingleton<IIdentityTokenValidator>(_identityTokenValidator);
+            services.RemoveAll<IExperienceCatalogueClient>();
+            services.AddScoped<IExperienceCatalogueClient>(provider => new SeededCatalogue(provider.GetRequiredService<MarineSafetyDbContext>(), this));
         });
+    }
+
+    // Existing end-to-end behavior tests now traverse the production gateway middleware
+    // with an Auth transport double, then the real private-service signed context validator.
+    public new HttpClient CreateClient() => CreateDefaultClient(new GatewayTestHandler(this));
+
+    public bool CatalogueUnavailable { get; set; }
+    public IReadOnlyList<Blueverse.MarineSafety.Dtos.MarineActivityDto>? CatalogueOverride { get; set; }
+    private sealed class SeededCatalogue(MarineSafetyDbContext db, MarineSafetyWebApplicationFactory owner) : IExperienceCatalogueClient
+    {
+        public async Task<IReadOnlyList<Blueverse.MarineSafety.Dtos.MarineActivityDto>> GetPublishedAsync(CancellationToken ct)
+        {
+            if (owner.CatalogueUnavailable) throw new CatalogueUnavailableException();
+            if (owner.CatalogueOverride is not null) return owner.CatalogueOverride;
+            return await db.MarineActivities.Where(a => a.IsActive).Select(a => new Blueverse.MarineSafety.Dtos.MarineActivityDto(
+                a.Id, a.Name, a.ActivityType, a.IsActive, a.CreatedAt, a.UpdatedAt)).ToListAsync(ct);
+        }
     }
 
     public async Task SeedAsync(Func<MarineSafetyDbContext, Task> seed)
@@ -169,8 +188,8 @@ public sealed class MarineSafetyWebApplicationFactory : WebApplicationFactory<Pr
 /// <summary>
 /// Deterministic permission resolver double mirroring the seeded test
 /// identities. It verifies how endpoints authorize, not how SQL resolves; the
-/// production IdentityPermissionResolver and IdentityTokenValidator queries
-/// are not exercised by this in-memory test host.
+/// Auth transport is doubled; this host exercises the production gateway
+/// middleware and private signed-context validator, not Auth persistence.
 /// </summary>
 public sealed class TestPermissionResolver : IPermissionResolver
 {

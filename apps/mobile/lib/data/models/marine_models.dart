@@ -8,6 +8,8 @@
 /// Field names intentionally mirror the backend payload so a change in the
 /// contract is visible in exactly one place.
 
+library;
+
 /// A persisted condition snapshot as returned by the backend.
 class ConditionSnapshotDto {
   const ConditionSnapshotDto({
@@ -677,4 +679,41 @@ Map<String, dynamic> _requiredMap(Map<String, dynamic> json, String key) {
     throw FormatException('Missing or invalid $key.');
   }
   return Map<String, dynamic>.from(value);
+}
+
+/// Structured missing dependency data, separate from an empty successful result.
+class MarineDependencyAvailability {
+  const MarineDependencyAvailability({
+    required this.dependency,
+    required this.code,
+    required this.reason,
+    required this.missingFields,
+    required this.retryable,
+  });
+  String get availability => 'UNAVAILABLE';
+  final String dependency;
+  final String code;
+  final String reason;
+  final List<String> missingFields;
+  final bool retryable;
+
+  static MarineDependencyAvailability? tryParse(Map<String, dynamic> json) {
+    final fields = json['missingFields'];
+    if (json['availability'] != 'UNAVAILABLE' ||
+        json['dependency'] is! String ||
+        json['code'] is! String ||
+        json['reason'] is! String ||
+        json['retryable'] is! bool ||
+        fields is! List ||
+        fields.any((field) => field is! String)) {
+      return null;
+    }
+    return MarineDependencyAvailability(
+      dependency: json['dependency'] as String,
+      code: json['code'] as String,
+      reason: json['reason'] as String,
+      missingFields: List<String>.unmodifiable(fields.cast<String>()),
+      retryable: json['retryable'] as bool,
+    );
+  }
 }

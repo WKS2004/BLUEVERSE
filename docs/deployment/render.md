@@ -34,3 +34,10 @@ Before deploying:
    another short-lived value. Keep `AuthSession__DefaultLifetimeDays` at `1`
    and `AuthSession__RememberMeLifetimeDays` at `30` to preserve the public
    session contract.
+
+When adding the private Marine Safety deployment, configure the same independent
+`MARINE_ACTOR_SIGNING_KEY` on API and Marine, and the private
+`EXPERIENCE_CATALOGUE_URL` on Marine. The existing API/Auth foundation can run
+without an actor key; protected Marine requests then return 503, while Auth
+and health routes remain available. Do not expose the component service to
+clients. See the root README and ADR-0021 for the complete integration setup.

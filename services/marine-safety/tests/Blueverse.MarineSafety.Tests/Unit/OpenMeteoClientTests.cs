@@ -399,6 +399,63 @@ public sealed class OpenMeteoClientTests
         Assert.Contains("rate limited", exception.Reason);
         Assert.Equal(1, weatherCalls);
     }
+    [Theory, Trait("CaseId", "M2-PROVIDER-014")]
+    [InlineData(24)] [InlineData(-24)]
+    public async Task M2_PROVIDER_014_forecast_outside_requested_window_cannot_be_used(int hourOffset)
+    {
+        var times = Times(RequestTime.AddHours(hourOffset));
+        var handler = new StubHandler(request => request.RequestUri!.Host == WeatherHost
+            ? Json(WeatherBody(Hourly(times, Num(10), Num(0), Codes(3), null, null)))
+            : Json(WeatherBody(Hourly(times, null, null, null, Num(0.5), Num(0.4)))));
+        var result = await CreateClient(handler).GetConditionsAsync(6.025m,80.216m,RequestTime,default);
+        Assert.Null(result.WindSpeed);Assert.Null(result.WaveHeight);Assert.Null(result.SwellHeight);
+        Assert.Contains("windSpeed",result.MissingFields);Assert.Contains("waveHeight",result.MissingFields);
+        Assert.Equal(RequestTime,result.ForecastTimeUtc);
+    }
+    [Fact, Trait("CaseId", "M2-PROVIDER-015")]
+    public async Task M2_PROVIDER_015_extreme_finite_values_are_missing_not_overflow_or_zero()
+    {
+        var handler = new StubHandler(request => request.RequestUri!.Host == WeatherHost
+            ? Json(WeatherBody(Hourly(Times(RequestTime), Num(1e100), Num(0), Codes(-1), null, null)))
+            : Json(WeatherBody(FullMarineHourly())));
+        var result = await CreateClient(handler).GetConditionsAsync(6.025m,80.216m,RequestTime,default);
+        Assert.Null(result.WindSpeed);Assert.Null(result.WeatherCode);
+        Assert.Contains("windSpeed",result.MissingFields);Assert.Contains("weatherCode",result.MissingFields);
+        Assert.NotNull(result.WaveHeight);
+    }
+
+    [Theory, Trait("CaseId", "M2-PROVIDER-016")]
+    [InlineData(9999.99, 999.99, true)]
+    [InlineData(10000, 1000, false)]
+    [InlineData(9999.995, 999.995, false)]
+    [InlineData(1e20, 1e20, false)]
+    public async Task M2_PROVIDER_016_storage_boundaries_preserve_or_reject_each_environmental_field(
+        double weatherValue, double marineValue, bool representable)
+    {
+        var handler = new StubHandler(request => request.RequestUri!.Host == WeatherHost
+            ? Json(WeatherBody(Hourly(Times(RequestTime), Num(weatherValue), Num(weatherValue), Codes(3), null, null)))
+            : Json(WeatherBody(Hourly(Times(RequestTime), null, null, null, Num(marineValue), Num(marineValue)))));
+        var result = await CreateClient(handler).GetConditionsAsync(6.025m, 80.216m, RequestTime, default);
+        Assert.Equal(RequestTime, result.ForecastTimeUtc);
+        Assert.Equal(3, result.WeatherCode);
+        if (representable)
+        {
+            Assert.Equal(9999.99m, result.WindSpeed);
+            Assert.Equal(9999.99m, result.Rain);
+            Assert.Equal(999.99m, result.WaveHeight);
+            Assert.Equal(999.99m, result.SwellHeight);
+            Assert.Empty(result.MissingFields);
+        }
+        else
+        {
+            Assert.Null(result.WindSpeed);
+            Assert.Null(result.Rain);
+            Assert.Null(result.WaveHeight);
+            Assert.Null(result.SwellHeight);
+            Assert.Equal(new[] { "rain", "swellHeight", "waveHeight", "windSpeed" }, result.MissingFields.Order());
+        }
+    }
+
 }
 
 /// <summary>

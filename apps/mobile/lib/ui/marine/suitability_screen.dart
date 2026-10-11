@@ -2,17 +2,22 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import 'package:flutter/services.dart';
+import '../blueverse_theme.dart';
 
 import '../../data/models/marine_models.dart';
-import '../../data/repositories/marine_repository.dart';
 import '../../data/services/marine_api_client.dart';
 import '../../data/services/marine_service.dart';
-import 'marine_route_table.dart';
+import 'marine_presentation.dart';
+import '../feedback/loading_screen_controller.dart';
 
 class SuitabilityScreen extends StatefulWidget {
-  const SuitabilityScreen({super.key, required this.service});
+  const SuitabilityScreen({
+    super.key,
+    required this.service,
+    this.embedded = false,
+  });
   final MarineService service;
+  final bool embedded;
 
   @override
   State<SuitabilityScreen> createState() => _SuitabilityScreenState();
@@ -29,8 +34,7 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
     text: _initialLongitude.toStringAsFixed(5),
   );
   final _timeController = TextEditingController();
-  String _activityId =
-      MarineRepository.referenceActivities.first['id'] as String;
+  String _activityId = '';
   List<Map<String, dynamic>> _activities = const [];
   ConditionSnapshotDto? _snapshot;
   SuitabilityResultDto? _result;
@@ -41,7 +45,60 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
   @override
   void initState() {
     super.initState();
-    _activities = widget.service.referenceActivities;
+    _loadActivities();
+  }
+
+  String? _catalogueError;
+  bool _catalogueLoading = true;
+
+  Future<void> _loadActivities() async {
+    if (!mounted) return;
+    setState(() {
+      _catalogueLoading = true;
+      _catalogueError = null;
+    });
+    try {
+      final rows = await widget.service.activities();
+      if (mounted) {
+        setState(() {
+          _activities = rows;
+          _activityId = rows.isEmpty ? '' : rows.first['id'] as String;
+          _catalogueLoading = false;
+        });
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _activities = const [];
+          _activityId = '';
+          _catalogueError = error is MarineApiException
+              ? error.message
+              : 'Activities could not be loaded. Please retry.';
+          _catalogueLoading = false;
+        });
+      }
+    }
+  }
+
+  Widget _catalogueStatus() {
+    if (_catalogueLoading) return const Text('Loading available activities…');
+    if (_catalogueError != null) {
+      return Column(
+        children: [
+          const Text('Activity data unavailable'),
+          Text(_catalogueError!),
+          const Text('Condition lookup and saved records remain accessible.'),
+          TextButton(
+            onPressed: _loadActivities,
+            child: const Text('Retry activities'),
+          ),
+        ],
+      );
+    }
+    if (_activities.isEmpty) {
+      return const Text('No published activities are available.');
+    }
+    return const SizedBox.shrink();
   }
 
   @override
@@ -52,8 +109,8 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
     super.dispose();
   }
 
-  Future<void> _loadConditionsAndEvaluate() async {
-    if (!mounted) return;
+  Future<void> _loadConditionsAndEvaluate({bool conditionsOnly = false}) async {
+    if (!mounted || _loading) return;
     final latitude = _parseCoordinate(_latitudeController.text, -90, 90);
     final longitude = _parseCoordinate(_longitudeController.text, -180, 180);
     if (latitude == null || longitude == null) {
@@ -65,10 +122,8 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
       });
       return;
     }
-    final requestedTime = _timeController.text.isNotEmpty
-        ? _parseUtcTimestamp(_timeController.text)
-        : null;
-    if (requestedTime == null && _timeController.text.isNotEmpty) {
+    final requestedTime = _parseUtcTimestamp(_timeController.text);
+    if (requestedTime == null && _timeController.text.trim().isNotEmpty) {
       setState(() {
         _formError = 'Enter the requested time as a valid UTC moment, e.g. 2026-09-26T10:00.';
         _error = null;
@@ -84,14 +139,36 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
       _snapshot = null;
       _result = null;
     });
+    final finishLoading = blueverseLoadingScreenController.begin();
     try {
+      if (conditionsOnly) {
+        final conditions = await widget.service.currentConditions(
+          latitude: latitude,
+          longitude: longitude,
+          timeUtc: requestedTime,
+        );
+        if (mounted) {
+          setState(() {
+            _snapshot = conditions;
+            _result = null;
+            _loading = false;
+          });
+        }
+        return;
+      }
       final result = await widget.service.evaluateSuitability(
         activityId: _activityId,
         latitude: latitude,
         longitude: longitude,
         timeUtc: requestedTime,
       );
-      final conditions = result.toConditionSnapshot();
+      final conditions =
+          result.conditions != null &&
+              result.source != null &&
+              result.retrievedAt != null &&
+              result.freshness != null
+          ? result.toConditionSnapshot()
+          : null;
       if (mounted) {
         setState(() {
           _snapshot = conditions;
@@ -117,11 +194,14 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
           _result = null;
         });
       }
+    } finally {
+      finishLoading();
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (widget.embedded) return _buildBody();
     return Scaffold(
       appBar: AppBar(title: const Text('Marine conditions')),
       body: _buildBody(),
@@ -130,12 +210,15 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
 
   Widget _buildBody() {
     return RefreshIndicator(
-      onRefresh: () => _loadConditionsAndEvaluate(),
+      onRefresh: () => _loadConditionsAndEvaluate(conditionsOnly: true),
       child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (widget.embedded) const MarineHero(index: 0),
+            _catalogueStatus(),
             if (_error != null) _errorCard(),
             if (_formError != null) _formErrorCard(),
             _queryCard(),
@@ -176,15 +259,12 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
       padding: const EdgeInsets.all(14),
       child: Row(
         children: [
-          const Icon(Icons.error_outline, color: Colors.amberAccent),
+          const Icon(Icons.error_outline, color: Color(0xFF92621B)),
           const SizedBox(width: 12),
-          const Flexible(
+          Flexible(
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
-                'Enter valid values before checking the coast.',
-                maxLines: 3,
-              ),
+              child: Text(_formError!),
             ),
           ),
         ],
@@ -201,14 +281,19 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.waves_outlined, color: Colors.blueAccent),
+                const Icon(
+                  Icons.waves_outlined,
+                  color: BlueversePalette.coastBlue,
+                ),
                 const SizedBox(width: 8),
-                const Text(
-                  'CONDITION QUERY',
-                  style: TextStyle(
-                    color: Colors.blueAccent,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.2,
+                const Expanded(
+                  child: Text(
+                    'CONDITION QUERY',
+                    style: TextStyle(
+                      color: BlueversePalette.coastBlue,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2,
+                    ),
                   ),
                 ),
               ],
@@ -219,13 +304,19 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
                 _field(
                   controller: _latitudeController,
                   label: 'Latitude (−90 to 90)',
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: TextInputType.numberWithOptions(
+                    decimal: true,
+                    signed: true,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 _field(
                   controller: _longitudeController,
                   label: 'Longitude (−180 to 180)',
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: TextInputType.numberWithOptions(
+                    decimal: true,
+                    signed: true,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 _field(
@@ -237,7 +328,8 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: _activityId,
+                  isExpanded: true,
+                  initialValue: _activityId.isEmpty ? null : _activityId,
                   decoration: const InputDecoration(labelText: 'Activity'),
                   items: _activities
                       .map(
@@ -254,8 +346,21 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
               ],
             ),
             const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: _loading
+                  ? null
+                  : () => _loadConditionsAndEvaluate(conditionsOnly: true),
+              child: const Text('View conditions only'),
+            ),
+            const SizedBox(height: 8),
             FilledButton.icon(
-              onPressed: _loading ? null : _loadConditionsAndEvaluate,
+              onPressed:
+                  _loading ||
+                      _catalogueLoading ||
+                      _activities.isEmpty ||
+                      _activityId.isEmpty
+                  ? null
+                  : _loadConditionsAndEvaluate,
               icon: const Icon(Icons.check_circle_outline),
               label: _loading
                   ? const Text('Checking the coast…')
@@ -278,14 +383,18 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  '${snapshot.latitude}, ${snapshot.longitude}',
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+                Expanded(
+                  child: Text(
+                    '${snapshot.latitude}, ${snapshot.longitude}',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                 ),
                 _freshnessChip(snapshot.freshnessStatus),
               ],
             ),
             const SizedBox(height: 8),
+            MarineReadings(snapshot: snapshot),
+            const SizedBox(height: 12),
             _detailRow('Forecast time', snapshot.forecastTime),
             _detailRow('Retrieved at', snapshot.retrievedAt),
             _detailRow('Source', snapshot.source),
@@ -312,13 +421,16 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
               children: [
                 _statusPill(result.status),
                 const SizedBox(width: 8),
-                Text(
-                  result.activityName,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+                Expanded(
+                  child: Text(
+                    result.activityName,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
+            MarineOutcomeExplanation(status: result.status),
             Text(
               'Evaluated for ${result.location.latitude}, ${result.location.longitude} at ${_formatTimestamp(result.requestedTime)}.',
               style: const TextStyle(height: 1.4),
@@ -339,7 +451,7 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
       padding: const EdgeInsets.all(16),
       child: const Text(
         'Enter a coastal location and check the sea before you plan. Missing or stale evidence is always labelled rather than silently treated as safe.',
-        style: TextStyle(color: Colors.blueGrey),
+        style: TextStyle(color: BlueversePalette.coastMuted),
       ),
     ),
   );
@@ -357,11 +469,14 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
             '$label: ',
             style: const TextStyle(
               fontWeight: FontWeight.w600,
-              color: Colors.blueGrey,
+              color: BlueversePalette.coastMuted,
             ),
           ),
           Expanded(
-            child: Text(text, style: const TextStyle(color: Colors.blueGrey)),
+            child: Text(
+              text,
+              style: const TextStyle(color: BlueversePalette.coastMuted),
+            ),
           ),
         ],
       ),
@@ -369,40 +484,28 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
   }
 
   Widget _freshnessChip(String freshness) {
-    final tone = freshness == 'FRESH'
-        ? 'bg-green-100 text-green-800'
-        : freshness == 'STALE'
-        ? 'bg-amber-100 text-amber-800'
-        : 'bg-red-100 text-red-800';
     return Chip(
       label: Text(freshness),
       backgroundColor: Colors.transparent,
       labelStyle: TextStyle(
         backgroundColor: Colors.transparent,
-        color: Colors.blueGrey,
+        color: BlueversePalette.coastMuted,
       ),
     );
   }
 
   Widget _statusPill(String status) {
-    final tone = status == 'SUITABLE'
-        ? 'bg-green-100 text-green-800'
-        : status == 'CAUTION'
-        ? 'bg-amber-100 text-amber-800'
-        : status == 'UNSUITABLE'
-        ? 'bg-red-100 text-red-800'
-        : 'bg-slate-100 text-slate-700';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.blueGrey.withValues(alpha: 0.12),
+        color: BlueversePalette.coastMuted.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
         status,
         style: const TextStyle(
           fontWeight: FontWeight.w800,
-          color: Colors.blueGrey,
+          color: BlueversePalette.coastMuted,
         ),
       ),
     );
@@ -412,10 +515,10 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
       _list('LIMITS EXCEEDED', violations, Colors.redAccent);
 
   Widget _cautionList(List<String> factors) =>
-      _list('CAUTION FACTORS', factors, Colors.amberAccent);
+      _list('CAUTION FACTORS', factors, const Color(0xFF92621B));
 
   Widget _missingList(List<String> missing) =>
-      _list('MISSING OR STALE EVIDENCE', missing, Colors.blueGrey);
+      _list('MISSING OR STALE EVIDENCE', missing, BlueversePalette.coastMuted);
 
   Widget _list(String title, List<String> items, Color color) => Padding(
     padding: const EdgeInsets.only(top: 6),
@@ -453,40 +556,31 @@ class _SuitabilityScreenState extends State<SuitabilityScreen> {
         helperText: helperText,
         border: const OutlineInputBorder(),
         focusedBorder: const OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.blueAccent, width: 1.5),
+          borderSide: BorderSide(color: BlueversePalette.coastBlue, width: 1.5),
         ),
       ),
-      inputFormatters:
-          keyboardType == TextInputType.numberWithOptions(decimal: true)
-          ? <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly]
-          : null,
     );
   }
 
   String _formatTimestamp(DateTime value) {
     try {
-      return value.toLocal().toString();
+      return '${value.toUtc().toIso8601String()} (UTC)';
     } catch (_) {
       return value.toIso8601String();
     }
   }
 
   double? _parseCoordinate(String raw, double min, double max) {
-    final trimmed = raw.trim();
-    if (trimmed.isEmpty) return null;
-    final parts = trimmed.split('.');
-    if (parts.length > 2) return null;
-    final integer = int.tryParse(parts[0]);
-    if (integer == null) return null;
-    final fractional = parts.length == 2 ? double.parse('0.' + parts[1]) : 0.0;
-    final value = integer.toDouble() + fractional;
-    if (value < min || value > max) return null;
+    final value = double.tryParse(raw.trim());
+    if (value == null || !value.isFinite || value < min || value > max) {
+      return null;
+    }
     return value;
   }
 
   DateTime? _parseUtcTimestamp(String raw) {
     try {
-      return DateTime.parse(raw);
+      return marineUtcTime(raw);
     } catch (_) {
       return null;
     }
@@ -507,13 +601,13 @@ class _NoteCard extends StatelessWidget {
             'Server assessment',
             style: TextStyle(
               fontWeight: FontWeight.w800,
-              color: Colors.blueAccent,
+              color: BlueversePalette.coastBlue,
             ),
           ),
           const SizedBox(height: 6),
           const Text(
             'The outcome is calculated on the backend from configured safety profiles and retrieved conditions. Flutter never reclassifies the result, even when fields are missing or stale.',
-            style: TextStyle(height: 1.4, color: Colors.blueGrey),
+            style: TextStyle(height: 1.4, color: BlueversePalette.coastMuted),
           ),
         ],
       ),

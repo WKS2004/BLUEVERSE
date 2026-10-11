@@ -7,11 +7,11 @@ BLUEVERSE is an integrated coastal ecosystem platform combining coastal tourism,
 The checked-in application provides the **v0 foundation** for the SE3090
 integrated full-stack and Agentic AI project. The submission target is
 **v0 plus v1**. React and Flutter implement the shared Auth registration and session workflows,
-backed by the public API gateway, internal Auth service and PostgreSQL. The
-Member 2's marine-safety backend and React workflows are implemented on
-`features/marine-safety`. Its Flutter screens, the other three business
-components, four executable agents and biodiversity integration remain
-unimplemented targets.
+backed by the public API gateway, internal Auth service and PostgreSQL. Member 2's marine-safety backend and corresponding React/Flutter workflows
+are implemented on `features/marine-safety`. Other member implementations must
+be integrated from their own branches; four executable agents remain gated
+on accepted G07. Current Member 2 evidence is recorded in
+[the G00 decision record](docs/v1/g00/member-2-marine-safety-decisions.md).
 
 ## Project identity
 
@@ -64,12 +64,15 @@ maps it to Tailwind styles in `apps/web`, and Flutter maps it to native theme
 and widgets in `apps/mobile`.
 
 The marine conditions & safety component (Member 2, branch
-`features/marine-safety`) currently implements its React Web surface:
+`features/marine-safety`) implements equivalent React Web and Flutter Mobile surfaces:
 `/marine/conditions`, `/marine/history` and `/marine/safety-profiles` query the
 public marine API for condition evidence, the deterministic suitability
 assessment and permission-gated safety profiles. The paired Flutter routes are
-registered under the same shared workflow IDs; the mobile surface remains
-future work.
+registered under the same shared workflow IDs and implemented with native
+forms, coastal heroes and pinned navigation. Open **Marine & safety** from the
+mobile Dashboard or account menu with `marine.profile.read`; profile writes
+also require `marine.profile.manage`. Mobile calls reuse the selected account's
+secure credentials through the public gateway.
 
 The [v0 foundation guide](docs/v0/README.md) maps the implemented technical
 components and their integration path. The
@@ -245,7 +248,7 @@ On macOS, Linux or WSL2, use:
 cp .env.example .env
 ```
 
-Edit `.env` and replace the example `JWT_SIGNING_KEY`, database password and
+Edit `.env` and replace the example `JWT_SIGNING_KEY`, independent `MARINE_ACTOR_SIGNING_KEY`, database password and
 administrator password with unique local values. The JWT signing key must be
 at least 32 UTF-8 bytes. Use a password manager or secure random generator;
 never commit `.env`. Keep `AUTH_SERVICE_URL=http://auth:8080` because it is the
@@ -273,6 +276,64 @@ variables configure its Open-Meteo integration and freshness policy
 (`OPEN_METEO_WEATHER_URL`,
 `OPEN_METEO_MARINE_URL`, `OPEN_METEO_FRESHNESS_MINUTES`, defaults documented in
 `services/marine-safety/appsettings.json`); no provider key is required.
+
+The API and Marine Safety require the same independent
+`MARINE_ACTOR_SIGNING_KEY` (at least 32 UTF-8 bytes). API/Auth continue using
+`JWT_SIGNING_KEY`; Marine Safety receives only a signed request-bound actor
+context after the API verifies the caller through Auth `/api/auth/me`.
+Marine Safety does not access Auth tables or accept client JWTs directly.
+
+Activity CRUD belongs to Member 1's `experience-biodiversity` service. Set
+`EXPERIENCE_CATALOGUE_URL` to its private base URL; the default is
+`http://experience-biodiversity:8080`. This branch does not contain that service
+or add a Compose startup dependency on it. Deploy Member 1 on the same private
+network when integrating its branch. When activity data is unavailable,
+activity lists, new profile drafts/edits/reviews and evaluations return a
+structured 503 with `availability`, `dependency`, `code`, `reason`,
+`missingFields`, `retryable` and null `data`. Marine starts and checks its own
+database without requiring other member services. Empty or invalid catalogue
+configuration is reported as `UNCONFIGURED` when data is requested; the
+catalogue request timeout is five seconds. Conditions-only queries, saved
+profiles/snapshots/assessments and profile deactivation remain available.
+Both clients retain saved records, indicate "Activity data unavailable" and
+offer retry; only actions requiring published activity data are disabled.
+A successful empty catalogue remains 200 `[]`. See the complete
+[availability contract](docs/api/marine-dependency-availability.md).
+Both clients load published canonical activity IDs through
+`GET /api/marine/activities`, with loading, empty and retry states. The former
+marine activity POST/PUT/DELETE endpoints are removed.
+
+The React Marine pages provide shared workflow navigation, plain-language
+assessment explanations, factor-grouped cited profile forms, and independent
+history/profile recovery. See the [Web workflow guide](apps/web/README.md#marine-safety-web-workflows)
+for routes, permissions and available actions.
+
+Open **Account → Marine & safety**, the account sidebar or Dashboard's marine
+quick link with `marine.profile.read`. The Admin header contains account actions
+without the home-section links. An Admin role name alone does not grant Marine
+access: current role assignments must include the read permission (and manage
+for profile writes).
+
+When an older local image or another member branch supplied Auth, rebuild the
+Auth and Web images together so this branch's existing bootstrap grants apply:
+
+```powershell
+docker compose build auth frontend
+docker compose up -d --no-deps auth frontend
+```
+
+Use the existing `.env` and PostgreSQL volume. Reload the browser to retrieve
+current grants; signing out is unnecessary. Permission seeding preserves codes,
+existing rows and assignments when another member has used a preferred seed ID.
+
+Old placeholder IDs are retained for historic references; they are never
+mapped by activity name. Create cited profiles for Member 1's canonical IDs
+and have a different manager approve them. The new
+`CanonicalActivityProjection` migration removes the projection's unique-name
+constraint and expands category storage to Member 1's 100-character limit.
+The forward migration preserves all rows. A downgrade needs manual duplicate
+name/category reconciliation before restoring the previous constraints.
+See [ADR-0021](docs/adr/ADR-0021-marine-catalogue-and-gateway-actor-context.md).
 
 ### Build and start the stack
 
@@ -376,9 +437,9 @@ For Flutter on an Android emulator, explicitly pass the laptop gateway as
 `http://10.0.2.2:80` with
 `--dart-define=BLUEVERSE_API_BASE_URL=http://10.0.2.2:80`. A physical Android
 device must use the laptop's current Wi-Fi/LAN address with the same
-compile-time setting. The explicit value overrides the checked-in,
-environment-specific Android fallback; do not rely on that fallback for a
-device run. The current mobile resolver accepts local HTTP on port `80` only,
+compile-time setting. Without an explicit value, Android tries the standard
+emulator host `10.0.2.2:80`, then the USB reverse tunnel at `127.0.0.1:80`.
+The current mobile resolver accepts local HTTP on port `80` only,
 so a deployment HTTPS configuration remains future work. The Flutter
 resolver also has a fixed port-80 limit; changing `BLUEVERSE_HTTP_PORT` does
 not update the mobile client's accepted port. Keep the gateway on port 80 for
@@ -386,6 +447,15 @@ Flutter or update the resolver before changing that setting. If managed Wi-Fi
 isolates the phone from the laptop, use `adb reverse tcp:80 tcp:80` over USB.
 See [Mobile setup](apps/mobile/README.md) for the full device workflow and
 current limitations.
+
+Before a Flutter Android run, check `flutter doctor -v` and ensure the Gradle
+cache drive and workspace drive have free space for engine extraction and APK
+packaging. SDK/device detection and passing Flutter tests do not establish a
+successful Android build when the build-cache drive is full.
+On Windows, use `GRADLE_USER_HOME` and `PUB_CACHE` to place Gradle and Dart
+dependency caches on a drive with space; use a process-local temporary directory
+for the build. The [Windows cache setup](apps/mobile/README.md#windows-build-cache-location)
+records the configuration and the ARM64 phone build command.
 
 ## CI
 
@@ -423,17 +493,16 @@ tree for authoritative cases.
 
 - `docker-web-build.yml` synchronizes the React lockfile with the DHI Node 24 image, then builds the React web image.
 - `docker-backend-build.yml` builds the public API and discovered ASP.NET services one by one.
-- `docker-stack-health.yml` waits for both build workflows, starts the root Compose file and checks frontend/API/discovered-service health endpoints plus the public API/Auth Swagger routes.
+- `docker-stack-health.yml` waits for both build workflows, starts the root Compose file and checks frontend/API/discovered-service health endpoints plus the public API/Auth Swagger routes. Member OpenAPI documents are required when their service source exists, allowing this Marine branch to run without an absent Experiences service.
 
 The web and backend build workflows run on supported branch families when their relevant application, service, Docker infrastructure, lockfile synchronization, Compose, workflow or build-context paths change. The stack-health workflow waits for the required image builds for the same commit and runs only for pull requests targeting `main`; it synchronizes the web lockfile again on its separate runner before running the Compose health checks. Backend build failures are collected across all services so later services are still checked before the workflow fails.
 
 The Docker backend workflow builds `services/api` first and then discovers and
 builds the other ASP.NET service directories, including Auth and
-marine-safety. The stack-health workflow currently derives each service's
-health URL from its folder name; for marine-safety that produces
-`/api/marine-safety/health`, while the gateway exposes `/api/marine/health`.
-The workflow needs an explicit alias mapping before its service-health check
-can verify marine-safety. The backend test workflow fails if a service source project has no
+marine-safety. The stack-health workflow maps the marine-safety folder to its actual
+`/api/marine/health` route and supplies masked ephemeral signing keys for the
+isolated CI stack. A hosted run is still required for deployment evidence.
+The backend test workflow fails if a service source project has no
 discovered service-local test project.
 
 `github-config-sync.yml` uses GitHub Actions to copy `.github/**` changes
@@ -487,3 +556,24 @@ Use `.env.example` for variable names and safe example values only.
 ## Assignment basis
 
 This repository structure follows the SE3090 requirement for an integrated React + Flutter + ASP.NET Core + PostgreSQL + Agentic AI system, Git/GitHub, CI, testing, documentation, ADRs and deployment evidence.
+
+## Marine Safety input and recovery behavior
+
+React and Flutter expose all three Marine pages with `marine.profile.read`;
+profile mutation controls additionally require `marine.profile.manage`. Enter
+latitude/longitude as signed decimal WGS84 coordinates. Nonblank invalid filters
+are rejected before querying. Maximum and optional caution limits accept at most
+two decimal places, preserving the exact reviewed values.
+
+Condition reuse requires matching rounded coordinates, an applicable forecast
+from requested time minus 30 minutes through plus one hour, and retrieval within
+the preceding 15 minutes. Future retrieval timestamps cannot be reused.
+Acquisition/evaluation rejects UTC request times outside
+`0001-01-01T01:00:00Z`–`9999-12-31T22:59:59.9999999Z` with 400 before provider
+access; provider forecast availability still has its own limits.
+
+Flutter allows 45 seconds per request. An ambiguous timeout or connection failure
+after dispatching a write reports that its outcome is unconfirmed and makes no
+automatic second attempt. Check assessment history or the profile before retrying;
+a timeout does not cancel server work. Read requests may try another configured
+gateway candidate. Server-enforced mutation idempotency is not implemented.

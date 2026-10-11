@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import { hasAnyPermission } from '../../features/authorization/permissions'
 import { useAuthSession } from '../../features/auth/authSession'
+import { marineWorkflowLabels } from '../../features/marine/marineWorkflowLabels'
 
 type Area = 'profile' | 'dashboard' | 'marine' | 'admin'
 type NavigationGroup = { id: Area; label: string; href: string; children: { label: string; href: string }[] }
@@ -25,9 +26,9 @@ function groupsFor(permissions: string[]): NavigationGroup[] {
   if (hasAnyPermission({ permissions }, ['marine.profile.read'])) {
     groups.push({
       id: 'marine', label: 'Marine & safety', href: '/marine/conditions', children: [
-        { label: 'Marine conditions', href: '/marine/conditions' },
-        { label: 'Condition history', href: '/marine/history' },
-        { label: 'Safety profiles', href: '/marine/safety-profiles' },
+        { label: marineWorkflowLabels.conditions, href: '/marine/conditions' },
+        { label: marineWorkflowLabels.history, href: '/marine/history' },
+        { label: marineWorkflowLabels.profiles, href: '/marine/safety-profiles' },
       ],
     })
   }

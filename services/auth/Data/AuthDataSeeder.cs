@@ -68,15 +68,21 @@ public static class AuthDataSeeder
         var permissions = await db.Permissions
             .Where(p => adminPermissions.Keys.Contains(p.Code))
             .ToListAsync(cancellationToken);
+        // Independently deployed member branches can have reused seed GUIDs.
+        // Codes identify grants; preserve every existing row and assignment.
+        var occupiedIds = (await db.Permissions.Select(p => p.Id)
+            .ToListAsync(cancellationToken)).ToHashSet();
 
         foreach (var (code, definition) in adminPermissions)
         {
             if (permissions.Any(p => p.Code == code))
                 continue;
 
+            var permissionId = definition.Id;
+            while (!occupiedIds.Add(permissionId)) permissionId = Guid.NewGuid();
             var permission = new Permission
             {
-                Id = definition.Id,
+                Id = permissionId,
                 Code = code,
                 Description = definition.Description,
                 CreatedAt = DateTime.UtcNow

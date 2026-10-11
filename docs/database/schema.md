@@ -16,6 +16,13 @@ one installation and five active sessions per account across installations.
 
 ## Auth session tables
 
+Bootstrap permission identity is the unique permission code. Preferred seed
+GUIDs are used only when free; if another member's existing code occupies one,
+Auth allocates a new GUID for the missing code. Existing identities, descriptions,
+role assignments and audit timestamps are preserved, and repeated seeding is
+idempotent. This is an essential member-integration correction for reused Marine/
+Experiences seed IDs, with no schema or authentication-flow change.
+
 | Table | Important fields and constraints |
 |---|---|
 | `DeviceInstallations` | Server-issued `DeviceId` primary key, hashed `DeviceKeyHash`, legacy marker, last-seen and revocation timestamps. The device key is never stored in plaintext. |
@@ -72,7 +79,7 @@ the shared `blueverse` database:
 
 | Table | Keys, constraints and purpose |
 |---|---|
-| `MarineActivities` | `Id` PK, unique `Name`, `ActivityType`, `IsActive`, audit timestamps. Minimal locally-owned activity reference (Surfing, Snorkeling, Scuba Diving, whale/dolphin watching, coastal boat tour) to be replaced by Member 1's canonical taxonomy when that component merges. |
+| `MarineActivities` | `Id` PK, nonunique indexed `Name`, `ActivityType` (100 characters), `IsActive`, audit timestamps. Non-authoritative projection of Member 1 published activities. Legacy rows retain historic references; current availability is always checked through the catalogue, never this table. |
 | `SafetyProfiles` | `Id` PK, `ActivityId` FK → `MarineActivities` (cascade), positive-limit CHECK constraints (`MaxWindSpeed`/`MaxWaveHeight`/`MaxSwellHeight` > 0), caution-band CHECKs (each optional `Caution*` < its hard limit), partial unique index enforcing one active profile per activity, unique `(ActivityId, Version)`, per-factor source and rationale, author/reviewer IDs and review/effective timestamps. Drafts are inactive; approval is required before evaluation can use a version. |
 | `ConditionSnapshots` | `Id` PK, `Latitude numeric(8,5)`/`Longitude numeric(9,5)`, `ForecastTime`/`RetrievedAt` timestamptz, nullable environmental values (`WindSpeed`, `WaveHeight`, `SwellHeight`, `Rain`, `WeatherCode` — null means unavailable, never zero), `Source`, `FreshnessStatus`, `MissingFields text[]`; location/forecast and retrieval indexes. Provider-derived and immutable through the public API. |
 | `SuitabilityAssessments` | `Id` PK, `ActivityId` FK (restrict), captured activity name, profile/snapshot IDs and version, request/forecast/evaluation times, `Result` (`SUITABLE`/`CAUTION`/`UNSUITABLE`/`UNKNOWN`), violations/caution/missing arrays, copied condition values and retrieval metadata, copied limits and per-factor criteria citations, source/freshness and `EvidenceCompleteness`; activity/request-time and evaluation-time indexes. History intentionally has no FK to snapshots or profiles so it survives retention pruning and profile deletion. |
@@ -85,20 +92,16 @@ profile must be replaced by a cited draft and reviewed before it can support a
 new assessment; old assessment records remain available with their evidence
 gaps visible.
 
-The marine service validates Auth-issued tokens against the current Auth-owned
-`Users` and `ActiveSessions` rows, including account activity, token version,
-session ID/version and session expiry. It then resolves each required marine
-permission with a separate parameterized, read-only query over `Users`,
-`ActiveSessions`, `UserRoles`, `RolePermissions` and `Permissions`. It does not
-map or write identity entities and does not authorize from JWT role or
-permission claims. Its two marine permission grants (`marine.profile.read`,
-`marine.profile.manage`) are seeded for the Admin role by the Auth seeder, so
-the marine service itself never writes identity data. Account, session and
-role-grant changes take effect on the next protected request.
-The marine service's in-memory HTTP test host substitutes a deterministic
-permission resolver and does not execute these Auth-schema SQL queries. A
-PostgreSQL-backed integration run is still required to verify those production
-queries against the provider.
+The public API uses Auth `/api/auth/me` for current account/session and
+role-permission resolution. It signs a short-lived request-bound actor context
+for Marine Safety, which enforces the permissions without reading Auth tables.
+The Marine in-memory HTTP host exercises the production gateway middleware
+with Auth/provider/catalogue transport doubles. PostgreSQL constraints and
+migrations still require separate provider-backed evidence.
+
+`CanonicalActivityProjection` preserves rows while removing the local unique
+name rule and expanding category length from 64 to 100. Downgrade requires
+reconciling duplicate names and long categories before shrinking constraints.
 
 See the [v1 component and agent index](../v1/README.md). Marine-safety is the
 first implemented v1 business schema. Introduce schemas for the other member

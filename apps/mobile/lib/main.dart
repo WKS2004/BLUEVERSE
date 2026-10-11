@@ -21,12 +21,9 @@ import 'ui/feedback/blueverse_error_screen.dart';
 import 'ui/feedback/blueverse_loading_screen.dart';
 import 'ui/feedback/loading_screen_controller.dart';
 import 'ui/marine/marine_auth_navigation.dart';
-import 'ui/marine/marine_condition_screen.dart';
 import 'ui/marine/marine_permissions_guard.dart';
 import 'ui/marine/marine_route_table.dart';
-import 'ui/marine/suitability_screen.dart';
-import 'ui/marine/history_screen.dart';
-import 'ui/marine/safety_profiles_screen.dart';
+import 'ui/marine/marine_workspace_screen.dart';
 
 void main() {
   ErrorWidget.builder = blueverseUnexpectedErrorWidget;
@@ -34,7 +31,10 @@ void main() {
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, this.authRepository, this.marineService});
+
+  final AuthRepository? authRepository;
+  final MarineService? marineService;
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -45,18 +45,17 @@ class _MyAppState extends State<MyApp> {
   late final AuthViewModel _authViewModel;
   bool _initialSessionHandled = false;
   String? _lastAuthenticatedUserId;
+  http.Client? _marineHttpClient;
+  late final MarineService _marineService;
 
   @override
   void initState() {
     super.initState();
-    final gateway = const ApiGatewayConfig();
-    final client = MarineApiClient(client: http.Client(), gateway: gateway);
-    final repository = MarineRepository(client: client);
-    final service = MarineService(repository: repository);
-
     _authViewModel = AuthViewModel(
-      repository: AuthRepository(apiService: AuthApiService()),
+      repository:
+          widget.authRepository ?? AuthRepository(apiService: AuthApiService()),
     )..addListener(_handleSessionChange);
+    _marineService = _buildMarineService();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _authViewModel.restore();
@@ -66,6 +65,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void dispose() {
+    _marineHttpClient?.close();
     _authViewModel
       ..removeListener(_handleSessionChange)
       ..dispose();
@@ -93,13 +93,7 @@ class _MyAppState extends State<MyApp> {
   void _navigationFor(AuthUser? user) {
     if (user == null) return;
 
-    if (marineRouteHrefsFor(user).contains(MarineRoutes.conditions)) {
-      _replaceNavigationWith(MarineRoutes.conditions);
-    } else if (marineRouteHrefsFor(user).contains(MarineRoutes.history)) {
-      _replaceNavigationWith(MarineRoutes.history);
-    } else {
-      _replaceNavigationWith('/dashboard');
-    }
+    _replaceNavigationWith('/dashboard');
   }
 
   void _replaceNavigationWith(String routeName) {
@@ -134,6 +128,7 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
       routes: {
+        '/': (_) => MobileLaunchPage(viewModel: _authViewModel),
         '/signin': (_) => AuthLoginScreen(viewModel: _authViewModel),
         '/signup': (_) => AuthRegistrationScreen(viewModel: _authViewModel),
         '/profile': (_) => AuthProfileScreen(viewModel: _authViewModel),
@@ -153,108 +148,88 @@ class _MyAppState extends State<MyApp> {
         ),
         '/404': (_) => const BlueverseErrorScreen.notFound(),
         '/500': (_) => const BlueverseErrorScreen.server(),
-        '/marine/conditions': (_) => _marineShell(
-          route: MarineRoutes.conditions,
-          child: SuitabilityScreen(service: _buildMarineService()),
-        ),
-        '/marine/history': (_) => _marineShell(
-          route: MarineRoutes.history,
-          child: MarineHistoryScreen(service: _buildMarineService()),
-        ),
-        '/marine/safety-profiles': (_) => _marineShell(
-          route: MarineRoutes.safetyProfiles,
-          child: SafetyProfilesScreen(
-            service: _buildMarineService(),
-            canManage:
-                _authViewModel.user?.permissions.contains(
-                  'marine.profile.manage',
-                ) ==
-                true,
-            currentUserId: _authViewModel.user?.id,
-          ),
-        ),
+        '/marine/conditions': (_) =>
+            _marineShell(route: MarineRoutes.conditions),
+        '/marine/history': (_) => _marineShell(route: MarineRoutes.history),
+        '/marine/safety-profiles': (_) =>
+            _marineShell(route: MarineRoutes.safetyProfiles),
       },
       onUnknownRoute: blueverseUnknownRoute,
     );
   }
 
   MarineService _buildMarineService() {
+    final injected = widget.marineService;
+    if (injected != null) return injected;
     final gateway = const ApiGatewayConfig();
-    final client = MarineApiClient(client: http.Client(), gateway: gateway);
+    _marineHttpClient = http.Client();
+    final client = MarineApiClient(
+      client: _marineHttpClient!,
+      gateway: gateway,
+      authenticatedHeaders:
+          _authViewModel.repository.apiService.authenticatedHeaders,
+      beginRequest: (method) =>
+          method == 'GET' ? () {} : blueverseLoadingScreenController.begin(),
+    );
     final repository = MarineRepository(client: client);
     return MarineService(repository: repository);
   }
 
-  Widget _marineShell({required String route, required Widget child}) {
-    final hrefs = marineRouteHrefsFor(_authViewModel.user);
-    final mayRead = hasMarineReadAccess(_authViewModel.user);
-
-    if (!mayRead || !hrefs.contains(route)) {
-      return const ColoredBox(
-        color: Color(0xFFF7F6F0),
-        child: Center(
-          child: Text(
-            'This coastal service needs permission. Ask an administrator to review your role assignments if you need access.',
-            textAlign: TextAlign.center,
+  Widget _marineShell({required String route}) => ListenableBuilder(
+    listenable: _authViewModel,
+    builder: (context, _) {
+      final user = _authViewModel.user;
+      if (!hasMarineReadAccess(user) ||
+          !marineRouteHrefsFor(user).contains(route)) {
+        return Scaffold(
+          appBar: AppBar(title: const Text('Marine & safety')),
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'This coastal service needs permission. Ask an administrator to review your role assignments if you need access.',
+                    textAlign: TextAlign.center,
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pushNamed(context, '/dashboard'),
+                    child: const Text('Return to dashboard'),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-      );
-    }
-
-    return Scaffold(
-      appBar: AppBar(title: _appBarTitle(route)),
-      body: child,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex(route),
-        onTap: _onTabSelected,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.waves_outlined),
-            label: 'Conditions',
+        );
+      }
+      return MarineWorkspaceScreen(
+        key: ValueKey('${user!.id}:${user.permissions.join(',')}'),
+        service: _marineService,
+        initialIndex: route == MarineRoutes.history
+            ? 1
+            : route == MarineRoutes.safetyProfiles
+            ? 2
+            : 0,
+        canManage: user.permissions.contains('marine.profile.manage'),
+        currentUserId: user.id,
+        actions: [
+          IconButton(
+            tooltip: 'Dashboard',
+            icon: const Icon(Icons.home_outlined),
+            onPressed: () => Navigator.pushNamed(context, '/dashboard'),
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shield_outlined),
-            label: 'Safety profiles',
+          IconButton(
+            tooltip: 'Profile',
+            icon: const Icon(Icons.person_outline),
+            onPressed: () => Navigator.pushNamed(context, '/profile'),
           ),
+          AuthAdminNavigationMenu(viewModel: _authViewModel),
+          AuthAccountSwitcher(viewModel: _authViewModel),
         ],
-      ),
-    );
-  }
-
-  Widget _appBarTitle(String route) {
-    Widget title = const Text('Marine');
-    switch (route) {
-      case MarineRoutes.conditions:
-        title = const Text('Marine conditions');
-        break;
-      case MarineRoutes.history:
-        title = const Text('Condition history');
-        break;
-      case MarineRoutes.safetyProfiles:
-        title = const Text('Safety profiles');
-        break;
-    }
-    return title;
-  }
-
-  int _selectedIndex(String route) {
-    if (route == MarineRoutes.conditions) return 0;
-    if (route == MarineRoutes.history) return 1;
-    if (route == MarineRoutes.safetyProfiles) return 2;
-    return 0;
-  }
-
-  void _onTabSelected(int index) {
-    if (index == 0) {
-      _replaceNavigationWith(MarineRoutes.conditions);
-    } else if (index == 1) {
-      _replaceNavigationWith(MarineRoutes.history);
-    } else {
-      _replaceNavigationWith(MarineRoutes.safetyProfiles);
-    }
-  }
+      );
+    },
+  );
 }
 
 class MobileLaunchPage extends StatelessWidget {

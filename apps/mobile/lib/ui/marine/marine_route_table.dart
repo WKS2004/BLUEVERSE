@@ -1,7 +1,7 @@
 /// Public registration for the Member 2 marine workflows.
 ///
 /// Every route below is registered under a shared, backend-visible workflow.
-/// The router files are used by [main.dart]; none of these targets a backend
+/// These destinations mirror [main.dart]; none of them targets a backend
 /// route directly by hostname, PostgreSQL, Auth or Agentic AI.
 library;
 
@@ -14,7 +14,6 @@ class MarineRoutes {
   static const conditions = '/marine/conditions';
   static const history = '/marine/history';
   static const safetyProfiles = '/marine/safety-profiles';
-  static const safetyProfileDetail = '/marine/safety-profiles/:id';
 }
 
 /// A tiny path matcher used by [MarineNavigator].
@@ -37,18 +36,12 @@ class MarinePath {
         return full == MarineRoutes.safetyProfiles
             ? const MarineRouteMatch.success(MarineRoutes.safetyProfiles)
             : const MarineRouteMatch.unmatched();
-      case MarineRoutes.safetyProfileDetail:
-        return full == MarineRoutes.safetyProfileDetail
-            ? const MarineRouteMatch.success(MarineRoutes.safetyProfileDetail)
-            : const MarineRouteMatch.unmatched();
     }
-    throw ArgumentError('Unknown marine route: $route');
+    return const MarineRouteMatch.unmatched();
   }
 }
 
 class MarineRouteMatch {
-  const MarineRouteMatch._({required this.route, this.params = const {}});
-
   const MarineRouteMatch.success(this.route) : params = const {};
   const MarineRouteMatch.unmatched() : route = null, params = const {};
 
@@ -74,9 +67,4 @@ class MarineNavigator {
 
   static Future<void> toSafetyProfiles(BuildContext context) =>
       Navigator.pushNamed(context, MarineRoutes.safetyProfiles);
-
-  static Future<void> toSafetyProfileDetail(
-    BuildContext context,
-    String id,
-  ) => Navigator.pushNamed(context, MarineRoutes.safetyProfileDetail, arguments: id);
 }

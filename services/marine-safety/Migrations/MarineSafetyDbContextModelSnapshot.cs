@@ -94,8 +94,8 @@ namespace Blueverse.MarineSafety.Migrations
 
                     b.Property<string>("ActivityType")
                         .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -113,8 +113,7 @@ namespace Blueverse.MarineSafety.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Name")
-                        .IsUnique();
+                    b.HasIndex("Name");
 
                     b.ToTable("MarineActivities");
 

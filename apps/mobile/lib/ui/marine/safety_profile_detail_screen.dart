@@ -47,17 +47,19 @@ class _SafetyProfileDetailScreenState extends State<SafetyProfileDetailScreen> {
         });
       }
     } on MarineApiException catch (error) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = error.message;
           _loading = false;
         });
+      }
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = 'The marine service could not be reached. Check the gateway address and try again.';
           _loading = false;
         });
+      }
     }
   }
 
@@ -120,17 +122,19 @@ class _SafetyProfileDetailScreenState extends State<SafetyProfileDetailScreen> {
         });
       }
     } on MarineApiException catch (error) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _busy = false;
           _error = error.message;
         });
+      }
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _busy = false;
           _error = 'The marine service could not be reached. Check the gateway address and try again.';
         });
+      }
     }
   }
 
@@ -158,17 +162,19 @@ class _SafetyProfileDetailScreenState extends State<SafetyProfileDetailScreen> {
         });
       }
     } on MarineApiException catch (error) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _busy = false;
           _error = error.message;
         });
+      }
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _busy = false;
           _error = 'The marine service could not be reached. Check the gateway address and try again.';
         });
+      }
     }
   }
 
@@ -226,7 +232,7 @@ class _SafetyProfileDetailScreenState extends State<SafetyProfileDetailScreen> {
             const Icon(Icons.error_outline, color: Colors.redAccent, size: 42),
             const SizedBox(height: 12),
             Text(
-              _error ?? 'No profile is configured yet.',
+              _error ?? 'No profile is configured.',
               style: const TextStyle(color: Colors.redAccent),
             ),
             const SizedBox(height: 12),

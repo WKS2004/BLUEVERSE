@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { after, afterEach, test } from 'node:test'
+import { after, afterEach, beforeEach, test } from 'node:test'
 import {
   cleanup,
   closeWebTestServer,
@@ -21,6 +21,21 @@ const [{ MarineConditionsPage, MarineHistoryPage, MarineSafetyProfilesPage }, { 
   loadWebModule('/src/app/routes.tsx'),
 ])
 const originalFetch = globalThis.fetch
+const catalogueFixture = [
+  { id: '33333333-3333-3333-3333-333333333301', name: 'Surfing', activityType: 'Surfing', isActive: true },
+  { id: '33333333-3333-3333-3333-333333333302', name: 'Snorkeling', activityType: 'Snorkeling', isActive: true },
+]
+let catalogueResponse = () => jsonResponse(catalogueFixture)
+let operationFetch = originalFetch
+// Supply the independently loaded catalogue without changing existing operation
+// request-count/body assertions. Dedicated cases below vary this dependency.
+Object.defineProperty(globalThis, 'fetch', {
+  configurable: true,
+  get: () => (input, init) => String(input) === '/api/marine/activities'
+    ? catalogueResponse(input, init) : operationFetch(input, init),
+  set: value => { operationFetch = value },
+})
+beforeEach(() => { catalogueResponse = () => jsonResponse(catalogueFixture) })
 
 afterEach(() => {
   cleanup()
@@ -28,7 +43,10 @@ afterEach(() => {
   globalThis.fetch = originalFetch
 })
 
-after(async () => closeWebTestServer())
+after(async () => {
+  Object.defineProperty(globalThis, 'fetch', { configurable: true, writable: true, value: originalFetch })
+  await closeWebTestServer()
+})
 
 const surfingActivityId = '33333333-3333-3333-3333-333333333301'
 const snorkelingActivityId = '33333333-3333-3333-3333-333333333302'
@@ -154,13 +172,14 @@ function makeProfile(overrides = {}) {
   }
 }
 
-test('WEB-MARINE-UI-001 the conditions page exposes labeled location, UTC period and activity inputs (ui-integration: marine-conditions)', () => {
+test('WEB-MARINE-UI-001 the conditions page exposes labeled location, UTC period and activity inputs (ui-integration: marine-conditions)', async () => {
   renderInApp(createElement(MarineConditionsPage), { path: '/marine/conditions', auth: makeAuthSessionValue({ user: marineUser(), status: 'signed-in' }) })
 
   assert.ok(screen.getByRole('heading', { name: 'Marine conditions' }))
   assert.ok(screen.getByLabelText('Latitude'))
   assert.ok(screen.getByLabelText('Longitude'))
   assert.ok(screen.getByLabelText(/Requested time/))
+  await waitFor(() => assert.ok(screen.getByRole('option', { name: 'Surfing' })))
   const activitySelect = screen.getByLabelText('Activity')
   assert.ok(Array.from(activitySelect.options).some((option) => option.value === surfingActivityId && option.textContent === 'Surfing'))
   assert.ok(screen.getByText(/not a substitute for professional maritime navigation information|decision support/i))
@@ -280,8 +299,8 @@ test('WEB-MARINE-UI-008 history filters serialize coordinates and the UTC window
   await waitFor(() => assert.equal(calls.length, 4))
   assert.ok(calls.some((call) => call.input === '/api/marine/history?latitude=6.025&longitude=80.216&from=2026-09-26T00%3A00%3A00.000Z&to=2026-09-27T08%3A30%3A00.000Z'))
   assert.ok(calls.some((call) => call.input === '/api/marine/assessments?from=2026-09-26T00%3A00%3A00.000Z&to=2026-09-27T08%3A30%3A00.000Z'))
-  assert.ok(screen.getByText(/No condition snapshots match these filters yet/))
-  assert.ok(screen.getByText(/No suitability assessments match these filters yet/))
+  assert.ok(screen.getByText(/No condition snapshots match these filters/))
+  assert.ok(screen.getByText(/No suitability assessments match these filters/))
 })
 
 test('WEB-MARINE-UI-023 legacy assessment rows render with explicit missing evidence (ui-integration: marine-history)', async () => {
@@ -405,7 +424,7 @@ test('WEB-MARINE-UI-010 a manager saves an immutable evidence-backed draft while
   assert.ok(screen.getByText('ACTIVE'))
 })
 
-test('WEB-MARINE-UI-011 a caution band above its maximum is rejected by the server and reported safely (ui-integration: marine-safety-profiles)', async () => {
+test('WEB-MARINE-UI-011 a caution band above its maximum is blocked before submission (ui-integration: marine-safety-profile-management)', async () => {
   let createCalls = 0
   globalThis.fetch = async (input, init = {}) => {
     if (init?.method === 'POST' && String(input).endsWith('/api/marine/safety-profiles')) {
@@ -439,8 +458,9 @@ test('WEB-MARINE-UI-011 a caution band above its maximum is rejected by the serv
   setProfileEvidence('create-profile')
   await userEvent.setup().click(screen.getByRole('button', { name: 'Create profile' }))
 
-  assert.equal((await screen.findByRole('alert')).textContent, 'Caution wind speed must be below the maximum wind speed.')
-  assert.equal(createCalls, 1, 'the create form must submit exactly once')
+  assert.equal((await screen.findByRole('alert')).textContent, 'Each caution limit must be lower than its matching maximum.')
+  assert.equal(createCalls, 0, 'invalid caution criteria must not be submitted')
+  assert.equal(document.getElementById('create-profile-caution-wind').value, '35')
   assert.equal(screen.getByRole('button', { name: 'Create profile' }).disabled, false)
 })
 
@@ -476,6 +496,7 @@ test('WEB-MARINE-UI-014 a selected activity and local date-time reach the evalua
 
   renderInApp(createElement(MarineConditionsPage), { path: '/marine/conditions', auth: makeAuthSessionValue({ user: marineUser(), status: 'signed-in' }) })
   fireEvent.change(screen.getByLabelText(/Requested time/), { target: { value: '2026-10-03T15:45' } })
+  await waitFor(() => assert.ok(screen.getByRole('option', { name: 'Snorkeling' })))
   await userEvent.setup().selectOptions(screen.getByLabelText('Activity'), snorkelingActivityId)
   await userEvent.setup().click(screen.getByRole('button', { name: 'Check conditions & suitability' }))
 
@@ -541,6 +562,7 @@ test('WEB-MARINE-UI-017 a permitted manager creates a cited draft and sees it aw
     auth: makeAuthSessionValue({ user: marineUser(['marine.profile.read', 'marine.profile.manage']), status: 'signed-in' }),
   })
   await waitFor(() => assert.ok(screen.getByLabelText('Activity')))
+  await waitFor(() => assert.ok(screen.getByRole('option', { name: 'Snorkeling' })))
   await userEvent.setup().selectOptions(screen.getByLabelText('Activity'), snorkelingActivityId)
   await userEvent.setup().type(document.getElementById('create-profile-max-wind'), '40')
   await userEvent.setup().type(document.getElementById('create-profile-max-wave'), '2')
@@ -654,7 +676,7 @@ test('WEB-MARINE-UI-021 confirming profile deactivation sends DELETE, refreshes 
     ['/api/marine/safety-profiles/profile-1', 'DELETE'],
     ['/api/marine/safety-profiles', 'GET'],
   ])
-  assert.ok(screen.getByText(/No safety profiles are configured yet/))
+  assert.ok(screen.getByText(/No safety profiles are configured/))
   assert.ok(screen.getByRole('status').textContent.includes('Assessments keep their history'))
 })
 
@@ -677,4 +699,77 @@ test('WEB-MARINE-UI-022 an expired session shows safe recovery and no marine ass
   assert.equal(screen.queryByText('SERVER ASSESSMENT'), null)
   assert.equal(calls.length, 1)
   assert.ok(calls.every((call) => call.init.credentials === 'include'))
+})
+
+test('WEB-MARINE-UI-024 canonical published IDs are loaded and used for assessments (ui-integration: marine-conditions)', async () => {
+  const id = '12345678-1234-1234-1234-123456789abc'
+  catalogueResponse = () => jsonResponse([{ id, name: 'Canonical activity', activityType: 'Surfing', isActive: true }])
+  const calls = []
+  globalThis.fetch = async (input, init) => { calls.push({ input, init }); return jsonResponse(makeSuitability({ activityId: id, activityName: 'Canonical activity' })) }
+  renderInApp(createElement(MarineConditionsPage), { path: '/marine/conditions', auth: makeAuthSessionValue({ user: marineUser(), status: 'signed-in' }) })
+  await waitFor(() => assert.ok(screen.getByRole('option', { name: 'Canonical activity' })))
+  assert.equal(screen.queryByRole('option', { name: 'Surfing' }), null)
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Check conditions & suitability' }))
+  await waitFor(() => assert.equal(calls.length, 1))
+  assert.equal(JSON.parse(calls[0].init.body).activityId, id)
+})
+
+test('WEB-MARINE-UI-025 unavailable catalogue disables assessment and supports retry (ui-integration: marine-conditions)', async () => {
+  catalogueResponse = () => jsonResponse({ detail: 'The activity catalogue is temporarily unavailable.' }, 503)
+  renderInApp(createElement(MarineConditionsPage), { path: '/marine/conditions', auth: makeAuthSessionValue({ user: marineUser(), status: 'signed-in' }) })
+  await waitFor(() => assert.ok(screen.getByText('The activity catalogue is temporarily unavailable.')))
+  assert.equal(screen.getByRole('button', { name: 'Check conditions & suitability' }).disabled, true)
+  catalogueResponse = () => jsonResponse(catalogueFixture)
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Retry activities' }))
+  await waitFor(() => assert.equal(screen.getByRole('button', { name: 'Check conditions & suitability' }).disabled, false))
+})
+
+test('WEB-MARINE-UI-026 empty published catalogue has no invented activities (ui-integration: marine-conditions)', async () => {
+  catalogueResponse = () => jsonResponse([])
+  renderInApp(createElement(MarineConditionsPage), { path: '/marine/conditions', auth: makeAuthSessionValue({ user: marineUser(), status: 'signed-in' }) })
+  await waitFor(() => assert.ok(screen.getByText('No published activities are available.')))
+  assert.equal(screen.getByLabelText('Activity').options.length, 0)
+  assert.equal(screen.getByRole('button', { name: 'Check conditions & suitability' }).disabled, true)
+})
+
+test('WEB-MARINE-UI-027 conditions-only lookup works during a catalogue outage (ui-integration: marine-conditions)', async () => {
+  catalogueResponse = () => jsonResponse({ detail: 'Activities unavailable.' }, 503)
+  const calls = []
+  globalThis.fetch = async (input) => { calls.push(input); return jsonResponse(makeSnapshot()) }
+  renderInApp(createElement(MarineConditionsPage), { path: '/marine/conditions', auth: makeAuthSessionValue({ user: marineUser(), status: 'signed-in' }) })
+  await waitFor(() => assert.ok(screen.getByText('Activities unavailable.')))
+  await userEvent.setup().click(screen.getByRole('button', { name: 'View conditions only' }))
+  await waitFor(() => assert.ok(screen.getByRole('region', { name: 'Condition evidence' })))
+  assert.equal(calls.length, 1)
+  assert.ok(calls[0].startsWith('/api/marine/current?'))
+  assert.equal(screen.queryByText('SERVER ASSESSMENT'), null)
+})
+
+
+test('WEB-MARINE-AVAIL-002 catalogue outage preserves saved profiles and deactivation while disabling dependent actions (ui-integration: marine-safety-profile-management)', async () => {
+  let available = false
+  catalogueResponse = () => available ? jsonResponse(catalogueFixture) : jsonResponse({ detail: 'Activity data is unavailable.' }, 503)
+  const calls = []
+  globalThis.fetch = async (input, init = {}) => { calls.push({ input, method: init.method ?? 'GET' }); return jsonResponse([makeProfile()]) }
+  renderInApp(createElement(MarineSafetyProfilesPage), { path: '/marine/safety-profiles', auth: makeAuthSessionValue({ user: marineUser(['marine.profile.read', 'marine.profile.manage']), status: 'signed-in' }) })
+  await waitFor(() => assert.ok(screen.getByText('Activity data unavailable')))
+  await waitFor(() => assert.ok(screen.getByRole('button', { name: 'Save limits' })))
+  assert.equal(screen.getByRole('button', { name: 'Save limits' }).disabled, true)
+  assert.equal(screen.getByRole('button', { name: 'Deactivate profile' }).disabled, false)
+  assert.ok(screen.getByText(/Condition lookup and saved records remain accessible/))
+  assert.equal(calls.every(call => call.method === 'GET'), true)
+  available = true
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Retry activities' }))
+  await waitFor(() => assert.equal(screen.getByRole('button', { name: 'Save limits' }).disabled, false))
+  assert.equal(screen.queryByText('Activity data unavailable'), null)
+})
+
+test('WEB-MARINE-AVAIL-003 catalogue outage preserves draft inspection while review stays disabled (ui-integration: marine-safety-profile-management)', async () => {
+  catalogueResponse = () => jsonResponse({ detail: 'Activity data is unavailable.' }, 503)
+  globalThis.fetch = async () => jsonResponse([makeProfile({ isActive: false, reviewedAt: null, reviewedByUserId: null })])
+  renderInApp(createElement(MarineSafetyProfilesPage), { path: '/marine/safety-profiles', auth: makeAuthSessionValue({ user: marineUser(['marine.profile.read', 'marine.profile.manage']), status: 'signed-in' }) })
+  await waitFor(() => assert.ok(screen.getByText('Activity data unavailable')))
+  await waitFor(() => assert.ok(screen.getByRole('button', { name: 'Review and activate this version' })))
+  assert.equal(screen.getByRole('button', { name: 'Review and activate this version' }).disabled, true)
+  assert.equal(screen.getByRole('button', { name: 'Save limits' }).disabled, true)
 })

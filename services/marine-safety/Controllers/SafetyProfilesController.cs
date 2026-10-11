@@ -51,6 +51,7 @@ public sealed class SafetyProfilesController : ControllerBase
 
     [HasPermission("marine.profile.manage")]
     [HttpPost]
+    [ProducesResponseType(typeof(DependencyUnavailableProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     [ProducesResponseType(typeof(SafetyProfileDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
@@ -81,6 +82,7 @@ public sealed class SafetyProfilesController : ControllerBase
 
     [HasPermission("marine.profile.manage")]
     [HttpPut("{id:guid}")]
+    [ProducesResponseType(typeof(DependencyUnavailableProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     [ProducesResponseType(typeof(SafetyProfileDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -109,6 +111,7 @@ public sealed class SafetyProfilesController : ControllerBase
     /// <summary>Approves a pending immutable profile version and makes it effective.</summary>
     [HasPermission("marine.profile.manage")]
     [HttpPost("{id:guid}/review")]
+    [ProducesResponseType(typeof(DependencyUnavailableProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     [ProducesResponseType(typeof(SafetyProfileDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

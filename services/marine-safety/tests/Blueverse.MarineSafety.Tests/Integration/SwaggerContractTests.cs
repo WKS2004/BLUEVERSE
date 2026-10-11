@@ -20,10 +20,7 @@ public sealed class SwaggerContractTests : IClassFixture<MarineSafetyWebApplicat
         ("get", "/api/marine/assessments"),
         ("get", "/api/marine/assessments/{id}"),
         ("get", "/api/marine/activities"),
-        ("post", "/api/marine/activities"),
         ("get", "/api/marine/activities/{id}"),
-        ("put", "/api/marine/activities/{id}"),
-        ("delete", "/api/marine/activities/{id}"),
         ("get", "/api/marine/safety-profiles"),
         ("post", "/api/marine/safety-profiles"),
         ("get", "/api/marine/safety-profiles/{id}"),
@@ -76,6 +73,9 @@ public sealed class SwaggerContractTests : IClassFixture<MarineSafetyWebApplicat
                     schemes.TryGetProperty("Bearer", out _),
             "The bearer security scheme must be defined for clients to bind to.");
 
+        Assert.False(paths.GetProperty("/api/marine/activities").TryGetProperty("post", out _));
+        Assert.False(paths.GetProperty("/api/marine/activities/{id}").TryGetProperty("put", out _));
+        Assert.False(paths.GetProperty("/api/marine/activities/{id}").TryGetProperty("delete", out _));
         var healthOperation = paths.GetProperty("/api/marine/health").GetProperty("get");
         Assert.False(
             healthOperation.TryGetProperty("security", out _) &&

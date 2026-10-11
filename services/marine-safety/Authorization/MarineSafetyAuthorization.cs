@@ -64,10 +64,8 @@ public sealed class PermissionPolicyProvider : IAuthorizationPolicyProvider
 }
 
 /// <summary>
-/// Resolves the caller's permission through the configured
-/// <see cref="IPermissionResolver"/>. JWT permission claims are a display
-/// snapshot; this database resolution is authoritative, exactly as the Auth
-/// service resolves permissions for its own endpoints.
+/// Checks permissions in the authenticated gateway actor context. Auth owns
+/// current session and role-permission resolution at the public boundary.
 /// </summary>
 public sealed class PermissionHandler(
     IPermissionResolver resolver,

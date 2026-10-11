@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+
+import '../blueverse_theme.dart';
 
 import '../../data/models/marine_models.dart';
 import '../../data/services/marine_api_client.dart';
 import '../../data/services/marine_service.dart';
+import 'marine_presentation.dart';
+import '../feedback/loading_screen_controller.dart';
 
 class MarineHistoryScreen extends StatefulWidget {
-  const MarineHistoryScreen({super.key, required this.service});
+  const MarineHistoryScreen({
+    super.key,
+    required this.service,
+    this.embedded = false,
+  });
 
   final MarineService service;
+  final bool embedded;
 
   @override
   State<MarineHistoryScreen> createState() => _MarineHistoryScreenState();
@@ -23,9 +31,71 @@ class _MarineHistoryScreenState extends State<MarineHistoryScreen> {
   List<MarineAssessmentHistoryDto> _assessments = const [];
   String _activityFilter = '';
   String _resultFilter = '';
+  List<Map<String, dynamic>> _activities = const [];
   bool _loading = true;
   String? _error;
   String? _formError;
+  String? _snapshotError;
+  String? _assessmentError;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadActivities();
+    _load(initial: true);
+  }
+
+  String? _catalogueError;
+  bool _catalogueLoading = true;
+
+  Future<void> _loadActivities() async {
+    if (!mounted) return;
+    setState(() {
+      _catalogueLoading = true;
+      _catalogueError = null;
+    });
+    try {
+      final rows = await widget.service.activities();
+      if (mounted) {
+        setState(() {
+          _activities = rows;
+          _activityFilter = '';
+          _catalogueLoading = false;
+        });
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _activities = const [];
+          _catalogueError = error is MarineApiException
+              ? error.message
+              : 'Activities could not be loaded. Please retry.';
+          _catalogueLoading = false;
+        });
+      }
+    }
+  }
+
+  Widget _catalogueStatus() {
+    if (_catalogueLoading) return const Text('Loading available activities…');
+    if (_catalogueError != null) {
+      return Column(
+        children: [
+          const Text('Activity data unavailable'),
+          Text(_catalogueError!),
+          const Text('Condition lookup and saved records remain accessible.'),
+          TextButton(
+            onPressed: _loadActivities,
+            child: const Text('Retry activities'),
+          ),
+        ],
+      );
+    }
+    if (_activities.isEmpty) {
+      return const Text('No published activities are available.');
+    }
+    return const SizedBox.shrink();
+  }
 
   @override
   void dispose() {
@@ -36,83 +106,111 @@ class _MarineHistoryScreenState extends State<MarineHistoryScreen> {
     super.dispose();
   }
 
-  Future<void> _load() async {
+  Future<void> _load({bool initial = false}) async {
     if (!mounted) return;
+    if (_loading && !initial) return;
     setState(() {
       _loading = true;
       _error = null;
       _formError = null;
-      _snapshots = const [];
     });
 
     try {
-      final from = _fromController.text.isNotEmpty
-          ? DateTime.parse(_fromController.text)
-          : null;
-      final to = _toController.text.isNotEmpty
-          ? DateTime.parse(_toController.text)
-          : null;
-      final latitude = _latitudeController.text.isNotEmpty
-          ? double.tryParse(_latitudeController.text)
-          : null;
-      final longitude = _longitudeController.text.isNotEmpty
-          ? double.tryParse(_longitudeController.text)
-          : null;
+      final from = marineUtcTime(_fromController.text);
+      final to = marineUtcTime(_toController.text);
+      final latitude = _optionalCoordinate(
+        _latitudeController.text,
+        -90,
+        90,
+        'Latitude',
+      );
+      final longitude = _optionalCoordinate(
+        _longitudeController.text,
+        -180,
+        180,
+        'Longitude',
+      );
 
-      if (latitude != null && (latitude < -90 || latitude > 90)) {
-        throw const FormatException('Latitude must be between -90 and 90.');
-      }
-      if (longitude != null && (longitude < -180 || longitude > 180)) {
-        throw const FormatException('Longitude must be between -180 and 180.');
-      }
       if (from != null && to != null && from.isAfter(to)) {
         throw const FormatException(
           'The from time must not be later than the to time.',
         );
       }
 
-      final list = await widget.service.history(
-        latitude: latitude,
-        longitude: longitude,
-        fromUtc: from,
-        toUtc: to,
-      );
-      final assessments = await widget.service.assessments(
-        activityId: _activityFilter,
-        result: _resultFilter,
-        fromUtc: from,
-        toUtc: to,
-      );
+      Future<(List<T>?, String?)> read<T>(
+        Future<List<T>> Function() action,
+      ) async {
+        try {
+          return (await action(), null);
+        } catch (error) {
+          return (
+            null,
+            error is MarineApiException
+                ? error.message
+                : 'Saved data could not be read. Please retry.',
+          );
+        }
+      }
+
+      final finish = initial ? null : blueverseLoadingScreenController.begin();
+      try {
+        final snapshots = read(
+          () => widget.service.history(
+            latitude: latitude,
+            longitude: longitude,
+            fromUtc: from,
+            toUtc: to,
+          ),
+        );
+        final assessments = read(
+          () => widget.service.assessments(
+            activityId: _activityFilter,
+            result: _resultFilter,
+            fromUtc: from,
+            toUtc: to,
+          ),
+        );
+        final (snapshotData, snapshotError) = await snapshots;
+        final (assessmentData, assessmentError) = await assessments;
+        if (mounted) {
+          setState(() {
+            if (snapshotData != null) _snapshots = snapshotData;
+            if (assessmentData != null) _assessments = assessmentData;
+            _snapshotError = snapshotError;
+            _assessmentError = assessmentError;
+            _loading = false;
+          });
+        }
+      } finally {
+        finish?.call();
+      }
+    } on FormatException catch (error) {
       if (mounted) {
         setState(() {
-          _snapshots = list;
-          _assessments = assessments;
+          _formError = error.message;
           _loading = false;
         });
       }
-    } on FormatException catch (error) {
-      if (mounted)
-        setState(() {
-          _formError = error.message ?? 'Invalid filter.';
-          _loading = false;
-        });
     } on MarineApiException catch (error) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = error.message;
           _loading = false;
         });
+      }
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = 'The marine service could not be reached. Check the gateway address and try again.';
           _loading = false;
         });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (widget.embedded) return _buildBody();
     return Scaffold(
       appBar: AppBar(title: const Text('Marine history')),
       body: _buildBody(),
@@ -123,14 +221,34 @@ class _MarineHistoryScreenState extends State<MarineHistoryScreen> {
     return RefreshIndicator(
       onRefresh: () => _load(),
       child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (widget.embedded) const MarineHero(index: 1),
+            if (_loading)
+              Semantics(
+                liveRegion: true,
+                child: Text('Loading saved coastal evidence…'),
+              ),
+            _catalogueStatus(),
             if (_error != null) _errorCard(),
             if (_formError != null) _formErrorCard(),
             _filterCard(),
+            if (_snapshotError != null)
+              _dataError(
+                'Saved readings',
+                _snapshotError!,
+                _snapshots.isNotEmpty,
+              ),
             _listCard(),
+            if (_assessmentError != null)
+              _dataError(
+                'Saved assessments',
+                _assessmentError!,
+                _assessments.isNotEmpty,
+              ),
             _assessmentListCard(),
           ],
         ),
@@ -156,17 +274,44 @@ class _MarineHistoryScreenState extends State<MarineHistoryScreen> {
     ),
   );
 
+  Widget _dataError(String label, String error, bool retained) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Semantics(
+        liveRegion: true,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$label unavailable',
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+            Text(error),
+            if (retained)
+              const Text(
+                'Showing last-loaded data; it may not match the current filters.',
+              ),
+            TextButton(
+              onPressed: _loading ? null : () => _load(),
+              child: Text('Retry $label'),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+
   Widget _formErrorCard() => Card(
     child: Padding(
       padding: const EdgeInsets.all(14),
       child: Row(
         children: [
-          const Icon(Icons.error_outline, color: Colors.amberAccent),
+          const Icon(Icons.error_outline, color: Color(0xFF92621B)),
           const SizedBox(width: 12),
-          const Flexible(
+          Flexible(
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 4),
-              child: Text('Enter valid filters before applying.', maxLines: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(_formError!, maxLines: 3),
             ),
           ),
         ],
@@ -183,14 +328,16 @@ class _MarineHistoryScreenState extends State<MarineHistoryScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.history, color: Colors.blueAccent),
+                const Icon(Icons.history, color: BlueversePalette.coastBlue),
                 const SizedBox(width: 8),
-                const Text(
-                  'FILTER HISTORY',
-                  style: TextStyle(
-                    color: Colors.blueAccent,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.2,
+                const Expanded(
+                  child: Text(
+                    'FILTER HISTORY',
+                    style: TextStyle(
+                      color: BlueversePalette.coastBlue,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2,
+                    ),
                   ),
                 ),
               ],
@@ -199,13 +346,19 @@ class _MarineHistoryScreenState extends State<MarineHistoryScreen> {
             _field(
               controller: _latitudeController,
               label: 'Latitude (−90 to 90)',
-              keyboardType: TextInputType.numberWithOptions(decimal: true),
+              keyboardType: TextInputType.numberWithOptions(
+                decimal: true,
+                signed: true,
+              ),
             ),
             const SizedBox(height: 12),
             _field(
               controller: _longitudeController,
               label: 'Longitude (−180 to 180)',
-              keyboardType: TextInputType.numberWithOptions(decimal: true),
+              keyboardType: TextInputType.numberWithOptions(
+                decimal: true,
+                signed: true,
+              ),
             ),
             const SizedBox(height: 12),
             _field(
@@ -221,7 +374,8 @@ class _MarineHistoryScreenState extends State<MarineHistoryScreen> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _activityFilter,
+              isExpanded: true,
+              initialValue: _activityFilter,
               decoration: const InputDecoration(
                 labelText: 'Assessment activity',
               ),
@@ -230,7 +384,7 @@ class _MarineHistoryScreenState extends State<MarineHistoryScreen> {
                   value: '',
                   child: Text('All activities'),
                 ),
-                ...widget.service.referenceActivities.map(
+                ..._activities.map(
                   (activity) => DropdownMenuItem<String>(
                     value: activity['id'] as String,
                     child: Text(activity['name'] as String),
@@ -243,7 +397,8 @@ class _MarineHistoryScreenState extends State<MarineHistoryScreen> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _resultFilter,
+              initialValue: _resultFilter,
+              isExpanded: true,
               decoration: const InputDecoration(labelText: 'Assessment result'),
               items: const [
                 DropdownMenuItem(value: '', child: Text('All results')),
@@ -276,12 +431,13 @@ class _MarineHistoryScreenState extends State<MarineHistoryScreen> {
   Widget _listCard() {
     if (_loading) return const SizedBox.shrink();
     if (_snapshots.isEmpty) {
+      if (_snapshotError != null) return const SizedBox.shrink();
       return Card(
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: const Text(
-            'No condition snapshots match these filters yet. Run a condition query to store the first one.',
-            style: TextStyle(color: Colors.blueGrey),
+            'No condition snapshots match these filters. Run a condition query to store the first one.',
+            style: TextStyle(color: BlueversePalette.coastMuted),
           ),
         ),
       );
@@ -295,12 +451,14 @@ class _MarineHistoryScreenState extends State<MarineHistoryScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'STORED SNAPSHOTS',
-                  style: TextStyle(
-                    color: Colors.blueAccent,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.2,
+                const Expanded(
+                  child: Text(
+                    'STORED SNAPSHOTS',
+                    style: TextStyle(
+                      color: BlueversePalette.coastBlue,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2,
+                    ),
                   ),
                 ),
                 Text(
@@ -320,12 +478,13 @@ class _MarineHistoryScreenState extends State<MarineHistoryScreen> {
   Widget _assessmentListCard() {
     if (_loading) return const SizedBox.shrink();
     if (_assessments.isEmpty) {
+      if (_assessmentError != null) return const SizedBox.shrink();
       return const Card(
         child: Padding(
           padding: EdgeInsets.all(16),
           child: Text(
-            'No suitability assessments match these filters yet.',
-            style: TextStyle(color: Colors.blueGrey),
+            'No suitability assessments match these filters.',
+            style: TextStyle(color: BlueversePalette.coastMuted),
           ),
         ),
       );
@@ -339,7 +498,7 @@ class _MarineHistoryScreenState extends State<MarineHistoryScreen> {
             const Text(
               'SUITABILITY ASSESSMENTS',
               style: TextStyle(
-                color: Colors.blueAccent,
+                color: BlueversePalette.coastBlue,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.2,
               ),
@@ -368,6 +527,7 @@ class _MarineHistoryScreenState extends State<MarineHistoryScreen> {
             style: const TextStyle(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 4),
+          MarineOutcomeExplanation(status: assessment.result),
           _detail('Assessment', assessment.id),
           _detail('Profile version', assessment.profileVersion),
           _detail('Condition snapshot', assessment.conditionSnapshotId),
@@ -392,7 +552,7 @@ class _MarineHistoryScreenState extends State<MarineHistoryScreen> {
               padding: EdgeInsets.symmetric(vertical: 4),
               child: Text(
                 'Some evidence predates evidence snapshots and cannot be reconstructed reliably.',
-                style: TextStyle(color: Colors.blueGrey),
+                style: TextStyle(color: BlueversePalette.coastMuted),
               ),
             ),
           if (assessment.violations.isNotEmpty)
@@ -422,14 +582,18 @@ class _MarineHistoryScreenState extends State<MarineHistoryScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '${snapshot.latitude}, ${snapshot.longitude}',
-                style: const TextStyle(fontWeight: FontWeight.w700),
+              Expanded(
+                child: Text(
+                  '${snapshot.latitude}, ${snapshot.longitude}',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
               ),
               _freshnessChip(snapshot.freshnessStatus),
             ],
           ),
           const SizedBox(height: 6),
+          MarineReadings(snapshot: snapshot),
+          const SizedBox(height: 8),
           _detail('Forecast time', snapshot.forecastTime),
           _detail('Retrieved at', snapshot.retrievedAt),
           _detail('Source', snapshot.source),
@@ -443,17 +607,12 @@ class _MarineHistoryScreenState extends State<MarineHistoryScreen> {
   );
 
   Widget _freshnessChip(String freshness) {
-    final tone = freshness == 'FRESH'
-        ? 'bg-green-100 text-green-800'
-        : freshness == 'STALE'
-        ? 'bg-amber-100 text-amber-800'
-        : 'bg-red-100 text-red-800';
     return Chip(
       label: Text(freshness),
       backgroundColor: Colors.transparent,
       labelStyle: TextStyle(
         backgroundColor: Colors.transparent,
-        color: Colors.blueGrey,
+        color: BlueversePalette.coastMuted,
       ),
     );
   }
@@ -466,9 +625,28 @@ class _MarineHistoryScreenState extends State<MarineHistoryScreen> {
       padding: const EdgeInsets.only(bottom: 4),
       child: Text(
         '$label: $text',
-        style: const TextStyle(color: Colors.blueGrey, fontSize: 13),
+        style: const TextStyle(
+          color: BlueversePalette.coastMuted,
+          fontSize: 13,
+        ),
       ),
     );
+  }
+
+  double? _optionalCoordinate(
+    String raw,
+    double min,
+    double max,
+    String label,
+  ) {
+    if (raw.trim().isEmpty) return null;
+    final value = double.tryParse(raw.trim());
+    if (value == null || !value.isFinite || value < min || value > max) {
+      throw FormatException(
+        '$label must be a decimal value between $min and $max.',
+      );
+    }
+    return value;
   }
 
   Widget _field({
@@ -483,13 +661,9 @@ class _MarineHistoryScreenState extends State<MarineHistoryScreen> {
         labelText: label,
         border: const OutlineInputBorder(),
         focusedBorder: const OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.blueAccent, width: 1.5),
+          borderSide: BorderSide(color: BlueversePalette.coastBlue, width: 1.5),
         ),
       ),
-      inputFormatters:
-          keyboardType == TextInputType.numberWithOptions(decimal: true)
-          ? <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly]
-          : null,
     );
   }
 }

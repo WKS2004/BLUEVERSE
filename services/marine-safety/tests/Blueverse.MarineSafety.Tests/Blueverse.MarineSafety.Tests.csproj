@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <Compile Include="../../../api/Integration/MarineGatewayMiddleware.cs" Link="Fixtures/MarineGatewayMiddleware.cs" />
   </ItemGroup>
 
   <ItemGroup>

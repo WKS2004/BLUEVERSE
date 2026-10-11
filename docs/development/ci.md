@@ -175,13 +175,15 @@ originating run was a pull request targeting `main`, determines which required
 image workflows were triggered for that exact comparison range, waits for
 those runs to succeed, and then checks out the exact commit. It validates
 `compose.yaml` or `docker-compose.yml`, starts the stack on host port `8080`,
-checks `/health`, `/api/health`, the Swagger UI and the configured API/Auth/
-experience OpenAPI paths, then probes each discovered service using
-`/api/<service-folder>/health`. This generic derivation currently does not
-account for the marine service's public `/api/marine` alias (`services/marine-safety`),
-so it probes `/api/marine-safety/health`; a passing stack-health run does not
-yet establish the marine health route. The workflow prints Compose diagnostics on failure and always
-tears the stack down.
+checks `/health`, `/api/health`, the Swagger UI and the API/Auth OpenAPI paths,
+then probes each discovered service using
+its public health route. The `experience-biodiversity` folder maps to
+`/api/experiences/health` and `marine-safety` maps to `/api/marine/health`.
+Experiences and Marine OpenAPI documents are required when their service
+`Program.cs` exists. Absent member services are excluded from document checks;
+implemented services still must pass, including Marine on its standalone branch.
+The workflow creates masked ephemeral signing keys before Compose validation,
+prints Compose diagnostics on failure and always tears the stack down.
 
 ## GitHub configuration synchronization
 
@@ -218,3 +220,16 @@ git diff --check
 The GitHub runner is authoritative for Actions expression parsing, Docker,
 Flutter and hosted SDK behavior. Local validation should still be run before a
 pull request and its workflow results should be recorded in the PR template.
+
+## Marine Safety integration wiring
+
+Changes to `infrastructure/contracts/**` trigger backend build/test, UI/API
+contract checks and Docker backend builds for both push and pull-request events.
+Stack-health scope selection also recognizes the path. The regression checks in
+`.github/scripts/tests/test_marine_integration_wiring.py` cover both Docker event
+filters and executes the workflow's OpenAPI selection for no member sources,
+Marine alone and both Marine/Experiences sources. This shared source is compiled
+into the API and Marine Safety containers.
+Stack-health uses `/api/marine/health` for the `marine-safety` folder and
+creates masked ephemeral Auth/Marine signing keys for its isolated Compose
+run. Backup rescue and GitHub configuration synchronization are unchanged.

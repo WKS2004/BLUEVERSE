@@ -8,7 +8,7 @@ namespace Blueverse.MarineSafety.Services;
 
 /// <summary>
 /// Owns the condition snapshot lifecycle: reuse a fresh stored snapshot when
-/// one exists for the rounded location and hour, otherwise acquire through the
+/// one exists for the rounded location and applicable forecast window, otherwise acquire through the
 /// Open-Meteo adapter, validate and persist the result. Provider failure is a
 /// safe, explicit outcome — never a fabricated condition.
 /// </summary>
@@ -42,7 +42,7 @@ public sealed class ConditionService : IConditionService
         DateTime? timeUtc,
         CancellationToken cancellationToken)
     {
-        var requestedTime = MarineTime.ToUtc(timeUtc ?? DateTime.UtcNow);
+        var requestedTime = MarineTime.RequireRequested(timeUtc ?? DateTime.UtcNow);
         var snapshot = await FindReusableSnapshotAsync(latitude, longitude, requestedTime, cancellationToken);
         if (snapshot is not null)
         {
@@ -91,26 +91,19 @@ public sealed class ConditionService : IConditionService
     {
         var lat = Math.Round(latitude, _options.CoordinatePrecision, MidpointRounding.AwayFromZero);
         var lon = Math.Round(longitude, _options.CoordinatePrecision, MidpointRounding.AwayFromZero);
-        var newestAllowed = requestedTime + SnapshotReuseWindow;
+        var (earliest, latest) = MarineTime.ForecastWindow(requestedTime);
+        var now = DateTime.UtcNow;
+        var retrievedAfter = now - SnapshotReuseWindow;
 
-        var candidates = await _db.ConditionSnapshots
-            .AsNoTracking()
-            .Where(s => s.Latitude == lat && s.Longitude == lon && s.ForecastTime <= newestAllowed)
-            .OrderByDescending(s => s.ForecastTime)
-            .Take(1)
-            .ToListAsync(cancellationToken);
-
-        var candidate = candidates.FirstOrDefault();
-        if (candidate is null)
-        {
-            return null;
-        }
-
-        // Reuse only when the snapshot represents the same requested hour and
-        // its own retrieval happened recently enough to count as fresh.
-        var sameHour = Math.Abs((candidate.ForecastTime - requestedTime).TotalMinutes) <= 60;
-        var recentlyRetrieved = DateTime.UtcNow - candidate.RetrievedAt <= SnapshotReuseWindow;
-        return sameHour && recentlyRetrieved ? candidate : null;
+        // Match the adapter's forecast window and chronological hour selection.
+        // Retrieval recency is independent of forecast applicability.
+        return await _db.ConditionSnapshots.AsNoTracking()
+            .Where(s => s.Latitude == lat && s.Longitude == lon &&
+                s.ForecastTime >= earliest && s.ForecastTime <= latest &&
+                s.RetrievedAt >= retrievedAfter && s.RetrievedAt <= now)
+            .OrderBy(s => s.ForecastTime)
+            .ThenByDescending(s => s.RetrievedAt)
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task<ConditionSnapshot?> GetSnapshotAsync(Guid id, CancellationToken cancellationToken)

@@ -16,6 +16,12 @@
   --font-display: 'Sora', 'Manrope', 'Aptos', 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
   --animate-coast-arrive: coast-arrive 650ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
   --animate-coast-menu: coast-menu 180ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-coast-tab-change: coast-tab-change 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes coast-tab-change {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes coast-arrive {

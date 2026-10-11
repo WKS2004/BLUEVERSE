@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+
+import '../blueverse_theme.dart';
 
 import '../../data/models/marine_models.dart';
+import 'marine_presentation.dart';
 
 /// Lightweight reusable condition card used by the suitability flow and the
 /// standalone history/evidence surfaces.
 class MarineConditionCard extends StatelessWidget {
-  const MarineConditionCard({
-    super.key,
-    required this.snapshot,
-  });
+  const MarineConditionCard({super.key, required this.snapshot});
 
   final ConditionSnapshotDto snapshot;
 
@@ -24,14 +23,18 @@ class MarineConditionCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  '${snapshot.latitude}, ${snapshot.longitude}',
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+                Expanded(
+                  child: Text(
+                    '${snapshot.latitude}, ${snapshot.longitude}',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                 ),
                 _freshnessChip(snapshot.freshnessStatus),
               ],
             ),
             const SizedBox(height: 8),
+            MarineReadings(snapshot: snapshot),
+            const SizedBox(height: 12),
             _detail('Forecast time', snapshot.forecastTime),
             _detail('Retrieved at', snapshot.retrievedAt),
             _detail('Source', snapshot.source),
@@ -45,30 +48,35 @@ class MarineConditionCard extends StatelessWidget {
   }
 
   Widget _freshnessChip(String freshness) {
-    final tone = freshness == 'FRESH'
-        ? 'bg-green-100 text-green-800'
-        : freshness == 'STALE'
-            ? 'bg-amber-100 text-amber-800'
-            : 'bg-red-100 text-red-800';
-    return Chip(label: Text(freshness), backgroundColor: Colors.transparent, labelStyle: TextStyle(backgroundColor: Colors.transparent, color: Colors.blueGrey));
+    return Chip(
+      label: Text(freshness),
+      backgroundColor: Colors.transparent,
+      labelStyle: TextStyle(
+        backgroundColor: Colors.transparent,
+        color: BlueversePalette.coastMuted,
+      ),
+    );
   }
 
   Widget _detail(String label, dynamic value) => Padding(
-        padding: const EdgeInsets.only(bottom: 6),
-        child: Row(
-          children: [
-            const SizedBox(width: 8),
-            Text(
-              '$label: ',
-              style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.blueGrey),
-            ),
-            Expanded(
-              child: Text(
-                value is DateTime ? value.toIso8601String() : value.toString(),
-                style: const TextStyle(color: Colors.blueGrey),
-              ),
-            ),
-          ],
+    padding: const EdgeInsets.only(bottom: 6),
+    child: Row(
+      children: [
+        const SizedBox(width: 8),
+        Text(
+          '$label: ',
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            color: BlueversePalette.coastMuted,
+          ),
         ),
-      );
+        Expanded(
+          child: Text(
+            value is DateTime ? value.toIso8601String() : value.toString(),
+            style: const TextStyle(color: BlueversePalette.coastMuted),
+          ),
+        ),
+      ],
+    ),
+  );
 }

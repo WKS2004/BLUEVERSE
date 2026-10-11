@@ -446,6 +446,9 @@ class AuthApiService {
     return response;
   }
 
+  /// Reuses the selected account's secure credentials for public API clients.
+  Future<Map<String, String>> authenticatedHeaders() => _authHeaders();
+
   Future<Map<String, String>> _authHeaders() async {
     final activeAccountId = await _storage.read(_activeAccountIdKey);
     final scopedToken = activeAccountId == null

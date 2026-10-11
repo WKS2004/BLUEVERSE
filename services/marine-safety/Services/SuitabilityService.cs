@@ -26,26 +26,28 @@ public sealed class SuitabilityService : ISuitabilityService
 {
     private readonly MarineSafetyDbContext _db;
     private readonly IConditionService _conditions;
+    private readonly IActivityService _activities;
     private readonly IFreshnessPolicy _freshnessPolicy;
     private readonly ILogger<SuitabilityService> _logger;
 
     public SuitabilityService(
         MarineSafetyDbContext db,
         IConditionService conditions,
+        IActivityService activities,
         IFreshnessPolicy freshnessPolicy,
         ILogger<SuitabilityService> logger)
     {
         _db = db;
         _conditions = conditions;
+        _activities = activities;
         _freshnessPolicy = freshnessPolicy;
         _logger = logger;
     }
 
     public async Task<SuitabilityResultDto> EvaluateAsync(EvaluateSuitabilityDto request, CancellationToken cancellationToken)
     {
-        var activity = await _db.MarineActivities
-            .AsNoTracking()
-            .SingleOrDefaultAsync(a => a.Id == request.ActivityId, cancellationToken);
+        var requestedTime = MarineTime.RequireRequested(request.DateTime ?? DateTime.UtcNow);
+        var activity = await _activities.ResolvePublishedAsync(request.ActivityId!.Value, cancellationToken);
 
         if (activity is null || !activity.IsActive)
         {
@@ -62,6 +64,8 @@ public sealed class SuitabilityService : ISuitabilityService
 
         if (profile is null)
         {
+            if (await _db.SafetyProfiles.AnyAsync(p => p.ActivityId == activity.Id && !p.ReviewedAt.HasValue, cancellationToken))
+                throw new SuitabilityValidationException("review", "The safety profile is awaiting independent review.");
             throw new SuitabilityValidationException(
                 "activityId",
                 $"No reviewed active safety profile is configured for activity '{activity.Name}'.");
@@ -80,7 +84,6 @@ public sealed class SuitabilityService : ISuitabilityService
                 $"The safety profile for '{activity.Name}' is awaiting review with a source and rationale for wind, wave and swell limits.");
         }
 
-        var requestedTime = MarineTime.ToUtc(request.DateTime ?? DateTime.UtcNow);
         var conditions = await _conditions.GetConditionsAsync(
             request.Latitude, request.Longitude, requestedTime, cancellationToken);
         var evaluatedAt = DateTime.UtcNow;

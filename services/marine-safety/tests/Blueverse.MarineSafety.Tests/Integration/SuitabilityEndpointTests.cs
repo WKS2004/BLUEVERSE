@@ -573,14 +573,14 @@ public sealed class SuitabilityEndpointTests : IClassFixture<MarineSafetyWebAppl
         using var client = await CreateClientAsync();
         var managerToken = _factory.CreateToken(MarineSafetyTestSeed.ManagerUserId);
         using var create = AuthorizedJson(HttpMethod.Post, "/api/marine/safety-profiles", managerToken,
-            MarineSafetyTestSeed.ValidProfilePayload(MarineSafetyTestSeed.ActivityId, 24m, 1.4m, 1.1m));
+            MarineSafetyTestSeed.ValidProfilePayload(MarineSafetyTestSeed.UnprofiledActivityId, 24m, 1.4m, 1.1m));
         using var createResponse = await client.SendAsync(create);
         Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
 
         _factory.Provider = new StubOpenMeteoClient(() => new MarineConditionsResult(
             DateTime.UtcNow, DateTime.UtcNow, 10m, 0.8m, 0.7m, 0m, 0,
             ConditionSources.OpenMeteo, []));
-        using var response = await EvaluateAsync(client, ReaderToken(), windSpeed: 10m);
+        using var response = await EvaluateAsync(client, ReaderToken(), windSpeed: 10m, activityId: MarineSafetyTestSeed.UnprofiledActivityId);
         using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);

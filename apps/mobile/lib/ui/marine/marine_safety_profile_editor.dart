@@ -106,8 +106,9 @@ class _MarineSafetyProfileEditorState extends State<MarineSafetyProfileEditor> {
     ),
     validator: (value) {
       final length = value?.trim().length ?? 0;
-      if (length < minLength || length > maxLength)
+      if (length < minLength || length > maxLength) {
         return 'Use $minLength to $maxLength characters.';
+      }
       return null;
     },
   );

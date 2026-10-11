@@ -92,6 +92,12 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
+builder.Services.AddHttpClient<Blueverse.Api.Integration.IAuthActorClient, Blueverse.Api.Integration.AuthActorClient>(client =>
+{
+    var address = builder.Configuration["ReverseProxy:Clusters:auth:Destinations:auth:Address"] ?? "http://auth:8080";
+    client.BaseAddress = new Uri(address.TrimEnd('/') + "/");
+    client.Timeout = TimeSpan.FromSeconds(5);
+});
 
 // CORS Policy
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() 
@@ -164,6 +170,8 @@ app.UseSwaggerUI(options =>
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<Blueverse.Api.Integration.MarineGatewayMiddleware>();
+app.UseMiddleware<Blueverse.Api.Integration.MarineProxyAvailabilityMiddleware>();
 
 // Route gateway controllers (e.g. /api/health)
 app.MapControllers();

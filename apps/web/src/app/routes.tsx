@@ -7,6 +7,7 @@ import RegistrationPage from '../pages/RegistrationPage'
 import { NotFoundPage, ServerErrorPage } from '../pages/GlobalErrorPage'
 import { AdminAccessDenied, AdminIndexPage, AdminPermissionsPage, AdminRolesPage, AdminUsersPage } from '../pages/admin/AdminPages'
 import { MarineConditionsPage, MarineHistoryPage, MarineSafetyProfilesPage } from '../pages/marine/MarinePages'
+import MarineWorkspaceLayout from '../pages/marine/MarineWorkspaceLayout'
 import { useAuthSession } from '../features/auth/authSession'
 import { authEntryHrefFor } from '../features/auth/authNavigation'
 import { hasAnyPermission } from '../features/authorization/permissions'
@@ -82,9 +83,11 @@ export default function AppRoutes() {
         <Route path="/admin/permissions" element={<RequireAnyAdminPermission permissions={['auth.permission.read']}><AdminPermissionsPage /></RequireAnyAdminPermission>} />
         <Route path="/admin/roles" element={<RequireAnyAdminPermission permissions={['auth.role.read']}><AdminRolesPage /></RequireAnyAdminPermission>} />
         <Route path="/admin/users" element={<RequireAnyAdminPermission permissions={['auth.user.read']}><AdminUsersPage /></RequireAnyAdminPermission>} />
-        <Route path="/marine/conditions" element={<RequireMarineReadPermission><MarineConditionsPage /></RequireMarineReadPermission>} />
-        <Route path="/marine/history" element={<RequireMarineReadPermission><MarineHistoryPage /></RequireMarineReadPermission>} />
-        <Route path="/marine/safety-profiles" element={<RequireMarineReadPermission><MarineSafetyProfilesPage /></RequireMarineReadPermission>} />
+        <Route element={<RequireMarineReadPermission><MarineWorkspaceLayout /></RequireMarineReadPermission>}>
+          <Route path="/marine/conditions" element={<MarineConditionsPage />} />
+          <Route path="/marine/history" element={<MarineHistoryPage />} />
+          <Route path="/marine/safety-profiles" element={<MarineSafetyProfilesPage />} />
+        </Route>
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

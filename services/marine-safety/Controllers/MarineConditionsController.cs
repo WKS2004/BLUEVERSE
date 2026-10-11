@@ -28,7 +28,7 @@ public sealed class MarineConditionsController : ControllerBase
     [HttpGet("current")]
     [HasPermission("marine.profile.read")]
     [ProducesResponseType(typeof(ConditionSnapshotDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
+    [ProducesResponseType(typeof(DependencyUnavailableProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetCurrent(
         [FromQuery, Required] decimal? latitude,
@@ -51,6 +51,10 @@ public sealed class MarineConditionsController : ControllerBase
         {
             var snapshot = await _conditions.GetConditionsAsync(latitude.Value, longitude.Value, time, cancellationToken);
             return Ok(ToDto(snapshot));
+        }
+        catch (MarineTimeValidationException exception)
+        {
+            return BadRequest(new ProblemDetails { Title = "Invalid requested time", Detail = exception.Message, Status = 400 });
         }
         catch (ConditionsUnavailableException exception)
         {
@@ -114,12 +118,8 @@ public sealed class MarineConditionsController : ControllerBase
     private IActionResult ProviderUnavailable(ConditionsUnavailableException exception)
     {
         Response.Headers.RetryAfter = "60";
-        return StatusCode(StatusCodes.Status503ServiceUnavailable, new ProblemDetails
-        {
-            Title = "Marine Conditions Unavailable",
-            Detail = "Condition information cannot be obtained right now. The suitability result would be UNKNOWN; retry later.",
-            Status = StatusCodes.Status503ServiceUnavailable
-        });
+        return StatusCode(StatusCodes.Status503ServiceUnavailable,
+            DependencyUnavailableProblemDetails.Conditions("Condition information is unavailable. Retry to refresh the evidence."));
     }
 }
 
@@ -145,7 +145,7 @@ public sealed class SuitabilityController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
+    [ProducesResponseType(typeof(DependencyUnavailableProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> Evaluate([FromBody] EvaluateSuitabilityDto dto, CancellationToken cancellationToken)
     {
         try
@@ -167,15 +167,20 @@ public sealed class SuitabilityController : ControllerBase
                     Status = isProfileProblem ? StatusCodes.Status409Conflict : StatusCodes.Status404NotFound
                 });
         }
+        catch (MarineTimeValidationException exception)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Invalid requested time",
+                Detail = exception.Message,
+                Status = StatusCodes.Status400BadRequest
+            });
+        }
         catch (ConditionsUnavailableException)
         {
             Response.Headers.RetryAfter = "60";
-            return StatusCode(StatusCodes.Status503ServiceUnavailable, new ProblemDetails
-            {
-                Title = "Marine Conditions Unavailable",
-                Detail = "Condition evidence could not be obtained; no suitability decision can be made.",
-                Status = StatusCodes.Status503ServiceUnavailable
-            });
+            return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                DependencyUnavailableProblemDetails.Conditions("Condition evidence is unavailable; no suitability assessment was created."));
         }
     }
 }

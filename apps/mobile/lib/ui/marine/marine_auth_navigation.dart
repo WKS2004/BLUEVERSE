@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 import '../../data/models/auth_models.dart';
 import 'marine_route_table.dart';
 
@@ -13,18 +11,9 @@ List<String> marineRouteHrefsFor(AuthUser? user) {
   final grants = user.permissions.toSet();
   if (!grants.contains('marine.profile.read')) return const [];
 
-  if (grants.contains('marine.profile.manage')) {
-    return [
-      MarineRoutes.conditions,
-      MarineRoutes.history,
-      MarineRoutes.safetyProfiles,
-    ];
-  }
-
-  // Read-only marine insight is exposed to any caller holding the read grant:
-  // conditions, history and suitability evaluation stay visible.
   return [
     MarineRoutes.conditions,
     MarineRoutes.history,
+    MarineRoutes.safetyProfiles,
   ];
 }

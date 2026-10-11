@@ -17,22 +17,52 @@ responsibility, and cross-member contracts here describe only the
 marine-safety side of each handoff. Decisions follow the eight G00 exit
 criteria.
 
-## Latest implementation verification — 2026-10-06
+## Latest implementation verification — 2026-10-09
 
-The current React Web suite passes **201/201**, including **44 marine-safety
-cases**; the production Web build, endpoint catalog and shared UI-integration
-validator pass. The backend project builds with zero warnings or errors and
-contains 118 authored cases. Its latest VSTest attempt timed out during the
-testhost handshake, so **117/117** remains the last completed backend run.
-Backend tests use an in-memory database and deterministic Auth/provider
-doubles, so they do not verify the production Auth-table SQL against
-PostgreSQL. Flutter marine screens are implemented and the ten changed marine
-sources pass direct Dart formatting with the expected package-resolution
-warning; Flutter analysis/runtime verification remains open because the local
-package configuration and cached dependencies are absent. Executable Agentic
-AI, component PR/merge and G07 evidence are not recorded. The historical
-revision notes below retain their original counts
-and dates.
+The implementation now consumes Member 1's published activity contract and
+uses the API-issued request-bound actor context from ADR-0021. Activity CRUD
+belongs exclusively to Member 1. Current checks: Marine backend **183/183**,
+API gateway **54/54**, React **246/246**, Flutter **118/118**, Web build/lint and
+both route/contract validators pass. Flutter analysis reports no issues.
+CI helper tests pass **10/10** and UI validator tests pass **35/35**.
+Five changed workflow YAML files and 21 Bash/default Ubuntu run blocks pass syntax checks. Compose
+configuration and idempotent migration SQL generation pass; physical-device
+runs remain separate evidence. Backend tests use EF InMemory and transport doubles;
+PostgreSQL migration execution and a live Member 1 deployment are not verified.
+Latest scoped Auth checks pass **80/80**. The Docker daemon is running; refreshed
+Auth/frontend containers and public API/Auth/Marine health checks pass. Real
+PostgreSQL readbacks verify missing Marine grant repair with existing permission
+IDs, grants and account/session counts preserved across repeated startup. These
+checks do not establish broader member integration or the optional Auth
+PostgreSQL suite. Browser automation could not initialize; JSDOM and served
+assets verify the header/entry behavior. No executable Agentic
+AI, PR/merge or G07 acceptance is recorded. Historical revision notes retain
+their original evidence.
+
+## Branch review and repairs — 2026-10-08
+
+The repeated branch review identified seven functional gaps. The subsequent
+user-authorized repair fixes signed decimal coordinate editing, ambiguous mobile
+write retries, condition-cache time matching, profile precision, read-only mobile
+access, Docker trigger coverage and extreme-time validation. New requirement-based
+regressions include actual Flutter shell navigation and provider time boundaries.
+See the [branch review](../../testing/marine-branch-review-2026-10-08.md) for the
+original evidence, resolution mapping and remaining integration limits. These
+checks do not establish PostgreSQL runtime readiness or accepted G07.
+
+## Independent dependency availability — 2026-10-08
+
+The [availability contract](../../api/marine-dependency-availability.md) freezes
+operation-level dependencies and additive 503 fields: `availability`,
+`dependency`, `code`, `reason`, `missingFields`, `retryable` and null `data`.
+Marine startup/own readiness, saved records and profile deactivation require no
+other member service. Condition lookup requires only provider evidence. Profile
+create/edit/review and evaluation require published activity data; unavailable
+data blocks those operations without fabricated records or assessments.
+Catalogue recovery restores dependent actions without restarting Marine.
+Auth verification remains mandatory for protected public API operations.
+Both clients preserve independent actions and use "unavailable" wording.
+See [ADR-0022](../../adr/ADR-0022-member-service-data-availability-and-fault-isolation.md).
 
 ## 1. Owner and branch assignment (exit criterion 1)
 
@@ -47,7 +77,7 @@ and dates.
 
 | Decision | Record |
 |---|---|
-| Activity identity | Member 1 owns the canonical coastal activity taxonomy. Until that component's service exists, Member 2 keeps a locally-owned `MarineActivities` reference table seeded with the agreed coastal activities (Surfing, Snorkeling, Scuba Diving, Whale & Dolphin Watching, Coastal Boat Tour) with fixed seed GUIDs (`33333333-3333-…-3301`…`3305`). Revision (7) expanded the reference table to a manager-maintained CRUD surface (see section 3): rows beyond the seeds can be added, renamed, retyped and deactivated, while the table stays a reference table — no competing catalogue features (descriptions, publication, scheduling) are added. When Member 1's canonical IDs are available, the reference table and its seed are replaced by a mapping to those IDs. |
+| Activity identity | Member 1 owns Activity CRUD and canonical opaque GUIDs. Marine consumes its implemented published `GET /api/experiences/activities` contract through `IExperienceCatalogueClient`; both clients fetch `/api/marine/activities`. Local rows are non-authoritative projections/legacy FK references, never a catalogue fallback. Existing placeholder IDs are not mapped by name; managers create and independently approve profiles for canonical IDs. |
 | Activity reference to suitability | Profiles and assessments reference `ActivityId` (GUID). Consumer handoffs (Member 3 planner, Member 4 operations) receive `activityId`, the activity name, and the assessment result/evidence; they never re-derive suitability. |
 | Condition/suitability data authority | Member 2 is the sole source of condition snapshots, freshness classification and deterministic suitability results. Consumers preserve `UNSUITABLE`/`UNKNOWN`/missing/stale meanings; no consumer recalculates or softens them. |
 | Workflow identity | Marine suitability assessments are point-in-time evaluations, not long-running workflows; they carry an `assessmentId` (GUID) and `snapshotId` for correlation. No shared long-running workflow ID is required for this component pre-G07. |
@@ -58,12 +88,12 @@ and dates.
 | Decision | Record |
 |---|---|
 | Service identity | Folder `services/marine-safety`, project `Blueverse.MarineSafety`, container `blueverse-marine-safety`, internal base route `/api/marine` (short prefix chosen deliberately; the component keeps the `marine-safety` name for folder, project and container identity). |
-| Public operation set | `GET /api/marine/health`, `GET /api/marine/current`, `GET /api/marine/snapshots/{id}`, `GET /api/marine/history`, `POST /api/marine/evaluate`, `GET /api/marine/assessments`, `GET /api/marine/assessments/{id}`, `GET|POST /api/marine/activities`, `GET|PUT|DELETE /api/marine/activities/{id}`, `GET|POST /api/marine/safety-profiles`, `GET|PUT|DELETE /api/marine/safety-profiles/{id}`, `POST /api/marine/safety-profiles/{id}/review`, `GET /api/marine/safety-profiles/by-activity/{activityId}` — registered in `docs/api/endpoint-catalog.json`. Revision (7) added activity CRUD and assessment history; revision (11) adds explicit profile review. |
+| Public operation set | `GET /api/marine/health`, `GET /api/marine/current`, `GET /api/marine/snapshots/{id}`, `GET /api/marine/history`, `POST /api/marine/evaluate`, `GET /api/marine/assessments`, `GET /api/marine/assessments/{id}`, `GET /api/marine/activities`, `GET /api/marine/activities/{id}`, `GET|POST /api/marine/safety-profiles`, `GET|PUT|DELETE /api/marine/safety-profiles/{id}`, `POST /api/marine/safety-profiles/{id}/review`, `GET /api/marine/safety-profiles/by-activity/{activityId}`. Revision (12) removes Marine activity writes; the endpoint catalog is authoritative. |
 | Route/transport | `services/api` forwards `/api/marine/{**catch-all}` over YARP to `http://marine-safety:8080` on the private network; clients never address the component service. No `/api/v1`-style segments. |
-| Permission codes | `marine.profile.read` (condition reads, history, evaluate, assessment reads, activity reads), `marine.profile.manage` in addition to read (profile and activity create/update/deactivate). Codes are defined in Auth's `PermissionCodes`, seeded for the Admin role by the Auth seeder (approved additive change), and resolved from current role assignments (never JWT claims). Enforced in the component service via the `PERMISSION:<code>` policy convention. The marine-safety service mirrors the constants locally for enforcement; provisioning belongs to Auth. |
-| Authentication and session validity | The service accepts the Auth-issued signed JWT as a bearer token or through Auth browser cookies, preferring an explicit bearer header when both are present. `blueverse_active_account_id` selects `blueverse_access_token_<userIdN>`; a legacy token is accepted only if its subject matches that selection. A malformed selection fails closed; without a selection, the legacy single-account cookie remains supported. The service validates signature, issuer, audience, HS256 algorithm and lifetime, then checks the current Auth user (`IsActive`, `TokenVersion`) and exact unexpired `ActiveSessions` row (`session_id`, `session_version`). A revoked, expired or stale session is rejected with 401; a valid session without the current required permission receives 403. The component performs read-only checks; Auth remains the only identity/session writer. |
+| Permission codes | `marine.profile.read` for condition/catalogue/history/evaluation reads and actions; profile creation/update/review/deactivation additionally needs `marine.profile.manage`. Auth owns current role assignments. The API verifies them through Auth `/api/auth/me`; Marine enforces the signed operation-context permissions, never caller JWT role claims or role names. |
+| Authentication and session validity | The public API selects an explicit bearer token before Auth account cookies, fails malformed selections closed, and calls existing Auth `/api/auth/me` for current account/session/permission checks. It strips caller credentials and signs actor/permissions under the independent `MARINE_ACTOR_SIGNING_KEY`, binding method, path/query and body hash with 30-second expiry. Marine validates this context only and never reads Auth tables. Revoked/invalid sessions receive 401; missing current permission receives 403; unavailable Auth receives 503/Retry-After. See ADR-0021. |
 | Swagger | The component serves its OpenAPI document under `/api/marine/swagger` (anonymous, gateway-forwarded). The public API Swagger UI at `/api/swagger` lists it beside the public API and Auth documents; the gateway forwards document requests over the existing `/api/marine` route. The component service is not modified for aggregation. |
-| Error/status behavior | RFC 7807 ProblemDetails. 400 invalid input (coordinates, ranges, missing fields), 401 unauthenticated or expired/revoked/stale Auth session, 403 an active caller lacking a required permission grant, 404 unknown activity/snapshot/profile/assessment, 409 no reviewed active profile for an activity, a pending profile review, or a duplicate activity name, 503 with `Retry-After` when Open-Meteo is unavailable. Profile and activity delete semantics: delete deactivates, never hard-deletes. |
+| Error/status behavior | RFC 7807 ProblemDetails: 400 invalid input; 401 missing/invalid/revoked identity or internal context; 403 missing required permission; 404 absent/unpublished activity or unknown stored resource; 409 missing reviewed active profile or review conflict; 503 with structured availability metadata on provider, Auth, catalogue or Marine destination failure. Provider uses Retry-After 60; Auth/catalogue and gateway reads use 5. Ambiguous forwarded writes have retryable false and no retry hint. Profile delete deactivates. Marine activity writes no longer exist (405). |
 | DTO ownership | Request/response DTOs live in the component service (`Blueverse.MarineSafety.Dtos`); EF entities are never exposed. Response bodies always carry source, forecast/retrieval times, freshness and missing fields where applicable. |
 | Provider seam | `IOpenMeteoClient` is the only provider boundary. Result `MarineConditionsResult` carries nullable values plus `MissingFields`; failure is the typed `OpenMeteoUnavailableException`. Bounded retry (1, transient-only) and 10 s per-attempt timeout. |
 
@@ -72,15 +102,15 @@ and dates.
 | Decision | Record |
 |---|---|
 | Database sharing | One shared PostgreSQL 16 `blueverse` database. Each member service owns its own tables and EF Core migrations in the public schema; no separate database and no cross-service table writes. |
-| Migration ownership | `services/marine-safety/Migrations` (`InitialMarineSafetySchema`, `SafetyProfileReviewAndAssessmentEvidence`). Auth keeps identity migrations; the public API owns no domain tables. Migrations apply at service startup with a bounded timeout. |
+| Migration ownership | `services/marine-safety/Migrations`: InitialMarineSafetySchema, SafetyProfileReviewAndAssessmentEvidence, CanonicalActivityProjection. The latter preserves rows, removes name uniqueness and expands categories to 100 characters. Auth retains identity migrations. Startup applies migrations with a bounded timeout. |
 | Table ownership | `MarineActivities`, `SafetyProfiles`, `ConditionSnapshots`, `SuitabilityAssessments` are owned by this service only. Other services must not read or write them; cross-component data moves through public API contracts. |
 | Keys/constraints | GUID PKs; FK profile→activity (cascade); FK assessment→activity (restrict); CHECK constraints for positive limits and caution-below-max; partial unique index enforcing one active profile per activity; unique `(ActivityId, Version)`; numeric precision `numeric(8,5)`/`(9,5)` coordinates, `(6,2)`/`(5,2)` environmental values; `MissingFields text[]`. |
-| Time semantics | All persisted and exchanged times are UTC (`timestamptz`). Open-Meteo is queried with `timezone=UTC`. The requested period is an ordinary query input (`dateTime`, optional; defaults to now). Freshness compares retrieval recency and forecast validity against the configured window — retrieval time and forecast time are distinct facts and both are stored. |
+| Time semantics | All persisted and exchanged times are UTC (`timestamptz`). Open-Meteo is queried with `timezone=UTC`. The requested period is an ordinary query input (`dateTime`, optional; defaults to now). Acquisition/evaluation accepts UTC times from 0001-01-01T01:00:00Z through 9999-12-31T22:59:59.9999999Z to allow provider arithmetic; outside values receive 400 before dependency/persistence access. This arithmetic-safe range does not guarantee provider forecast availability. Historical read filters need no such arithmetic restriction. Freshness compares retrieval recency and forecast validity against the configured window — retrieval time and forecast time are distinct facts and both are stored. |
 | Freshness policy | `FRESH` when `now − RetrievedAt ≤ FreshnessMaxAge` and `now − ForecastTime ≤ FreshnessMaxAge`; `STALE` otherwise; `UNAVAILABLE` only where no snapshot exists. Default window 60 minutes via `OpenMeteo:FreshnessMaxAgeMinutes` (documented implementation decision; the component contract deliberately sets no numeric limit). |
-| Missing data | A provider field that is absent, malformed, negative or non-finite is reported in `MissingFields` and stored as NULL. Missing values are never coerced to zero or another safe value, and a missing required factor forces `UNKNOWN`. |
-| Snapshot retention/reuse | A stored snapshot may be reused for the same rounded coordinate and hour within a 15-minute retrieval-recency window; otherwise a fresh acquisition is made and persisted. History endpoints classify freshness at read time. |
+| Missing data | A provider field that is absent, malformed, negative, non-finite or unrepresentable in its database numeric column is reported in `MissingFields` and stored as NULL. Missing values are never coerced to zero or another safe value, and a missing required factor forces `UNKNOWN`. |
+| Snapshot retention/reuse | A stored snapshot may be reused for matching rounded coordinates when its forecast lies within requested time minus 30 minutes through plus one hour (inclusive), matching provider acquisition. Retrieval must be within the preceding 15 minutes and cannot be in the future. The earliest applicable forecast is preferred; otherwise fresh acquisition is persisted. History endpoints classify freshness at read time. |
 | Suitability rule vocabulary | `SUITABLE`, `CAUTION`, `UNSUITABLE`, `UNKNOWN`. `CAUTION` is produced only when the applied profile configures explicit caution bands; strict profiles yield three-state results. No implicit percentage rule. |
-| Safety-profile evidence and review | Numeric limits remain owner-supplied; no default live values are approved by this record. Every wind, wave and swell criterion requires its own source reference and rationale. New or changed limits are immutable inactive drafts. A different authorized manager must review and approve the draft before evaluation; evaluation returns 409 while no reviewed, source-complete active profile exists. The author, reviewer, review time and effective interval are recorded. Test-only example citations are not evidence for production limits. |
+| Safety-profile evidence and review | Maximum and optional caution limits must be representable at scale two (at most two decimal places); excess precision receives 400 before persistence and values are never silently rounded. Numeric limits remain owner-supplied; no default live values are approved by this record. Every wind, wave and swell criterion requires its own source reference and rationale. New or changed limits are immutable inactive drafts. A different authorized manager must review and approve the draft before evaluation; evaluation returns 409 while no reviewed, source-complete active profile exists. The author, reviewer, review time and effective interval are recorded. Test-only example citations are not evidence for production limits. |
 
 ## 5. Service and delivery identity (exit criterion 5)
 
@@ -88,8 +118,8 @@ and dates.
 |---|---|
 | Compose service | `marine-safety`, image built from `infrastructure/docker/marine-safety/Dockerfile` (DHI `dhi.io/dotnet:10-sdk-alpine` / `aspnetcore:10-alpine`, exec-form entrypoint). |
 | Networks | `blueverse_internal` (reachable by the API) + `blueverse_database` (PostgreSQL access). Not on the edge network; no published host port. |
-| Configuration/secrets | `JWT_SIGNING_KEY`, `ConnectionStrings__DefaultConnection` via Compose environment; `OPEN_METEO_WEATHER_URL`, `OPEN_METEO_MARINE_URL`, `OPEN_METEO_FRESHNESS_MINUTES` optional with documented defaults. No provider API key required. No secrets in source or logs. |
-| Health/readiness | `GET /api/marine/health` (anonymous, mirroring the Auth health contract) reports service liveness plus PostgreSQL connectivity with a bounded 2-second probe; database failure yields a structured 503. Marine operations' availability is additionally evidenced by their responses; dependency failures stay structured 503s rather than redefining API liveness. `GET /api/health` remains public-API liveness and is not redefined. The service Swagger UI under `/api/marine/swagger` is a development/contract-inspection surface registered in the catalog and listed in the public API Swagger UI. |
+| Configuration/secrets | `MARINE_ACTOR_SIGNING_KEY` shared only by API/Marine; `JWT_SIGNING_KEY` remains API/Auth-owned; `ConnectionStrings__DefaultConnection`; private `EXPERIENCE_CATALOGUE_URL`. Open-Meteo base URLs/freshness options retain documented defaults. No secrets in source/logs. |
+| Health/readiness | `GET /api/marine/health` (anonymous, mirroring the Auth health contract) reports service liveness plus its own PostgreSQL connectivity with a bounded 2-second probe; database failure yields a structured 503. No other member service is required by startup/readiness. Marine operations' availability is additionally evidenced by their responses; dependency failures stay structured 503s rather than redefining API liveness. `GET /api/health` remains public-API liveness and is not redefined. The service Swagger UI under `/api/marine/swagger` is a development/contract-inspection surface registered in the catalog and listed in the public API Swagger UI. |
 | Tests/CI | Test project `services/marine-safety/tests/Blueverse.MarineSafety.Tests` with requirement-linked case IDs (`M2-*`); discovered by the existing backend test workflows, which require every service directory to have a test project. |
 | Local ports | Container-internal `8080`; no host port. Host-run verification may bind any free host port (e.g. 5085) and is not part of the deployment topology. |
 
@@ -99,8 +129,8 @@ and dates.
 |---|---|
 | Registry edits | Endpoint catalog gains only the marine-safety entries; `backendSources` gains `services/marine-safety`. React Web registration (revision 6) adds the three marine workflow IDs, six React/Flutter route rows and seven workflow-linked endpoints to the same shared registries; no Auth or public API operation changed. |
 | Client routes (before revision 6; superseded) | React and Flutter routes were to be registered under shared workflow IDs when client work was implemented. Revision 6 records the React implementation; the Flutter routes remain registered for the paired mobile implementation, which is not implemented yet. |
-| Client routes (React, revision 6) | React owns `/marine/conditions`, `/marine/history` and `/marine/safety-profiles` under the shared workflow IDs `marine-conditions`, `marine-condition-history` and `marine-safety-profile-management`, permission-gated by `marine.profile.read` (+ `marine.profile.manage` for profile writes) resolved from current role assignments. Flutter routes are registered under the same workflow IDs for the paired mobile implementation; the mobile surface is not implemented yet. The browser submits `latitude`/`longitude`/`time` and evaluate `dateTime` in UTC and renders — never recomputes — the server classification, source, timestamps, freshness and missing fields. |
-| Shared files | Edits limited to: endpoint catalog JSON+MD, `services/api/appsettings.json` (YARP route), `services/api/Program.cs` (one SwaggerUI endpoint entry listing the marine document), `compose.yaml`, `.env` documentation, Auth permission codes/seeder and seeder test counts (approved additive change), README and database docs. No reformatting of unrelated shared content. |
+| Client routes (React/Flutter, revision 12) | React owns `/marine/conditions`, `/marine/history` and `/marine/safety-profiles` under the shared workflow IDs `marine-conditions`, `marine-condition-history` and `marine-safety-profile-management`, permission-gated by `marine.profile.read` (+ `marine.profile.manage` for profile writes) resolved from current role assignments. Flutter implements the same workflow routes, canonical activity lookup and authorized profile actions. The browser submits `latitude`/`longitude`/`time` and evaluate `dateTime` in UTC and renders — never recomputes — the server classification, source, timestamps, freshness and missing fields. |
+| Shared files | Edits limited to: endpoint catalog JSON+MD, `services/api/appsettings.json` (YARP route), `services/api/Program.cs` (Swagger listing and narrow Marine gateway actor integration), API/Marine linked actor contract and Docker build context, `compose.yaml`, `.env` documentation, Auth permission codes/seeder and seeder test counts (approved additive change), README and database docs. No reformatting of unrelated shared content. |
 
 ## 7. Provider and evidence seams (exit criterion 7)
 
@@ -234,3 +264,106 @@ and dates.
   cleanly. The source contains 118 backend test cases, but VSTest could not
   complete on this host because testhost startup timed out; PostgreSQL/Auth SQL
   and Flutter runtime verification remain open.
+
+- Revision 2026-10-08 (12): user-requested Member 2 reimplementation adopts the
+  published Member 1 activity contract verified in the local remote branch,
+  removes duplicated Marine catalogue writes and fixed frontend IDs, and
+  supplies a safe unavailable result until the producer is deployed. API
+  integration now verifies existing Auth sessions/current permissions and
+  passes the signed actor/operation context prescribed by ADR-0020; direct
+  Marine Auth SQL is removed. Historical IDs/assessments remain readable.
+  Both clients load activities with loading/empty/failure/retry states and
+  offer independent conditions-only queries. Provider times outside the
+  requested bounded window, numeric conversion overflow and unrepresentable
+  database values become missing
+  evidence. Existing tests were updated with explicit user permission; no
+  passing assertions were relaxed. M2-SUIT-019 uses an unprofiled activity so
+  its review gate is tested independently of the seeded approved profile.
+  Full-current validation details are in the latest evidence section above.
+
+- Revision 2026-10-08 (13): repaired all seven findings from the repeated branch
+  review with explicit user authorization. Flutter preserves signed decimal
+  coordinates, validates filters, offers all profile reads with read permission,
+  and uses a 45-second request budget without automatically replaying ambiguous
+  writes. Condition cache and provider acquisition share the bounded forecast
+  window; excess profile precision and unsafe acquisition times return 400
+  before side effects. Docker push/PR filters include the shared actor source.
+  New regression cases preserve approved-profile history, assert persistence and
+  provider side effects, navigate the actual mobile shell and verify uncancelled
+  writes are not repeated. Current suite results and limitations are recorded
+  above and in the branch review; no database model change or executable AI was
+  introduced by these repairs.
+
+- Revision 2026-10-08 (14): implemented dependency isolation for the standalone
+  Marine branch. Optional catalogue misconfiguration no longer prevents startup;
+  unavailable dependency errors carry structured missing-data metadata, preserve
+  valid empty responses and produce no fabricated success. Both clients retain
+  stored records/deactivation and disable only dependent actions until recovery.
+  The public API preserves received service errors, reports unavailable Auth
+  verification safely, and handles unreachable/timed-out Marine destinations
+  without automatically retrying writes. Stack CI checks member OpenAPI only for
+  present service sources. Current suite evidence is recorded above; absent
+  component implementations, live deployment and G07 remain outside this branch.
+
+- Revision 2026-10-08 (15): completed the React Web Marine experience on the
+  existing three routes. Added accessible workflow navigation, clearer condition
+  guidance and explanations of unchanged server results, factor-grouped cited
+  profile forms and exact shared range/precision/caution validation. History
+  refresh retains independently successful datasets and labels unavailable data;
+  saved profile reads have explicit retry. Fourteen new Web cases cover outcomes,
+  boundaries, no-write validation, recovery and read-only access. Current Web
+  evidence is 224/224 plus lint/build and contract gates; backend/mobile evidence
+  above is retained from the preceding scoped checks. No new business endpoint,
+  permission, client capability asymmetry or executable agent is introduced.
+
+- Revision 2026-10-08 (16): corrected the Admin header to show home-section
+  links only on the actual home route, removed the empty Admin mobile menu and
+  added a read-permission-gated Marine entry to the account menu. The running
+  Admin had zero Marine grants: another member's catalogue permissions occupied
+  Marine's preferred seed IDs. The essential Auth integration fix identifies
+  permissions by code and allocates unused IDs for missing codes, preserving
+  all existing rows, grants and Auth flows. Ten new Web and three Auth cases
+  pass in full suites (234/234 and 80/80). Refreshed local containers serve the
+  corrected app; actual PostgreSQL confirms Admin's 16 grants include both
+  Marine permissions and repeat startup preserves identities/counts. No schema,
+  public API route, role shortcut or executable agent was added. Full evidence
+  and qualified deployment/build limitations are in the test matrix.
+
+- Revision 2026-10-09 (17): added distinct editorial heroes to the three Marine
+  React workflows using newly generated local coastal imagery. Responsive
+  Tailwind layout keeps guidance on a solid panel and preserves existing forms,
+  shared labels, permissions and public requests. Six new hero cases cover
+  image semantics, page binding and image/dependency failure; existing tests
+  remain intact. Full Web evidence is 240/240 with one worker after host memory
+  exhaustion, plus lint/build and contract checks. The rebuilt local frontend
+  serves all three new WebP images verified against build bytes. This is visual
+  presentation work; mobile/business contracts and executable AI are unchanged.
+
+- Revision 2026-10-09 (18): Marine React routes now share a persistent heading
+  and introduction, followed by the unchanged pill navigation above the stacked
+  hero and content. Tabs stick below the site header; content changes animate
+  with reduced-motion support. Initial reads during Marine tab switches use
+  inline feedback, as requested; initial entry, explicit retries/refreshes,
+  mutations and Auth retain normal loading behavior. Permission and cookie/API
+  contracts are preserved. Six new workspace cases cover slow/rapid navigation,
+  history traversal, scrolling, keyboard focus, authorization, read errors,
+  recovery and re-entry. Full Web evidence is 246/246 plus lint/build and
+  endpoint/UI gates, including 35 validator tests. Actual browser visual
+  inspection remains separate from JSDOM structure and served-asset checks.
+
+- Revision 2026-10-09 (19): completed native mobile Marine integration with one
+  shell, permission-gated Dashboard/account entry, shared pinned labels, bundled
+  coastal heroes and reduced-motion transitions. Added the narrow Auth credential
+  accessor so public Marine calls use the selected secure account; the HTTP
+  transport is app-owned and closed, and protected UI resets on account/grant
+  changes. Restored the registered root onboarding route and standard Dashboard
+  landing. Conditions now show sourced values/units and preserve UNKNOWN without
+  evidence; UTC calendar input is validated and refresh reads without another
+  assessment write. History datasets recover independently, with labelled
+  last-loaded records, and profile reads have explicit retry and honest empty/
+  unavailable/caution presentation. Existing profile draft/version, independent
+  review and confirmed deactivation remain server-authorized. Full Flutter
+  evidence is 118/118 and clean analysis, plus endpoint/UI gates and 35 validator
+  cases. Android packaging/device verification is separate: the attempted debug
+  build did not produce output and was stopped. No new backend endpoint, device
+  capability, Activity CRUD ownership change or executable agent was introduced.

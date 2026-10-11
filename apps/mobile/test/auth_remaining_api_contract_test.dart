@@ -8,25 +8,33 @@ import 'package:mobile/data/services/api_gateway_config.dart';
 import 'package:mobile/data/services/marine_api_client.dart';
 import 'package:mobile/data/services/marine_service.dart';
 import 'package:mobile/data/repositories/marine_repository.dart';
+
 void main() {
   group('MOB-MARINE-003', () {
-    test('marine service delegates to the repository and preserves the result',
-        () async {
-      final repository = MarineRepository(client: _dummyMarineClient());
-      final service = MarineService(repository: repository);
+    test(
+      'marine service delegates to the repository and preserves the result',
+      () async {
+        final repository = MarineRepository(client: _dummyMarineClient());
+        final service = MarineService(repository: repository);
 
-      final snapshot = await service.currentConditions(
-        latitude: 6.025,
-        longitude: 80.216,
-      );
-      expect(snapshot.latitude, 6.025);
-      expect(snapshot.longitude, 80.216);
-      expect(service.referenceActivities, isA<List<Map<String, dynamic>>>()
-          .having((list) => list.length, 'length', 5));
-    });
+        final snapshot = await service.currentConditions(
+          latitude: 6.025,
+          longitude: 80.216,
+        );
+        expect(snapshot.latitude, 6.025);
+        expect(snapshot.longitude, 80.216);
+        expect(
+          await service.activities(),
+          isA<List<Map<String, dynamic>>>().having(
+            (list) => list.length,
+            'length',
+            5,
+          ),
+        );
+      },
+    );
 
-    test('suitability evaluation targets the reference activity for the supplied location',
-        () async {
+    test('suitability evaluation targets the reference activity for the supplied location', () async {
       final repository = MarineRepository(client: _dummyMarineClient());
       final service = MarineService(repository: repository);
 
@@ -59,7 +67,7 @@ void main() {
       final client = MockClient((incoming) async {
         request = incoming;
         // ignore: avoid_print
-        print('AUTH-REQ url: ' + incoming.url.toString());
+        print('AUTH-REQ url: ${incoming.url}');
         if (incoming.url.path == '/api/marine/current') {
           return http.Response(
             jsonEncode({
@@ -88,6 +96,7 @@ void main() {
               'activityName': 'Surfing',
               'location': {'latitude': 6.025, 'longitude': 80.216},
               'requestedTime': '2026-09-26T10:00:00Z',
+              'forecastTime': '2026-09-26T10:00:00Z',
               'evaluatedAt': '2026-09-26T10:06:00Z',
               'source': 'Open-Meteo',
               'retrievedAt': '2026-09-26T10:06:30Z',
@@ -105,7 +114,10 @@ void main() {
       });
       addTearDown(client.close);
 
-      final api = MarineApiClient(client: client, gateway: const ApiGatewayConfig());
+      final api = MarineApiClient(
+        client: client,
+        gateway: const ApiGatewayConfig(),
+      );
 
       final snapshot = await api.getConditions(
         latitude: 6.025,
@@ -115,7 +127,10 @@ void main() {
       expect(snapshot.longitude, 80.216);
       expect(request.url.path, '/api/marine/current');
       expect(request.method, 'GET');
-      expect(request.url.queryParameters, {'latitude': '6.02500', 'longitude': '80.21600'});
+      expect(request.url.queryParameters, {
+        'latitude': '6.02500',
+        'longitude': '80.21600',
+      });
 
       final result = await api.evaluateSuitability(
         activityId: '33333333-3333-3333-3333-333333333301',
@@ -139,6 +154,23 @@ void main() {
 
 MarineApiClient _dummyMarineClient() {
   final client = MockClient((incoming) async {
+    if (incoming.url.path == '/api/marine/activities') {
+      return http.Response(
+        jsonEncode(
+          List.generate(
+            5,
+            (index) => {
+              'id': '33333333-3333-3333-3333-33333333330${index + 1}',
+              'name': 'Published fixture ${index + 1}',
+              'activityType': 'Fixture',
+              'isActive': true,
+            },
+          ),
+        ),
+        200,
+      );
+    }
+
     if (incoming.url.path == '/api/marine/current') {
       return http.Response(
         jsonEncode({
@@ -167,6 +199,7 @@ MarineApiClient _dummyMarineClient() {
           'activityName': 'Surfing',
           'location': {'latitude': 6.025, 'longitude': 80.216},
           'requestedTime': '2026-09-26T10:00:00Z',
+          'forecastTime': '2026-09-26T10:00:00Z',
           'evaluatedAt': '2026-09-26T10:06:00Z',
           'source': 'Open-Meteo',
           'retrievedAt': '2026-09-26T10:06:30Z',
@@ -181,10 +214,7 @@ MarineApiClient _dummyMarineClient() {
       );
     }
     if (incoming.url.path == '/api/marine/history') {
-      return http.Response(
-        jsonEncode([]),
-        200,
-      );
+      return http.Response(jsonEncode([]), 200);
     }
     return http.Response('{}', 404);
   });

@@ -40,7 +40,7 @@ public sealed class OpenMeteoClient : IOpenMeteoClient
         DateTime timeUtc,
         CancellationToken cancellationToken)
     {
-        var time = MarineTime.ToUtc(timeUtc);
+        var time = MarineTime.RequireRequested(timeUtc);
         var start = time.AddHours(-1).ToString("yyyy-MM-ddTHH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
         var end = time.AddHours(1).ToString("yyyy-MM-ddTHH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
         var normalizedLatitude = Normalize(latitude, "latitude", -90, 90);
@@ -86,11 +86,11 @@ public sealed class OpenMeteoClient : IOpenMeteoClient
         }
 
         var forecastTime = ResolveForecastTime(weather, marine, time);
-        var wind = ExtractSeries(weather.WindSpeed10m, weather.Time, forecastTime);
-        var rain = ExtractSeries(weather.Precipitation, weather.Time, forecastTime);
+        var wind = ExtractSeries(weather.WindSpeed10m, weather.Time, forecastTime, 9999.99m);
+        var rain = ExtractSeries(weather.Precipitation, weather.Time, forecastTime, 9999.99m);
         var weatherCode = ExtractIntSeries(weather.WeatherCode, weather.Time, forecastTime);
-        var waveHeight = marine is null ? null : ExtractSeries(marine.WaveHeight, marine.Time, forecastTime);
-        var swellHeight = marine is null ? null : ExtractSeries(marine.SwellWaveHeight, marine.Time, forecastTime);
+        var waveHeight = marine is null ? null : ExtractSeries(marine.WaveHeight, marine.Time, forecastTime, 999.99m);
+        var swellHeight = marine is null ? null : ExtractSeries(marine.SwellWaveHeight, marine.Time, forecastTime, 999.99m);
 
         var missingFields = new List<string>();
         if (wind is null)
@@ -267,6 +267,7 @@ public sealed class OpenMeteoClient : IOpenMeteoClient
 
         // Open-Meteo hourly timestamps are naive local strings; because the
         // request pinned timezone=UTC they are UTC values.
+        var (earliest, latest) = MarineTime.ForecastWindow(requested);
         foreach (var candidate in series)
         {
             if (candidate is not null &&
@@ -275,8 +276,8 @@ public sealed class OpenMeteoClient : IOpenMeteoClient
                     System.Globalization.CultureInfo.InvariantCulture,
                     System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal,
                     out var parsed) &&
-                parsed >= requested.AddMinutes(-30))
-        {
+                parsed >= earliest && parsed <= latest)
+            {
                 return parsed;
             }
         }
@@ -284,7 +285,7 @@ public sealed class OpenMeteoClient : IOpenMeteoClient
         return requested;
     }
 
-    private static decimal? ExtractSeries(List<double?>? values, List<string?>? times, DateTime forecastTime)
+    private static decimal? ExtractSeries(List<double?>? values, List<string?>? times, DateTime forecastTime, decimal maximumStoredValue)
     {
         var raw = ExtractRaw(values, times, forecastTime);
         if (raw is null)
@@ -299,7 +300,14 @@ public sealed class OpenMeteoClient : IOpenMeteoClient
             return null;
         }
 
-        return Math.Round((decimal)raw.Value, 2, MidpointRounding.AwayFromZero);
+        try
+        {
+            var normalized = Math.Round((decimal)raw.Value, 2, MidpointRounding.AwayFromZero);
+            // Match the owning numeric(6,2)/(5,2) storage contract. An
+            // unrepresentable provider value is missing evidence, never zero.
+            return normalized <= maximumStoredValue ? normalized : null;
+        }
+        catch (OverflowException) { return null; }
     }
 
     private static int? ExtractIntSeries(List<int?>? values, List<string?>? times, DateTime forecastTime)
@@ -315,7 +323,7 @@ public sealed class OpenMeteoClient : IOpenMeteoClient
             return null;
         }
 
-        return (int?)Math.Round((double)values[index]!.Value, System.MidpointRounding.AwayFromZero);
+        return values[index] >= 0 ? values[index] : null;
     }
 
     private static double? ExtractRaw(List<double?>? values, List<string?>? times, DateTime forecastTime)

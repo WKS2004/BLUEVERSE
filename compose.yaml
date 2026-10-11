@@ -64,6 +64,7 @@ services:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_HTTP_PORTS: ${API_HTTP_PORT:-8080}
       JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY in .env}
+      MARINE_ACTOR_SIGNING_KEY: ${MARINE_ACTOR_SIGNING_KEY:?Set MARINE_ACTOR_SIGNING_KEY in .env}
       ReverseProxy__Clusters__auth__Destinations__auth__Address: ${AUTH_SERVICE_URL:-http://auth:8080}
       ReverseProxy__Clusters__marine-safety__Destinations__marine-safety__Address: ${MARINE_SAFETY_SERVICE_URL:-http://marine-safety:8080}
     depends_on:
@@ -87,7 +88,8 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_HTTP_PORTS: ${MARINE_SAFETY_HTTP_PORT:-8080}
-      JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY in .env}
+      MARINE_ACTOR_SIGNING_KEY: ${MARINE_ACTOR_SIGNING_KEY:?Set MARINE_ACTOR_SIGNING_KEY in .env}
+      EXPERIENCE_CATALOGUE_URL: ${EXPERIENCE_CATALOGUE_URL:-http://experience-biodiversity:8080}
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-blueverse};Username=${POSTGRES_USER:-blueverse};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       OpenMeteo__WeatherBaseUrl: ${OPEN_METEO_WEATHER_URL:-https://api.open-meteo.com/}
       OpenMeteo__MarineBaseUrl: ${OPEN_METEO_MARINE_URL:-https://marine-api.open-meteo.com/}

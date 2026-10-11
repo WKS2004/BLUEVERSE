@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "status": "active",
-  "auditedAt": "2026-09-25",
+  "auditedAt": "2026-10-08",
   "purpose": "Fast, repository-local inventory of implemented frontend routes, gateway routes, public API endpoints, test-only routes, and Agentic AI endpoint status.",
   "authority": {
     "uiWorkflowRegistry": "docs/contracts/ui-integration.json",
@@ -120,7 +120,7 @@
       "workflowId": "auth-profile-management",
       "status": "implemented",
       "description": "Adaptive profile, password-security, and login-session management route.",
-      "usage": "Shows and updates profile details, changes the password, and reviews or ends login sessions through the public Auth API."
+      "usage": "Shows and updates profile details, changes the password, and reviews or ends login sessions through the public Auth API. Accounts with marine.profile.read can open Marine & safety from the account menu; Dashboard also provides a Marine entry card."
     },
     {
       "id": "mobile-dashboard",
@@ -130,7 +130,7 @@
       "workflowId": "coastal-overview-dashboard",
       "status": "implemented",
       "description": "Adaptive signed-in account and coastal-services overview route.",
-      "usage": "Shows the current account overview and clearly marked future BLUEVERSE coastal service areas. Login sessions remain in Profile."
+      "usage": "Shows the current account overview and clearly marked future BLUEVERSE coastal service areas. Login sessions remain in Profile. Accounts with marine.profile.read can open Marine & safety from the account menu; Dashboard also provides a Marine entry card."
     },
     {
       "id": "react-admin-entry",
@@ -140,7 +140,7 @@
       "workflowId": "auth-admin-entry",
       "status": "implemented",
       "description": "Administration entry.",
-      "usage": "Routes authorized accounts to the first administration area allowed by current profile grants."
+      "usage": "Routes authorized accounts to the first administration area allowed by current profile grants. Administration omits the home-section marketing links; permitted accounts can open Marine & safety from the shared account menu."
     },
     {
       "id": "react-admin-permissions",
@@ -150,7 +150,7 @@
       "workflowId": "auth-permission-administration",
       "status": "implemented",
       "description": "Permission catalogue.",
-      "usage": "Lists application-defined permission codes and directs permitted role editors to manage grants."
+      "usage": "Lists application-defined permission codes and directs permitted role editors to manage grants. Administration omits the home-section marketing links; permitted accounts can open Marine & safety from the shared account menu."
     },
     {
       "id": "react-admin-roles",
@@ -160,7 +160,7 @@
       "workflowId": "auth-role-administration",
       "status": "implemented",
       "description": "Role administration.",
-      "usage": "Lists roles and provides permission-checked role create, update, permission-assignment and delete actions."
+      "usage": "Lists roles and provides permission-checked role create, update, permission-assignment and delete actions. Administration omits the home-section marketing links; permitted accounts can open Marine & safety from the shared account menu."
     },
     {
       "id": "react-admin-users",
@@ -170,7 +170,7 @@
       "workflowId": "auth-user-administration",
       "status": "implemented",
       "description": "User administration.",
-      "usage": "Lists accounts and provides permission-checked account, password, active-state and role-assignment actions."
+      "usage": "Lists accounts and provides permission-checked account, password, active-state and role-assignment actions. Administration omits the home-section marketing links; permitted accounts can open Marine & safety from the shared account menu."
     },
     {
       "id": "flutter-admin-entry",
@@ -260,7 +260,7 @@
       "workflowId": "marine-conditions",
       "status": "implemented",
       "description": "Marine condition lookup and deterministic suitability assessment route for the React client.",
-      "usage": "Queries current/forecast conditions and the server suitability result for a location, activity and requested UTC period through the public marine API; shows source, timestamps, freshness and missing fields without reclassifying."
+      "usage": "Queries current/forecast conditions and the server suitability result for a location, activity and requested UTC period through the public marine API; shows source, timestamps, freshness and missing fields without reclassifying. Activity outages are shown as unavailable with retry; saved records and condition lookup stay accessible. Profile draft/edit/review and evaluation require available published activity data; deactivation remains independent. The Web UI provides current-page workflow navigation, a short location/time guide, plain-language explanations for all four server outcomes and explicit missing-evidence disclosure. Entry is available from the permission-gated account menu, account sidebar and dashboard; the read grant, not an Admin role name, controls visibility. The sidebar and page tabs share the label 'Coastal conditions'. A responsive hero pairs workflow guidance with new decorative ocean swell and shoreline imagery; it adds no API requests or safety claims. Hero image and text remain vertically stacked at every viewport width. React uses a persistent shared heading and introduction, followed by the existing pill tabs above each stacked hero and content panel. Tabs stick below the site header during scrolling. Switching Marine tabs animates only the panel with reduced-motion support and uses inline initial-read feedback; first entry, explicit retries, writes and Auth retain normal loading feedback."
     },
     {
       "id": "react-marine-history",
@@ -270,7 +270,7 @@
       "workflowId": "marine-condition-history",
       "status": "implemented",
       "description": "Stored condition snapshots and complete suitability-assessment history for the React client.",
-      "usage": "Filters past condition evidence and activity assessments by location, activity, result and UTC period. Shows immutable condition values, the applied profile criteria and citations, freshness, and any legacy evidence gaps."
+      "usage": "Filters past condition evidence and activity assessments by location, activity, result and UTC period. Shows immutable condition values, the applied profile criteria and citations, freshness, and any legacy evidence gaps. Activity outages are shown as unavailable with retry; saved records and condition lookup stay accessible. Profile draft/edit/review and evaluation require available published activity data; deactivation remains independent. Web refresh and filter requests retain each successful dataset independently. Failed data is labelled unavailable rather than empty; last-loaded readings remain identified while retry restores current results. The sidebar and page tabs share the label 'Coastal evidence'. A responsive hero pairs workflow guidance with new decorative coastal field notebook and compass imagery; it adds no API requests or safety claims. Hero image and text remain vertically stacked at every viewport width. React uses a persistent shared heading and introduction, followed by the existing pill tabs above each stacked hero and content panel. Tabs stick below the site header during scrolling. Switching Marine tabs animates only the panel with reduced-motion support and uses inline initial-read feedback; first entry, explicit retries, writes and Auth retain normal loading feedback."
     },
     {
       "id": "react-marine-safety-profiles",
@@ -280,7 +280,7 @@
       "workflowId": "marine-safety-profile-management",
       "status": "implemented",
       "description": "Activity safety-profile inspection, evidence capture, version drafting and review for the React client.",
-      "usage": "Authorized managers create immutable drafts with a source and rationale for wind, wave and swell, then a different authorized manager reviews and approves them. Existing active limits remain effective until approval."
+      "usage": "Authorized managers create immutable drafts with a source and rationale for wind, wave and swell, then a different authorized manager reviews and approves them. Existing active limits remain effective until approval. Activity outages are shown as unavailable with retry; saved records and condition lookup stay accessible. Profile draft/edit/review and evaluation require available published activity data; deactivation remains independent. The Web editor groups each factor’s maximum, optional caution level, citation and rationale. Input preserves two-decimal values and checks caution below maximum; wind accepts the contract upper bound of 1000 km/h. Failed profile reads have an explicit retry action. Server validation and independent review remain authoritative. The sidebar and page tabs share the label 'Activity safety limits'. A responsive hero pairs workflow guidance with new decorative kayak and safety equipment prepared on shore imagery; it adds no API requests or safety claims. Hero image and text remain vertically stacked at every viewport width. React uses a persistent shared heading and introduction, followed by the existing pill tabs above each stacked hero and content panel. Tabs stick below the site header during scrolling. Switching Marine tabs animates only the panel with reduced-motion support and uses inline initial-read feedback; first entry, explicit retries, writes and Auth retain normal loading feedback."
     },
     {
       "id": "flutter-marine-conditions",
@@ -290,7 +290,7 @@
       "workflowId": "marine-conditions",
       "status": "implemented",
       "description": "Implemented Flutter marine condition lookup and deterministic suitability assessment route.",
-      "usage": "Uses the public marine API to show matching source evidence and the backend result for the selected location, activity and time, preserving the shared permission and outcome contract."
+      "usage": "Uses the public marine API to show matching source evidence and the backend result for the selected location, activity and time, preserving the shared permission and outcome contract. Signed decimal WGS84 coordinates are preserved and validated as finite values before submission. The mobile request budget is 45 seconds. Dispatched writes are never automatically replayed after ambiguous transport failures; the user is directed to verify history or the profile before retrying. Activity outages are shown as unavailable with retry; saved records and condition lookup stay accessible. Profile draft/edit/review and evaluation require available published activity data; deactivation remains independent. Flutter uses one native Marine shell with the shared labels Coastal conditions, Coastal evidence and Activity safety limits, pinned navigation, stacked local photographic heroes and reduced-motion-aware panel transitions. Dashboard and account-menu entry require the read grant. Native public requests reuse the selected secure account credentials, and changing accounts or grants resets or removes protected content. Tab bootstrap reads remain inline; explicit reads and production writes retain shared loading feedback. Flutter renders sourced wind, wave, swell and rain values with units and explicit unavailable fields. UNKNOWN results survive absent condition evidence. Time input is normalized to UTC; pull-to-refresh reads conditions without creating another assessment."
     },
     {
       "id": "flutter-marine-history",
@@ -300,7 +300,7 @@
       "workflowId": "marine-condition-history",
       "status": "implemented",
       "description": "Implemented Flutter condition and suitability assessment history route.",
-      "usage": "Filters persisted conditions and assessments and shows captured evidence, applied criteria, source citations and legacy evidence gaps."
+      "usage": "Filters persisted conditions and assessments and shows captured evidence, applied criteria, source citations and legacy evidence gaps. Signed decimal coordinate filters are preserved; nonblank malformed, non-finite or out-of-range coordinates block the query with an input error. The mobile request budget is 45 seconds. Dispatched writes are never automatically replayed after ambiguous transport failures; the user is directed to verify history or the profile before retrying. Activity outages are shown as unavailable with retry; saved records and condition lookup stay accessible. Profile draft/edit/review and evaluation require available published activity data; deactivation remains independent. Flutter uses one native Marine shell with the shared labels Coastal conditions, Coastal evidence and Activity safety limits, pinned navigation, stacked local photographic heroes and reduced-motion-aware panel transitions. Dashboard and account-menu entry require the read grant. Native public requests reuse the selected secure account credentials, and changing accounts or grants resets or removes protected content. Tab bootstrap reads remain inline; explicit reads and production writes retain shared loading feedback. Flutter loads readings and assessments independently, distinguishes failed from empty data, retains labelled last-loaded records after a failed refresh and provides retry."
     },
     {
       "id": "flutter-marine-safety-profiles",
@@ -310,7 +310,7 @@
       "workflowId": "marine-safety-profile-management",
       "status": "implemented",
       "description": "Implemented Flutter safety-profile draft, review and history route.",
-      "usage": "Authorized managers create evidence-backed immutable drafts and a different authorized manager reviews them before use; read and manage permissions match React."
+      "usage": "Authorized managers create evidence-backed immutable drafts and a different authorized manager reviews them before use; read and manage permissions match React. Readers can navigate to the profile page without the manage grant; mutation controls remain hidden. The mobile request budget is 45 seconds. Dispatched writes are never automatically replayed after ambiguous transport failures; the user is directed to verify history or the profile before retrying. Activity outages are shown as unavailable with retry; saved records and condition lookup stay accessible. Profile draft/edit/review and evaluation require available published activity data; deactivation remains independent. Flutter uses one native Marine shell with the shared labels Coastal conditions, Coastal evidence and Activity safety limits, pinned navigation, stacked local photographic heroes and reduced-motion-aware panel transitions. Dashboard and account-menu entry require the read grant. Native public requests reuse the selected secure account credentials, and changing accounts or grants resets or removes protected content. Tab bootstrap reads remain inline; explicit reads and production writes retain shared loading feedback. Flutter exposes profile read retry, distinguishes unavailable from empty profiles, labels retained data and shows absent caution values as not configured. Create/version, independent review and confirmed deactivation retain the shared permission and evidence contract. Profile details and actions remain inside this registered route; no separate profile-detail route is exposed. Pending dialogs stop after the workspace closes, and older read replies cannot replace a newer refresh."
     }
   ],
   "gatewayRoutes": [
@@ -361,8 +361,8 @@
       "type": "reverse-proxy",
       "upstream": "marine-safety",
       "source": "services/api/appsettings.json",
-      "description": "API-gateway route that forwards public marine paths to the internal marine-safety service.",
-      "usage": "Keeps the marine-safety component service private while exposing its approved operations through the public API boundary."
+      "description": "API-gateway route that verifies current Auth sessions and permissions before forwarding protected Marine operations with a signed actor context.",
+      "usage": "Keeps Marine Safety private. Protected requests replace client credentials with a request-bound actor context; anonymous health and Swagger requests are forwarded without an actor context. Missing Auth verification or unreachable/timed-out Marine returns structured availability metadata; unrelated routes and received upstream errors are preserved. Ambiguous proxy writes are not retryable and have no Retry-After hint."
     },
     {
       "id": "auth-yarp-route",
@@ -554,7 +554,7 @@
       "status": "implemented",
       "auth": "anonymous",
       "description": "Reports marine-safety service and database readiness.",
-      "usage": "Used by Docker-stack health diagnostics and operational checks; mirrors the Auth health contract.",
+      "usage": "Used by Docker-stack health diagnostics and operational checks; mirrors the Auth health contract. Readiness checks its own database/schema without requiring other member services or provider data.",
       "source": "services/marine-safety/Controllers/HealthController.cs"
     },
     {
@@ -570,7 +570,7 @@
       "uiWorkflowIds": [
         "marine-conditions"
       ],
-      "usage": "Acquires conditions through the backend Open-Meteo adapter, reusing a fresh stored snapshot when available, and reports source, retrieval time, freshness and missing fields. Used by React and Flutter condition workflows and future suitability consumers.",
+      "usage": "Acquires conditions through the backend Open-Meteo adapter, reusing a fresh stored snapshot when available, and reports source, retrieval time, freshness and missing fields. Used by React and Flutter condition workflows and future suitability consumers. Requested UTC times must be within 0001-01-01T01:00:00Z through 9999-12-31T22:59:59.9999999Z; values outside this arithmetic-safe range return 400 before dependency or persistence access. Reuse requires matching rounded coordinates, a forecast within requested time minus 30 minutes through plus one hour, and retrieval within the preceding 15 minutes (never in the future); the earliest applicable forecast is selected. Activity catalogue availability has no effect. Complete provider failure returns structured CONDITION_DATA_UNAVAILABLE 503 with null data, required missing fields and Retry-After: 60; partial evidence keeps null values and missingFields.",
       "source": "services/marine-safety/Controllers/MarineConditionsController.cs"
     },
     {
@@ -583,7 +583,7 @@
       "status": "implemented",
       "auth": "permission:marine.profile.read",
       "description": "Returns one stored condition snapshot with provenance and missing-field detail.",
-      "usage": "Lets authorized callers inspect a persisted snapshot's source, timestamps, freshness and unavailable fields; snapshots are provider-derived and read-only.",
+      "usage": "Lets authorized callers inspect a persisted snapshot's source, timestamps, freshness and unavailable fields; snapshots are provider-derived and read-only. Reads Marine-owned records without contacting the activity catalogue or provider.",
       "source": "services/marine-safety/Controllers/MarineConditionsController.cs"
     },
     {
@@ -599,7 +599,7 @@
       "uiWorkflowIds": [
         "marine-condition-history"
       ],
-      "usage": "Supports condition-history inspection with optional latitude, longitude, from and to query filters; each row carries its own source and freshness classification.",
+      "usage": "Supports condition-history inspection with optional latitude, longitude, from and to query filters; each row carries its own source and freshness classification. Reads Marine-owned records without contacting the activity catalogue or provider.",
       "source": "services/marine-safety/Controllers/MarineConditionsController.cs"
     },
     {
@@ -615,7 +615,7 @@
       "uiWorkflowIds": [
         "marine-conditions"
       ],
-      "usage": "The Member 2 non-CRUD operation: validates the activity and its safety profile, gathers fresh condition evidence, applies the profile's deterministic limits, and returns SUITABLE, CAUTION, UNSUITABLE or UNKNOWN with violations, caution factors, evidence, source and freshness. CAUTION is returned only when an explicit caution band is configured and crossed; strict profiles can return three-state outcomes. Missing profiles or activities are rejected; missing or stale evidence yields UNKNOWN rather than a fabricated result.",
+      "usage": "The Member 2 non-CRUD operation: validates the activity and its safety profile, gathers fresh condition evidence, applies the profile's deterministic limits, and returns SUITABLE, CAUTION, UNSUITABLE or UNKNOWN with violations, caution factors, evidence, source and freshness. CAUTION is returned only when an explicit caution band is configured and crossed; strict profiles can return three-state outcomes. Missing profiles or activities are rejected; missing or stale evidence yields UNKNOWN rather than a fabricated result. Requested UTC times must be within 0001-01-01T01:00:00Z through 9999-12-31T22:59:59.9999999Z; values outside this arithmetic-safe range return 400 before dependency or persistence access. Requires verified published Member 1 activity data. Unavailable catalogue returns structured ACTIVITY_DATA_UNAVAILABLE 503 with Retry-After: 5 and null data; no new draft, review result or assessment is stored. Evaluation provider failure similarly returns CONDITION_DATA_UNAVAILABLE 503. See docs/api/marine-dependency-availability.md.",
       "source": "services/marine-safety/Controllers/MarineConditionsController.cs"
     },
     {
@@ -631,7 +631,7 @@
       "uiWorkflowIds": [
         "marine-safety-profile-management"
       ],
-      "usage": "Lets authorized callers inspect limits, cited sources and rationales, draft/approval state, effective period and version history.",
+      "usage": "Lets authorized callers inspect limits, cited sources and rationales, draft/approval state, effective period and version history. React and Flutter both allow this page with marine.profile.read; manage is needed only for mutations. Reads Marine-owned records without contacting the activity catalogue or provider.",
       "source": "services/marine-safety/Controllers/SafetyProfilesController.cs"
     },
     {
@@ -644,7 +644,7 @@
       "status": "implemented",
       "auth": "permission:marine.profile.read",
       "description": "Returns one safety profile by identifier.",
-      "usage": "Supports profile detail inspection for authorized callers.",
+      "usage": "Supports profile detail inspection for authorized callers. Reads Marine-owned records without contacting the activity catalogue or provider.",
       "source": "services/marine-safety/Controllers/SafetyProfilesController.cs"
     },
     {
@@ -657,7 +657,7 @@
       "status": "implemented",
       "auth": "permission:marine.profile.read",
       "description": "Returns the active safety profile configured for one activity.",
-      "usage": "Supports activity-centric profile lookup for condition and suitability workflows.",
+      "usage": "Supports activity-centric profile lookup for condition and suitability workflows. Reads Marine-owned records without contacting the activity catalogue or provider.",
       "source": "services/marine-safety/Controllers/SafetyProfilesController.cs"
     },
     {
@@ -673,7 +673,7 @@
       "uiWorkflowIds": [
         "marine-safety-profile-management"
       ],
-      "usage": "Requires positive limits and per-factor provenance. The draft is inactive and cannot support assessment until separately reviewed; an existing active version remains effective.",
+      "usage": "Requires positive limits and per-factor provenance. The draft is inactive and cannot support assessment until separately reviewed; an existing active version remains effective. All maximum and optional caution limits must be exactly representable with at most two decimal places; excess precision returns 400 before storing a draft. Limits are not silently rounded. Requires verified published Member 1 activity data. Unavailable catalogue returns structured ACTIVITY_DATA_UNAVAILABLE 503 with Retry-After: 5 and null data; no new draft or review result is stored. See docs/api/marine-dependency-availability.md.",
       "source": "services/marine-safety/Controllers/SafetyProfilesController.cs"
     },
     {
@@ -689,7 +689,7 @@
       "uiWorkflowIds": [
         "marine-safety-profile-management"
       ],
-      "usage": "Does not mutate prior versions or change active limits. The returned draft remains ineligible for assessment until separately reviewed and approved.",
+      "usage": "Does not mutate prior versions or change active limits. The returned draft remains ineligible for assessment until separately reviewed and approved. All maximum and optional caution limits must be exactly representable with at most two decimal places; excess precision returns 400 before storing a draft. Limits are not silently rounded. Requires verified published Member 1 activity data. Unavailable catalogue returns structured ACTIVITY_DATA_UNAVAILABLE 503 with Retry-After: 5 and null data; no new draft or review result is stored. See docs/api/marine-dependency-availability.md.",
       "source": "services/marine-safety/Controllers/SafetyProfilesController.cs"
     },
     {
@@ -705,7 +705,7 @@
       "uiWorkflowIds": [
         "marine-safety-profile-management"
       ],
-      "usage": "Profiles are retained so assessments keep their criteria reference; deactivation is idempotent and prevents new evaluations until a reviewed version is active.",
+      "usage": "Profiles are retained so assessments keep their criteria reference; deactivation is idempotent and prevents new evaluations until a reviewed version is active. Does not require activity catalogue or provider availability.",
       "source": "services/marine-safety/Controllers/SafetyProfilesController.cs"
     },
     {
@@ -717,8 +717,8 @@
       "operationId": "GetActivities",
       "status": "implemented",
       "auth": "permission:marine.profile.read",
-      "description": "Lists the marine activity reference rows with their active state.",
-      "usage": "Lets authorized callers resolve activity identities and names for profile, condition and suitability workflows; supports an optional isActive filter.",
+      "description": "Reads published activity references from the Member 1 catalogue using canonical IDs.",
+      "usage": "Marine read permission is required. Member 1 owns activity CRUD; unavailable upstream returns 503 with Retry-After and no cached fallback. Failure fields are availability, dependency, code, reason, missingFields, retryable and null data. A valid empty catalogue is 200 []; invalid/empty catalogue configuration yields UNCONFIGURED when requested, without blocking startup.",
       "source": "services/marine-safety/Controllers/ActivitiesController.cs"
     },
     {
@@ -730,47 +730,8 @@
       "operationId": "GetActivity",
       "status": "implemented",
       "auth": "permission:marine.profile.read",
-      "description": "Returns one marine activity reference row by identifier.",
-      "usage": "Supports activity detail inspection for condition, suitability and profile workflows.",
-      "source": "services/marine-safety/Controllers/ActivitiesController.cs"
-    },
-    {
-      "id": "marine-activity-create",
-      "method": "POST",
-      "path": "/api/marine/activities",
-      "ownerService": "marine-safety",
-      "publicBoundary": "api",
-      "operationId": "CreateActivity",
-      "status": "implemented",
-      "auth": "permission:all(marine.profile.read,marine.profile.manage)",
-      "description": "Creates a marine activity reference row with a unique name.",
-      "usage": "Permission-gated management over the locally-owned activity reference table (placeholder for Member 1's canonical taxonomy); duplicate names are rejected as a state conflict.",
-      "source": "services/marine-safety/Controllers/ActivitiesController.cs"
-    },
-    {
-      "id": "marine-activity-update",
-      "method": "PUT",
-      "path": "/api/marine/activities/{id:guid}",
-      "ownerService": "marine-safety",
-      "publicBoundary": "api",
-      "operationId": "UpdateActivity",
-      "status": "implemented",
-      "auth": "permission:all(marine.profile.read,marine.profile.manage)",
-      "description": "Renames or retypes a marine activity reference row.",
-      "usage": "Permission-gated management; the name stays unique within the reference table and rows are never re-activated through this surface.",
-      "source": "services/marine-safety/Controllers/ActivitiesController.cs"
-    },
-    {
-      "id": "marine-activity-deactivate",
-      "method": "DELETE",
-      "path": "/api/marine/activities/{id:guid}",
-      "ownerService": "marine-safety",
-      "publicBoundary": "api",
-      "operationId": "DeactivateActivity",
-      "status": "implemented",
-      "auth": "permission:all(marine.profile.read,marine.profile.manage)",
-      "description": "Deactivates a marine activity without deleting it.",
-      "usage": "Deletion deactivates so assessment history keeps its restrict reference and profiles keep their cascade reference; an inactive activity cannot receive new profiles or evaluations. Deactivation is idempotent.",
+      "description": "Reads published activity references from the Member 1 catalogue using canonical IDs.",
+      "usage": "Marine read permission is required. Member 1 owns activity CRUD; unavailable upstream returns 503 with Retry-After and no cached fallback. Failure fields are availability, dependency, code, reason, missingFields, retryable and null data. A valid empty catalogue is 200 []; invalid/empty catalogue configuration yields UNCONFIGURED when requested, without blocking startup.",
       "source": "services/marine-safety/Controllers/ActivitiesController.cs"
     },
     {
@@ -783,7 +744,7 @@
       "status": "implemented",
       "auth": "permission:marine.profile.read",
       "description": "Lists persisted suitability assessments with copied condition values and the exact criteria and citations applied; historical gaps are identified.",
-      "usage": "Filters by activity, result and UTC assessment window. Each assessment retains the result, condition values and retrieval time, source and freshness, profile limits, citations, and evidence-completeness state.",
+      "usage": "Filters by activity, result and UTC assessment window. Each assessment retains the result, condition values and retrieval time, source and freshness, profile limits, citations, and evidence-completeness state. Reads Marine-owned records without contacting the activity catalogue or provider.",
       "source": "services/marine-safety/Controllers/AssessmentsController.cs"
     },
     {
@@ -796,7 +757,7 @@
       "status": "implemented",
       "auth": "permission:marine.profile.read",
       "description": "Returns one persisted suitability assessment with copied condition values and its exact profile criteria and citations.",
-      "usage": "Supports audit and explanation after profile changes or provider-snapshot retention; unrecoverable older evidence remains explicitly marked incomplete.",
+      "usage": "Supports audit and explanation after profile changes or provider-snapshot retention; unrecoverable older evidence remains explicitly marked incomplete. Reads Marine-owned records without contacting the activity catalogue or provider.",
       "source": "services/marine-safety/Controllers/AssessmentsController.cs"
     },
     {
@@ -1228,7 +1189,7 @@
       "uiWorkflowIds": [
         "marine-safety-profile-management"
       ],
-      "usage": "A different authorized manager approves a pending version after reviewing its wind, wave and swell sources and rationales. Approval records reviewer and effective time and atomically supersedes the previous active version.",
+      "usage": "A different authorized manager approves a pending version after reviewing its wind, wave and swell sources and rationales. Approval records reviewer and effective time and atomically supersedes the previous active version. Requires verified published Member 1 activity data. Unavailable catalogue returns structured ACTIVITY_DATA_UNAVAILABLE 503 with Retry-After: 5 and null data; no new draft or review result is stored. See docs/api/marine-dependency-availability.md.",
       "source": "services/marine-safety/Controllers/SafetyProfilesController.cs"
     }
   ],

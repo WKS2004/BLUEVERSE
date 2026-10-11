@@ -5,6 +5,7 @@ on:
     branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
     paths:
       - "services/**"
+      - "infrastructure/contracts/**"
       - "infrastructure/docker/api/**"
       - "infrastructure/docker/*/**"
       - ".dockerignore"
@@ -16,6 +17,7 @@ on:
     branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
     paths:
       - "services/**"
+      - "infrastructure/contracts/**"
       - "infrastructure/docker/api/**"
       - "infrastructure/docker/*/**"
       - ".dockerignore"

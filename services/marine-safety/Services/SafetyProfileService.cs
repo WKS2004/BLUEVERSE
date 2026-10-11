@@ -15,7 +15,12 @@ public sealed class SafetyProfileService : ISafetyProfileService
 {
     private readonly MarineSafetyDbContext _db;
 
-    public SafetyProfileService(MarineSafetyDbContext db) => _db = db;
+    private readonly IActivityService _activities;
+    public SafetyProfileService(MarineSafetyDbContext db, IActivityService activities)
+    {
+        _db = db;
+        _activities = activities;
+    }
 
     public async Task<IReadOnlyList<SafetyProfileDto>> GetProfilesAsync(CancellationToken cancellationToken)
     {
@@ -52,9 +57,8 @@ public sealed class SafetyProfileService : ISafetyProfileService
         ValidateCriteria(dto.WaveCriteriaSource, dto.WaveCriteriaRationale, "wave");
         ValidateCriteria(dto.SwellCriteriaSource, dto.SwellCriteriaRationale, "swell");
 
-        var activity = await _db.MarineActivities
-            .SingleOrDefaultAsync(item => item.Id == dto.ActivityId!.Value, cancellationToken)
-            ?? throw new InvalidOperationException($"Activity {dto.ActivityId} does not exist.");
+        var activity = await _activities.ResolvePublishedAsync(dto.ActivityId!.Value, cancellationToken)
+            ?? throw new InvalidOperationException($"Activity {dto.ActivityId} does not exist or is not active in the published catalogue.");
         if (!activity.IsActive)
         {
             throw new InvalidOperationException($"Activity '{activity.Name}' is not active.");
@@ -112,6 +116,9 @@ public sealed class SafetyProfileService : ISafetyProfileService
         {
             return null;
         }
+
+        if (await _activities.GetActivityAsync(source.ActivityId, cancellationToken) is null)
+            throw new InvalidOperationException("The activity is no longer published in the catalogue.");
 
         var highestVersion = await _db.SafetyProfiles
             .Where(profile => profile.ActivityId == source.ActivityId)
@@ -185,7 +192,7 @@ public sealed class SafetyProfileService : ISafetyProfileService
             ValidateCriteria(profile.WindCriteriaSource, profile.WindCriteriaRationale, "wind");
             ValidateCriteria(profile.WaveCriteriaSource, profile.WaveCriteriaRationale, "wave");
             ValidateCriteria(profile.SwellCriteriaSource, profile.SwellCriteriaRationale, "swell");
-            if (profile.Activity is null || !profile.Activity.IsActive)
+            if (await _activities.GetActivityAsync(profile.ActivityId, cancellationToken) is null)
             {
                 throw new SafetyProfileReviewConflictException("A profile for an inactive activity cannot be approved.");
             }
@@ -267,6 +274,12 @@ public sealed class SafetyProfileService : ISafetyProfileService
             UpdateSafetyProfileDto update => update.CautionSwellHeight,
             _ => null
         };
+
+        foreach (var limit in new decimal?[] { maxWind, maxWave, maxSwell, cautionWind, cautionWave, cautionSwell })
+        {
+            if (limit.HasValue && limit.Value != decimal.Round(limit.Value, 2))
+                throw new InvalidOperationException("Safety profile limits must have at most two decimal places.");
+        }
 
         if (cautionWind.HasValue && cautionWind.Value >= maxWind)
             throw new InvalidOperationException("Caution wind speed must be below the maximum wind speed.");

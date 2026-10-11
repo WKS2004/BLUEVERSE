@@ -6,6 +6,7 @@ import {
   deactivateMarineSafetyProfile,
   evaluateMarineSuitability,
   getMarineAssessments,
+  getMarineActivities,
   getMarineConditions,
   getMarineHistory,
   getMarineSafetyProfiles,
@@ -321,4 +322,36 @@ test('WEB-MARINE-API-019 transport failures reject unchanged for caller recovery
   globalThis.fetch = async () => { throw failure }
 
   await assert.rejects(() => getMarineConditions(6.025, 80.216), (error) => error === failure)
+})
+
+test('WEB-MARINE-022 activities use the public read-only catalogue projection', async () => {
+  let captured
+  const id = '12345678-1234-1234-1234-123456789abc'
+  globalThis.fetch = async (input, init) => { captured = { input, init }; return jsonResponse([{ id, name: 'Canonical activity', activityType: 'Surfing', isActive: true }]) }
+  const rows = await getMarineActivities()
+  assert.equal(captured.input, '/api/marine/activities')
+  assert.equal(captured.init.credentials, 'include')
+  assert.equal(rows[0].id, id)
+})
+test('WEB-MARINE-023 malformed activity projections cannot supply selector IDs', async () => {
+  const row = { id: '12345678-1234-1234-1234-123456789abc', name: 'Canonical activity', activityType: 'Surfing', isActive: true }
+  for (const payload of [{}, null, [null], [row, row], [{ ...row, isActive: false }], [{ ...row, id: 'invalid' }]]) {
+    globalThis.fetch = async () => jsonResponse(payload)
+    await assert.rejects(getMarineActivities(), error => error instanceof MarineApiError && error.status === 502)
+  }
+})
+
+
+test('WEB-MARINE-AVAIL-001 dependency outages retain structured missing data rather than an empty success', async () => {
+  const problem = { status: 503, detail: 'Activity data is unavailable.', availability: 'UNAVAILABLE', dependency: 'experience-biodiversity', code: 'ACTIVITY_DATA_UNAVAILABLE', reason: 'UNREACHABLE', missingFields: ['activityCatalogue'], retryable: true, data: null }
+  globalThis.fetch = async () => jsonResponse(problem, 503)
+  await assert.rejects(getMarineActivities(), error => {
+    assert.ok(error instanceof MarineApiError)
+    assert.equal(error.status, 503)
+    assert.deepEqual(error.dependencyAvailability, { availability: problem.availability, dependency: problem.dependency, code: problem.code, reason: problem.reason, missingFields: problem.missingFields, retryable: true })
+    assert.doesNotMatch(error.message, /not yet/i)
+    return true
+  })
+  globalThis.fetch = async () => jsonResponse({ ...problem, missingFields: [123] }, 503)
+  await assert.rejects(getMarineActivities(), error => { assert.equal(error.status, 503); assert.equal(error.dependencyAvailability, undefined); return true })
 })

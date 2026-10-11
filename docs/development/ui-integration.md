@@ -85,8 +85,10 @@ loopback hosts for local smoke tests, not Docker service names. Do not add
 client-facing boundary and forwards requests to internal services.
 Authentication, current permission resolution, domain validation and business
 rules are enforced at the owning service boundary under the accepted contract;
-marine-safety performs the current Auth-session and role-permission checks
-itself.
+the public API verifies current Auth sessions and role permissions, then
+marine-safety validates the signed request-bound actor context and enforces
+its permission policies. Both clients read published canonical activities
+through `/api/marine/activities`.
 
 ## Implementation sequence
 

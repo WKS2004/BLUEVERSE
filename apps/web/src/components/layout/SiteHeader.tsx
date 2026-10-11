@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router'
 import { authEntryHref } from '../../features/auth/authNavigation'
 import { MAX_DEVICE_ACCOUNTS, useAuthSession } from '../../features/auth/authSession'
 import { preserveAuthLoadingContextForReload } from '../../features/loading/backendLoading'
+import { hasAnyPermission } from '../../features/authorization/permissions'
 
 type SiteHeaderProps = {
   active?: 'home' | 'login' | 'register' | 'profile' | 'dashboard'
@@ -32,6 +33,8 @@ function SiteHeader({ active = 'home', compactMobile = false }: SiteHeaderProps)
   const [isSigningOut, setIsSigningOut] = useState(false)
   const headerRef = useRef<HTMLElement>(null)
   const location = useLocation()
+  const isHomePage = location.pathname === '/'
+  const isAdminPage = location.pathname === '/admin' || location.pathname.startsWith('/admin/')
   const { user, accounts, status, switchingAccountId, switchAccount, signOut } = useAuthSession()
   const accountLimitReached = accounts.length >= MAX_DEVICE_ACCOUNTS
   const loginHref = authEntryHref('/signin', location)
@@ -142,6 +145,7 @@ function SiteHeader({ active = 'home', compactMobile = false }: SiteHeaderProps)
             <nav aria-label="Account menu" className="grid gap-1">
               <Link className={accountMenuLinkClass} to="/profile" onClick={() => { setAccountMenuOpen(false); setMenuOpen(false) }}>Profile <span aria-hidden="true">↗</span></Link>
               <Link className={accountMenuLinkClass} to="/dashboard" onClick={() => { setAccountMenuOpen(false); setMenuOpen(false) }}>Dashboard <span aria-hidden="true">↗</span></Link>
+              {hasAnyPermission(user, ['marine.profile.read']) && <Link className={accountMenuLinkClass} to="/marine/conditions" onClick={() => { setAccountMenuOpen(false); setMenuOpen(false) }}>Marine &amp; safety <span aria-hidden="true">↗</span></Link>}
               {accountLimitReached ? (
                 <p className="mx-4 my-2 text-[11px] leading-5 text-coast-muted">Remove an account from this browser before adding another. The limit is five.</p>
               ) : (
@@ -183,7 +187,7 @@ function SiteHeader({ active = 'home', compactMobile = false }: SiteHeaderProps)
           <span className="text-[15px] font-extrabold tracking-[0.13em] sm:text-[17px] sm:tracking-[0.16em]">BLUEVERSE<span className="text-coast-teal">.</span></span>
         </Link>
 
-        {active === 'home' && (
+        {isHomePage && (
           <nav aria-label="Main navigation" className="hidden items-center gap-2 md:flex lg:gap-4">
             <Link className={navClass(false)} to="#our-story">Our story</Link>
             <Link className={navClass(false)} to="#what-matters">What matters</Link>
@@ -194,20 +198,20 @@ function SiteHeader({ active = 'home', compactMobile = false }: SiteHeaderProps)
         <div className="hidden shrink-0 items-center gap-2 sm:flex">{authLinks()}</div>
         <div className="flex shrink-0 items-center gap-2 sm:hidden">
           {user && status === 'signed-in' && accountMenu(true)}
-          <button aria-controls="mobile-site-menu" aria-expanded={menuOpen} aria-label={menuOpen ? 'Close menu' : 'Open menu'} className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-coast-line bg-white/70 text-coast-deep transition duration-200 hover:-translate-y-0.5 hover:bg-coast-sage focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coast-blue active:scale-95" onClick={() => { setMenuOpen((open) => !open); setAccountMenuOpen(false) }} type="button">
+          {!isAdminPage && <button aria-controls="mobile-site-menu" aria-expanded={menuOpen} aria-label={menuOpen ? 'Close menu' : 'Open menu'} className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-coast-line bg-white/70 text-coast-deep transition duration-200 hover:-translate-y-0.5 hover:bg-coast-sage focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coast-blue active:scale-95" onClick={() => { setMenuOpen((open) => !open); setAccountMenuOpen(false) }} type="button">
             <span aria-hidden="true" className="text-2xl leading-none">{menuOpen ? '×' : '≡'}</span>
-          </button>
+          </button>}
         </div>
       </div>
 
-      <nav aria-label="Mobile navigation" className={`absolute left-0 right-0 top-full border-b border-coast-line bg-coast-paper px-5 pb-5 pt-2 shadow-lg transition duration-200 sm:hidden ${menuOpen ? 'visible translate-y-0 opacity-100' : 'invisible -translate-y-2 opacity-0 pointer-events-none'}`} id="mobile-site-menu">
-        {active === 'home' ? <>
+      {!isAdminPage && <nav aria-label="Mobile navigation" className={`absolute left-0 right-0 top-full border-b border-coast-line bg-coast-paper px-5 pb-5 pt-2 shadow-lg transition duration-200 sm:hidden ${menuOpen ? 'visible translate-y-0 opacity-100' : 'invisible -translate-y-2 opacity-0 pointer-events-none'}`} id="mobile-site-menu">
+        {isHomePage ? <>
           <Link className="block border-b border-coast-line py-3 text-sm font-semibold text-coast-ink transition-colors hover:text-coast-blue" to="#our-story" onClick={() => setMenuOpen(false)}>Our story</Link>
           <Link className="block border-b border-coast-line py-3 text-sm font-semibold text-coast-ink transition-colors hover:text-coast-blue" to="#what-matters" onClick={() => setMenuOpen(false)}>What matters</Link>
           <Link className="block border-b border-coast-line py-3 text-sm font-semibold text-coast-ink transition-colors hover:text-coast-blue" to="#our-coast" onClick={() => setMenuOpen(false)}>Our coast</Link>
         </> : <Link className="block border-b border-coast-line py-3 text-sm font-semibold text-coast-ink transition-colors hover:text-coast-blue" to="/" onClick={() => setMenuOpen(false)}>Explore BLUEVERSE</Link>}
         {!user && status !== 'checking' && <div className="mt-4 flex flex-wrap gap-3">{authLinks(true)}</div>}
-      </nav>
+      </nav>}
     </header>
   )
 }

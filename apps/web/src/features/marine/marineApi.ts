@@ -1,3 +1,4 @@
+import type { MarineActivityReference } from "./marineActivities"
 import { withLoadingScreen } from '../loading/backendLoading.ts'
 
 export type MarineSafetyProfile = {
@@ -94,13 +95,35 @@ export type MarineAssessmentHistory = {
   createdAt: string
 }
 
+export type MarineDependencyAvailability = {
+  availability: 'UNAVAILABLE'
+  dependency: string
+  code: string
+  reason: string
+  missingFields: string[]
+  retryable: boolean
+}
+
+function dependencyAvailability(payload: unknown): MarineDependencyAvailability | undefined {
+  if (typeof payload !== 'object' || payload === null) return undefined
+  const row = payload as Record<string, unknown>
+  if (row.availability !== 'UNAVAILABLE' || typeof row.dependency !== 'string' ||
+      typeof row.code !== 'string' || typeof row.reason !== 'string' ||
+      typeof row.retryable !== 'boolean' || !Array.isArray(row.missingFields) ||
+      !row.missingFields.every(field => typeof field === 'string')) return undefined
+  return { availability: 'UNAVAILABLE', dependency: row.dependency, code: row.code,
+    reason: row.reason, missingFields: row.missingFields as string[], retryable: row.retryable }
+}
+
 export class MarineApiError extends Error {
   readonly status: number
+  readonly dependencyAvailability?: MarineDependencyAvailability
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, dependencyAvailability?: MarineDependencyAvailability) {
     super(message)
     this.name = 'MarineApiError'
     this.status = status
+    this.dependencyAvailability = dependencyAvailability
   }
 }
 
@@ -116,8 +139,8 @@ function requestOptions(method = 'GET', body?: unknown): RequestInit {
   }
 }
 
-async function request<T>(send: () => Promise<Response>): Promise<T> {
-  return withLoadingScreen(async () => {
+async function request<T>(send: () => Promise<Response>, showLoadingScreen = true): Promise<T> {
+  const operation = async () => {
     const response = await send()
 
     if (response.status === 204) return undefined as T
@@ -135,11 +158,12 @@ async function request<T>(send: () => Promise<Response>): Promise<T> {
           : response.status === 503
             ? 'Marine conditions cannot be retrieved right now. The provider may be briefly unavailable; please try again shortly.'
             : 'We couldn’t complete that marine request. Please try again.'
-      throw new MarineApiError(response.status, detail)
+      throw new MarineApiError(response.status, detail, dependencyAvailability(payload))
     }
     if (payload === undefined) throw new MarineApiError(response.status, 'The server returned a response that could not be read.')
     return payload as T
-  })
+  }
+  return showLoadingScreen ? withLoadingScreen(operation) : operation()
 }
 
 export const getMarineConditions = (latitude: number, longitude: number, dateTime?: string) =>
@@ -152,7 +176,7 @@ export const getMarineConditions = (latitude: number, longitude: number, dateTim
     return fetch(`/api/marine/current?${query.toString()}`, requestOptions())
   })
 
-export const getMarineHistory = (filters: { latitude?: number; longitude?: number; from?: string; to?: string } = {}) =>
+export const getMarineHistory = (filters: { latitude?: number; longitude?: number; from?: string; to?: string } = {}, showLoadingScreen = true) =>
   request<MarineConditionSnapshot[]>(() => {
     const query = new URLSearchParams()
     if (filters.latitude !== undefined) query.set('latitude', String(filters.latitude))
@@ -160,9 +184,9 @@ export const getMarineHistory = (filters: { latitude?: number; longitude?: numbe
     if (filters.from) query.set('from', filters.from)
     if (filters.to) query.set('to', filters.to)
     return fetch(`/api/marine/history?${query.toString()}`, requestOptions())
-  })
+  }, showLoadingScreen)
 
-export const getMarineAssessments = (filters: { activityId?: string; result?: string; from?: string; to?: string } = {}) =>
+export const getMarineAssessments = (filters: { activityId?: string; result?: string; from?: string; to?: string } = {}, showLoadingScreen = true) =>
   request<MarineAssessmentHistory[]>(() => {
     const query = new URLSearchParams()
     if (filters.activityId) query.set('activityId', filters.activityId)
@@ -170,7 +194,7 @@ export const getMarineAssessments = (filters: { activityId?: string; result?: st
     if (filters.from) query.set('from', filters.from)
     if (filters.to) query.set('to', filters.to)
     return fetch(`/api/marine/assessments?${query.toString()}`, requestOptions())
-  })
+  }, showLoadingScreen)
 
 export const evaluateMarineSuitability = (input: {
   activityId: string
@@ -185,8 +209,8 @@ export const evaluateMarineSuitability = (input: {
     ...(input.dateTime ? { dateTime: input.dateTime } : {}),
   })))
 
-export const getMarineSafetyProfiles = () =>
-  request<MarineSafetyProfile[]>(() => fetch('/api/marine/safety-profiles', requestOptions()))
+export const getMarineSafetyProfiles = (showLoadingScreen = true) =>
+  request<MarineSafetyProfile[]>(() => fetch('/api/marine/safety-profiles', requestOptions()), showLoadingScreen)
 
 export const createMarineSafetyProfile = (input: {
   activityId: string
@@ -226,3 +250,15 @@ export const reviewMarineSafetyProfile = (id: string) =>
 
 export const deactivateMarineSafetyProfile = (id: string) =>
   request<void>(() => fetch(`/api/marine/safety-profiles/${encodeURIComponent(id)}`, requestOptions('DELETE')))
+
+export async function getMarineActivities(showLoadingScreen = true): Promise<MarineActivityReference[]> {
+  const rows = await request<unknown>(() => fetch('/api/marine/activities', requestOptions()), showLoadingScreen)
+  if (!Array.isArray(rows) || rows.some(row => !row || typeof row.id !== 'string' ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(row.id) ||
+      row.id === '00000000-0000-0000-0000-000000000000' || typeof row.name !== 'string' || !row.name.trim() ||
+      typeof row.activityType !== 'string' || row.isActive !== true) ||
+      new Set(rows.map(row => row.id)).size !== rows.length) {
+    throw new MarineApiError(502, 'The activity list could not be read. Please retry.')
+  }
+  return rows as MarineActivityReference[]
+}

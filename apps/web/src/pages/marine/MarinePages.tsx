@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
-import AccountAreaNavigation from '../../components/account/AccountAreaNavigation'
-import SiteFooter from '../../components/layout/SiteFooter'
-import SiteHeader from '../../components/layout/SiteHeader'
+import MarineResultExplanation from './MarineResultExplanation'
+import MarinePageHero from './MarinePageHero'
+import type { MarineHeroArea } from './MarinePageHero'
 import {
   MarineApiError,
   deactivateMarineSafetyProfile,
@@ -10,12 +10,14 @@ import {
   evaluateMarineSuitability,
   getMarineAssessments,
   getMarineHistory,
+  getMarineConditions,
   getMarineSafetyProfiles,
   reviewMarineSafetyProfile,
   updateMarineSafetyProfile,
 } from '../../features/marine/marineApi'
 import type { MarineAssessmentHistory, MarineConditionSnapshot, MarineSafetyProfile, MarineSuitabilityResult } from '../../features/marine/marineApi'
-import { MARINE_ACTIVITY_REFERENCES } from '../../features/marine/marineActivities'
+import { useMarineActivities } from '../../features/marine/marineActivities'
+import { useMarineInitialLoadingScreen } from '../../features/marine/marineWorkspaceContext'
 import { hasAllPermissions } from '../../features/authorization/permissions'
 import { useAuthSession } from '../../features/auth/authSession'
 
@@ -25,22 +27,11 @@ const primaryButton = 'inline-flex min-h-10 items-center justify-center rounded-
 const secondaryButton = 'inline-flex min-h-10 items-center justify-center rounded-full border border-coast-line bg-white px-4 text-sm font-bold text-coast-deep transition hover:bg-coast-sage focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-coast-blue disabled:cursor-not-allowed disabled:opacity-50'
 const dangerButton = 'inline-flex min-h-10 items-center justify-center rounded-full border border-red-200 bg-red-50 px-4 text-sm font-bold text-red-800 transition hover:bg-red-100 focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-red-700 disabled:cursor-not-allowed disabled:opacity-50'
 
-function MarinePageFrame({ title, intro, children }: { title: string; intro: string; children: ReactNode }) {
-  return <div className="flex min-h-screen flex-col bg-coast-paper font-sans text-coast-ink">
-    <SiteHeader />
-    <main className="mx-auto grid w-full max-w-[90rem] flex-1 grid-cols-1 content-start gap-6 px-4 py-6 sm:px-8 sm:py-10 lg:grid-cols-[15rem_minmax(0,1fr)] lg:items-start lg:gap-8 lg:px-6 lg:py-0">
-      <AccountAreaNavigation active="marine" />
-      <div className="min-w-0 lg:py-12">
-        <header className="mb-7 sm:mb-9">
-          <p className="text-[11px] font-extrabold tracking-[0.18em] text-coast-blue">MARINE CONDITIONS &amp; SAFETY</p>
-          <h1 className="mt-2 break-words font-display text-4xl leading-tight tracking-[-0.05em] sm:text-5xl">{title}</h1>
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-coast-muted sm:text-base">{intro}</p>
-        </header>
-        {children}
-      </div>
-    </main>
-    <SiteFooter />
-  </div>
+function MarinePageFrame({ area, title, intro, children }: { area: MarineHeroArea; title: string; intro: string; children: ReactNode }) {
+  return <>
+    <MarinePageHero area={area} intro={intro} title={title} />
+    {children}
+  </>
 }
 
 function MarineErrorMessage({ children }: { children: string }) {
@@ -123,6 +114,9 @@ function SnapshotEvidencePanel({ snapshot }: { snapshot: MarineConditionSnapshot
         Forecast time and retrieval time are different facts; this evidence is decision support, not a substitute for professional maritime navigation information.
       </p>
     </dl>
+    {snapshot.missingFields.length > 0 && <p className="rounded-2xl border border-coast-line bg-coast-sand p-4 text-sm leading-6 text-coast-deep sm:col-span-2 lg:col-span-3">
+      Unavailable evidence: {snapshot.missingFields.map(formatFactor).join(', ')}. Missing values cannot be treated as safe conditions.
+    </p>}
   </div>
 }
 
@@ -142,9 +136,10 @@ function StatusResultCard({ result }: { result: MarineSuitabilityResult }) {
       </div>
       <span className="rounded-full bg-white/80 px-4 py-2 font-display text-lg font-bold text-coast-ink">{result.status}</span>
     </div>
+    <MarineResultExplanation status={result.status} />
     <p className="mt-3 text-sm leading-6 text-coast-ink">
       Evaluated for {result.location.latitude}, {result.location.longitude} at {formatTimestamp(result.requestedTime)}.
-      The classification is calculated on the server from configured safety rules; this page never reclassifies it.
+      This result uses the activity’s reviewed safety limits and the evidence shown below.
     </p>
     {result.violations.length > 0 && <div className="mt-4">
       <p className="text-xs font-extrabold tracking-[0.12em] text-red-900">LIMITS EXCEEDED</p>
@@ -181,17 +176,19 @@ function toUtcTimestamp(raw: string): string | null {
 }
 
 export function MarineConditionsPage() {
+  const catalogue = useMarineActivities()
+  const activities = catalogue.activities
   const [latitude, setLatitude] = useState('6.025')
   const [longitude, setLongitude] = useState('80.216')
   const [dateTime, setDateTime] = useState('')
-  const [activityId, setActivityId] = useState(MARINE_ACTIVITY_REFERENCES[0].id)
+  const [activityId, setActivityId] = useState('')
   const [snapshot, setSnapshot] = useState<MarineConditionSnapshot | null>(null)
   const [result, setResult] = useState<MarineSuitabilityResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: Pick<FormEvent, 'preventDefault'>, conditionsOnly = false) {
     event.preventDefault()
     const parsedLatitude = parseCoordinate(latitude, -90, 90)
     const parsedLongitude = parseCoordinate(longitude, -180, 180)
@@ -209,10 +206,18 @@ export function MarineConditionsPage() {
     setFormError(null)
     setError(null)
     setLoading(true)
+    setSnapshot(null)
+    setResult(null)
     try {
       const requestedTime = dateTime ? toUtcTimestamp(dateTime) : undefined
+      if (conditionsOnly) {
+        const conditions = await getMarineConditions(parsedLatitude, parsedLongitude, requestedTime || undefined)
+        setSnapshot(conditions)
+        setResult(null)
+        return
+      }
       const suitability = await evaluateMarineSuitability({
-        activityId,
+        activityId: (activities.some(activity => activity.id === activityId) ? activityId : activities[0]?.id) || '',
         latitude: parsedLatitude,
         longitude: parsedLongitude,
         dateTime: requestedTime || undefined,
@@ -241,12 +246,15 @@ export function MarineConditionsPage() {
   }
 
   return <MarinePageFrame
-    intro="Look up coastal weather and marine evidence for a place and time, then see the server’s deterministic suitability result for a coastal activity. Conditions come from the backend Open-Meteo integration; classifications are never recalculated here."
+    area="conditions"
+    intro="Check wind, waves and swell for a coastal place and time. Choose an activity to compare the evidence with its reviewed safety limits, or look up conditions on their own."
     title="Marine conditions"
   >
     <div className="grid gap-5">
       <section className={cardClass}>
-        <p className="text-xs font-extrabold tracking-[0.15em] text-coast-blue">CONDITION QUERY</p>
+        <p className="text-xs font-extrabold tracking-[0.15em] text-coast-blue">PLAN A COASTAL CHECK</p>
+        <h2 className="mt-2 font-display text-2xl tracking-[-0.035em]">Where and when are you going?</h2>
+        <p className="mt-2 text-sm leading-6 text-coast-muted">Use decimal latitude and longitude. Leave the time blank for current conditions; any time you enter is in UTC.</p>
         <form className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4" onSubmit={submit}>
           <label className="text-sm font-bold" htmlFor="marine-latitude">Latitude
             <input className={inputClass} id="marine-latitude" inputMode="decimal" onChange={(event) => setLatitude(event.target.value)} required value={latitude} />
@@ -258,14 +266,16 @@ export function MarineConditionsPage() {
             <input className={inputClass} id="marine-datetime" onChange={(event) => setDateTime(event.target.value)} type="datetime-local" value={dateTime} />
           </label>
           <label className="text-sm font-bold" htmlFor="marine-activity">Activity
-            <select className={inputClass} id="marine-activity" onChange={(event) => setActivityId(event.target.value)} value={activityId}>
-              {MARINE_ACTIVITY_REFERENCES.map((activity) => <option key={activity.id} value={activity.id}>{activity.name}</option>)}
+            <select className={inputClass} disabled={catalogue.loading || activities.length === 0} id="marine-activity" onChange={(event) => setActivityId(event.target.value)} value={(activities.some(activity => activity.id === activityId) ? activityId : activities[0]?.id) || ''}>
+              {activities.map((activity) => <option key={activity.id} value={activity.id}>{activity.name}</option>)}
             </select>
           </label>
-          <div className="flex items-end md:col-span-2 xl:col-span-4">
-            <button className={primaryButton} disabled={loading} type="submit">{loading ? 'Checking the coast…' : 'Check conditions & suitability'}</button>
+          <div className="flex flex-wrap items-end gap-3 md:col-span-2 xl:col-span-4">
+            <button className={primaryButton} disabled={loading || catalogue.loading || activities.length === 0} type="submit">{loading ? 'Checking the coast…' : 'Check conditions & suitability'}</button>
+            <button className={secondaryButton} disabled={loading} type="button" onClick={(event) => void submit(event, true)}>View conditions only</button>
           </div>
         </form>
+        <ActivityCatalogueStatus catalogue={catalogue} />
         {formError && <div className="mt-4"><MarineErrorMessage>{formError}</MarineErrorMessage></div>}
         {error && <div className="mt-4"><MarineErrorMessage>{error}</MarineErrorMessage></div>}
       </section>
@@ -281,10 +291,16 @@ export function MarineConditionsPage() {
         </div>
         <SnapshotEvidencePanel snapshot={snapshot} />
       </section>}
-      {!result && !snapshot && !loading && !error && !formError && <section className={cardClass}>
+      {!result && !snapshot && !loading && !error && !formError && <section className={`${cardClass} bg-coast-sage/40`}>
+        <h2 className="font-display text-2xl tracking-[-0.035em]">A clearer check before you go</h2>
         <p className="text-sm leading-6 text-coast-muted">
           Enter a coastal location — for example 6.025, 80.216 near Weligama — and check the sea before you plan. Missing or stale evidence is always labelled rather than silently treated as safe.
         </p>
+        <ol className="mt-5 grid gap-4 text-sm leading-6 md:grid-cols-3">
+          <li><span className="font-extrabold text-coast-deep">1. Choose a place and time</span><p className="text-coast-muted">The evidence belongs to that location and forecast period.</p></li>
+          <li><span className="font-extrabold text-coast-deep">2. Read the conditions</span><p className="text-coast-muted">Check the units, source, timestamps and any unavailable readings.</p></li>
+          <li><span className="font-extrabold text-coast-deep">3. Compare an activity</span><p className="text-coast-muted">Reviewed limits determine the result. Saved evidence remains in Marine history.</p></li>
+        </ol>
       </section>}
       <section className="rounded-3xl bg-coast-sage/70 p-5 text-sm leading-6 text-coast-deep">
         Suitability results are decision support from configured safety profiles. They are not a marine navigation service, an official closure authority or an autonomous safety decision.
@@ -294,6 +310,9 @@ export function MarineConditionsPage() {
 }
 
 export function MarineHistoryPage() {
+  const showInitialLoadingScreen = useMarineInitialLoadingScreen()
+  const catalogue = useMarineActivities()
+  const activities = catalogue.activities
   const [latitude, setLatitude] = useState('')
   const [longitude, setLongitude] = useState('')
   const [from, setFrom] = useState('')
@@ -304,21 +323,24 @@ export function MarineHistoryPage() {
   const [assessments, setAssessments] = useState<MarineAssessmentHistory[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [unavailable, setUnavailable] = useState({ snapshots: false, assessments: false })
   const [formError, setFormError] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
-    void Promise.allSettled([getMarineHistory(), getMarineAssessments()]).then(([conditionRows, assessmentRows]) => {
+    const showLoadingScreen = showInitialLoadingScreen()
+    void Promise.allSettled([getMarineHistory({}, showLoadingScreen), getMarineAssessments({}, showLoadingScreen)]).then(([conditionRows, assessmentRows]) => {
       if (!active) return
       if (conditionRows.status === 'fulfilled') setSnapshots(conditionRows.value)
       if (assessmentRows.status === 'fulfilled') setAssessments(assessmentRows.value)
+      setUnavailable({ snapshots: conditionRows.status === 'rejected', assessments: assessmentRows.status === 'rejected' })
       const failed = [conditionRows, assessmentRows].find((row) => row.status === 'rejected')
       if (failed?.status === 'rejected') setError(getMarineError(failed.reason))
     }).finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [])
+  }, [showInitialLoadingScreen])
 
-  async function search(event: FormEvent<HTMLFormElement>) {
+  async function search(event: Pick<FormEvent, 'preventDefault'>) {
     event.preventDefault()
     const parsedLatitude = latitude.trim() ? parseCoordinate(latitude, -90, 90) : ('' as const)
     const parsedLongitude = longitude.trim() ? parseCoordinate(longitude, -180, 180) : ('' as const)
@@ -340,7 +362,7 @@ export function MarineHistoryPage() {
     setError(null)
     setLoading(true)
     try {
-      const [items, assessmentItems] = await Promise.all([
+      const [items, assessmentItems] = await Promise.allSettled([
         getMarineHistory({
         ...(parsedLatitude === '' ? {} : { latitude: parsedLatitude }),
         ...(parsedLongitude === '' ? {} : { longitude: parsedLongitude }),
@@ -354,8 +376,11 @@ export function MarineHistoryPage() {
           ...(to ? { to: toTimestamp } : {}),
         }),
       ])
-      setSnapshots(items)
-      setAssessments(assessmentItems)
+      if (items.status === 'fulfilled') setSnapshots(items.value)
+      if (assessmentItems.status === 'fulfilled') setAssessments(assessmentItems.value)
+      setUnavailable({ snapshots: items.status === 'rejected', assessments: assessmentItems.status === 'rejected' })
+      const failure = [items, assessmentItems].find(row => row.status === 'rejected')
+      if (failure?.status === 'rejected') setError(getMarineError(failure.reason))
     } catch (reason) {
       setError(getMarineError(reason))
     } finally {
@@ -364,12 +389,19 @@ export function MarineHistoryPage() {
   }
 
   return <MarinePageFrame
+    area="history"
     intro="Review stored condition readings and past suitability assessments with the source evidence and exact reviewed limits that produced each result."
     title="Marine history"
   >
+    {loading && <p className="mb-4 text-sm text-coast-muted" role="status">Loading saved coastal evidence…</p>}
+    <ActivityCatalogueStatus catalogue={catalogue} />
     <div className="grid gap-5">
       <section className={cardClass}>
-        <p className="text-xs font-extrabold tracking-[0.15em] text-coast-blue">FILTER HISTORY</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs font-extrabold tracking-[0.15em] text-coast-blue">FILTER HISTORY</p>
+          <button className={secondaryButton} disabled={loading} onClick={event => void search(event)} type="button">Refresh history</button>
+        </div>
+        <p className="mt-3 text-sm leading-6 text-coast-muted">Location filters apply to condition readings. Activity and result filters apply to assessments. The UTC time window applies to both.</p>
         <form className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4" onSubmit={search}>
           <label className="text-sm font-bold" htmlFor="history-latitude">Latitude
             <input className={inputClass} id="history-latitude" inputMode="decimal" onChange={(event) => setLatitude(event.target.value)} value={latitude} />
@@ -386,7 +418,7 @@ export function MarineHistoryPage() {
           <label className="text-sm font-bold" htmlFor="history-activity">Assessment activity
             <select className={inputClass} id="history-activity" onChange={(event) => setActivityId(event.target.value)} value={activityId}>
               <option value="">All activities</option>
-              {MARINE_ACTIVITY_REFERENCES.map((activity) => <option key={activity.id} value={activity.id}>{activity.name}</option>)}
+              {activities.map((activity) => <option key={activity.id} value={activity.id}>{activity.name}</option>)}
             </select>
           </label>
           <label className="text-sm font-bold" htmlFor="history-result">Assessment result
@@ -406,10 +438,11 @@ export function MarineHistoryPage() {
       <section className={cardClass}>
         <div className="flex flex-wrap items-end justify-between gap-4 border-b border-coast-line pb-5">
           <div><p className="text-xs font-extrabold tracking-[0.15em] text-coast-blue">STORED SNAPSHOTS</p><h2 className="mt-2 font-display text-2xl tracking-[-0.035em]">Past condition evidence</h2></div>
-          <span className="rounded-full bg-coast-sage px-3 py-1.5 text-xs font-extrabold text-coast-deep">{snapshots.length} snapshots</span>
+          <span className="rounded-full bg-coast-sage px-3 py-1.5 text-xs font-extrabold text-coast-deep">{unavailable.snapshots ? 'Unavailable' : `${snapshots.length} snapshots`}</span>
         </div>
-        {loading ? null : snapshots.length === 0
-          ? <p className="py-5 text-sm text-coast-muted">No condition snapshots match these filters yet. Run a condition query to store the first one.</p>
+        {unavailable.snapshots && <p className="py-4 text-sm leading-6 text-coast-muted">Condition history is unavailable. Refresh history to retry.{snapshots.length > 0 ? ' Showing the last loaded readings.' : ''}</p>}
+        {loading || (unavailable.snapshots && snapshots.length === 0) ? null : snapshots.length === 0
+          ? <p className="py-5 text-sm text-coast-muted">No condition snapshots match these filters. Run a condition query to store the first one.</p>
           : <ul className="divide-y divide-coast-line">
             {snapshots.map((snapshot) => <li className="grid gap-2 py-4" key={snapshot.id}>
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -430,10 +463,11 @@ export function MarineHistoryPage() {
       <section className={cardClass}>
         <div className="flex flex-wrap items-end justify-between gap-4 border-b border-coast-line pb-5">
           <div><p className="text-xs font-extrabold tracking-[0.15em] text-coast-blue">SUITABILITY ASSESSMENTS</p><h2 className="mt-2 font-display text-2xl tracking-[-0.035em]">Past activity decisions</h2></div>
-          <span className="rounded-full bg-coast-sage px-3 py-1.5 text-xs font-extrabold text-coast-deep">{assessments.length} assessments</span>
+          <span className="rounded-full bg-coast-sage px-3 py-1.5 text-xs font-extrabold text-coast-deep">{unavailable.assessments ? 'Unavailable' : `${assessments.length} assessments`}</span>
         </div>
-        {loading ? null : assessments.length === 0
-          ? <p className="py-5 text-sm text-coast-muted">No suitability assessments match these filters yet.</p>
+        {unavailable.assessments && <p className="py-4 text-sm leading-6 text-coast-muted">Assessment history is unavailable. Refresh history to retry.{assessments.length > 0 ? ' Showing the last loaded assessments.' : ''}</p>}
+        {loading || (unavailable.assessments && assessments.length === 0) ? null : assessments.length === 0
+          ? <p className="py-5 text-sm text-coast-muted">No suitability assessments match these filters.</p>
           : <ul className="divide-y divide-coast-line">
             {assessments.map((assessment) => <li className="grid gap-3 py-5" key={assessment.id}>
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -506,13 +540,13 @@ function profileToDraft(profile: MarineSafetyProfile): ProfileDraft {
 }
 
 const profileCriteria = [
-  { factor: 'Wind', source: 'windCriteriaSource', rationale: 'windCriteriaRationale' },
-  { factor: 'Wave', source: 'waveCriteriaSource', rationale: 'waveCriteriaRationale' },
-  { factor: 'Swell', source: 'swellCriteriaSource', rationale: 'swellCriteriaRationale' },
+  { factor: 'Wind', source: 'windCriteriaSource', rationale: 'windCriteriaRationale', maximum: 'maxWindSpeed', caution: 'cautionWindSpeed', slug: 'wind', metric: 'wind speed', unit: 'km/h', upper: 1000 },
+  { factor: 'Wave', source: 'waveCriteriaSource', rationale: 'waveCriteriaRationale', maximum: 'maxWaveHeight', caution: 'cautionWaveHeight', slug: 'wave', metric: 'wave height', unit: 'm', upper: 50 },
+  { factor: 'Swell', source: 'swellCriteriaSource', rationale: 'swellCriteriaRationale', maximum: 'maxSwellHeight', caution: 'cautionSwellHeight', slug: 'swell', metric: 'swell height', unit: 'm', upper: 50 },
 ] as const
 
 function parsePositiveLimit(raw: string, max: number): number | null {
-  if (!COORDINATE_PATTERN.test(raw.trim())) return null
+  if (!/^\d+(?:\.\d{1,2})?$/.test(raw.trim())) return null
   const value = Number(raw)
   if (!Number.isFinite(value) || value <= 0 || value > max) return null
   return value
@@ -531,59 +565,53 @@ function SafetyProfileForm({ idPrefix, profile, draft, onDraftChange, onSubmit, 
   const field = (key: keyof ProfileDraft) => (event: { target: { value: string } }) =>
     onDraftChange({ ...draft, [key]: event.target.value })
 
-  return <form className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3" onSubmit={onSubmit}>
-    {leading && <div className="sm:col-span-2 xl:col-span-3">{leading}</div>}
-    <label className="text-sm font-bold" htmlFor={`${idPrefix}-max-wind`}>Maximum wind speed <span className="font-normal text-coast-muted">(km/h)</span>
-      <input className={inputClass} disabled={busy} id={`${idPrefix}-max-wind`} inputMode="decimal" max={1000} min={0.01} onChange={field('maxWindSpeed')} required step="any" type="number" value={draft.maxWindSpeed} />
-    </label>
-    <label className="text-sm font-bold" htmlFor={`${idPrefix}-max-wave`}>Maximum wave height <span className="font-normal text-coast-muted">(m)</span>
-      <input className={inputClass} disabled={busy} id={`${idPrefix}-max-wave`} inputMode="decimal" max={50} min={0.01} onChange={field('maxWaveHeight')} required step="any" type="number" value={draft.maxWaveHeight} />
-    </label>
-    <label className="text-sm font-bold" htmlFor={`${idPrefix}-max-swell`}>Maximum swell height <span className="font-normal text-coast-muted">(m)</span>
-      <input className={inputClass} disabled={busy} id={`${idPrefix}-max-swell`} inputMode="decimal" max={50} min={0.01} onChange={field('maxSwellHeight')} required step="any" type="number" value={draft.maxSwellHeight} />
-    </label>
-    <label className="text-sm font-bold" htmlFor={`${idPrefix}-caution-wind`}>Caution wind speed <span className="font-normal text-coast-muted">(optional)</span>
-      <input className={inputClass} disabled={busy} id={`${idPrefix}-caution-wind`} inputMode="decimal" max={1000} min={0.01} onChange={field('cautionWindSpeed')} step="any" type="number" value={draft.cautionWindSpeed} />
-    </label>
-    <label className="text-sm font-bold" htmlFor={`${idPrefix}-caution-wave`}>Caution wave height <span className="font-normal text-coast-muted">(optional)</span>
-      <input className={inputClass} disabled={busy} id={`${idPrefix}-caution-wave`} inputMode="decimal" max={50} min={0.01} onChange={field('cautionWaveHeight')} step="any" type="number" value={draft.cautionWaveHeight} />
-    </label>
-    <label className="text-sm font-bold" htmlFor={`${idPrefix}-caution-swell`}>Caution swell height <span className="font-normal text-coast-muted">(optional)</span>
-      <input className={inputClass} disabled={busy} id={`${idPrefix}-caution-swell`} inputMode="decimal" max={50} min={0.01} onChange={field('cautionSwellHeight')} step="any" type="number" value={draft.cautionSwellHeight} />
-    </label>
-    <div className="grid gap-3 sm:col-span-2 xl:col-span-3">
-      <h3 className="font-display text-lg">Evidence for each limit</h3>
-      <p className="text-sm leading-6 text-coast-muted">Cite the source that supports each wind, wave and swell limit, then explain why it applies to this activity. A second authorized manager must review the draft before it can be used.</p>
-      {profileCriteria.map(({ factor, source, rationale }) => <fieldset className="grid gap-3 rounded-2xl border border-coast-line p-4 md:grid-cols-2" key={factor}>
-        <legend className="px-2 text-sm font-extrabold text-coast-deep">{factor} criteria</legend>
-        <label className="text-sm font-bold" htmlFor={`${idPrefix}-${source}`}>Source reference
+  return <form className="mt-5 grid gap-5" onSubmit={onSubmit}>
+    {leading}
+    <p className="text-sm leading-6 text-coast-muted">For each factor, enter the maximum, an optional lower caution level, and the evidence behind your choice. Use at most two decimal places. A different authorized manager reviews the draft before use.</p>
+    {profileCriteria.map(({ factor, source, rationale, maximum, caution, slug, metric, unit, upper }) => <fieldset className="min-w-0 rounded-2xl border border-coast-line p-4 sm:p-5" key={factor}>
+      <legend className="px-2 font-display text-lg text-coast-deep">{factor} criteria</legend>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="text-sm font-bold" htmlFor={`${idPrefix}-max-${slug}`}>Maximum {metric} <span className="font-normal text-coast-muted">({unit})</span>
+          <input className={inputClass} disabled={busy} id={`${idPrefix}-max-${slug}`} inputMode="decimal" max={upper} min={0.01} onChange={field(maximum)} required step="0.01" type="number" value={draft[maximum]} />
+        </label>
+        <label className="text-sm font-bold" htmlFor={`${idPrefix}-caution-${slug}`}>Caution {metric} <span className="font-normal text-coast-muted">(optional)</span>
+          <input aria-describedby={`${idPrefix}-${slug}-hint`} className={inputClass} disabled={busy} id={`${idPrefix}-caution-${slug}`} inputMode="decimal" max={upper} min={0.01} onChange={field(caution)} step="0.01" type="number" value={draft[caution]} />
+          <span className="mt-2 block text-xs font-normal leading-5 text-coast-muted" id={`${idPrefix}-${slug}-hint`}>Use {unit}; the caution level must be below the maximum. Leave blank if no caution band is defined.</span>
+        </label>
+        <label className="text-sm font-bold sm:col-span-2" htmlFor={`${idPrefix}-${source}`}>Source reference
           <input className={inputClass} disabled={busy} id={`${idPrefix}-${source}`} maxLength={512} minLength={3} onChange={field(source)} placeholder="Publication, authority or URL" required value={draft[source]} />
         </label>
-        <label className="text-sm font-bold" htmlFor={`${idPrefix}-${rationale}`}>Rationale
+        <label className="text-sm font-bold sm:col-span-2" htmlFor={`${idPrefix}-${rationale}`}>Rationale
           <textarea className={`${inputClass} min-h-24`} disabled={busy} id={`${idPrefix}-${rationale}`} maxLength={2000} minLength={10} onChange={field(rationale)} placeholder={`Why this ${factor.toLowerCase()} limit is appropriate`} required value={draft[rationale]} />
         </label>
-      </fieldset>)}
-    </div>
-    <div className="flex flex-wrap items-center gap-3 sm:col-span-2 xl:col-span-3">
+      </div>
+    </fieldset>)}
+    <div className="flex flex-wrap items-center gap-3">
       <button className={primaryButton} disabled={busy} type="submit">{submitLabel}</button>
-      {profile && <p className="text-xs text-coast-muted">Saving creates a new immutable profile version and leaves the current approved version in place until review.</p>}
+      {profile && <p className="text-xs leading-5 text-coast-muted">Saving creates a new immutable profile version and leaves the current approved version in place until review.</p>}
     </div>
   </form>
 }
 
 export function MarineSafetyProfilesPage() {
+  const showInitialLoadingScreen = useMarineInitialLoadingScreen()
+  const catalogue = useMarineActivities()
+  const activities = catalogue.activities
   const { user } = useAuthSession()
   const canManage = hasAllPermissions(user, ['marine.profile.read', 'marine.profile.manage'])
   const [profiles, setProfiles] = useState<MarineSafetyProfile[]>([])
   const [selectedId, setSelectedId] = useState('')
-  const [createActivityId, setCreateActivityId] = useState(MARINE_ACTIVITY_REFERENCES[0].id)
+  const [createActivityId, setCreateActivityId] = useState('')
   const [createDraft, setCreateDraft] = useState<ProfileDraft>(emptyDraft)
   const [editDraft, setEditDraft] = useState<ProfileDraft>(emptyDraft)
+  const [profileLoadError, setProfileLoadError] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const selected = profiles.find((profile) => profile.id === selectedId) ?? null
+  const selectedActivityAvailable = !catalogue.loading && activities.some(activity => activity.id === selected?.activityId)
   const selectedHasProvenance = Boolean(
     selected?.windCriteriaSource?.trim() && selected.windCriteriaRationale?.trim() &&
     selected.waveCriteriaSource?.trim() && selected.waveCriteriaRationale?.trim() &&
@@ -596,23 +624,26 @@ export function MarineSafetyProfilesPage() {
 
   useEffect(() => {
     let active = true
-    void getMarineSafetyProfiles().then((items) => {
+    void getMarineSafetyProfiles(refreshKey > 0 || showInitialLoadingScreen()).then((items) => {
       if (!active) return
       setProfiles(items)
       const initialProfile = items[0] ?? null
       setSelectedId(initialProfile?.id ?? '')
       setEditDraft(initialProfile ? profileToDraft(initialProfile) : emptyDraft)
     }).catch((reason: unknown) => {
-      if (active) setError(getMarineError(reason))
+      if (active) { setError(getMarineError(reason)); setProfileLoadError(true) }
     }).finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [])
+  }, [refreshKey, showInitialLoadingScreen])
 
   function parseDraft(draft: ProfileDraft): {
     limits: { maxWindSpeed: number; maxWaveHeight: number; maxSwellHeight: number }
     caution: { cautionWindSpeed?: number; cautionWaveHeight?: number; cautionSwellHeight?: number }
     criteria: Pick<ProfileDraft, 'windCriteriaSource' | 'windCriteriaRationale' | 'waveCriteriaSource' | 'waveCriteriaRationale' | 'swellCriteriaSource' | 'swellCriteriaRationale'>
   } | { error: string } {
+    if (profileCriteria.some(({ maximum, caution }) => [draft[maximum], draft[caution]].some(value => /\.\d{3,}$/.test(value.trim())))) {
+      return { error: 'Use at most two decimal places for every maximum and caution limit. Values are not rounded.' }
+    }
     const maxWind = parsePositiveLimit(draft.maxWindSpeed, 1000)
     const maxWave = parsePositiveLimit(draft.maxWaveHeight, 50)
     const maxSwell = parsePositiveLimit(draft.maxSwellHeight, 50)
@@ -624,6 +655,9 @@ export function MarineSafetyProfilesPage() {
     const cautionSwell = draft.cautionSwellHeight.trim() ? parsePositiveLimit(draft.cautionSwellHeight, 50) : ('' as const)
     if (cautionWind === null || cautionWave === null || cautionSwell === null) {
       return { error: 'Optional caution limits must be positive numbers below their maximum.' }
+    }
+    if ((cautionWind !== '' && cautionWind >= maxWind) || (cautionWave !== '' && cautionWave >= maxWave) || (cautionSwell !== '' && cautionSwell >= maxSwell)) {
+      return { error: 'Each caution limit must be lower than its matching maximum.' }
     }
     for (const criterion of profileCriteria) {
       const source = draft[criterion.source].trim()
@@ -651,11 +685,12 @@ export function MarineSafetyProfilesPage() {
 
   async function createProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (!canManage || catalogue.loading || !activities.length) return
     const parsed = parseDraft(createDraft)
     if ('error' in parsed) { setError(parsed.error); return }
     setBusy(true); setError(null); setNotice(null)
     try {
-      const created = await createMarineSafetyProfile({ activityId: createActivityId, ...parsed.limits, ...parsed.criteria, ...parsed.caution })
+      const created = await createMarineSafetyProfile({ activityId: (activities.some(activity => activity.id === createActivityId) ? createActivityId : activities[0]?.id) || '', ...parsed.limits, ...parsed.criteria, ...parsed.caution })
       const items = await getMarineSafetyProfiles()
       setProfiles(items)
       setSelectedId(created.id)
@@ -667,7 +702,7 @@ export function MarineSafetyProfilesPage() {
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!selected || !canManage) return
+    if (!selected || !canManage || !selectedActivityAvailable) return
     const parsed = parseDraft(editDraft)
     if ('error' in parsed) { setError(parsed.error); return }
     setBusy(true); setError(null); setNotice(null)
@@ -682,7 +717,7 @@ export function MarineSafetyProfilesPage() {
   }
 
   async function reviewProfile() {
-    if (!selected || !canManage || selected.reviewedAt || busy) return
+    if (!selected || !canManage || !selectedActivityAvailable || selected.reviewedAt || busy) return
     setBusy(true); setError(null); setNotice(null)
     try {
       const approved = await reviewMarineSafetyProfile(selected.id)
@@ -709,23 +744,34 @@ export function MarineSafetyProfilesPage() {
   }
 
   return <MarinePageFrame
-    intro="Review activity limits with their cited basis. Each change creates an immutable draft; a different authorized manager must approve the cited wind, wave and swell criteria before a version can be used."
+    area="profiles"
+    intro="Keep activity safety limits supported by clear sources. Create a draft, have a different authorized manager review it, and retain earlier versions with their assessment history."
     title="Safety profiles"
   >
+    {loading && <p className="mb-4 text-sm text-coast-muted" role="status">Loading activity safety limits…</p>}
+    <ActivityCatalogueStatus catalogue={catalogue} />
     <div className="grid gap-5">
       {error && <MarineErrorMessage>{error}</MarineErrorMessage>}
       {notice && <MarineNotice>{notice}</MarineNotice>}
 
+      <section className="rounded-3xl bg-coast-sage/70 p-5 sm:p-7" aria-label="Safety profile lifecycle">
+        <h2 className="font-display text-2xl tracking-[-0.035em]">How a safety profile becomes effective</h2>
+        <ol className="mt-4 grid gap-4 text-sm leading-6 md:grid-cols-3">
+          <li><p className="font-extrabold text-coast-deep">1. Document the limits</p><p className="text-coast-muted">An authorized manager records wind, wave and swell criteria with sources and rationale.</p></li>
+          <li><p className="font-extrabold text-coast-deep">2. Review independently</p><p className="text-coast-muted">A different authorized manager checks and approves the saved draft.</p></li>
+          <li><p className="font-extrabold text-coast-deep">3. Use the approved version</p><p className="text-coast-muted">Assessments use effective limits. Editing creates a new draft; deactivation preserves history.</p></li>
+        </ol>
+      </section>
       {canManage && <section className={cardClass}>
         <p className="text-xs font-extrabold tracking-[0.15em] text-coast-blue">NEW PROFILE VERSION</p>
         <p className="mt-2 text-sm text-coast-muted">Creating a draft keeps the current approved limits in effect. A different authorized manager must review the new version before it can be used.</p>
         <SafetyProfileForm
-          busy={busy}
+          busy={busy || catalogue.loading || activities.length === 0}
           draft={createDraft}
           idPrefix="create-profile"
           leading={<label className="block text-sm font-bold" htmlFor="create-activity">Activity
-            <select className={inputClass} disabled={busy} id="create-activity" onChange={(event) => setCreateActivityId(event.target.value)} value={createActivityId}>
-              {MARINE_ACTIVITY_REFERENCES.map((activity) => <option key={activity.id} value={activity.id}>{activity.name}{profiledActivityIds.has(activity.id) ? ' · has an active profile' : ''}</option>)}
+            <select className={inputClass} disabled={busy} id="create-activity" onChange={(event) => setCreateActivityId(event.target.value)} value={(activities.some(activity => activity.id === createActivityId) ? createActivityId : activities[0]?.id) || ''}>
+              {activities.map((activity) => <option key={activity.id} value={activity.id}>{activity.name}{profiledActivityIds.has(activity.id) ? ' · has an active profile' : ''}</option>)}
             </select>
           </label>}
           onDraftChange={setCreateDraft}
@@ -738,8 +784,12 @@ export function MarineSafetyProfilesPage() {
       <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(15rem,0.8fr)_minmax(0,1.4fr)]">
         <section aria-label="Safety profile list" className={`${cardClass} self-start`}>
           <div className="flex items-center justify-between gap-3 border-b border-coast-line pb-4"><h2 className="font-display text-xl">Profiles</h2><span className="rounded-full bg-coast-sage px-3 py-1 text-xs font-bold text-coast-deep">{profiles.length}</span></div>
-          {loading ? null : profiles.length === 0
-            ? <p className="py-5 text-sm text-coast-muted">No safety profiles are configured yet{canManage ? '. Create the first one above.' : '.'}</p>
+          {profileLoadError && <div className="grid gap-3 py-5 text-sm leading-6 text-coast-muted">
+            <p>Saved profiles are unavailable. Retry to retrieve the records.</p>
+            <button className={secondaryButton} disabled={loading} onClick={() => { setLoading(true); setProfileLoadError(false); setError(null); setRefreshKey(value => value + 1) }} type="button">Retry profiles</button>
+          </div>}
+          {loading || profileLoadError ? null : profiles.length === 0
+            ? <p className="py-5 text-sm text-coast-muted">No safety profiles are configured{canManage ? '. Create the first one above.' : '.'}</p>
             : <ul className="mt-3 grid gap-2">
               {profiles.map((profile) => <li key={profile.id}>
                 <button aria-current={profile.id === selectedId ? 'true' : undefined} className={`w-full rounded-2xl border px-4 py-3 text-left transition ${profile.id === selectedId ? 'border-coast-blue bg-coast-sage/70' : 'border-transparent hover:border-coast-line hover:bg-coast-paper'}`} onClick={() => { setSelectedId(profile.id); setEditDraft(profileToDraft(profile)) }} type="button">
@@ -766,13 +816,13 @@ export function MarineSafetyProfilesPage() {
             <p><span className="font-bold text-coast-deep">Wave source:</span> {selected.waveCriteriaSource ?? 'Not recorded'}. {selected.waveCriteriaRationale ?? ''}</p>
             <p><span className="font-bold text-coast-deep">Swell source:</span> {selected.swellCriteriaSource ?? 'Not recorded'}. {selected.swellCriteriaRationale ?? ''}</p>
           </div>
-          <SafetyProfileForm busy={busy || !canManage} draft={editDraft} idPrefix="edit-profile" onDraftChange={setEditDraft} onSubmit={saveProfile} profile={selected} submitLabel="Save limits" />
+          <SafetyProfileForm busy={busy || !canManage || !selectedActivityAvailable} draft={editDraft} idPrefix="edit-profile" onDraftChange={setEditDraft} onSubmit={saveProfile} profile={selected} submitLabel="Save limits" />
           {canManage
             ? <div className="mt-6 border-t border-coast-line pt-5">
               {!selected.reviewedAt && <div className="mb-4 grid gap-2">
                 {selectedHasProvenance
                   ? <>
-                    <button className={primaryButton} disabled={busy || selected.createdByUserId === user?.id} onClick={() => void reviewProfile()} type="button">Review and activate this version</button>
+                    <button className={primaryButton} disabled={busy || !selectedActivityAvailable || selected.createdByUserId === user?.id} onClick={() => void reviewProfile()} type="button">Review and activate this version</button>
                     {selected.createdByUserId === user?.id
                       ? <p className="text-xs text-coast-muted">A different authorized manager must review this version. Sign in with another manager account to approve it.</p>
                       : <p className="text-xs text-coast-muted">Approval makes this immutable version effective and records the review time.</p>}
@@ -787,4 +837,11 @@ export function MarineSafetyProfilesPage() {
       </div>
     </div>
   </MarinePageFrame>
+}
+
+function ActivityCatalogueStatus({ catalogue }: { catalogue: ReturnType<typeof useMarineActivities> }) {
+  if (catalogue.loading) return <p role="status" className="mt-3 text-sm text-coast-muted">Loading available activities…</p>
+  if (catalogue.error) return <div className="my-4 rounded-2xl border border-coast-line bg-coast-sand p-4 text-sm leading-6 text-coast-deep" role="alert"><p className="font-bold">Activity data unavailable</p><p>{catalogue.error}</p><p className="mt-2 text-sm text-coast-muted">Condition lookup and saved records remain accessible.</p><button className={secondaryButton} onClick={catalogue.retry} type="button">Retry activities</button></div>
+  if (!catalogue.activities.length) return <p role="status" className="mt-3 text-sm text-coast-muted">No published activities are available.</p>
+  return null
 }

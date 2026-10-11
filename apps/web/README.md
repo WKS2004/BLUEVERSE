@@ -107,19 +107,68 @@ New workflows must
 continue to register both client surfaces and their public API references
 together.
 
-## Marine conditions & safety workflows (v1, Member 2)
+## Marine Safety web workflows
 
-The marine-safety component's React surface lives in member-specific modules:
-`src/features/marine/` (typed public-API adapter and the frozen activity
-reference identities) and `src/pages/marine/MarinePages.tsx`. The routes
-`/marine/conditions`, `/marine/history` and `/marine/safety-profiles` are
-permission-gated by the server-owned `marine.profile.read` grant (plus
-`marine.profile.manage` for profile writes), registered under the shared
+The implementation lives in `src/features/marine/` (typed public API adapter
+and live published activity catalogue) and `src/pages/marine/` (workflow pages,
+navigation and result explanations). The shared workflow IDs are
 `marine-conditions`, `marine-condition-history` and
-`marine-safety-profile-management` workflow IDs, and styled with the shared
-coastal design system. The pages render the server's condition evidence and
-deterministic suitability classification — including source, UTC timestamps,
-freshness and missing fields — and never recompute or soften a result. The
-Flutter implements the paired marine screens under the same workflow IDs and
-public API contract. Local Flutter runtime verification remains open in this
-environment.
+`marine-safety-profile-management`.
+
+Sign in with `marine.profile.read` to use the three registered routes:
+
+Open **Account → Marine & safety** on desktop or mobile, the **Marine & safety**
+account-sidebar group, or Dashboard's marine quick link. The header shows home
+section links only on Home; Administration retains account actions without
+those marketing links. A role name alone never enables the Marine shortcut.
+
+- `/marine/conditions`: enter signed decimal coordinates and an optional UTC
+  time, read condition evidence independently, or compare a published activity
+  against its reviewed limits. The Web UI explains SUITABLE, CAUTION, UNSUITABLE
+  and UNKNOWN without recalculating the server result. Missing readings stay
+  explicit; sources, units and forecast/retrieval times remain visible.
+- `/marine/history`: filter saved conditions and assessments, inspect captured
+  criteria and citations, and refresh independently available records. Failed
+  data is labelled unavailable; a successful empty result stays distinct. If a
+  refresh fails, retained records are identified as the last-loaded data.
+- `/marine/safety-profiles`: inspect versions and effective periods. With the
+  additional `marine.profile.manage` grant, create or edit cited drafts, review
+  another manager's draft, or confirm deactivation while preserving history.
+  The editor groups each factor with its evidence; limits use at most two
+  decimal places and caution must be lower than the corresponding maximum.
+
+All pages share responsive Tailwind styling, the established header/footer and
+accessible Marine workflow navigation. The sidebar and page tabs share the labels
+**Coastal conditions**, **Coastal evidence** (saved readings and assessments),
+and **Activity safety limits**. Labels are defined once in
+`src/features/marine/marineWorkflowLabels.ts` to keep both menus consistent.
+Catalogue outages preserve condition
+lookup, stored records and deactivation; only data-dependent actions are
+disabled. Saved-profile requests have their own retry action. See the shared
+[availability contract](../../docs/api/marine-dependency-availability.md).
+
+Presentation differs from Flutter while authorized actions, permissions and
+public API contracts remain equivalent. The browser does not call internal
+services, perform Activity CRUD, invent profile thresholds or execute agents.
+
+
+### Marine page heroes
+
+Each Marine page has its own responsive editorial hero: ocean swell for
+conditions, a coastal field notebook for saved evidence, and kayaking preparation
+for activity safety limits. `src/pages/marine/MarinePageHero.tsx` pairs workflow
+copy with three newly generated local WebP images. Text stays on a solid paper
+panel; every screen width stacks the photo above the copy. Images have intrinsic dimensions,
+priority loading, decorative empty alt text and no safety/data status claims.
+The persistent workspace places a shared heading and introduction first, then
+the existing pill navigation, then the selected page's hero and forms. The tabs
+stick below the site header while scrolling. Switching tabs animates only the
+content panel over 260 ms; reduced-motion preferences disable this animation.
+Initial reads during Marine tab switches show inline status instead of the
+full-screen loader. First entry, explicit retries/refreshes, saves and Auth
+retain their normal loading feedback. Switching from deep in a page brings the
+workflow start into view; switching near the top preserves the scroll position.
+
+[Asset inventory and generation prompts](src/assets/coastal/marine/README.md)
+record the image provenance. The imagery illustrates the theme; actual provider
+and stored evidence continues to come from the public API.
