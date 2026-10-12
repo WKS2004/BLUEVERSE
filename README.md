@@ -88,10 +88,12 @@ BLUEVERSE/
 │       ├── api/
 │       ├── edge-nginx/
 │       ├── frontend/
-│       └── auth/
+│       ├── auth/
+│       └── experience-biodiversity/
 ├── services/                # ASP.NET Core services
 │   ├── api/                  # checked-in public API foundation
-│   └── auth/                 # internal Auth service
+│   ├── auth/                 # internal Auth service
+│   └── experience-biodiversity/ # internal Experience & Biodiversity service
 ├── AGENTS.md
 ├── compose.yaml
 ├── global.json
@@ -133,19 +135,23 @@ apps/web/          # React
 apps/mobile/       # Flutter
 ```
 
-`services/api/` and `services/auth/` are the service locations referenced by
-Compose, the Dockerfiles, Render and CI. Both backend projects are checked in;
-Auth remains internal and is reachable by clients only through the public API
-gateway. Do not move the Dockerfiles into generated projects; keep them under
-`infrastructure/docker/`.
+`services/api/` and `services/auth/` are the backend projects currently used
+by Render. `services/experience-biodiversity/` is Member 1's implemented
+private ASP.NET Core service providing destinations, activities, offerings,
+schedules, publication lifecycle, Haversine nearby discovery with keyword
+geocoding fallback, and pre-G07 Agentic AI dispatch seams. All Dockerfiles
+stay under `infrastructure/docker/`. Auth and Experience & Biodiversity remain
+internal and are reachable only through the public API gateway.
 
 ## Local setup and deployment
 
 The supported local deployment runs the checked-in React client, public API,
-internal Auth service and PostgreSQL with Docker Compose. Run Compose commands
-from the repository root (the directory containing `compose.yaml`). The public
-entry point is `edge-nginx`; clients use the gateway's `/api/...` routes and do
-not connect directly to internal services.
+internal Auth and Experience & Biodiversity services, and PostgreSQL with
+Docker Compose. The Experience & Biodiversity service provides catalogue discovery,
+management, map vector tiles and nearby geocoding via the public API gateway.
+Run Compose commands from the repository root (the directory containing `compose.yaml`).
+The public entry point is `edge-nginx`; clients use the gateway's `/api/...` routes
+and do not connect directly to internal services.
 
 See [Local Deployment](docs/deployment/local.md) for deployment topology and
 additional platform notes.
@@ -230,12 +236,19 @@ On macOS, Linux or WSL2, use:
 cp .env.example .env
 ```
 
-Edit `.env` and replace the example `JWT_SIGNING_KEY`, database password and
+Edit `.env` and replace the example `JWT_SIGNING_KEY`, PostgreSQL password and
 administrator password with unique local values. The JWT signing key must be
-at least 32 UTF-8 bytes. Use a password manager or secure random generator;
-never commit `.env`. Keep `AUTH_SERVICE_URL=http://auth:8080` because it is the
-Docker-internal API-to-Auth address. `ADMIN_EMAIL` and `ADMIN_PASSWORD` are
-used for the local administrator account.
+at least 32 UTF-8 bytes. Use a password manager or secure random generator.
+The API gateway, Auth service and Experience & Biodiversity service use this
+same key so both public and private service boundaries can validate Auth-issued
+tokens.
+Auth and Experience & Biodiversity use the same `POSTGRES_DB`, `POSTGRES_USER`
+and `POSTGRES_PASSWORD` settings for the single PostgreSQL database. Never
+commit `.env`. Keep
+`AUTH_SERVICE_URL=http://auth:8080` and
+`EXPERIENCE_BIODIVERSITY_SERVICE_URL=http://experience-biodiversity:8080` as
+the Docker-internal API-to-service addresses. `ADMIN_EMAIL` and
+`ADMIN_PASSWORD` are used for the local administrator account.
 
 The gateway is published on host port `80` by default. On the development
 branch, PostgreSQL is published as `5432:5432`, which binds the host port on
@@ -273,20 +286,27 @@ docker compose ps
 
 The first build pulls the DHI base images and may take several minutes. To
 build and run in the foreground while watching logs, use
-`docker compose up --build`. Auth waits for PostgreSQL to become healthy, applies its
-migrations and seeds the configured administrator account.
+`docker compose up --build`. Auth waits for PostgreSQL to become healthy,
+applies its migrations and seeds the configured administrator account.
+Experience & Biodiversity uses the same database settings and applies its own
+EF Core migrations at startup. No second database or PostgreSQL initialization
+script is required for new or existing volumes; see the
+[database setup guide](docs/database/README.md) for migration configuration.
 
 ### Verify the local deployment
 
 Open the web app at `http://localhost` (or the port configured by
 `BLUEVERSE_HTTP_PORT`). The unified Swagger UI is at
-`http://localhost/api/swagger`. Check the frontend, public API and Auth health
-routes; each should return HTTP 200:
+`http://localhost/api/swagger` and includes the Experience & Biodiversity
+document at `/api/experiences/swagger/v1/swagger.json`. Check the frontend,
+public API, Auth and Experience & Biodiversity health routes; each should
+return HTTP 200:
 
 ```powershell
 curl.exe -f http://localhost/health
 curl.exe -f http://localhost/api/health
 curl.exe -f http://localhost/api/auth/health
+curl.exe -f http://localhost/api/experiences/health
 ```
 
 The React and Flutter clients show branded 404 and 500 recovery screens for
@@ -303,11 +323,12 @@ On macOS, Linux or WSL2, run:
 curl --fail --silent --show-error http://localhost/health
 curl --fail --silent --show-error http://localhost/api/health
 curl --fail --silent --show-error http://localhost/api/auth/health
+curl --fail --silent --show-error http://localhost/api/experiences/health
 ```
 
-In `docker compose ps`, PostgreSQL should report `healthy`
-and the frontend, API, Auth and gateway containers should be running. The
-development Compose stack exposes PostgreSQL on host port `5432` across all
+In `docker compose ps`, PostgreSQL should report `healthy`, and the frontend,
+API, Auth, Experience & Biodiversity and gateway containers should be running.
+The development Compose stack exposes PostgreSQL on host port `5432` across all
 interfaces; Auth connects over the Docker network. When promoting the Compose
 configuration from `dev` to `main`, change the host mapping to
 `127.0.0.1:5432:5432` so host access is loopback-only. Production databases
@@ -316,7 +337,7 @@ remain privately managed and are not configured through this local binding.
 If a service does not start or a health URL fails, inspect its recent logs:
 
 ```text
-docker compose logs --tail=100 edge-nginx frontend api auth postgres
+docker compose logs --tail=100 edge-nginx frontend api auth experience-biodiversity postgres
 ```
 
 Common first-run causes are Docker Desktop not running, missing DHI registry
@@ -339,16 +360,36 @@ For Flutter on an Android emulator, explicitly pass the laptop gateway as
 `http://10.0.2.2:80` with
 `--dart-define=BLUEVERSE_API_BASE_URL=http://10.0.2.2:80`. A physical Android
 device must use the laptop's current Wi-Fi/LAN address with the same
-compile-time setting. The explicit value overrides the checked-in,
-environment-specific Android fallback; do not rely on that fallback for a
-device run. The current mobile resolver accepts local HTTP on port `80` only,
+compile-time setting. The default Android gateway is the standard emulator
+host `10.0.2.2:80`; an explicit value overrides it for physical-device runs. The current mobile resolver accepts local HTTP on port `80` only,
 so a deployment HTTPS configuration remains future work. The Flutter
 resolver also has a fixed port-80 limit; changing `BLUEVERSE_HTTP_PORT` does
 not update the mobile client's accepted port. Keep the gateway on port 80 for
 Flutter or update the resolver before changing that setting. If managed Wi-Fi
 isolates the phone from the laptop, use `adb reverse tcp:80 tcp:80` over USB.
 See [Mobile setup](apps/mobile/README.md) for the full device workflow and
-current limitations.
+current limitations. Kotlin incremental compilation is disabled in the mobile
+Gradle configuration to avoid cache errors across Windows drive roots; keep
+space available for Gradle, Pub and temporary compiler output.
+
+For Windows builds using a relocated Flutter cache, initialize each PowerShell
+terminal from the repository root before running Flutter:
+
+```powershell
+. .\scripts\Windows\powershell\initialize-flutter-cache.ps1 -CacheRoot D:\WKS\FlutterBuildCache
+Set-Location apps\mobile
+flutter pub get
+```
+
+This reuses the existing D: Gradle and Pub caches and redirects temporary
+compiler files to D: for that terminal. Already-open processes may not inherit
+saved user environment settings. See [Android build caches](apps/mobile/README.md#android-build-caches)
+for verification commands and the USB-device launch command.
+
+On Android, select **Precise** when using the coastal map location control for
+the most accurate device fix. Existing installs can enable **Use precise
+location** in the app's Location permission settings. See the
+[mobile permission guide](apps/mobile/README.md#android-location-permission).
 
 ## CI
 

@@ -77,7 +77,6 @@ jobs:
         if: steps.scope.outputs.affected == 'true'
         with:
           python-version: "3.12"
-          cache: pip
 
       - name: Install common AI test tooling
         if: steps.scope.outputs.affected == 'true'

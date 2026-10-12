@@ -166,10 +166,10 @@ Update this table as each owner starts work, opens a PR, merges, and completes
 the `dev` compatibility check. It tracks status only; it does not assign a
 turn-taking order.
 
-| Component | Assigned owner (full name) | GitHub account | Initial status | Branch | PR, merge and integration evidence |
+| Component | Assigned owner (full name) | GitHub account | Current status | Branch | PR, merge and integration evidence |
 |---|---|---|---|---|---|
-| G00 — Shared contract freeze | All four assigned owners | — | Pending | `dev` | — |
-| Ushan Srinuka (Member 1) — Experience and Biodiversity | Ushan Srinuka | `Ushan-Srinuka` | Planned | `features/experience-biodiversity` | — |
+| G00 — Shared contract freeze | All four assigned owners | — | Pending | `dev` | Member 1's G00 record is a proposal; shared-owner agreement and verified exit evidence are not recorded. |
+| Ushan Srinuka (Member 1) — Experience and Biodiversity | Ushan Srinuka | `Ushan-Srinuka` | In progress; acceptance pending | `features/experience-biodiversity` | Branch source contains the private service, initial EF Core schema/migration, catalogue and schedule routes, discovery/favourites behavior and registered React workflow. G00 agreement, complete cross-client/provider evidence, PR/merge and `dev` integration acceptance remain open; see the [Member 1 phase plan](phases/member-1-phase-plan.md). The current agent route is a static `not_connected` status only. |
 | Sanuda Abeysinghe (Member 2) — Marine Conditions and Safety | Sanuda Abeysinghe | `sanudaabey` | Planned | `features/marine-safety` | — |
 | Adithya Gunawardana (Member 3) — Planner and Itineraries | Adithya Gunawardana | `AdithyaGunawardana` | Planned | `features/coastal-planner` | — |
 | Wanshaja Sooriyabandara (Member 4) — Coastal Operations | Wanshaja Sooriyabandara | `WKS2004` | Planned | `features/coastal-operations` | — |

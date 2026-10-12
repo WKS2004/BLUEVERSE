@@ -2,7 +2,7 @@
 contract_id: v1.component.experience-biodiversity
 contract_type: business_component
 release: v1
-implementation_status: target_not_implemented
+implementation_status: in_progress
 owner_label: member_1
 owner_full_name: "Ushan Srinuka"
 owner_github_username: "Ushan-Srinuka"
@@ -16,10 +16,10 @@ agent_contract: "../agents/member-1-coastal-experience-biodiversity-agent.md"
 
 # Ushan Srinuka (Member 1) — Coastal Experience & Biodiversity Discovery
 
-**Contract status:** v1 target specification. The current foundation does not
-contain the complete v1 business implementation described here. **Assigned
-owner:** Ushan Srinuka (`@Ushan-Srinuka`) — frozen-requirements trace label
-Member 1. Feature branch: `features/experience-biodiversity`; paired Agentic
+**Contract status:** v1 target specification. Partial implementation exists
+on `features/experience-biodiversity`, but complete component acceptance and
+shared G00 agreement are pending. **Assigned owner:** Ushan Srinuka
+(`@Ushan-Srinuka`) — frozen-requirements trace label Member 1. Paired Agentic
 AI branch: `agentic-ai/experience-biodiversity`.
 
 ## 1. Purpose and user outcome
@@ -46,10 +46,10 @@ Its user-visible answer must make these questions clear:
 | Layer | Component responsibility and implementation contract |
 |---|---|
 | **Universal product idea** | One authoritative coastal catalogue connects destinations, activities, destination-specific offerings, schedules, publication and current availability. People discover and save experiences; catalogue managers maintain them; biodiversity is optional, sourced context. Ushan Srinuka (Member 1) owns the BLUEVERSE map-provider integration that supports agreed location-aware discovery. Provider map/place data helps people find or view places; it never becomes the authoritative destination catalogue. Booking/payment inventory, generic travel search and an independent operational-restriction source are outside this component. |
-| **React Web** | Implement the same authorized discovery, detail, management, favourite, map-assisted location and biodiversity outcomes through the public API. Use the repository's React 19/TypeScript/Vite/React Router structure, reusable route/page/components, Tailwind utilities and existing request/state separation. Nearby search has a usable manual location/destination path. Map-provider requests and credentials stay in Ushan Srinuka's private service, reached through the public API; the eventual map presentation must use a provider-compatible approach that does not make the browser call the provider directly. Do not calculate authoritative availability in the browser. See the [React component contract](../../v0/components/react-web-client.md), [UI integration guide](../../development/ui-integration.md), and [React state ADR](../../adr/ADR-0005-react-state-management.md). |
-| **Flutter Mobile** | Implement equivalent authorized outcomes in Dart with native Material widgets and the existing UI/logic/data separation, repository/API service and view-model pattern. Device location can improve nearby search when permission is granted; manual destination/location selection remains available when denied, unavailable or unsupported. Map-provider requests and credentials stay in Ushan Srinuka's private service, reached through the public API; the eventual map presentation must use a provider-compatible approach that does not make the mobile client call the provider directly. Do not calculate availability locally. See the [Flutter component contract](../../v0/components/flutter-client.md), [UI integration guide](../../development/ui-integration.md), and [Flutter state ADR](../../adr/ADR-0006-flutter-state-management.md). |
-| **Ushan Srinuka (Member 1) .NET service and data** | A separate internal ASP.NET Core service in Ushan Srinuka's own `services/<component-service>/` subfolder owns catalogue/discovery operations, domain validation, persistence, schedules/availability/favourites and the map-provider adapter. Its EF Core/PostgreSQL records are owned by this service. The existing `services/api` remains the public boundary and receives only the authentication/permission, route/forwarding and typed-integration code needed to expose this service under `/api/...`; it contains none of Ushan Srinuka's business rules or persistence. Ushan Srinuka (Member 1) consumes biodiversity results through Adithya Gunawardana's validated public API contract; Adithya Gunawardana's service owns the private IT3091 adapter. Clients use only `/api/...`; they never call providers, PostgreSQL or internal services. Agree service identifiers, public/internal route mapping, DTOs, actor/permission propagation, schema and map choices at G00. |
-| **Map provider integration** | Ushan Srinuka (Member 1) owns the BLUEVERSE adapter and consumer contract for the selected map API. Its exact vendor and feature scope (for example map display, place lookup, geocoding or directions) are open decisions. All provider access is server-mediated under the assignment/repository boundary; keys remain server-side. Validate and normalize results, honor provider terms/attribution, and preserve manual/list discovery if the provider is unavailable. Provider results do not create, publish or overwrite canonical destinations automatically. |
+| **React Web** | Implement the same authorized discovery, detail, management, favourite, map-assisted location and biodiversity outcomes through the public API. Use the repository's React 19/TypeScript/Vite/React Router structure, reusable route/page/components, Tailwind utilities and existing request/state separation. Nearby search supports manual place selection and browser location after an explicit user action. Place search and provider configuration remain service-backed. The current web map uses MapLibre GL JS and the style returned by the public map-config endpoint; its provider and bounded public-tile relationship with Flutter remain pending shared G00 review. Do not send user/device location or BLUEVERSE credentials to tile providers or calculate authoritative availability in the browser. See the [React component contract](../../v0/components/react-web-client.md), [UI integration guide](../../development/ui-integration.md), and [React state ADR](../../adr/ADR-0005-react-state-management.md). |
+| **Flutter Mobile** | Implement equivalent authorized outcomes in Dart with native Material widgets and the existing UI/logic/data separation, repository/API service and view-model pattern. Device location can improve nearby search when permission is granted; manual destination/location selection remains available when denied, unavailable or unsupported. The current implementation obtains its MapLibre style configuration from the public API and fetches public OpenFreeMap style/vector-tile resources only from that configured HTTPS host under the bounded renderer exception in [ADR-0017](../../adr/ADR-0017-map-provider-integration-boundary.md). Place search and provider operations remain service-backed; no user/device location or BLUEVERSE credentials are sent to the tile provider. Do not calculate availability locally. See the [Flutter component contract](../../v0/components/flutter-client.md), [UI integration guide](../../development/ui-integration.md), and [Flutter state ADR](../../adr/ADR-0006-flutter-state-management.md). |
+| **Ushan Srinuka (Member 1) .NET service and data** | A separate internal ASP.NET Core service in Ushan Srinuka's own `services/<component-service>/` subfolder owns catalogue/discovery operations, domain validation, persistence, schedules/availability/favourites and the map-provider adapter. Its EF Core/PostgreSQL records are owned by this service. The existing `services/api` remains the public boundary and receives only the authentication/permission, route/forwarding and typed-integration code needed to expose this service under `/api/...`; it contains none of Ushan Srinuka's business rules or persistence. Ushan Srinuka (Member 1) consumes biodiversity results through Adithya Gunawardana's validated public API contract; Adithya Gunawardana's service owns the private IT3091 adapter. Catalogue, map-configuration and place-search business requests use `/api/...`; the Flutter map renderer's limited public tile access is documented in ADR-0017. Agree service identifiers, public/internal route mapping, DTOs, actor/permission propagation, schema and map choices at G00. |
+| **Map provider integration** | Ushan Srinuka (Member 1) owns the BLUEVERSE adapter and consumer contract. Flutter MapLibre Native and React MapLibre GL JS use the OpenFreeMap public vector tiles from the configured style; this is an implementation proposal, not shared G00 acceptance. Place lookup, provider configuration and credential-bearing calls remain behind the public API and private service. Both renderers may fetch only the configured OpenFreeMap style/tile resources as the bounded exception in ADR-0017. Current-location coordinates remain in client memory and are sent only to the public nearby API after explicit user action; the map location marker is rendered locally. Validate and normalize search results, honor provider terms/attribution, and preserve manual/list discovery if the provider is unavailable. Provider results do not create, publish or overwrite canonical destinations automatically. |
 | **Biodiversity ML integration** | Adithya Gunawardana (Member 3) owns BLUEVERSE's backend adapter to the separate IT3091 inference service and its validated public prediction-result contract; the IT3091 workstream supplies the trained model and inference service. Ushan Srinuka (Member 1) owns the destination/activity-facing user experience and consumes only Adithya Gunawardana's public contract. Preserve genuine prediction provenance, model/version, query location/time, uncertainty and limitations. An outage is explicit unavailable context, never a guessed result. This integration is ordinary backend ML/API work, not Agentic AI, and is implemented before G07. |
 | **Other external ownership** | Open-Meteo Weather and Marine API acquisition belongs to Sanuda Abeysinghe (Member 2). It is independent of Ushan Srinuka's map integration and Adithya Gunawardana's biodiversity inference adapter. |
 | **Component relationships** | Ushan Srinuka (Member 1) is the canonical source of destination/activity/offering IDs and schedule/availability for Sanuda Abeysinghe and Adithya Gunawardana and the managed target/evidence referenced by Wanshaja Sooriyabandara (Member 4). It consumes Wanshaja Sooriyabandara's current operational restriction when deriving effective usability. It provides the location context Adithya Gunawardana (Member 3) may use for an optional biodiversity request and consumes the resulting validated Adithya Gunawardana (Member 3) public contract for presentation. Sanuda Abeysinghe (Member 2) owns activity suitability; Adithya Gunawardana (Member 3) owns planning and the ML adapter; Wanshaja Sooriyabandara (Member 4) owns operational restrictions. See the [producer/consumer relationship map](../component-relationships.md#producer-consumer-and-authority-map). |
@@ -115,20 +115,20 @@ operational users to inspect context when relevant to an assessment.
 Capabilities are granted by the server's role-to-permission model, not by
 client-side assumptions about role names. Therefore:
 
-- a person with browse permission can discover and inspect public/published
-  content;
-- a person with catalogue-management permission can perform the allowed
-  create, update, publication, archive, activity, offering, schedule or
-  availability actions;
+- a person with browse permission (`experiences.catalogue.read` or anonymous for published items) can discover and inspect public/published content;
+- a person with catalogue-management permission (`experiences.catalogue.manage`) can perform the allowed full CRUD operations:
+  - Destinations: create, read, update metadata/coordinates, transition publication status, and delete;
+  - Activities: create, read, update, transition publication status, and delete (cascading child offerings);
+  - Offerings: create, read, update pricing/capacity/duration, transition publication status, and delete;
+  - Schedules: maintain timetable slots with start/end windows and capacity;
+- permission holders (`experiences.catalogue.read`, `experiences.catalogue.manage`, or `auth.role.system.manage`) access catalogue management directly from the left navigation bar (`AccountAreaNavigation`) across Profile, Dashboard, Administration, and Management workspaces;
 - a person can create, view or remove only their own favourites, subject to
   the server contract; and
 - an operational restriction is read from the owning operations service and
   is not editable through this component.
 
-Exact permission codes, visibility rules for unpublished records, and whether
-some management operations have separate permissions are implementation
-decisions. React and Flutter must show the same actions to any caller with the
-same effective permissions.
+The implemented permission codes are `experiences.catalogue.read` and `experiences.catalogue.manage`.
+Both permissions are seeded to the system `Admin` role in `AuthDbContext` and `AuthDataSeeder`. React and Flutter show the same actions to any caller with the same effective permissions.
 
 ## 4. Domain concepts and information meaning
 
@@ -322,7 +322,7 @@ practical while still relying on server-side idempotency/validation.
 | Sanuda Abeysinghe (Member 2) — Marine Conditions & Safety Intelligence | Activity identity/context and suitability evidence may constrain recommendations or operational review. | Sanuda Abeysinghe (Member 2) owns marine data and deterministic environmental suitability. Ushan Srinuka (Member 1) must not calculate a second result. |
 | Adithya Gunawardana (Member 3) — Smart Coastal Planner & Itinerary Management | Valid destinations, activities, offerings, schedules, availability, experience constraints and location context for an optional prediction request. | Planner consumes authoritative candidate data and must apply marine and operational constraints too. Adithya Gunawardana (Member 3) owns the IT3091 backend adapter and exposes only validated prediction context through its public contract; Ushan Srinuka (Member 1) renders that context. |
 | Wanshaja Sooriyabandara (Member 4) — Coastal Operations, Advisories & Alerts | Current managed operational status/restriction relevant to an offering or session. | Wanshaja Sooriyabandara (Member 4) owns restriction state and approved transitions. |
-| Selected map API | Provider-backed map/place/geocoding/display data for Ushan Srinuka's agreed location-discovery features. | The private Ushan Srinuka (Member 1) service owns the adapter. `services/api` is the only client-facing boundary; provider results are untrusted, non-authoritative discovery context. Vendor and exact feature scope remain open. |
+| Selected map API | Flutter MapLibre Native and React MapLibre GL JS use OpenFreeMap public vector tiles for map display, with the public API for style configuration, place search and nearby discovery. | The private Ushan Srinuka (Member 1) service owns configuration and place-search integration; provider results remain untrusted, non-authoritative discovery context. Device coordinates are sent only to the public nearby endpoint after user action, never to tile requests. The OpenFreeMap/MapLibre implementation and bounded tile-rendering exception remain pending shared G00 review. |
 | IT3091 biodiversity inference | Adithya Gunawardana (Member 3) sends minimal validated prediction inputs and receives the model result. Ushan Srinuka (Member 1) consumes the resulting public context. | Adithya Gunawardana's internal adapter calls the IT3091 service; clients and agents do not call it directly. Preserve provenance, uncertainty and unavailable/invalid states; a prediction is never guaranteed presence or safety evidence. |
 | Open-Meteo | Weather and marine forecast/observation inputs. | Sanuda Abeysinghe (Member 2) owns the adapter and deterministic suitability; this integration is not part of Ushan Srinuka's map or Adithya Gunawardana's biodiversity adapter. |
 | Identity and authorization | Authenticated principal and effective permissions. | Public API/Auth contract is authoritative; no role check embedded only in the client. |
@@ -395,20 +395,27 @@ requirements, not from the current implementation.
 
 ## 12. Decisions to finalize during implementation
 
-The following choices are deliberately not invented here: final entity/table
-and DTO names; exact endpoints and permission codes; destination coordinate
-and search-radius semantics; publication and availability state machines;
-schedule time-zone representation; whether favourites can target each
-conceptual item type; map provider/vendor and exact feature scope (display,
-tiles, place search, geocoding, directions or other functions); whether its
-terms support the required ASP.NET-mediated access and chosen client-rendering
-approach; key restrictions, attribution, quotas, caching, timeouts and failure
-fallback; biodiversity request granularity, caching and retention; and
-audit-history retention. Do not ship direct client-to-provider calls under
-the current architecture. Each decision that changes architecture or a
-public contract must be documented in the owning API/database/ADR material,
-then reflected in implementation and tests. The map-provider ownership and
-ASP.NET Core boundary are recorded in
+The Member 1 G00 contract input and its pending shared-owner decisions are
+recorded in the [Experience & Biodiversity G00 proposal](../g00/member-1-experience-biodiversity.md).
+It remains a proposal until all four owners agree; the shared G00 gate is
+still pending.
+
+The following choices are not settled by this component contract: final
+entity/table and DTO names; exact endpoints and permission codes; destination
+coordinate and search-radius semantics; publication and availability state
+machines; schedule time-zone representation; whether favourites can target
+each conceptual item type; whether the current OpenFreeMap/MapLibre tile
+rendering exception for both clients is accepted by all owners; provider terms, attribution,
+quotas, caching, timeouts and failure fallback; biodiversity request
+granularity, caching and retention; and audit-history retention. The current
+OpenFreeMap/MapLibre implementation is a Member 1 proposal, not shared G00
+acceptance; both clients still need a shared provider and rendering-boundary decision. The linked G00
+proposal lists other Member 1 candidates where a shared decision is needed;
+they remain proposals until all affected owners
+agree. Do not add provider requests beyond the documented map-tile rendering
+exception. Each accepted decision that changes architecture or a public contract must be documented in the owning
+API/database/ADR material, then reflected in implementation and tests. The
+map-provider ownership and ASP.NET Core boundary are recorded in
 [ADR-0017](../../adr/ADR-0017-map-provider-integration-boundary.md). ML
 adapter ownership and the Ushan Srinuka (Member 1) consumer boundary are recorded in
 [ADR-0019](../../adr/ADR-0019-biodiversity-inference-integration-ownership.md).
@@ -419,4 +426,5 @@ adapter ownership and the Ushan Srinuka (Member 1) consumer boundary are recorde
 - Paired AI role: [Coastal Experience & Biodiversity Agent](../agents/member-1-coastal-experience-biodiversity-agent.md).
 - Component work areas on one member branch: [Ushan Srinuka (Member 1) phase plan](../phases/member-1-phase-plan.md); producer/consumer relationships: [component relationship map](../component-relationships.md); PR and G07 process: [member branch workflow](../member-branch-workflow.md).
 - Related shared contracts: [v1 workflows](../workflows.md), [member Agentic AI integration boundary](../agentic-ai-integration-boundary.md), [permissions and client parity](../cross-platform-and-permissions.md), [quality and delivery](../quality-and-delivery.md), [requirements coverage and readiness](../requirements-coverage-and-readiness.md), [Agentic AI safety](../../agentic-ai/safety.md), [endpoint catalog](../../api/endpoint-catalog.md), [UI integration](../../contracts/ui-integration.json).
+- G00 decision input: [Member 1 Experience & Biodiversity proposal](../g00/member-1-experience-biodiversity.md); it is not team acceptance.
 - Device/location contract: [v1 device capabilities](../device-capabilities.md) defines one-time Flutter GPS use, React's equivalent location input, manual fallback, consent and data-minimization behavior.

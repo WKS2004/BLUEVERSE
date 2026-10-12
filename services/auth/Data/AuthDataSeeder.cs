@@ -56,7 +56,9 @@ public static class AuthDataSeeder
             [PermissionCodes.UserDelete] = (Guid.Parse("11111111-1111-1111-1111-111111111109"), "Delete user accounts"),
             [PermissionCodes.RoleCreate] = (Guid.Parse("11111111-1111-1111-1111-111111111110"), "Create roles"),
             [PermissionCodes.RoleUpdate] = (Guid.Parse("11111111-1111-1111-1111-111111111111"), "Update roles and assigned permissions"),
-            [PermissionCodes.RoleDelete] = (Guid.Parse("11111111-1111-1111-1111-111111111112"), "Delete roles")
+            [PermissionCodes.RoleDelete] = (Guid.Parse("11111111-1111-1111-1111-111111111112"), "Delete roles"),
+            [PermissionCodes.ExperienceRead] = (Guid.Parse("11111111-1111-1111-1111-111111111113"), "View coastal experiences catalogue"),
+            [PermissionCodes.ExperienceManage] = (Guid.Parse("11111111-1111-1111-1111-111111111114"), "Manage coastal destinations, activities, offerings and schedules")
         };
 
         var permissions = await db.Permissions

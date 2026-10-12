@@ -2,7 +2,8 @@
 
 The following boundaries are implemented for the current foundation. The edge,
 client starter projects with the shared Auth workflow, public API gateway and
-internal Auth service are checked in; future domain services remain separate
+internal Auth service are checked in. The Member 1 branch also has a private
+service and database-connection scaffold; its domain workflow remains future
 implementation work.
 
 ## edge-nginx
@@ -87,13 +88,17 @@ default is no Auth service change.
 
 ## v1 member component services
 
-These four separately owned internal services are v1 target architecture and
-are **not implemented in the current repository**. Each member implements one
-service on the same `features/<component>` branch as its React and Flutter
-work. The service owns its component's domain operations, domain validation,
-application/data-access code, EF Core migrations and PostgreSQL records,
-third-party adapter, tests, health/readiness contract and prepared private
-Agentic AI client seam as required by its component contract.
+These four separately owned internal services are the v1 target architecture.
+The Member 1 service at `services/experience-biodiversity/` is implemented with
+domain entities, EF Core migrations, full catalogue CRUD (Destinations, Activities,
+Offerings, Schedules), publication lifecycle evaluations and transitions, favourites,
+Haversine proximity discovery with keyword geocoding fallback, OpenFreeMap/MapLibre
+vector tile configuration, and a private Agentic AI typed access seam.
+Each member implements one complete service on the same `features/<component>` branch as
+its React and Flutter work. A completed service owns its component's domain
+operations, validation, application/data-access code, EF Core migrations and
+PostgreSQL records, third-party adapter, tests, health/readiness contract and
+prepared private Agentic AI client seam as required by its component contract.
 
 | Owner | Service-owned responsibilities |
 |---|---|
@@ -108,7 +113,10 @@ or forwards client operations. Component services never call Auth directly.
 G00 must settle service identifiers, the API-to-service transport and route
 map, actor/permission propagation, PostgreSQL/schema ownership, and
 health/readiness semantics before parallel implementation. Keep each service
-isolated so its owner does not need to edit another member's service.
+isolated so its owner does not need to edit another member's service. The
+Member 1 branch currently uses Auth's shared database connection configuration
+and PostgreSQL default schema; G00 remains pending and this scaffold does not
+establish shared contract agreement.
 
 ## postgres
 
@@ -139,16 +147,16 @@ separate from post-G07 Agentic AI work; see
 
 ## v1 map-provider target
 
-Ushan Srinuka (Member 1) owns the BLUEVERSE adapter for the selected map API as part of
-location-aware destination and activity discovery. React and Flutter reach
-map capabilities only through the public API and Ushan Srinuka's private component
-service; provider credentials and outbound requests remain server-side.
-Provider-returned place
-or map data is untrusted discovery/display context and does not own canonical
-destination records. The provider, exact map features and compatible
-rendering approach remain open under
-[ADR-0017](../adr/ADR-0017-map-provider-integration-boundary.md). This
-integration is not implemented in the current repository.
+Ushan Srinuka (Member 1) owns the map configuration and place-search adapter in
+the private component service. React and Flutter call those capabilities only
+through the public API. Flutter renders OpenFreeMap vector tiles with MapLibre
+using the public style URL returned by `GET /api/experiences/map/config`; this
+bounded tile-rendering request is the only direct map-provider request made by
+the client. It contains neither user location nor credentials. Search and
+geocoding remain server-mediated, and provider results remain untrusted
+display context rather than canonical destination records. The implemented
+provider and boundary are documented in
+[ADR-0017](../adr/ADR-0017-map-provider-integration-boundary.md).
 
 The one-service-per-member target and the public API integration-only rule are
 recorded in [ADR-0020](../adr/ADR-0020-member-component-service-boundaries.md).

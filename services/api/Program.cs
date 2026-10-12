@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -91,7 +92,26 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("ExperienceAuthenticated", policy =>
+        policy.RequireAuthenticatedUser());
+
+    options.AddPolicy("ExperienceCatalogueRead", policy =>
+        policy.RequireAuthenticatedUser()
+            .RequireAssertion(context => ExperienceAuthorizationPolicyHelpers.HasAnyPermission(
+                context.User,
+                "experiences.catalogue.read",
+                "experiences.catalogue.manage",
+                "auth.role.system.manage")));
+
+    options.AddPolicy("ExperienceCatalogueManage", policy =>
+        policy.RequireAuthenticatedUser()
+            .RequireAssertion(context => ExperienceAuthorizationPolicyHelpers.HasAnyPermission(
+                context.User,
+                "experiences.catalogue.manage",
+                "auth.role.system.manage")));
+});
 
 // CORS Policy
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() 
@@ -146,8 +166,8 @@ app.UseCors("BlueverseCorsPolicy");
 // OpenAPI doc for the public API gateway
 app.MapOpenApi("/api/swagger/{documentName}.json");
 
-// Swagger UI is hosted only by the public API service. Auth is represented in
-// the same UI through its OpenAPI document exposed via the API gateway.
+// Swagger UI is hosted only by the public API service. Auth and private
+// component services are represented through documents exposed by the gateway.
 app.UseSwagger(options =>
 {
     options.RouteTemplate = "api/swagger/{documentName}/swagger.json";
@@ -159,6 +179,9 @@ app.UseSwaggerUI(options =>
     options.DocumentTitle = "BLUEVERSE API Documentation";
     options.SwaggerEndpoint("/api/swagger/v1/swagger.json", "BLUEVERSE Public API");
     options.SwaggerEndpoint("/api/auth/swagger/v1/swagger.json", "BLUEVERSE Auth API");
+    options.SwaggerEndpoint(
+        "/api/experiences/swagger/v1/swagger.json",
+        "BLUEVERSE Experience & Biodiversity Service");
 });
 
 app.UseAuthentication();
@@ -174,3 +197,12 @@ app.Run();
 
 // Make the implicit Program class public so test projects can access it
 public partial class Program { }
+
+internal static class ExperienceAuthorizationPolicyHelpers
+{
+    public static bool HasAnyPermission(ClaimsPrincipal principal, params string[] permissionCodes)
+    {
+        return principal.FindAll("permission")
+            .Any(claim => permissionCodes.Contains(claim.Value, StringComparer.OrdinalIgnoreCase));
+    }
+}

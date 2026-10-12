@@ -9,6 +9,7 @@ const legacyAliases: Record<string, string> = {
   'auth.role.create': 'auth.role.manage',
   'auth.role.update': 'auth.role.manage',
   'auth.role.delete': 'auth.role.manage',
+  'experiences.catalogue.read': 'experiences.catalogue.manage',
 }
 
 export function hasAllPermissions(user: PermissionSubject | null, required: readonly string[]): boolean {

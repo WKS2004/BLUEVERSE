@@ -15,6 +15,10 @@ public static class PermissionCodes
     public const string PermissionRead = "auth.permission.read";
     public const string SystemRoleManage = "auth.role.system.manage";
 
+    // Experience & Biodiversity catalogue permissions
+    public const string ExperienceRead = "experiences.catalogue.read";
+    public const string ExperienceManage = "experiences.catalogue.manage";
+
     public static IReadOnlyList<string> LegacyGrantAliases(string permissionCode) => permissionCode switch
     {
         UserCreate or UserUpdate or UserDelete => [UserManage],

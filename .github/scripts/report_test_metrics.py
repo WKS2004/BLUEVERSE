@@ -21,6 +21,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
+ANSI_ESCAPE_PATTERN = re.compile(r"\x1b(?:\[[0-?]*[ -/]*[@-~]|[@-Z\\-_])")
+
+
 @dataclass
 class Metrics:
     total: int = 0
@@ -109,7 +112,17 @@ def failure_detail(element: ET.Element) -> str:
 
 
 def parse_xml(path: Path) -> Metrics:
-    root = ET.parse(path).getroot()
+    xml_text = path.read_text(encoding="utf-8", errors="replace")
+    xml_text = ANSI_ESCAPE_PATTERN.sub("", xml_text)
+    xml_text = "".join(
+        character
+        for character in xml_text
+        if ord(character) in {0x9, 0xA, 0xD}
+        or 0x20 <= ord(character) <= 0xD7FF
+        or 0xE000 <= ord(character) <= 0xFFFD
+        or 0x10000 <= ord(character) <= 0x10FFFF
+    )
+    root = ET.fromstring(xml_text)
     elements = list(root.iter())
 
     trx_results = [element for element in elements if local_name(element.tag) == "UnitTestResult"]

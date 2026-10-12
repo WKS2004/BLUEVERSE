@@ -37,6 +37,47 @@ of the last active device account returns to the carousel. Its photos are
 bundled under `assets/coastal/onboarding/` and reuse the current BLUEVERSE
 coastal photography.
 
+The experience-biodiversity workflow is available at `/experiences`,
+`/experiences/favourites` and `/experiences/manage`, with destination and
+offering detail routes. Discovery, availability, biodiversity context,
+favourites and experience management use the registered public API. The
+Coastal Map tab gets its MapLibre style configuration from the public API and
+renders OpenFreeMap vector tiles with markers at published destination
+coordinates. Map panning and zooming do not request device location; **Near
+Me** requests the best available location accuracy only after the user taps it, sends it to the
+nearby API request and does not save it in the app. Place search and experience
+browsing remain available without location permission. Biodiversity values are
+model predictions, not species observations. Schedules are interpreted in
+`Asia/Colombo` and sent to the API as UTC instants.
+
+### Rebuilt experience flows
+
+- Discovery reads every available result page, preserves previously loaded
+  sections during refresh failures, and shows errors alongside usable results.
+  Search, activity and region filters remain separate from map place search.
+- Discovery and management tabs keep their scroll position while switching.
+  Tabs animate natively and the map keeps its native view alive. Tab selection
+  survives navigation within the current app session, not a process restart.
+- Map gestures own touches inside the map; swipe between tabs outside it.
+  Coastline presets, place matches, destination chips and selected/nearby cards
+  use the same public workflows as React. The map location button and Near Me
+  request precise location only on tap, subject to device permission. Refreshing nearby results leaves
+  the map mounted. Device location is not persisted.
+- Destination and offering detail routes own their request state. Core content
+  appears independently of optional marine, advisory, biodiversity and schedule
+  requests. Failed context remains unavailable; it never indicates safe conditions.
+- Management offers image heroes, pinned tabs, readable cards and consistent
+  actions for all three sections. Publishing review applies only to its selected
+  item and requested transition. Save buttons block repeated submissions; failed
+  saves preserve fields and show the service error. Departure times wrap on phones.
+- GET requests may try a fallback gateway after a connection failure. Writes
+  are not automatically replayed after a timeout: refresh the affected section
+  to check whether a change reached the service before submitting it again.
+- Tests in `test/experience_rebuild_test.dart` cover paging, request races,
+  account isolation, invalid responses, location denial, duplicate writes,
+  retained tabs, failed forms and narrow layouts. Native map rendering and GPS
+  still require an Android/iOS device; widget tests use an injected map platform.
+
 ## Commands
 
 Run from `apps/mobile`:
@@ -53,6 +94,62 @@ Linux, macOS, Windows and web. Platform-specific release configuration should
 be added only when that target is part of the delivery scope; it must not be
 used to exclude a product role from the mobile client.
 
+## Native session renewal
+
+Experience requests share the native Auth client's credential provider. Before
+dispatch, an access token within 30 seconds of expiry is renewed through the
+public Auth refresh endpoint. Concurrent reads share one renewal; denied
+permissions are not retried, and a changed account cannot be replaced by an
+older renewal response. This keeps long-running map and management sessions
+usable without restarting the app.
+
+## Android build caches
+
+The project disables Kotlin incremental compilation to avoid Kotlin cache
+failures when the checkout and Pub cache are on different Windows drives.
+Gradle task caching remains available; Kotlin recompilation may take longer.
+See [Kotlin compilation and caches](https://kotlinlang.org/docs/gradle-compilation-and-caches.html).
+Keep enough free space on the drives containing Gradle, Pub and the temporary
+compiler output. On Windows, configure all three before running Flutter. From
+the repository root in **each new PowerShell terminal**:
+
+```powershell
+. .\scripts\Windows\powershell\initialize-flutter-cache.ps1 -CacheRoot D:\WKS\FlutterBuildCache
+Set-Location apps\mobile
+flutter pub get
+flutter analyze --no-pub
+flutter test --no-pub
+```
+
+The helper reuses `gradle` and `pub` inside the chosen directory and sets both
+`TEMP` and `TMP` to its `temp` directory for this terminal and child processes.
+It leaves other applications' Windows temporary settings unchanged. Gradle
+wrapper downloads, dependency transforms, Pub packages and Flutter temporary
+compiler output then use D:. The Flutter SDK's own cache stays inside its SDK
+directory; this machine's SDK and repository build output are already on D:.
+An existing user-level `GRADLE_USER_HOME` or `PUB_CACHE` setting may not have
+reached an already-open terminal or Codex process, so run the helper explicitly.
+After changing `PUB_CACHE`, `flutter pub get` must run to regenerate local
+package references. Retain `pubspec.lock`; an older cache does not require
+upgrading dependencies or deleting reusable artifacts.
+
+## Android location permission
+
+Coastal discovery requests location only after a user taps **Near Me** or the
+map's current-location button. The app declares both fine and coarse foreground
+permissions, requests `LocationAccuracy.best` with a 30-second limit, and offers
+the precise permission choice to Android installs that previously had only
+coarse access. Select **Precise** in the Android permission dialog; if needed,
+enable **Use precise location** under the app's Location permission in settings.
+The OS and available GPS signals determine the actual accuracy; selecting
+approximate access remains a supported fallback. Background permission stays
+removed from the merged APK using Android's
+[manifest merge rules](https://developer.android.com/build/manage-manifests#node_markers),
+and guarded by `MOB-EXP-033`. The request behavior is covered by MOB-EXP-041–048.
+Location stays in memory and is used for the public
+nearby request; place search remains available after a permission denial.
+See Geolocator's [accuracy settings](https://pub.dev/documentation/geolocator/latest/geolocator/LocationAccuracy.html).
+
 ## API boundary
 
 The Auth workflow calls the public ASP.NET Core gateway using the host address
@@ -61,8 +158,8 @@ means the phone/emulator itself, not the laptop running Docker. For a standard
 Android emulator, explicitly set `BLUEVERSE_API_BASE_URL` to
 `http://10.0.2.2:80`; for a physical device, use the laptop's current LAN
 address. The explicit compile-time value overrides the checked-in
-environment-specific Android fallback, which differs from the standard
-emulator host. Do not rely on that fallback for a device run.
+standard Android emulator fallback (`10.0.2.2:80`). A physical phone still
+requires its laptop LAN address or the USB reverse tunnel below.
 
 Set the address explicitly for both `flutter run` and `flutter build`:
 
@@ -91,7 +188,7 @@ address, use the attached USB device with an ADB reverse tunnel:
 
 ```bash
 adb reverse tcp:80 tcp:80
-flutter run
+flutter run --dart-define=BLUEVERSE_API_BASE_URL=http://127.0.0.1:80
 ```
 
 The client tries `127.0.0.1:80` only as this final USB-reverse fallback when no

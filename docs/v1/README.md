@@ -58,11 +58,13 @@ human-readable structure and make the scope discoverable for agents. Logical
 input/output tables describe semantics, not frozen DTO schemas; implementation
 must define actual contracts before shipping.
 
-`target_not_implemented` means the requirement is specified but no executable
-v1 business implementation is present in the current foundation. Update that
-status only when source and tests provide evidence. The member numbers are
-stable trace labels; the assigned people and accounts are listed in the
-[canonical owner map](../project/ai-team-members.md).
+`target_not_implemented` means no executable v1 business implementation is
+present. `in_progress` means implementation source exists on the assigned
+feature branch; it does not mean the shared G00 gate, component acceptance,
+merge, integration or tests are complete. Use the readiness review and branch
+tracker for those decisions, based on current source and evidence. The member
+numbers are stable trace labels; the assigned people and accounts are listed
+in the [canonical owner map](../project/ai-team-members.md).
 
 ## Implementation start gate
 

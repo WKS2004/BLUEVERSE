@@ -1,13 +1,22 @@
 import 'package:flutter/material.dart';
 
 import 'data/repositories/auth_repository.dart';
+import 'data/repositories/experience_repository.dart';
 import 'data/services/auth_api_service.dart';
+import 'data/services/experience_api_service.dart';
 import 'ui/account_screens.dart';
 import 'ui/auth_admin_screen.dart';
 import 'ui/auth_registration_screen.dart';
 import 'ui/auth_screens.dart';
 import 'ui/auth_view_model.dart';
 import 'ui/blueverse_theme.dart';
+import 'ui/experiences/catalogue_management_screen.dart';
+import 'ui/experiences/destination_detail_screen.dart';
+import 'ui/experiences/experience_view_model.dart';
+import 'ui/experiences/experience_detail_scope.dart';
+import 'ui/experiences/experiences_discovery_screen.dart';
+import 'ui/experiences/favourites_screen.dart';
+import 'ui/experiences/offering_detail_screen.dart';
 import 'ui/feedback/blueverse_error_screen.dart';
 import 'ui/feedback/blueverse_loading_screen.dart';
 import 'ui/feedback/loading_screen_controller.dart';
@@ -28,15 +37,24 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   late final AuthViewModel _authViewModel;
+  late final ExperienceViewModel _experienceViewModel;
   bool _initialSessionHandled = false;
   String? _lastAuthenticatedUserId;
 
   @override
   void initState() {
     super.initState();
+    final authApi = AuthApiService();
     _authViewModel = AuthViewModel(
-      repository: AuthRepository(apiService: AuthApiService()),
+      repository: AuthRepository(apiService: authApi),
     )..addListener(_handleSessionChange);
+    _experienceViewModel = ExperienceViewModel(
+      repository: ExperienceRepository(
+        apiService: ExperienceApiService(
+          accessTokenProvider: authApi.accessTokenForRequest,
+        ),
+      ),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _authViewModel.restore();
     });
@@ -47,6 +65,7 @@ class _MyAppState extends State<MyApp> {
     _authViewModel
       ..removeListener(_handleSessionChange)
       ..dispose();
+    _experienceViewModel.dispose();
     super.dispose();
   }
 
@@ -62,7 +81,14 @@ class _MyAppState extends State<MyApp> {
     }
 
     final wasAuthenticated = _lastAuthenticatedUserId != null;
+    final previousUserId = _lastAuthenticatedUserId;
     _lastAuthenticatedUserId = activeUserId;
+    if (previousUserId != activeUserId) {
+      _experienceViewModel.clearUserScopedState();
+      if (activeUserId != null) {
+        _experienceViewModel.loadFavourites();
+      }
+    }
     if (wasAuthenticated && activeUserId == null) {
       _replaceNavigationWith('/');
     }
@@ -104,7 +130,10 @@ class _MyAppState extends State<MyApp> {
         '/signin': (_) => AuthLoginScreen(viewModel: _authViewModel),
         '/signup': (_) => AuthRegistrationScreen(viewModel: _authViewModel),
         '/profile': (_) => AuthProfileScreen(viewModel: _authViewModel),
-        '/dashboard': (_) => AuthDashboardScreen(viewModel: _authViewModel),
+        '/dashboard': (_) => AuthDashboardScreen(
+          viewModel: _authViewModel,
+          experienceViewModel: _experienceViewModel,
+        ),
         '/admin': (_) => AuthAdminLandingScreen(viewModel: _authViewModel),
         '/admin/permissions': (_) => AuthAdminScreen(
           viewModel: _authViewModel,
@@ -118,8 +147,63 @@ class _MyAppState extends State<MyApp> {
           viewModel: _authViewModel,
           section: AuthAdminSection.users,
         ),
+        '/experiences': (_) => ExperiencesDiscoveryScreen(
+          viewModel: _experienceViewModel,
+          authViewModel: _authViewModel,
+        ),
+        '/experiences/destinations/:id': (_) =>
+            ExperiencesDiscoveryScreen(viewModel: _experienceViewModel),
+        '/experiences/offerings/:id': (_) =>
+            ExperiencesDiscoveryScreen(viewModel: _experienceViewModel),
+        '/experiences/favourites': (_) => FavouritesScreen(
+          viewModel: _experienceViewModel,
+          authViewModel: _authViewModel,
+        ),
+        '/experiences/manage': (_) => CatalogueManagementScreen(
+          viewModel: _experienceViewModel,
+          authViewModel: _authViewModel,
+        ),
         '/404': (_) => const BlueverseErrorScreen.notFound(),
         '/500': (_) => const BlueverseErrorScreen.server(),
+      },
+      onGenerateRoute: (settings) {
+        final uri = Uri.tryParse(settings.name ?? '');
+        if (uri != null) {
+          final segments = uri.pathSegments;
+          if (segments.length == 3 &&
+              segments[0] == 'experiences' &&
+              segments[1] == 'destinations') {
+            return MaterialPageRoute(
+              settings: settings,
+              builder: (_) => ExperienceDetailScope(
+                parent: _experienceViewModel,
+                auth: _authViewModel,
+                builder: (detailModel) => DestinationDetailScreen(
+                  destinationId: segments[2],
+                  viewModel: detailModel,
+                  authViewModel: _authViewModel,
+                ),
+              ),
+            );
+          }
+          if (segments.length == 3 &&
+              segments[0] == 'experiences' &&
+              segments[1] == 'offerings') {
+            return MaterialPageRoute(
+              settings: settings,
+              builder: (_) => ExperienceDetailScope(
+                parent: _experienceViewModel,
+                auth: _authViewModel,
+                builder: (detailModel) => OfferingDetailScreen(
+                  offeringId: segments[2],
+                  viewModel: detailModel,
+                  authViewModel: _authViewModel,
+                ),
+              ),
+            );
+          }
+        }
+        return null;
       },
       onUnknownRoute: blueverseUnknownRoute,
     );
