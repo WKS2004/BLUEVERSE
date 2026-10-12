@@ -34,6 +34,7 @@ function SiteHeader({ active = 'home', compactMobile = false }: SiteHeaderProps)
   const headerRef = useRef<HTMLElement>(null)
   const location = useLocation()
   const isAdminPage = location.pathname === '/admin' || location.pathname.startsWith('/admin/')
+  const showMainNavigation = !isAdminPage && (active === 'home' || active === 'experiences')
   const { user, accounts, status, switchingAccountId, switchAccount, signOut } = useAuthSession()
   const accountLimitReached = accounts.length >= MAX_DEVICE_ACCOUNTS
   const loginHref = authEntryHref('/signin', location)
@@ -187,12 +188,15 @@ function SiteHeader({ active = 'home', compactMobile = false }: SiteHeaderProps)
           <span className="text-[15px] font-extrabold tracking-[0.13em] sm:text-[17px] sm:tracking-[0.16em]">BLUEVERSE<span className="text-coast-teal">.</span></span>
         </Link>
 
-        {(active === 'home' || active === 'experiences') && (
+        {showMainNavigation && (
           <nav aria-label="Main navigation" className="hidden items-center gap-2 md:flex lg:gap-4">
-            <Link className={navClass(active === 'experiences')} to="/experiences">Experiences</Link>
-            <Link className={navClass(false)} to="/#our-story">Our story</Link>
-            <Link className={navClass(false)} to="/#what-matters">What matters</Link>
-            <Link className={navClass(false)} to="/#our-coast">Our coast</Link>
+            {active === 'experiences' ? (
+              <Link className={navClass(true)} to="/experiences">Experiences</Link>
+            ) : <>
+              <Link className={navClass(false)} to="/#our-story">Our story</Link>
+              <Link className={navClass(false)} to="/#what-matters">What matters</Link>
+              <Link className={navClass(false)} to="/#our-coast">Our coast</Link>
+            </>}
           </nav>
         )}
 

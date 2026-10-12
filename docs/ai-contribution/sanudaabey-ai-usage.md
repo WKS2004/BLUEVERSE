@@ -1345,3 +1345,27 @@ Member 2, Marine Conditions & Safety Intelligence, branch `features/marine-safet
 - Verification/evidence: Reviewed the current Node.js v24.21.0 documentation
   for multiple reporters and verified reporter flags in local Node v24.11.1;
   `git diff --check` passed. Tests were not run. No commit or push was created.
+
+## 2026-10-12 — Fix Marine admin header navigation
+
+- Date/time or time range: 2026-10-12 15:52 (Asia/Colombo)
+- GitHub Username: `sanudaabey`
+- Team Member Name (actual): Sanuda Abeysinghe
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-6
+- Summary of the user's request: Investigate the continuing React workflow
+  failure and remove the test only if it was unnecessary; do not commit or push.
+- Summary of what the AI Agent did: Inspected the React Web Tests run and found
+  GitHub terminated its runner with a shutdown signal (exit 143) before the
+  suite completed. Kept the Marine entry test because it covers unique
+  permission and navigation behavior. Updated `SiteHeader` to omit home-section
+  links on admin pages and show only the active section's desktop links.
+- AI output accepted/changed/rejected: Kept and satisfied the existing
+  requirement-based tests; did not remove or weaken tests. No commit or push.
+- Verification/evidence: Marine entry tests passed 10/10, shared site
+  navigation tests passed 15/15, and lint passed. The full local React suite
+  passed 265/266; the remaining Experience map test cannot resolve the invalid
+  local `maplibre-gl` install (`npm ls maplibre-gl` reports it invalid). GitHub
+  run 38234544230 ended on a runner shutdown signal (exit 143) before the suite
+  finished, so it did not establish an assertion failure.
