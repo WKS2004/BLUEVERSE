@@ -38,6 +38,61 @@ class AuthApiService {
   final AuthCredentialStore _storage;
   final ApiGatewayConfig _gateway;
   Uri? _preferredBaseUri;
+  Future<AuthResponse>? _accessTokenRefresh;
+
+  /// Renew an expiring native session before sending a business request.
+  /// Concurrent requests share one refresh because refresh tokens rotate.
+  Future<String?> accessTokenForRequest() async {
+    final accountId = await _storage.read(_activeAccountIdKey);
+    var token = await _storedAccessToken(accountId);
+    if (!_expiresSoon(token)) return token;
+
+    final pending = _accessTokenRefresh ??= refresh();
+    try {
+      await pending;
+    } finally {
+      if (identical(_accessTokenRefresh, pending)) _accessTokenRefresh = null;
+    }
+    final currentAccount = await _storage.read(_activeAccountIdKey);
+    if (accountId != null && currentAccount != accountId) {
+      throw const AuthApiException(
+        401,
+        'The active account changed. Try again.',
+      );
+    }
+    token = await _storedAccessToken(currentAccount);
+    if (token == null || _expiresSoon(token)) {
+      throw const AuthApiException(401, 'Please sign in again to continue.');
+    }
+    return token;
+  }
+
+  Future<String?> _storedAccessToken(String? accountId) async {
+    final scoped = accountId == null
+        ? null
+        : await _storage.read(_accessTokenKeyFor(accountId));
+    final legacy = await _storage.read(_accessTokenKey);
+    return accountId == null
+        ? legacy
+        : (scoped ?? (_jwtSubject(legacy) == accountId ? legacy : null));
+  }
+
+  bool _expiresSoon(String? token) {
+    if (token == null || token.isEmpty) return false;
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return false;
+      final payload = jsonDecode(
+        utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
+      );
+      final expiry = payload is Map ? payload['exp'] : null;
+      // This is a renewal hint only. The server still validates the JWT.
+      return expiry is num &&
+          expiry <= DateTime.now().toUtc().millisecondsSinceEpoch / 1000 + 30;
+    } on Object {
+      return false;
+    }
+  }
 
   Future<AuthResponse> login({
     required String email,
@@ -141,6 +196,13 @@ class AuthApiService {
       ),
     );
     final auth = _decodeAuthResponse(response);
+    if (await _storage.read(_activeAccountIdKey) != activeAccountId ||
+        (activeAccountId != null && auth.user.id != activeAccountId)) {
+      throw const AuthApiException(
+        401,
+        'The active account changed. Try again.',
+      );
+    }
     await _persist(auth);
     return auth;
   }
@@ -446,18 +508,11 @@ class AuthApiService {
     return response;
   }
 
+  /// Reuses the selected account's secure credentials for public API clients.
+  Future<Map<String, String>> authenticatedHeaders() => _authHeaders();
+
   Future<Map<String, String>> _authHeaders() async {
-    final activeAccountId = await _storage.read(_activeAccountIdKey);
-    final scopedToken = activeAccountId == null
-        ? null
-        : await _storage.read(_accessTokenKeyFor(activeAccountId));
-    final legacyToken = await _storage.read(_accessTokenKey);
-    final token = activeAccountId == null
-        ? legacyToken
-        : (scopedToken ??
-              (_jwtSubject(legacyToken) == activeAccountId
-                  ? legacyToken
-                  : null));
+    final token = await accessTokenForRequest();
     return {
       ..._jsonHeaders,
       if (token != null && token.isNotEmpty)

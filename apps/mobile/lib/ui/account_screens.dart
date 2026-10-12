@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../data/models/auth_models.dart';
 import 'auth_view_model.dart';
 import 'planner_components.dart';
+import 'marine/marine_permissions_guard.dart';
 
 const _coastInk = Color(0xFF18394C);
 const _coastDeep = Color(0xFF205C79);
@@ -95,6 +96,8 @@ class AuthAccountSwitcher extends StatelessWidget {
           Navigator.pushNamed(context, '/signin');
         } else if (value == 'add-register') {
           Navigator.pushNamed(context, '/signup');
+        } else if (value == 'marine') {
+          Navigator.pushNamed(context, '/marine/conditions');
         } else if (value.startsWith('switch:')) {
           final userId = value.substring('switch:'.length);
           if (userId != viewModel.user?.id) {
@@ -103,6 +106,11 @@ class AuthAccountSwitcher extends StatelessWidget {
         }
       },
       itemBuilder: (context) => [
+        if (hasMarineReadAccess(viewModel.user))
+          const PopupMenuItem<String>(
+            value: 'marine',
+            child: Text('Marine & safety'),
+          ),
         ...viewModel.accounts.map(
           (account) => PopupMenuItem<String>(
             value: 'switch:${account.id}',
@@ -928,9 +936,14 @@ class _ProfileMessage extends StatelessWidget {
 }
 
 class AuthDashboardScreen extends StatefulWidget {
-  const AuthDashboardScreen({required this.viewModel, super.key});
+  const AuthDashboardScreen({
+    required this.viewModel,
+    this.experienceViewModel,
+    super.key,
+  });
 
   final AuthViewModel viewModel;
+  final Object? experienceViewModel;
 
   @override
   State<AuthDashboardScreen> createState() => _AuthDashboardScreenState();
@@ -1026,16 +1039,58 @@ class _AuthDashboardScreenState extends State<AuthDashboardScreen> {
                       style: TextStyle(color: Colors.white70, height: 1.5),
                     ),
                     const SizedBox(height: 18),
-                    FilledButton.tonalIcon(
-                      onPressed: () => Navigator.pushNamed(context, '/profile'),
-                      icon: const Icon(Icons.edit_outlined),
-                      label: const Text('Edit your profile'),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        FilledButton.tonalIcon(
+                          key: const Key('btn-explore-experiences'),
+                          onPressed: () => Navigator.pushNamed(context, '/experiences'),
+                          icon: const Icon(Icons.explore),
+                          label: const Text('Explore Experiences'),
+                        ),
+                        FilledButton.tonalIcon(
+                          key: const Key('btn-dashboard-favourites'),
+                          onPressed: () => Navigator.pushNamed(context, '/experiences/favourites'),
+                          icon: const Icon(Icons.bookmark_outline),
+                          label: const Text('Saved Wishlist'),
+                        ),
+                        if (user.permissions.contains('experiences.catalogue.manage') ||
+                            user.permissions.contains('auth.role.system.manage'))
+                          FilledButton.tonalIcon(
+                            key: const Key('btn-dashboard-catalogue-manage'),
+                            onPressed: () => Navigator.pushNamed(context, '/experiences/manage'),
+                            icon: const Icon(Icons.tune),
+                            label: const Text('Manage Experiences'),
+                          ),
+                        FilledButton.tonalIcon(
+                          onPressed: () => Navigator.pushNamed(context, '/profile'),
+                          icon: const Icon(Icons.edit_outlined),
+                          label: const Text('Edit your profile'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 16),
               const SizedBox(height: 28),
+              if (hasMarineReadAccess(user))
+                Card(
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.waves_outlined,
+                      color: _coastDeep,
+                    ),
+                    title: const Text('Marine & safety'),
+                    subtitle: const Text(
+                      'Coastal conditions, saved evidence and activity safety limits.',
+                    ),
+                    trailing: const Icon(Icons.arrow_forward),
+                    onTap: () =>
+                        Navigator.pushNamed(context, '/marine/conditions'),
+                  ),
+                ),
               Text(
                 'What’s ahead',
                 style: Theme.of(context).textTheme.titleLarge

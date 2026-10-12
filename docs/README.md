@@ -27,11 +27,12 @@ The checked-in application provides the v0 foundation; v0 plus v1 is the
 submission target. Documentation separates the checked-in state from the
 target contract. React and Flutter implement shared account registration,
 session, profile and permission-aware Auth administration workflows. The
-public API gateway, internal Auth service, Auth persistence, authorization and
-session-management contract are checked in at `services/api` and
-`services/auth`. V1 domain workflows and executable Agentic AI workflows
-remain implementation targets unless a page explicitly says the behavior is
-currently available.
+public API gateway, internal Auth service and Member 2's marine-safety backend
+are checked in at `services/api`, `services/auth` and `services/marine-safety`.
+React implements the marine conditions, history and safety-profile workflows;
+Flutter marine screens, the other three member components and executable
+Agentic AI remain implementation targets. See the [current component
+status](v1/member-branch-workflow.md#component-branch-status).
 
 Each v1 member component is assigned its own private .NET service. The public
 API remains the only client boundary and receives integration code only; the

@@ -16,9 +16,11 @@ use the same server-owned authorization and API contract. A screen can compile
 while still navigating to an undeclared route, calling the wrong service,
 bypassing the public gateway or using an API shape that the other client does
 not share.
-Both clients and the public API/Auth foundation are checked in. The contract
-must represent their working routes without claiming that future domain
-endpoints exist.
+When this ADR was accepted, both clients and the public API/Auth foundation
+were checked in; the registry represented those working routes without
+claiming future domain endpoints existed. The registry now also records the
+implemented marine-safety API and React workflows, with the paired Flutter
+marine routes registered but not implemented.
 
 ## Decision
 
@@ -48,9 +50,10 @@ surfaces.
   assigning stakeholder groups to a single platform.
 - Layout and device-integrated interactions may differ, while both client
   surfaces preserve the same authorized business capability.
-- The current foundation registry contains the implemented Auth
-  session-management endpoints but no domain API endpoints until the
-  corresponding ASP.NET Core source and OpenAPI contract are checked in.
+- At acceptance, the registry contained Auth session-management endpoints
+  and no domain API endpoints. It now includes marine-safety operations and
+  React routes because the ASP.NET Core service and public contract are
+  checked in; the Flutter marine UI and other member services remain pending.
 - The static validator complements, but does not replace, API HTTP integration,
   gateway and end-to-end tests once executable services are available.
 

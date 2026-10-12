@@ -8,10 +8,12 @@ The checked-in application provides the **v0 foundation** for the SE3090
 integrated full-stack and Agentic AI project. The submission target is
 **v0 plus v1**. React and Flutter implement the shared Auth registration and session workflows,
 backed by the public API gateway, internal Auth service and PostgreSQL. The
-Coastal Planner private service and React/Flutter planning workflows are
-implemented on this feature branch. The other three member services, live
-biodiversity provider and executable agents remain integration targets. See [planner implementation status](docs/development/coastal-planner.md)
-for the precise scope and remaining dependencies.
+Coastal Planner, Marine Safety, and Experience & Biodiversity private services
+and their React/Flutter workflows are implemented on this integration branch.
+Live peer/provider compatibility, the remaining Member 4 component, and
+executable agents remain integration targets. See [planner implementation
+status](docs/development/coastal-planner.md) and [Member 2 evidence](docs/v1/g00/member-2-marine-safety-decisions.md)
+for component scope and remaining dependencies.
 
 ## Project identity
 
@@ -35,19 +37,21 @@ React Web / Flutter Mobile
               │
               ▼
      Public ASP.NET Core API
-        ├──> Auth service ───────────────> PostgreSQL
-        └──> Private component services owned by the four assigned members ─> PostgreSQL
+        ├──> Auth service ──────────────────────────────> PostgreSQL
+        ├──> Marine-safety service (Member 2) ─────────> PostgreSQL
+        └──> Other private component services (planned) -> PostgreSQL
                       └──> Private Agentic AI runtime (after G07)
 ```
 
-The diagram combines the implemented v0 foundation and the v1 target. Today,
-the API integrates Auth and this branch's Coastal Planner, each owning its
-PostgreSQL-backed behavior. For v1, each
-member's private .NET service owns its component business rules, persistence
-and assigned provider adapters. The API remains the only client-facing
-boundary and receives only the authentication/permission and routing
-integration needed to expose those services. After all four member components
-pass G07, the owning service dispatches to the private Agentic AI runtime.
+The diagram combines the implemented v0 foundation, current v1 services and
+remaining target architecture. The API integrates Auth and routes Coastal
+Planner, Marine Safety and Experience & Biodiversity operations to their private
+services, which own their PostgreSQL-backed behavior and provider adapters.
+Each service owns its component business rules, persistence and accepted domain
+contract. The API remains the only client-facing boundary and receives only the
+authentication, permission and routing integration needed to expose those
+services. After all four member components pass G07, the owning service may
+dispatch to the private Agentic AI runtime.
 React and Flutter never call member services or Agentic AI directly. See
 [ADR-0020](docs/adr/ADR-0020-member-component-service-boundaries.md), the
 [v1 documentation index](docs/v1/README.md) and the
@@ -61,6 +65,17 @@ model, data and public API contract.
 Both clients follow the shared visual system in [`DESIGN.md`](DESIGN.md): React
 maps it to Tailwind styles in `apps/web`, and Flutter maps it to native theme
 and widgets in `apps/mobile`.
+
+The marine conditions & safety component (Member 2, branch
+`features/marine-safety`) implements equivalent React Web and Flutter Mobile surfaces:
+`/marine/conditions`, `/marine/history` and `/marine/safety-profiles` query the
+public marine API for condition evidence, the deterministic suitability
+assessment and permission-gated safety profiles. The paired Flutter routes are
+registered under the same shared workflow IDs and implemented with native
+forms, coastal heroes and pinned navigation. Open **Marine & safety** from the
+mobile Dashboard or account menu with `marine.profile.read`; profile writes
+also require `marine.profile.manage`. Mobile calls reuse the selected account's
+secure credentials through the public gateway.
 
 The [v0 foundation guide](docs/v0/README.md) maps the implemented technical
 components and their integration path. The
@@ -91,11 +106,15 @@ BLUEVERSE/
 │       ├── api/
 │       ├── edge-nginx/
 │       ├── frontend/
-│       └── auth/
+│       ├── auth/
+│       ├── marine-safety/
+│       └── experience-biodiversity/
 ├── services/                # ASP.NET Core services
 │   ├── api/                  # checked-in public API foundation
 │   ├── auth/                 # internal Auth service
-│   └── coastal-planner/      # private planning service
+│   ├── coastal-planner/      # private planning service
+│   ├── marine-safety/        # internal marine conditions & safety service (v1)
+│   └── experience-biodiversity/ # internal Experience & Biodiversity service
 ├── AGENTS.md
 ├── compose.yaml
 ├── global.json
@@ -137,19 +156,26 @@ apps/web/          # React
 apps/mobile/       # Flutter
 ```
 
-`services/api/` and `services/auth/` are the service locations referenced by
-Compose, the Dockerfiles, Render and CI. All three backend projects are checked in;
-Auth remains internal and is reachable by clients only through the public API
-gateway. Do not move the Dockerfiles into generated projects; keep them under
+`services/api/`, `services/auth/`, `services/coastal-planner/`,
+`services/marine-safety/` and `services/experience-biodiversity/` contain the
+checked-in backend projects. Compose, Dockerfiles and CI include these v1
+component services; hosted deployment is not yet evidenced. Experience &
+Biodiversity provides destinations, activities, offerings, schedules,
+publication lifecycle and nearby discovery; Agentic AI dispatch remains gated
+on accepted G07. Auth and component services remain internal and are reachable
+by clients only through the public API gateway. Keep all Dockerfiles under
 `infrastructure/docker/`.
 
 ## Local setup and deployment
 
 The supported local deployment runs the checked-in React client, public API,
-internal Auth and Coastal Planner services and PostgreSQL with Docker Compose. Run Compose commands
-from the repository root (the directory containing `compose.yaml`). The public
-entry point is `edge-nginx`; clients use the gateway's `/api/...` routes and do
-not connect directly to internal services.
+internal Auth, Coastal Planner, Marine Safety and Experience & Biodiversity
+services, and PostgreSQL with Docker Compose. The component services provide
+planning, marine conditions and safety, catalogue discovery and management,
+map vector tiles, and nearby geocoding through the public API gateway. Run
+Compose commands from the repository root (the directory containing
+`compose.yaml`). The public entry point is `edge-nginx`; clients use the
+gateway's `/api/...` routes and do not connect directly to internal services.
 
 See [Local Deployment](docs/deployment/local.md) for deployment topology and
 additional platform notes.
@@ -234,12 +260,23 @@ On macOS, Linux or WSL2, use:
 cp .env.example .env
 ```
 
-Edit `.env` and replace the example `JWT_SIGNING_KEY`, database password and
-administrator password with unique local values. The JWT signing key must be
-at least 32 UTF-8 bytes. Use a password manager or secure random generator;
-never commit `.env`. Keep `AUTH_SERVICE_URL=http://auth:8080` because it is the
-Docker-internal API-to-Auth address. `ADMIN_EMAIL` and `ADMIN_PASSWORD` are
-used for the local administrator account.
+Edit `.env` and replace the example `JWT_SIGNING_KEY`, independent
+`MARINE_ACTOR_SIGNING_KEY`, PostgreSQL password and administrator password with
+unique local values. The JWT signing key must be
+at least 32 UTF-8 bytes. Use a password manager or secure random generator.
+The API gateway, Auth service and Experience & Biodiversity service use this
+same key so both public and private service boundaries can validate Auth-issued
+tokens.
+The API and Marine Safety also share `MARINE_ACTOR_SIGNING_KEY` for signed
+request-bound actor context; Marine Safety does not read Auth tables or accept
+client JWTs directly.
+Auth and Experience & Biodiversity use the same `POSTGRES_DB`, `POSTGRES_USER`
+and `POSTGRES_PASSWORD` settings for the single PostgreSQL database. Never
+commit `.env`. Keep
+`AUTH_SERVICE_URL=http://auth:8080` and
+`EXPERIENCE_BIODIVERSITY_SERVICE_URL=http://experience-biodiversity:8080` as
+the Docker-internal API-to-service addresses. `ADMIN_EMAIL` and
+`ADMIN_PASSWORD` are used for the local administrator account.
 
 Compose defaults `AUTH_SELF_SERVICE_PLANNER_ACCESS=true`: new registrations
 receive the non-administrative **Coastal traveller** role with five planner
@@ -272,6 +309,74 @@ the loopback-only mapping planned for `main` use host port `5432`; changing the
 bind address does not resolve a host-port collision with a PostgreSQL process
 already listening on `5432`.
 
+The v1 marine conditions & safety service (`marine-safety`) joins the same
+stack: the public API forwards `/api/marine/...` to it, and it owns
+its marine-safety tables in the shared PostgreSQL database and applies its
+migrations at startup. Its two permission grants
+(`marine.profile.read`, `marine.profile.manage`) are seeded for the Admin role
+by the Auth seeder. Optional environment
+variables configure its Open-Meteo integration and freshness policy
+(`OPEN_METEO_WEATHER_URL`,
+`OPEN_METEO_MARINE_URL`, `OPEN_METEO_FRESHNESS_MINUTES`, defaults documented in
+`services/marine-safety/appsettings.json`); no provider key is required.
+
+The API and Marine Safety require the same independent
+`MARINE_ACTOR_SIGNING_KEY` (at least 32 UTF-8 bytes). API/Auth continue using
+`JWT_SIGNING_KEY`; Marine Safety receives only a signed request-bound actor
+context after the API verifies the caller through Auth `/api/auth/me`.
+Marine Safety does not access Auth tables or accept client JWTs directly.
+
+Activity CRUD belongs to the `experience-biodiversity` service. The API uses
+`EXPERIENCE_CATALOGUE_URL` for its private base URL; the default is
+`http://experience-biodiversity:8080`. Compose starts both component services
+on the shared private network. When activity data is unavailable,
+activity lists, new profile drafts/edits/reviews and evaluations return a
+structured 503 with `availability`, `dependency`, `code`, `reason`,
+`missingFields`, `retryable` and null `data`. Marine starts and checks its own
+database without requiring other member services. Empty or invalid catalogue
+configuration is reported as `UNCONFIGURED` when data is requested; the
+catalogue request timeout is five seconds. Conditions-only queries, saved
+profiles/snapshots/assessments and profile deactivation remain available.
+Both clients retain saved records, indicate "Activity data unavailable" and
+offer retry; only actions requiring published activity data are disabled.
+A successful empty catalogue remains 200 `[]`. See the complete
+[availability contract](docs/api/marine-dependency-availability.md).
+Both clients load published canonical activity IDs through
+`GET /api/marine/activities`, with loading, empty and retry states. The former
+marine activity POST/PUT/DELETE endpoints are removed.
+
+The React Marine pages provide shared workflow navigation, plain-language
+assessment explanations, factor-grouped cited profile forms, and independent
+history/profile recovery. See the [Web workflow guide](apps/web/README.md#marine-safety-web-workflows)
+for routes, permissions and available actions.
+
+Open **Account → Marine & safety**, the account sidebar or Dashboard's marine
+quick link with `marine.profile.read`. The Admin header contains account actions
+without the home-section links. An Admin role name alone does not grant Marine
+access: current role assignments must include the read permission (and manage
+for profile writes).
+
+When an older local image or another member branch supplied Auth, rebuild the
+Auth and Web images together so this branch's existing bootstrap grants apply:
+
+```powershell
+docker compose build auth frontend
+docker compose up -d --no-deps auth frontend
+```
+
+Use the existing `.env` and PostgreSQL volume. Reload the browser to retrieve
+current grants; signing out is unnecessary. Permission seeding preserves codes,
+existing rows and assignments when another member has used a preferred seed ID.
+
+Old placeholder IDs are retained for historic references; they are never
+mapped by activity name. Create cited profiles for Member 1's canonical IDs
+and have a different manager approve them. The new
+`CanonicalActivityProjection` migration removes the projection's unique-name
+constraint and expands category storage to Member 1's 100-character limit.
+The forward migration preserves all rows. A downgrade needs manual duplicate
+name/category reconciliation before restoring the previous constraints.
+See [ADR-0021](docs/adr/ADR-0021-marine-catalogue-and-gateway-actor-context.md).
+
 ### Build and start the stack
 
 The checked-in web lockfile is used by the container build. If it is missing
@@ -295,32 +400,46 @@ docker compose --env-file .env config --quiet
 docker compose ps
 ```
 
-The first build pulls the DHI base images and may take several minutes.
-Auth and planner Dockerfiles reuse NuGet packages across builds with
-BuildKit cache mounts and restore project dependencies before copying source.
-Source-only edits retain the restore layer; package changes still run restore.
-To build and run in the foreground while watching logs, use
-  `docker compose --profile dev up --build`. Auth waits for PostgreSQL to become healthy, applies its
-migrations and seeds the configured administrator account.
-Coastal Planner applies its own migrations and uses an exec-form .NET
-healthcheck, compatible with the minimal DHI runtime. The API waits for
-planner database/migration readiness; missing peer services do not prevent
-startup. Existing itineraries receive the Sri Lankan `Asia/Colombo` time zone
-when the new migration is applied, preserving their UTC schedules and IDs.
+The first build pulls the DHI base images and may take several minutes. Auth
+and component Dockerfiles reuse NuGet packages across builds with BuildKit cache
+mounts and restore dependencies before copying source. To build and run the full
+development stack, including the optional planner fake provider, use
+`docker compose --profile dev up --build`. Auth waits for PostgreSQL to become
+healthy, applies its migrations and seeds the configured administrator account.
+Coastal Planner, Marine Safety and Experience & Biodiversity use the shared
+database settings and apply their EF Core migrations at startup. Coastal Planner
+uses an exec-form .NET healthcheck compatible with the minimal DHI runtime; the
+API waits for planner readiness, while missing peer services do not prevent
+startup. No second database or PostgreSQL initialization script is required;
+see the [database setup guide](docs/database/README.md). Existing itineraries
+receive the Sri Lankan `Asia/Colombo` time zone when the planner migration is
+applied, preserving their UTC schedules and IDs.
 
 ### Verify the local deployment
 
 Open the web app at `http://localhost` (or the port configured by
 `BLUEVERSE_HTTP_PORT`). The unified Swagger UI is at
-`http://localhost/api/swagger`. Check the frontend, public API, Auth and
-Coastal Planner health routes; each should return HTTP 200:
+`http://localhost/api/swagger` and includes the Marine Safety and Experience &
+Biodiversity documents at `/api/marine/swagger/v1/swagger.json` and
+`/api/experiences/swagger/v1/swagger.json`. Check the frontend, public API,
+Auth and all three component health routes; each should return HTTP 200:
 
 ```powershell
 curl.exe -f http://localhost/health
 curl.exe -f http://localhost/api/health
 curl.exe -f http://localhost/api/auth/health
+curl.exe -f http://localhost/api/marine/health
+curl.exe -f http://localhost/api/experiences/health
 curl.exe -f http://localhost/api/planner/health
 ```
+
+The marine-safety document is also listed directly in the unified Swagger UI
+at `http://localhost/api/swagger` (select it from the top-right definition
+picker), and a standalone marine Swagger UI is available at
+`http://localhost/api/marine/swagger` for backend contract
+inspection; its operations require an authenticated account with the marine
+permission grants (`marine.profile.read`, `marine.profile.manage`), which the
+bootstrap administrator receives automatically.
 
 The React and Flutter clients show branded 404 and 500 recovery screens for
 unknown pages and unexpected rendering failures. Both Nginx layers also serve
@@ -336,13 +455,16 @@ On macOS, Linux or WSL2, run:
 curl --fail --silent --show-error http://localhost/health
 curl --fail --silent --show-error http://localhost/api/health
 curl --fail --silent --show-error http://localhost/api/auth/health
+curl --fail --silent --show-error http://localhost/api/marine/health
+curl --fail --silent --show-error http://localhost/api/experiences/health
 curl --fail --silent --show-error http://localhost/api/planner/health
 ```
 
 In `docker compose ps`, PostgreSQL should report `healthy` and the frontend,
-API, Auth, Coastal Planner and gateway containers should be running. The
-development Compose stack exposes PostgreSQL on host port `5432` across all
-interfaces; Auth connects over the Docker network. When promoting the Compose
+API, Auth, Coastal Planner, Marine Safety, Experience & Biodiversity and gateway
+containers should be running. The development Compose stack exposes PostgreSQL
+on host port `5432` across all interfaces; backend services connect over the
+Docker network. When promoting the Compose
 configuration from `dev` to `main`, change the host mapping to
 `127.0.0.1:5432:5432` so host access is loopback-only. Production databases
 remain privately managed and are not configured through this local binding.
@@ -350,7 +472,7 @@ remain privately managed and are not configured through this local binding.
 If a service does not start or a health URL fails, inspect its recent logs:
 
 ```text
-docker compose logs --tail=100 edge-nginx frontend api auth coastal-planner postgres
+docker compose logs --tail=100 edge-nginx frontend api auth coastal-planner marine-safety experience-biodiversity postgres
 ```
 
 Common first-run causes are Docker Desktop not running, missing DHI registry
@@ -372,10 +494,11 @@ delete the local database and start from a clean state.
 For Flutter on an Android emulator, explicitly pass the laptop gateway as
 `http://10.0.2.2:80` with
 `--dart-define=BLUEVERSE_API_BASE_URL=http://10.0.2.2:80`. A physical Android
-device uses the laptop's current Wi-Fi/LAN address or a USB reverse tunnel with
-the same compile-time setting. The explicit value overrides automatic
-emulator/USB fallback discovery. The current mobile resolver accepts local HTTP
-on port `80` only,
+device can use the laptop's current Wi-Fi/LAN address or a USB reverse tunnel
+with the compile-time setting. Without an explicit value, Android tries the
+standard emulator host `10.0.2.2:80`, then the USB reverse tunnel at
+`127.0.0.1:80`; an explicit value overrides those defaults. The current mobile
+resolver accepts local HTTP on port `80` only,
 so a deployment HTTPS configuration remains future work. The Flutter
 resolver also has a fixed port-80 limit; changing `BLUEVERSE_HTTP_PORT` does
 not update the mobile client's accepted port. Keep the gateway on port 80 for
@@ -396,7 +519,37 @@ adb -s $mobileDevice reverse tcp:80 tcp:80
 Keep USB connected for gateway access. Remove the tunnel with
 `adb -s $mobileDevice reverse --remove tcp:80` when it is no longer needed.
 See [Mobile setup](apps/mobile/README.md) for the full device workflow and
-current limitations.
+current limitations. Kotlin incremental compilation is disabled in the mobile
+Gradle configuration to avoid cache errors across Windows drive roots; keep
+space available for Gradle, Pub and temporary compiler output.
+
+For Windows builds using a relocated Flutter cache, initialize each PowerShell
+terminal from the repository root before running Flutter:
+
+```powershell
+. .\scripts\Windows\powershell\initialize-flutter-cache.ps1 -CacheRoot D:\WKS\FlutterBuildCache
+Set-Location apps\mobile
+flutter pub get
+```
+
+This reuses the existing D: Gradle and Pub caches and redirects temporary
+compiler files to D: for that terminal. Already-open processes may not inherit
+saved user environment settings. See [Android build caches](apps/mobile/README.md#android-build-caches)
+for verification commands and the USB-device launch command.
+
+On Android, select **Precise** when using the coastal map location control for
+the most accurate device fix. Existing installs can enable **Use precise
+location** in the app's Location permission settings. See the
+[mobile permission guide](apps/mobile/README.md#android-location-permission).
+
+Before a Flutter Android run, check `flutter doctor -v` and ensure the Gradle
+cache drive and workspace drive have free space for engine extraction and APK
+packaging. SDK/device detection and passing Flutter tests do not establish a
+successful Android build when the build-cache drive is full.
+On Windows, use `GRADLE_USER_HOME` and `PUB_CACHE` to place Gradle and Dart
+dependency caches on a drive with space; use a process-local temporary directory
+for the build. The [Windows cache setup](apps/mobile/README.md#windows-build-cache-location)
+records the configuration and the ARM64 phone build command.
 
 ## CI
 
@@ -434,13 +587,16 @@ tree for authoritative cases.
 
 - `docker-web-build.yml` synchronizes the React lockfile with the DHI Node 24 image, then builds the React web image.
 - `docker-backend-build.yml` builds the public API and discovered ASP.NET services one by one.
-- `docker-stack-health.yml` waits for both build workflows, starts the root Compose file and checks frontend/API/service health endpoints plus the public API/Auth Swagger routes.
+- `docker-stack-health.yml` waits for both build workflows, starts the root Compose file and checks frontend/API/discovered-service health endpoints plus the public API/Auth Swagger routes. Member OpenAPI documents are required when their service source exists, allowing this Marine branch to run without an absent Experiences service.
 
 The web and backend build workflows run on supported branch families when their relevant application, service, Docker infrastructure, lockfile synchronization, Compose, workflow or build-context paths change. The stack-health workflow waits for the required image builds for the same commit and runs only for pull requests targeting `main`; it synchronizes the web lockfile again on its separate runner before running the Compose health checks. Backend build failures are collected across all services so later services are still checked before the workflow fails.
 
 The Docker backend workflow builds `services/api` first and then discovers and
-builds the other ASP.NET service directories, including the internal Auth
-service. The backend test workflow fails if a service source project has no
+builds the other ASP.NET service directories, including Auth and
+marine-safety. The stack-health workflow maps the marine-safety folder to its actual
+`/api/marine/health` route and supplies masked ephemeral signing keys for the
+isolated CI stack. A hosted run is still required for deployment evidence.
+The backend test workflow fails if a service source project has no
 discovered service-local test project.
 
 `github-config-sync.yml` uses GitHub Actions to copy `.github/**` changes
@@ -537,3 +693,23 @@ condition-check refinement on the displayed page, reset and selectable page size
 The redesign
 retains existing public API contracts and permission checks. Flutter design
 changes are deferred until requested. See [the web guide](apps/web/README.md).
+## Marine Safety input and recovery behavior
+
+React and Flutter expose all three Marine pages with `marine.profile.read`;
+profile mutation controls additionally require `marine.profile.manage`. Enter
+latitude/longitude as signed decimal WGS84 coordinates. Nonblank invalid filters
+are rejected before querying. Maximum and optional caution limits accept at most
+two decimal places, preserving the exact reviewed values.
+
+Condition reuse requires matching rounded coordinates, an applicable forecast
+from requested time minus 30 minutes through plus one hour, and retrieval within
+the preceding 15 minutes. Future retrieval timestamps cannot be reused.
+Acquisition/evaluation rejects UTC request times outside
+`0001-01-01T01:00:00Z`–`9999-12-31T22:59:59.9999999Z` with 400 before provider
+access; provider forecast availability still has its own limits.
+
+Flutter allows 45 seconds per request. An ambiguous timeout or connection failure
+after dispatching a write reports that its outcome is unconfirmed and makes no
+automatic second attempt. Check assessment history or the profile before retrying;
+a timeout does not cancel server work. Read requests may try another configured
+gateway candidate. Server-enforced mutation idempotency is not implemented.

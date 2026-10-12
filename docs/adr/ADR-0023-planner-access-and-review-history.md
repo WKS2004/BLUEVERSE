@@ -1,4 +1,4 @@
-# ADR-0021: Planner access and durable itinerary reviews
+# ADR-0023: Planner access and durable itinerary reviews
 
 **Status:** Implemented on the Member 3 feature branch; shared G00 and release
 acceptance remain pending.

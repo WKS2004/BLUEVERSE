@@ -23,14 +23,15 @@ The v1 work has two separate deliveries:
 
 1. **Member feature delivery, before G07:** each member implements its own
    internal .NET component service and the minimum `services/api` integration
-   needed to expose that service through the public API. The member service
-   owns business/workflow identity and status persistence, its typed private
-   adapter to the future Agentic AI service, dependency configuration and
-   availability handling, and the safe unavailable response. The API owns
-   only public authentication/permission and route/forwarding integration.
-   The seam may be unconfigured or report `NOT_CONNECTED` until the service
-   exists. A member may verify the seam with test doubles, but must not ship a
-   fake agent or fabricated AI result as production behavior.
+   needed to expose that service through the public API. A member service owns
+   its business/workflow state. A typed private adapter to the future Agentic
+   AI service, dependency configuration, availability handling and safe
+   unavailable response are included only when accepted by that component's
+   G00 scope. The API owns only public authentication/permission and
+   route/forwarding integration. An accepted seam may be unconfigured or
+   report `NOT_CONNECTED` until the service exists. A member may verify an
+   accepted seam with test doubles, but must not ship a fake agent or
+   fabricated AI result as production behavior.
 2. **Agentic AI delivery, only after G07:** implement the actual private
    Agentic AI runtime, agent roles, prompts/model calls, tools, orchestration,
    agent-owned execution state and evaluations through `agentic-ai/**`
@@ -55,13 +56,15 @@ for its paired role while implementing the ordinary feature:
 | Member feature | Paired future AI role | Member-branch integration work |
 |---|---|---|
 | Ushan Srinuka (Member 1) — Coastal Experience & Biodiversity Discovery | Experience & Biodiversity specialist | Authorized public workflow initiation/status contract; validated references to Ushan Srinuka's catalogue and availability data; a typed private dispatch/result adapter; provenance and explicit not-connected/unavailable state for the optional Agentic report. |
-| Sanuda Abeysinghe (Member 2) — Marine Conditions & Safety Intelligence | Marine Conditions specialist | Authorized public workflow initiation/status contract; validated access to normalized conditions and deterministic suitability; typed private dispatch/result adapter; source/freshness references and explicit not-connected/unavailable state. The agent cannot set or override safety thresholds. |
+| Sanuda Abeysinghe (Member 2) — Marine Conditions & Safety Intelligence | Marine Conditions specialist | Deferred by the accepted Member 2 G00 decision: the `features/marine-safety` branch implements marine domain workflows without a paired AI workflow contract, typed dispatch adapter or AI availability behavior. Revisit this seam under the shared integration gates. The future agent cannot set or override safety thresholds. |
 | Adithya Gunawardana (Member 3) — Smart Coastal Planner & Itinerary Management | Planning & Coordination agent | Public request, shared workflow ID/status/result and itinerary contracts; durable business request state; typed private orchestration adapter and dependency status; safe behavior when the planner or specialist dependencies are not connected. Deterministic recommendations and itineraries remain usable independently. |
 | Wanshaja Sooriyabandara (Member 4) — Coastal Operations, Advisories & Alerts | Safety & Operations agent | Public assessment/status/proposal contracts; durable business assessment and proposal references; typed private dispatch adapter; explicit unavailable status. The Wanshaja Sooriyabandara (Member 4) service enforces authorized decisions and protected execution behind the public API boundary. |
 
 Each member branch owns the public business contract and implements its
-business operation and private-service client seam inside its own internal
-component service. Connect that service through `services/api` using only
+business operation inside its own internal component service. A private
+Agentic AI client seam is implemented only when accepted by the component's
+G00 scope; the current Member 2 G00 decision defers that seam. Connect the
+service through `services/api` using only
 necessary public route/forwarding and identity integration; preserve existing
 API and Auth flows. The later
 `agentic-ai/**` implementation owns the actual runtime, agent execution and
@@ -75,9 +78,10 @@ client shared-file boundary is in the [member branch workflow](member-branch-wor
 Before G07, Adithya Gunawardana and Wanshaja Sooriyabandara may persist ordinary business workflow records:
 requests, assessment identity, initiator and permissions, status, proposal
 references, outcome version, timestamps and safe dependency-failure status.
-Ushan Srinuka and Sanuda Abeysinghe persist their component-owned data and any public workflow
-request/status needed for their paired report. These records are owned by the
-business component and remain meaningful if no agent has ever run.
+Ushan Srinuka and Sanuda Abeysinghe persist their component-owned data and any
+ordinary business workflow state required by their accepted component scope.
+Member 2's current G00 decision defers the paired AI workflow contract and
+state. Component-owned records remain meaningful if no agent has ever run.
 
 The pre-G07 feature work does **not** implement an AI plan, agent steps,
 prompt/model history, tool-call execution, agent-owned recovery state or

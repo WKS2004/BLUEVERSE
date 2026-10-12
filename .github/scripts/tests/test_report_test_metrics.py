@@ -83,6 +83,23 @@ class ReportTestMetricsTests(unittest.TestCase):
         self.assertIn("overall: total=0 completed=0", output)
         self.assertIn("expected parseable test results", error)
 
+    def test_junit_parser_ignores_ansi_control_characters_without_losing_failures(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            result_file = Path(temporary_directory) / "junit.xml"
+            result_file.write_text(
+                '<testsuites><testcase classname="web" name="WEB-FAIL-001">'
+                '<failure type="assertion" message="\x1b[31mExpected coastal\x07 result\x1b[0m" />'
+                '</testcase></testsuites>',
+                encoding="utf-8",
+            )
+
+            metrics = REPORTER.parse_xml(result_file)
+
+        self.assertEqual(1, metrics.total)
+        self.assertEqual(1, metrics.failed)
+        self.assertEqual(0, metrics.errors)
+        self.assertEqual(["web::WEB-FAIL-001 — Expected coastal result"], metrics.failed_cases)
+
     def test_flutter_parser_supports_legacy_and_nested_machine_protocol_events(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             result_file = Path(temporary_directory) / "flutter-machine.json"

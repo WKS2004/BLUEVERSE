@@ -119,7 +119,7 @@ jobs:
             exit 1
           fi
 
-          npm --prefix apps/web run test:ci -- --test-reporter=junit --test-reporter-destination="$PWD/test-results/web/junit.xml" "${relative_test_files[@]}" 2>&1 | tee test-results/web/console.log
+          npm --prefix apps/web run test:ci -- --test-concurrency=1 --test-reporter=spec --test-reporter=junit --test-reporter-destination=stdout --test-reporter-destination="$PWD/test-results/web/junit.xml" "${relative_test_files[@]}" 2>&1 | tee test-results/web/console.log
           test_status=${PIPESTATUS[0]}
           python .github/scripts/report_test_metrics.py --results-root test-results/web --scope "React Web" --require-results
           metrics_status=$?

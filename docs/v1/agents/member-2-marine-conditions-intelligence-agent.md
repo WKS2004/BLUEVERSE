@@ -27,10 +27,12 @@ after G07: `agentic-ai/marine-conditions`.
 **Implementation sequence:** do not implement an executable agent, model
 call or tool before all four business components pass G07. After that gate,
 follow the post-G07 sequence in the [member branch and integration workflow](../member-branch-workflow.md).
-Before G07, the owning Sanuda Abeysinghe (Member 2) feature branch prepares only the public
-workflow contract, private backend adapter and not-connected/unavailable
-behavior defined in the [member integration boundary](../agentic-ai-integration-boundary.md).
-Implement this actual agent on an `agentic-ai/**` branch after G07.
+The accepted 2026-09-27 Member 2 G00 decision defers the paired AI workflow
+contract and typed private adapter on `features/marine-safety`; that branch
+implements its marine domain workflows without claiming AI dispatch or
+availability behavior. Revisit this seam under the shared integration gates
+and accepted decisions. Implement this actual agent on an `agentic-ai/**`
+branch after G07.
 
 ## 1. Responsibility and role separation
 

@@ -13,24 +13,29 @@ replaces them.
 
 ```text
 host ─► edge-nginx ─┬─► frontend (React static files)
-                   └─► api ─► auth ─► postgres
+                   └─► api ─┬─► auth ───────────────┐
+                             └─► marine-safety ──────┴─► postgres
+                                      └─► Open-Meteo (outbound)
 ```
 
 `blueverse_edge` connects edge-nginx and frontend.
-`blueverse_internal` connects edge-nginx, API and Auth and is marked
-internal. `blueverse_database` connects Auth and PostgreSQL. The
+`blueverse_internal` connects edge-nginx, API, Auth and marine-safety and is
+marked internal. `blueverse_database` connects Auth, marine-safety and
+PostgreSQL. The
 gateway publishes host port 80 by default. Development Compose publishes
-PostgreSQL with `5432:5432`, bound on all host interfaces; Auth uses the
-private database network. Use this development mapping only on a trusted
+PostgreSQL with `5432:5432`, bound on all host interfaces; Auth and
+marine-safety use the private database network. Use this development mapping only on a trusted
 network with the local database secret and host firewall. When promoting
 Compose from `dev` to `main`, use `127.0.0.1:5432:5432` for loopback-only host
 access. Both mappings use host port `5432`, so the bind-address choice does
 not avoid a collision with a PostgreSQL process already using that port. API
 and Auth expose container ports to their networks, not direct host-facing
-application ports.
+application ports. The marine service is included in local Compose; hosted
+deployment remains open.
 
 The edge routes `/api/*` to API and frontend paths to the React container.
-API/YARP forwards `/api/auth/*` to Auth. The stack uses environment
+API/YARP forwards `/api/auth/*` to Auth and `/api/marine/*` to the private
+marine-safety service. The stack uses environment
 variables for PostgreSQL credentials, bootstrap administrator and JWT key.
 Do not commit `.env` values or put secrets in images.
 
@@ -39,8 +44,9 @@ Do not commit `.env` values or put secrets in images.
 Use the [local deployment guide](../../deployment/local.md) and
 [Docker infrastructure guide](../../../infrastructure/docker/README.md)
 for prerequisites, lockfile synchronization, Compose commands and health
-checks. Verify `/health`, `/api/health` and
-`/api/auth/health` at the gateway, plus public API/Auth OpenAPI routes.
+checks. Verify `/health`, `/api/health`, `/api/auth/health` and
+`/api/marine/health` at the gateway, plus public API, Auth and marine-safety
+OpenAPI routes.
 The ASP.NET runtime image is minimal; startup and health assumptions must
 not depend on an unavailable shell. A new service needs source, tests,
 Dockerfile, network/health wiring, route documentation and CI discovery
