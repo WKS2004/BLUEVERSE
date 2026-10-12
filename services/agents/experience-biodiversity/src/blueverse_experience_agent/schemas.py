@@ -83,6 +83,27 @@ class BiodiversityStatus(str, Enum):
     INVALID = "invalid"
 
 
+class ModelExecutionStatus(str, Enum):
+    USED = "used"
+    SKIPPED_NO_API_KEY = "skipped_no_api_key"
+    RATE_LIMITED = "rate_limited"
+    UNAVAILABLE = "unavailable"
+    INVALID_OUTPUT = "invalid_output"
+
+
+@dataclass(frozen=True)
+class ModelExecutionSummary:
+    provider: str = "google-ai-studio"
+    model: str = "gemini-2.5-flash"
+    status: ModelExecutionStatus = ModelExecutionStatus.SKIPPED_NO_API_KEY
+    latency_ms: float = 0.0
+    prompt_tokens: Optional[int] = None
+    candidate_tokens: Optional[int] = None
+    synthesis_summary: Optional[str] = None
+    error_summary: Optional[str] = None
+
+
+
 @dataclass(frozen=True)
 class FocalSpeciesPrediction:
     species_id: str
@@ -394,10 +415,12 @@ class ExperienceBiodiversityContextReport:
     audited_tool_calls: List[AuditableToolCall] = field(default_factory=list)
     evidence_references: List[str] = field(default_factory=list)
     uncertainty_and_gaps: List[str] = field(default_factory=list)
+    model_execution: ModelExecutionSummary = field(default_factory=ModelExecutionSummary)
     generated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     def to_dict(self) -> Dict[str, Any]:
         raw = asdict(self)
         raw["completion_outcome"] = self.completion_outcome.value
         raw["biodiversity"]["status"] = self.biodiversity.status.value
+        raw["model_execution"]["status"] = self.model_execution.status.value
         return raw

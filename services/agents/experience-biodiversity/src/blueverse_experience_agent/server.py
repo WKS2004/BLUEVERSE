@@ -1,10 +1,12 @@
 """HTTP Server entry point for Coastal Experience & Biodiversity Agent.
 
 Runs inside the Docker container on port 8080 (or PORT env var) on blueverse_internal network.
-Exposes:
-- GET /health: Health probe for container liveness
-- GET /api/agent/info: Agent identity, capabilities, and tool allowlist
-- POST /api/agent/generate: Execute context generation for a planning/operations step
+All API endpoints are namespaced specifically under /api/experiences/agent/... to prevent
+route collisions when all four BLUEVERSE member agents merge:
+- GET /health and GET /api/experiences/agent/health: Health probe for container liveness
+- GET /api/experiences/agent/info: Agent identity, Gemini model config, and tool allowlist
+- POST /api/experiences/agent/context-reports (and /api/experiences/agent/generate):
+  Execute context generation for a planning/operations step
 """
 
 from __future__ import annotations
@@ -15,11 +17,13 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any, Dict, Optional
 
 from .agent import CoastalExperienceAgent
+from .gemini_client import GeminiClient, GeminiConfig
 from .schemas import ALLOWLISTED_TOOLS, ExperienceAgentInput
 from .tools import ExperienceAgentTools
 
 
 MAX_REQUEST_BODY_BYTES = 65536
+AGENT_ENDPOINT_PREFIX = "/api/experiences/agent"
 
 
 def build_default_agent() -> CoastalExperienceAgent:
@@ -33,7 +37,8 @@ def build_default_agent() -> CoastalExperienceAgent:
         experience_service_url=experience_url,
         planner_service_url=planner_url,
     )
-    return CoastalExperienceAgent(tools=tools)
+    gemini_client = GeminiClient(GeminiConfig.from_env())
+    return CoastalExperienceAgent(tools=tools, gemini_client=gemini_client)
 
 
 agent_instance = build_default_agent()
@@ -57,17 +62,25 @@ class AgentHttpHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         path = self.path.split("?", 1)[0]
-        if path in ("/health", "/api/health"):
+        active_agent = getattr(self, "agent", None) or agent_instance
+        gemini_cfg = active_agent.gemini_client.config
+
+        if path in ("/health", "/api/experiences/agent/health"):
             self._send_json(
                 200,
                 {
                     "status": "healthy",
+                    "agent_id": "v1.agent.experience-biodiversity",
                     "agent": "Coastal Experience & Biodiversity Agent",
                     "owner": "Ushan Srinuka",
                     "role": "specialist_context_provider",
+                    "endpoint_prefix": AGENT_ENDPOINT_PREFIX,
+                    "model_provider": "google-ai-studio",
+                    "model_name": gemini_cfg.model,
+                    "gemini_api_key_configured": gemini_cfg.is_configured,
                 },
             )
-        elif path in ("/api/agent/info", "/api/experiences/agent/info"):
+        elif path == "/api/experiences/agent/info":
             self._send_json(
                 200,
                 {
@@ -75,6 +88,16 @@ class AgentHttpHandler(BaseHTTPRequestHandler):
                     "name": "Coastal Experience & Biodiversity Agent",
                     "owner": "Ushan Srinuka",
                     "github_username": "Ushan-Srinuka",
+                    "endpoint_prefix": AGENT_ENDPOINT_PREFIX,
+                    "endpoints": [
+                        "/api/experiences/agent/health",
+                        "/api/experiences/agent/info",
+                        "/api/experiences/agent/context-reports",
+                        "/api/experiences/agent/generate",
+                    ],
+                    "model_provider": "google-ai-studio",
+                    "model_name": gemini_cfg.model,
+                    "gemini_api_key_configured": gemini_cfg.is_configured,
                     "tools": list(ALLOWLISTED_TOOLS),
                     "read_only": True,
                 },
@@ -84,7 +107,7 @@ class AgentHttpHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         path = self.path.split("?", 1)[0]
-        if path in ("/api/agent/generate", "/api/experiences/agent/generate"):
+        if path in ("/api/experiences/agent/context-reports", "/api/experiences/agent/generate"):
             try:
                 content_length = int(self.headers.get("Content-Length", "0"))
             except ValueError:

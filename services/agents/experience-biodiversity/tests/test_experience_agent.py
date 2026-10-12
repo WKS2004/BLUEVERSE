@@ -21,6 +21,7 @@ from uuid import uuid4
 import pytest
 
 from blueverse_experience_agent.agent import CoastalExperienceAgent
+from blueverse_experience_agent.gemini_client import GeminiClient, GeminiConfig
 from blueverse_experience_agent.schemas import (
     ALLOWLISTED_TOOLS,
     AgentCompletionOutcome,
@@ -30,6 +31,7 @@ from blueverse_experience_agent.schemas import (
     ExperienceAgentInput,
     ExperienceBiodiversityContextReport,
     FocalSpeciesPrediction,
+    ModelExecutionStatus,
 )
 from blueverse_experience_agent.server import create_http_server
 from blueverse_experience_agent.tools import ExperienceAgentTools
@@ -757,7 +759,7 @@ def test_schema_boundary_validation():
 
 
 def test_http_server_endpoints_end_to_end():
-    """EXP-AI-019 & EXP-AI-020: Verify /health, /api/agent/info, and /api/agent/generate HTTP server endpoints."""
+    """EXP-AI-019 & EXP-AI-020: Verify agent-specific /api/experiences/agent/... endpoints and route isolation."""
     dest_id = str(uuid4())
     mock_tools = MockExperienceAgentTools(fixed_destination_id=dest_id)
     mock_agent = CoastalExperienceAgent(tools=mock_tools)
@@ -768,22 +770,33 @@ def test_http_server_endpoints_end_to_end():
     server_thread.start()
 
     try:
-        # 1. GET /health
-        with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=2.0) as resp:
-            assert resp.status == 200
-            health_data = json.loads(resp.read().decode("utf-8"))
-            assert health_data["status"] == "healthy"
-            assert health_data["owner"] == "Ushan Srinuka"
+        # 1. GET /health and GET /api/experiences/agent/health
+        for health_path in ("/health", "/api/experiences/agent/health"):
+            with urllib.request.urlopen(f"http://127.0.0.1:{port}{health_path}", timeout=2.0) as resp:
+                assert resp.status == 200
+                health_data = json.loads(resp.read().decode("utf-8"))
+                assert health_data["status"] == "healthy"
+                assert health_data["owner"] == "Ushan Srinuka"
+                assert health_data["endpoint_prefix"] == "/api/experiences/agent"
+                assert health_data["model_provider"] == "google-ai-studio"
 
-        # 2. GET /api/agent/info
-        with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/agent/info", timeout=2.0) as resp:
+        # 2. GET /api/experiences/agent/info
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/experiences/agent/info", timeout=2.0) as resp:
             assert resp.status == 200
             info_data = json.loads(resp.read().decode("utf-8"))
             assert info_data["agent_id"] == "v1.agent.experience-biodiversity"
+            assert info_data["endpoint_prefix"] == "/api/experiences/agent"
+            assert info_data["model_provider"] == "google-ai-studio"
             assert info_data["read_only"] is True
             assert info_data["tools"] == list(ALLOWLISTED_TOOLS)
 
-        # 3. POST /api/agent/generate (200 OK)
+        # 3. Verify un-namespaced or other member agent routes return 404 (no endpoint collisions)
+        for unowned_path in ("/api/agent/info", "/api/marine/agent/info", "/api/planner/agent/info"):
+            with pytest.raises(urllib.error.HTTPError) as unowned_exc:
+                urllib.request.urlopen(f"http://127.0.0.1:{port}{unowned_path}", timeout=2.0)
+            assert unowned_exc.value.code == 404
+
+        # 4. POST /api/experiences/agent/context-reports (200 OK)
         req_payload = json.dumps(
             {
                 "workflow_id": str(uuid4()),
@@ -794,7 +807,7 @@ def test_http_server_endpoints_end_to_end():
             }
         ).encode("utf-8")
         post_req = urllib.request.Request(
-            f"http://127.0.0.1:{port}/api/agent/generate",
+            f"http://127.0.0.1:{port}/api/experiences/agent/context-reports",
             data=req_payload,
             headers={
                 "Content-Type": "application/json",
@@ -808,11 +821,12 @@ def test_http_server_endpoints_end_to_end():
             assert report_json["completion_outcome"] == "success_complete"
             assert report_json["destination"]["destination_id"] == dest_id
             assert report_json["biodiversity"]["status"] == "available"
+            assert report_json["model_execution"]["provider"] == "google-ai-studio"
 
-        # 4. POST /api/agent/generate with invalid payload -> 400 Bad Request
+        # 5. POST /api/experiences/agent/context-reports with invalid payload -> 400 Bad Request
         bad_payload = json.dumps({"workflow_id": "not-a-uuid"}).encode("utf-8")
         bad_req = urllib.request.Request(
-            f"http://127.0.0.1:{port}/api/agent/generate",
+            f"http://127.0.0.1:{port}/api/experiences/agent/context-reports",
             data=bad_payload,
             headers={"Content-Type": "application/json"},
             method="POST",
@@ -823,3 +837,171 @@ def test_http_server_endpoints_end_to_end():
     finally:
         httpd.shutdown()
         httpd.server_close()
+
+
+def test_gemini_model_synthesis_success_and_header_security():
+    """EXP-AI-021: Verify Google AI Studio Gemini generateContent synthesis, header auth, and thought stripping."""
+    dest_id = str(uuid4())
+    captured_requests: list[tuple[str, Dict[str, Any], Dict[str, str]]] = []
+
+    def mock_gemini_transport(url: str, body_bytes: bytes, headers: Dict[str, str], timeout: float):
+        captured_requests.append((url, json.loads(body_bytes.decode("utf-8")), headers))
+        gemini_response = {
+            "modelVersion": "gemini-2.5-flash",
+            "usageMetadata": {
+                "promptTokenCount": 185,
+                "candidatesTokenCount": 64,
+                "totalTokenCount": 249,
+            },
+            "candidates": [
+                {
+                    "content": {
+                        "role": "model",
+                        "parts": [
+                            {
+                                "thought": True,
+                                "text": "INTERNAL_HIDDEN_CHAIN_OF_THOUGHT_DO_NOT_PERSIST",
+                            },
+                            {
+                                "text": json.dumps(
+                                    {
+                                        "synthesis_summary": (
+                                            "Mirissa Beach Coastal Reserve is published with active morning "
+                                            "snorkeling schedule coverage and informative Green Sea Turtle "
+                                            "habitat suitability (0.88)."
+                                        ),
+                                        "uncertainty_notes": [
+                                            "Seasonal nesting period should be cross-checked with marine weather."
+                                        ],
+                                        "proposed_tools": [
+                                            "destination_lookup",
+                                            "biodiversity_prediction_lookup",
+                                        ],
+                                    }
+                                )
+                            },
+                        ],
+                    }
+                }
+            ],
+        }
+        return 200, json.dumps(gemini_response)
+
+    gemini_cfg = GeminiConfig(api_key="test-google-ai-studio-key", model="gemini-2.5-flash")
+    gemini_client = GeminiClient(config=gemini_cfg, transport=mock_gemini_transport)
+    agent = CoastalExperienceAgent(
+        tools=MockExperienceAgentTools(fixed_destination_id=dest_id),
+        gemini_client=gemini_client,
+    )
+
+    report = agent.generate_report(
+        ExperienceAgentInput(
+            workflow_id=str(uuid4()),
+            step_id="step-gemini-01",
+            objective="Synthesize Mirissa snorkeling and biodiversity context",
+            destination_id=dest_id,
+            include_biodiversity=True,
+        )
+    )
+
+    assert len(captured_requests) == 1
+    req_url, req_json, req_headers = captured_requests[0]
+    assert req_url == "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+    # API key must be in x-goog-api-key header, NEVER in URL query parameters
+    assert "key=" not in req_url
+    assert req_headers["x-goog-api-key"] == "test-google-ai-studio-key"
+    assert req_json["generationConfig"]["responseMimeType"] == "application/json"
+
+    assert report.model_execution.status == ModelExecutionStatus.USED
+    assert report.model_execution.provider == "google-ai-studio"
+    assert report.model_execution.model == "gemini-2.5-flash"
+    assert report.model_execution.prompt_tokens == 185
+    assert report.model_execution.candidate_tokens == 64
+    assert "Mirissa Beach Coastal Reserve is published" in (report.model_execution.synthesis_summary or "")
+    # Hidden thought part must never appear anywhere in the serialized report
+    serialized_report = json.dumps(report.to_dict())
+    assert "INTERNAL_HIDDEN_CHAIN_OF_THOUGHT_DO_NOT_PERSIST" not in serialized_report
+    assert "Seasonal nesting period should be cross-checked with marine weather." in report.uncertainty_and_gaps
+
+
+def test_gemini_free_tier_rate_limit_429_graceful_fallback():
+    """EXP-AI-022: Google AI Studio free-tier HTTP 429 rate limit degrades gracefully without losing deterministic evidence."""
+    dest_id = str(uuid4())
+
+    def rate_limited_transport(url: str, body_bytes: bytes, headers: Dict[str, str], timeout: float):
+        return 429, json.dumps({"error": {"code": 429, "message": "Resource has been exhausted (e.g. check quota)."}})
+
+    gemini_client = GeminiClient(
+        config=GeminiConfig(api_key="test-free-tier-key", model="gemini-2.5-flash"),
+        transport=rate_limited_transport,
+    )
+    agent = CoastalExperienceAgent(
+        tools=MockExperienceAgentTools(fixed_destination_id=dest_id),
+        gemini_client=gemini_client,
+    )
+
+    report = agent.generate_report(
+        ExperienceAgentInput(
+            workflow_id=str(uuid4()),
+            step_id="step-gemini-429",
+            objective="Test free tier rate limit resilience",
+            destination_id=dest_id,
+            include_biodiversity=True,
+        )
+    )
+
+    assert report.completion_outcome == AgentCompletionOutcome.SUCCESS_COMPLETE
+    assert report.destination is not None
+    assert report.destination.destination_id == dest_id
+    assert report.biodiversity.status == BiodiversityStatus.AVAILABLE
+    assert report.model_execution.status == ModelExecutionStatus.RATE_LIMITED
+    assert "HTTP 429" in (report.model_execution.error_summary or "")
+
+
+def test_gemini_untrusted_output_blocks_unauthorized_tools_and_status_overrides():
+    """EXP-AI-023: Untrusted Gemini output proposing unapproved tools or overriding availability is rejected."""
+    dest_id = str(uuid4())
+
+    def malicious_model_transport(url: str, body_bytes: bytes, headers: Dict[str, str], timeout: float):
+        malicious_payload = {
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [
+                            {
+                                "text": json.dumps(
+                                    {
+                                        "synthesis_summary": "Overriding status to available.",
+                                        "proposed_tools": ["destination_lookup", "delete_all_offerings"],
+                                    }
+                                )
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+        return 200, json.dumps(malicious_payload)
+
+    gemini_client = GeminiClient(
+        config=GeminiConfig(api_key="test-key", model="gemini-2.5-flash"),
+        transport=malicious_model_transport,
+    )
+    agent = CoastalExperienceAgent(
+        tools=MockExperienceAgentTools(fixed_destination_id=dest_id),
+        gemini_client=gemini_client,
+    )
+
+    report = agent.generate_report(
+        ExperienceAgentInput(
+            workflow_id=str(uuid4()),
+            step_id="step-gemini-untrusted",
+            objective="Test untrusted Gemini tool proposal rejection",
+            destination_id=dest_id,
+        )
+    )
+
+    assert report.model_execution.status == ModelExecutionStatus.INVALID_OUTPUT
+    assert report.model_execution.synthesis_summary is None
+    assert "outside ALLOWLISTED_TOOLS" in (report.model_execution.error_summary or "")
+    assert any("Model output validation note" in gap for gap in report.uncertainty_and_gaps)

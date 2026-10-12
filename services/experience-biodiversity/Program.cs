@@ -90,6 +90,7 @@ builder.Services.AddScoped<IMarineSafetyConsumerService, MarineSafetyConsumerSer
 builder.Services.AddScoped<IDependenciesDiagnosticsService, DependenciesDiagnosticsService>();
 builder.Services.AddScoped<IMapProviderService, MapProviderService>();
 builder.Services.AddScoped<IEvaluationService, EvaluationService>();
+builder.Services.AddScoped<IExperienceAgentConsumerService, ExperienceAgentConsumerService>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrWhiteSpace(connectionString))

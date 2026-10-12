@@ -7,7 +7,9 @@ FROM dhi.io/python:3.13-alpine
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH="/app/src" \
-    PORT=8080
+    PORT=8080 \
+    GEMINI_MODEL="gemini-2.5-flash" \
+    GEMINI_API_BASE_URL="https://generativelanguage.googleapis.com/v1beta"
 
 WORKDIR /app
 

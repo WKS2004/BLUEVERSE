@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import List, Optional
 
+from .gemini_client import GeminiClient
 from .schemas import (
     ActivityContext,
     AgentCompletionOutcome,
@@ -18,6 +19,7 @@ from .schemas import (
     DestinationContext,
     ExperienceAgentInput,
     ExperienceBiodiversityContextReport,
+    ModelExecutionStatus,
     OfferingContext,
     ScheduleContext,
 )
@@ -36,8 +38,13 @@ Invariants:
 
 
 class CoastalExperienceAgent:
-    def __init__(self, tools: Optional[ExperienceAgentTools] = None):
+    def __init__(
+        self,
+        tools: Optional[ExperienceAgentTools] = None,
+        gemini_client: Optional[GeminiClient] = None,
+    ):
         self.tools = tools or ExperienceAgentTools()
+        self.gemini_client = gemini_client or GeminiClient()
 
     def generate_report(
         self, agent_input: ExperienceAgentInput, auth_token: Optional[str] = None
@@ -229,6 +236,23 @@ class CoastalExperienceAgent:
                 uncertainty_notes="Biodiversity enrichment was not requested for this workflow step.",
             )
 
+        # 6. Optional Google AI Studio Gemini synthesis (bounded by deterministic tool evidence)
+        model_execution, model_uncertainty_notes = self.gemini_client.synthesize_context(
+            agent_input=agent_input,
+            system_instruction=SYSTEM_ROLE_PROMPT,
+            destination=destination,
+            activity=activity,
+            offering=offering,
+            schedule=schedule,
+            biodiversity=biodiversity,
+            existing_gaps=list(uncertainty_gaps),
+        )
+        for note in model_uncertainty_notes:
+            if note not in uncertainty_gaps:
+                uncertainty_gaps.append(note)
+        if model_execution.status == ModelExecutionStatus.INVALID_OUTPUT and model_execution.error_summary:
+            uncertainty_gaps.append(f"Model output validation note: {model_execution.error_summary}")
+
         # Determine completion outcome
         has_primary_evidence = bool(destination or activity or offering)
         if has_contradictory_selectors or has_unresolved_primary or not has_primary_evidence:
@@ -252,4 +276,5 @@ class CoastalExperienceAgent:
             audited_tool_calls=audited_tools,
             evidence_references=evidence_refs,
             uncertainty_and_gaps=uncertainty_gaps,
+            model_execution=model_execution,
         )
