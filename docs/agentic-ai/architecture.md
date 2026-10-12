@@ -1,7 +1,11 @@
 # Agentic AI architecture — v1 target
 
-**Implementation status:** the repository has no executable Agentic AI
-service, agent or tool. This is the v1 target contract derived from
+**Implementation status (2026-10-13):** Adithya Gunawardana's Planning &
+Coordination service has an executable private dispatch API, validated
+structured-plan orchestration, specialist HTTP adapters and Planner-owned
+durable execution-state persistence. The other specialist agents and tools
+remain unimplemented. This is partial AI-02 implementation, not end-to-end AI
+readiness. This v1 target contract is derived from
 [PROJECT_REQUIREMENTS.md](../../PROJECT_REQUIREMENTS.md). The
 [v1 index](../v1/README.md) links separate contracts for each member's agent.
 Before selecting a runtime, model/provider or retrieval design, use the
@@ -86,7 +90,14 @@ timestamps. Do not persist hidden reasoning, credentials or unnecessary
 sensitive data. Exact schemas and transport boundaries belong in the
 accepted ADRs and data/service contracts.
 
-The eventual orchestration framework remains undecided in
+The provider-neutral adapter uses an OpenAI-compatible chat-completions
+protocol only when explicitly configured. It is disabled without runtime
+configuration. Provider approval, model choice, data-processing review,
+specialist report schemas and shared runtime decisions remain open in
+[ADR-0007](../adr/ADR-0007-agentic-ai-framework.md) and
+[ADR-0008](../adr/ADR-0008-agent-workflow-state.md). This adapter is a
+provisional integration seam, not an accepted framework decision. The
+eventual orchestration framework remains undecided in
 [ADR-0007](../adr/ADR-0007-agentic-ai-framework.md). Whether the agents run
 in one private process or several does not change the public API, tool,
 validation or approval boundaries.

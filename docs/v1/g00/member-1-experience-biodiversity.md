@@ -306,3 +306,12 @@ gated on G07.
       delivery and client workflow registrations.
 - [ ] The maintainer records G00 acceptance in the readiness document and
       branch tracker only after the complete exit criteria are met.
+
+## Shared G00 ratification update — 2026-10-13
+
+Adithya Gunawardana reports that the team agreed in a meeting to finalize the
+current four component contracts and move to Agentic AI deployment. This
+records the team's shared G00 ratification as reported by Adithya; meeting
+minutes and individual signatures were not supplied to this repository. This
+update supersedes earlier pending-G00 statements. It does not accept G07 or
+claim live provider validation.

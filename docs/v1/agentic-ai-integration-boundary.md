@@ -11,13 +11,14 @@ contracts.
 
 ## Status and governing boundary
 
-The current repository has no executable Agentic AI service, agent, tool or
-AI endpoint in the endpoint catalog. This document describes required future
-integration behavior; it does not claim that the integration or health check
-already exists. The repository requirements and implemented sources remain
-authoritative. Any exact public route, internal service URL, DTO, status code,
-availability enum and retry policy must be finalized in the owning contract
-at G00 and implemented in source before it is described as live.
+The repository has a partial private Planning & Coordination service and
+cataloged Agentic AI endpoints. Other specialist agents and production tools
+remain unimplemented. G00 and G07 acceptance are recorded; AI-00 decisions and
+live compatibility evidence remain outstanding. The repository requirements
+and implemented sources remain authoritative. Any exact public route,
+internal service URL, DTO, status code, availability enum and retry policy
+must be finalized in the owning contract and implemented before it is
+described as live.
 
 The v1 work has two separate deliveries:
 

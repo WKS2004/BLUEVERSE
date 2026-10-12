@@ -10,15 +10,18 @@ defines a PostgreSQL/EF Core schema with checked-in migrations under
 `services/auth/Data/Migrations`.
 Auth, Coastal Operations, Coastal Planner, Marine Safety and Experience & Biodiversity have
 PostgreSQL/EF Core schemas with checked-in migrations under their owning
-service directories. Shared Agentic AI workflow-state tables remain deferred;
-shared G00 data-ownership and integrated component acceptance remain pending.
+service directories. Planning Coordination execution checkpoints use a
+separate `coastal_planner.agent_execution_states` table keyed to Planner's
+business workflow. This is Planner-owned persistence for AI-02, not a shared
+AI runtime schema. It stores structured plan/step state and validated report
+summaries only; it never stores hidden reasoning or credentials. Other shared
+Agentic AI state remains deferred pending ADR-0008 and AI-00 acceptance.
 
 The Coastal Operations service has a PostgreSQL-backed EF Core context with
 the provisional `coastal_operations` default schema and checked-in migrations.
-Shared G00 still needs to ratify schema provisioning, a dedicated database role
-and credential delivery. The service currently uses the configured Compose
-database credentials. No live PostgreSQL migration execution has been
-verified on this branch.
+G00 acceptance was recorded from Adithya Gunawardana's team meeting report.
+The service currently uses configured Compose database credentials. No live
+PostgreSQL migration execution has been verified for this change.
 
 ## Coastal Operations tables (branch-local, provisional)
 
@@ -176,6 +179,7 @@ cross-service foreign keys to Auth or other components.
 | Table | Important fields and constraints |
 |---|---|
 | `planning_workflows` | Workflow ID, actor ID, type, status and lifecycle timestamps; indexes on actor, status and creation time; status check limits values to `PENDING`, `PROCESSING`, `COMPLETED` and `FAILED`. |
+| `agent_execution_states` | One AI execution checkpoint per Planner workflow; stores bounded structured state JSON, current AI status, correlation ID and update time. Workflow ID is both primary key and cascading FK to `planning_workflows`; status is constrained to implemented execution states. The agent has no database access. |
 | `recommendations` | Unique workflow ID, owner ID, destination, UTC window, duration, candidate snapshot and uncertainty-note snapshot; checks enforce a positive window and duration; indexed by owner. |
 | `itineraries` | Owner ID, title, optional description, UTC window, optimistic `ConcurrencyVersion`, and created/updated timestamps; check enforces end after start; indexed by owner and creation time. |
 | `itinerary_items` | Ordered destination/activity/offering reference, UTC schedule, last known availability/suitability/operations states, and advisory; cascades from its itinerary; unique `(ItineraryId, OrderIndex)` and checks enforce a non-negative order and positive schedule interval. New items begin as `UNKNOWN`. |

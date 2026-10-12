@@ -18,13 +18,15 @@ framework has been selected or that an executable service exists.
 
 ## Container image preparation — 2026-10-13
 
-At the user's direction, the repository now has four opt-in, per-role Docker
-image shells based on `dhi.io/python:3.13-alpine`, wired to the private Docker
-network. They contain no agent code, dependencies, listener, health endpoint,
-model configuration or tools, and their default command only prints the
-Python version. This is packaging preparation for the later Agentic AI work;
-it does not accept the runtime framework, model/provider, or executable
-process topology. Those decisions remain for AI-00 after G07.
+At the user's direction, the repository has four opt-in, per-role Docker
+images based on `dhi.io/python:3.13-alpine`, wired to the private Docker
+network. Three remain runtime shells. Planning Coordination has a standard
+library HTTP runtime and a provider-neutral OpenAI-compatible adapter. This
+is a provisional implementation choice for the assigned component, not
+team-wide framework approval. The service is disabled by default. No
+model/provider is selected or approved; configuration must meet the
+assignment's institutional/no-cost requirement and pass data-handling review.
+Other specialist services remain unimplemented.
 
 ## Consequences
 

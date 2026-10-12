@@ -2,7 +2,7 @@
 contract_id: v1.agent.planning-coordination
 contract_type: agent_role
 release: v1
-implementation_status: target_not_implemented
+implementation_status: partial_implementation
 owner_label: member_3
 owner_full_name: "Adithya Gunawardana"
 owner_github_username: "AdithyaGunawardana"
@@ -14,9 +14,13 @@ business_component: "../components/member-3-smart-coastal-planner-itinerary-mana
 
 # Adithya Gunawardana (Member 3) — Planning & Coordination Agent
 
-**Target status:** no executable v1 planner, orchestration runtime or agent
-tools are present in the current foundation. This is the workflow coordinator
-contract, not an implementation claim.
+**Implementation status (2026-10-13):** partial executable implementation is
+checked in under `services/ai/planning-coordination`. It validates a bounded
+structured plan, delegates to configured specialist endpoints, validates
+response identity/provenance and persists structured execution checkpoints
+through Planner. Specialist agents, approved model/provider choice, exact
+report schemas, integrated live execution and release evaluation remain
+unfinished. This contract remains the target specification.
 
 **Assigned owner:** Adithya Gunawardana (`@AdithyaGunawardana`), requirement
 trace label Member 3. Component branch: `features/coastal-planner`; actual

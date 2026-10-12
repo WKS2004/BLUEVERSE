@@ -95,9 +95,13 @@ docker compose --profile agentic-ai build \
   agent-safety-operations
 ```
 
-They contain no executable agent code and only print the Python version when
-started. Keep the profile out of `up` until G07 is accepted and the assigned
-agent branches provide their workloads and readiness behavior.
+Planning Coordination runs a private HTTP service; the other role images
+remain shells. The profile is optional and keeps all AI services on the
+internal network. Set `AGENTIC_SERVICE_KEY` and an approved no-cost or
+institution-provided model configuration in local `.env`; then set
+`AGENTIC_AI_ENABLED=true` to enable Planner dispatch. Without specialist
+services, execution returns unavailable/blocked status. The AI service is
+disabled by default and has no database credentials.
 
 ## Start
 

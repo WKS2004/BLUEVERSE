@@ -1,7 +1,5 @@
 # syntax=docker/dockerfile:1
 
-# Runtime-only image shell. The executable agent remains gated on G07 and its
-# implementation belongs on agentic-ai/planning-coordination.
 FROM dhi.io/python:3.13-alpine
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -9,4 +7,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-CMD ["python3", "--version"]
+COPY services/ai/planning-coordination/planning_coordination /app/planning_coordination
+
+EXPOSE 8080
+
+ENTRYPOINT ["python3", "-m", "planning_coordination"]

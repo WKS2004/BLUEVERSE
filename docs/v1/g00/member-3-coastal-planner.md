@@ -4,6 +4,13 @@
 captures the Smart Coastal Planner & Itinerary Management inputs for the G00
 Shared Contract Freeze. It is not team-accepted until all four owners agree.
 
+**Shared G00 ratification update — 2026-10-13:** Adithya Gunawardana reports
+that the team agreed in a meeting to finalize the current four component
+contracts and move to Agentic AI deployment. This records shared G00
+ratification as reported by Adithya; meeting minutes and individual signatures
+were not supplied here. This supersedes earlier pending-G00 statements. G07
+and live provider validation remain separate gates.
+
 - **Component:** Smart Coastal Planner & Itinerary Management (Member 3)
 - **Assigned owner:** Adithya Gunawardana (`@AdithyaGunawardana`)
 - **Feature branch:** `features/coastal-planner`

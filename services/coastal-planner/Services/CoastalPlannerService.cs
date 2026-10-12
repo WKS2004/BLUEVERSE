@@ -239,6 +239,21 @@ public partial class CoastalPlannerService : ICoastalPlannerService
         
         await _db.SaveChangesAsync(ct);
 
+        if (_configuration.GetValue<bool>("AgenticAi:Enabled") && _coordinationClient is not null)
+        {
+            try
+            {
+                await _coordinationClient.DispatchAsync(new PlanningCoordinationRequest(
+                    workflow.WorkflowId, recommendationId, request.TargetDestinationId, request.StartsAt,
+                    request.EndsAt, request.PreferredActivityIds ?? []), ct);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Planning coordination did not complete for workflow {WorkflowId}", workflow.WorkflowId);
+            }
+        }
+
         return new RecommendationResultDto(
             RecommendationId: recommendationId,
             WorkflowId: workflow.WorkflowId,
@@ -310,6 +325,8 @@ public partial class CoastalPlannerService : ICoastalPlannerService
 
         var ai = _coordinationClient is null ? new PlanningCoordinationAvailability("NOT_CONNECTED", false) :
             await _coordinationClient.CheckAvailabilityAsync(ct);
+        var aiExecutionStatus = await _db.AgentExecutionStates.Where(x => x.WorkflowId == workflow.WorkflowId)
+            .Select(x => x.Status).SingleOrDefaultAsync(ct) ?? "NOT_STARTED";
         return new WorkflowStatusDto(
             WorkflowId: workflow.WorkflowId,
             WorkflowType: workflow.WorkflowType,
@@ -320,7 +337,8 @@ public partial class CoastalPlannerService : ICoastalPlannerService
             CompletedAt: workflow.CompletedAtUtc,
             ResultSummary: workflow.ResultSummary,
             FailureReason: workflow.FailureReason,
-            AiDependencyStatus: ai.Status
+            AiDependencyStatus: ai.Status,
+            AiExecutionStatus: aiExecutionStatus
         );
     }
 
