@@ -154,7 +154,7 @@ Docker checks remain separate from source/test checks:
 | Workflow | Trigger/dependency | Purpose |
 |---|---|---|
 | `docker-web-build.yml` | Supported work branches; web/Docker/Compose paths | Synchronizes the React lockfile and builds the web image. |
-| `docker-backend-build.yml` | Supported work branches; service/Docker/Compose paths | Builds the public API first, then each discovered ASP.NET backend service. |
+| `docker-backend-build.yml` | Supported work branches; service/Docker/Compose paths | Builds the public API first, then each discovered ASP.NET backend service and the four DHI Python Agentic AI runtime image shells. |
 | `docker-stack-health.yml` | Successful Docker build workflows for a PR targeting `main` only | Generates masked temporary signing keys, checks the Compose network and public health endpoints, and validates API/Auth plus each implemented component's health and OpenAPI routes. |
 
 The web and backend image workflows start only when their relevant application,
@@ -163,7 +163,7 @@ paths change on a supported work branch. Backend image errors are collected
 across discovered services so later services are still checked before the
 workflow fails.
 
-The Docker backend convention is:
+The ASP.NET Docker backend convention is:
 
 ```text
 services/<service-name>/
@@ -174,6 +174,9 @@ The workflow identifies ASP.NET services from `Program.cs` and project
 metadata, requires `services/api`, verifies each matching Dockerfile and
 builds the images from the repository root. Non-ASP.NET service directories
 are reported as skipped rather than being silently treated as backend images.
+The workflow separately builds the four runtime-only Agentic AI image shells
+from `infrastructure/docker/agentic-ai/<agent>/Dockerfile`; these images contain
+no executable agent code and do not imply that G07 has passed.
 
 The stack-health workflow is intentionally heavy. It is not a direct push
 workflow: it listens for completed image workflows, proceeds only when the
