@@ -11,7 +11,10 @@ and UI integration validators passed, and `docker compose config --quiet`
 accepted the combined services. The first hosted backend run exposed three
 remaining 16-permission Auth assertions and valid `/api/...` peer paths being
 rejected as absolute file URIs; both were corrected and covered by the complete
-local suites. The hosted follow-up run is pending. Web tests use one worker on
+local suites. The hosted follow-up run for `37ee55a` passed all 10
+PR-triggered GitHub Actions workflows. Docker Stack Health is scoped to pull
+requests targeting `main`, so it did not run for this maintenance-base PR; the
+combined Compose configuration passed locally. Web tests use one worker on
 this Windows host to avoid its parallel Node memory limit.
 
 ## Coastal Operations navigation and detailed activity — 2026-10-02
