@@ -113,6 +113,13 @@ builder.Services.AddAuthorization(options =>
                 "auth.role.system.manage")));
 });
 
+builder.Services.AddHttpClient<Blueverse.Api.Integration.IAuthActorClient, Blueverse.Api.Integration.AuthActorClient>(client =>
+{
+    var address = builder.Configuration["ReverseProxy:Clusters:auth:Destinations:auth:Address"] ?? "http://auth:8080";
+    client.BaseAddress = new Uri(address.TrimEnd('/') + "/");
+    client.Timeout = TimeSpan.FromSeconds(5);
+});
+
 // CORS Policy
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() 
     ?? new[] { "http://localhost", "http://localhost:5173", "http://localhost:8080", "http://localhost:3000" };
@@ -179,6 +186,7 @@ app.UseSwaggerUI(options =>
     options.DocumentTitle = "BLUEVERSE API Documentation";
     options.SwaggerEndpoint("/api/swagger/v1/swagger.json", "BLUEVERSE Public API");
     options.SwaggerEndpoint("/api/auth/swagger/v1/swagger.json", "BLUEVERSE Auth API");
+    options.SwaggerEndpoint("/api/marine/swagger/v1/swagger.json", "BLUEVERSE Marine Conditions & Safety API");
     options.SwaggerEndpoint(
         "/api/experiences/swagger/v1/swagger.json",
         "BLUEVERSE Experience & Biodiversity Service");
@@ -186,6 +194,8 @@ app.UseSwaggerUI(options =>
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<Blueverse.Api.Integration.MarineGatewayMiddleware>();
+app.UseMiddleware<Blueverse.Api.Integration.MarineProxyAvailabilityMiddleware>();
 
 // Route gateway controllers (e.g. /api/health)
 app.MapControllers();

@@ -15,6 +15,13 @@ public static class PermissionCodes
     public const string PermissionRead = "auth.permission.read";
     public const string SystemRoleManage = "auth.role.system.manage";
 
+    // v1 member-domain permission codes. The marine-safety component service
+    // enforces these codes through its own permission policies; Auth seeds
+    // them for the Admin role so role administration can grant them without
+    // extending this file per workflow.
+    public const string MarineProfileRead = "marine.profile.read";
+    public const string MarineProfileManage = "marine.profile.manage";
+
     // Experience & Biodiversity catalogue permissions
     public const string ExperienceRead = "experiences.catalogue.read";
     public const string ExperienceManage = "experiences.catalogue.manage";

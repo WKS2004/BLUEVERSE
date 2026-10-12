@@ -1,14 +1,19 @@
 # Render Deployment
 
 `render.yaml` is the initial Render Blueprint. It is deployment configuration,
-not deployment evidence; the public API and Auth projects referenced by its
-Dockerfiles are committed.
+not deployment evidence. It includes the public API and Auth services. The
+marine-safety service is present in local Compose but is not defined in this
+Render Blueprint; do not treat its local implementation as a hosted deployment.
 
 It defines:
 
 - Dockerized API
 - Dockerized Auth service
 - managed PostgreSQL
+
+The Member 2 marine-safety backend still needs a private hosted-service
+definition and deployment configuration before the marine workflow is
+available from a hosted stack.
 
 The React Web frontend and Flutter Mobile client are intentionally outside this
 backend Blueprint. React is planned for Vercel, while Flutter is distributed
@@ -29,3 +34,10 @@ Before deploying:
    another short-lived value. Keep `AuthSession__DefaultLifetimeDays` at `1`
    and `AuthSession__RememberMeLifetimeDays` at `30` to preserve the public
    session contract.
+
+When adding the private Marine Safety deployment, configure the same independent
+`MARINE_ACTOR_SIGNING_KEY` on API and Marine, and the private
+`EXPERIENCE_CATALOGUE_URL` on Marine. The existing API/Auth foundation can run
+without an actor key; protected Marine requests then return 503, while Auth
+and health routes remain available. Do not expose the component service to
+clients. See the root README and ADR-0021 for the complete integration setup.

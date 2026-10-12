@@ -6,6 +6,8 @@ import ProfilePage from '../pages/ProfilePage'
 import RegistrationPage from '../pages/RegistrationPage'
 import { NotFoundPage, ServerErrorPage } from '../pages/GlobalErrorPage'
 import { AdminAccessDenied, AdminIndexPage, AdminPermissionsPage, AdminRolesPage, AdminUsersPage } from '../pages/admin/AdminPages'
+import { MarineConditionsPage, MarineHistoryPage, MarineSafetyProfilesPage } from '../pages/marine/MarinePages'
+import MarineWorkspaceLayout from '../pages/marine/MarineWorkspaceLayout'
 import ExperiencesPage from '../pages/experiences/ExperiencesPage'
 import DestinationDetailPage from '../pages/experiences/DestinationDetailPage'
 import OfferingDetailPage from '../pages/experiences/OfferingDetailPage'
@@ -50,6 +52,29 @@ function RequireAnyAdminPermission({ permissions, children }: { permissions: str
   return hasAnyPermission(user, permissions) ? children : <AdminAccessDenied />
 }
 
+function MarineAccessDenied() {
+  return (
+    <main className="flex min-h-[60vh] items-center justify-center bg-coast-paper px-5 py-16 text-coast-ink">
+      <section aria-live="polite" className="w-full max-w-lg rounded-3xl border border-coast-line bg-white p-7 text-center shadow-sm sm:p-10">
+        <p className="text-xs font-extrabold tracking-[0.15em] text-coast-blue">MARINE CONDITIONS &amp; SAFETY</p>
+        <h1 className="mt-3 font-display text-3xl tracking-[-0.04em]">This coastal service needs permission.</h1>
+        <p className="mt-3 text-sm leading-6 text-coast-muted">Marine condition pages are available to accounts whose roles carry the marine profile read grant. Ask an administrator to review your role assignments if you need access.</p>
+        <Link
+          className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full bg-coast-deep px-5 text-sm font-extrabold text-white transition hover:bg-coast-blue focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-coast-blue"
+          to="/dashboard"
+        >
+          Return to your dashboard
+        </Link>
+      </section>
+    </main>
+  )
+}
+
+function RequireMarineReadPermission({ children }: { children: React.ReactNode }) {
+  const { user } = useAuthSession()
+  return hasAnyPermission(user, ['marine.profile.read']) ? children : <MarineAccessDenied />
+}
+
 export default function AppRoutes() {
   return (
     <Routes>
@@ -70,6 +95,11 @@ export default function AppRoutes() {
         <Route path="/admin/permissions" element={<RequireAnyAdminPermission permissions={['auth.permission.read']}><AdminPermissionsPage /></RequireAnyAdminPermission>} />
         <Route path="/admin/roles" element={<RequireAnyAdminPermission permissions={['auth.role.read']}><AdminRolesPage /></RequireAnyAdminPermission>} />
         <Route path="/admin/users" element={<RequireAnyAdminPermission permissions={['auth.user.read']}><AdminUsersPage /></RequireAnyAdminPermission>} />
+        <Route element={<RequireMarineReadPermission><MarineWorkspaceLayout /></RequireMarineReadPermission>}>
+          <Route path="/marine/conditions" element={<MarineConditionsPage />} />
+          <Route path="/marine/history" element={<MarineHistoryPage />} />
+          <Route path="/marine/safety-profiles" element={<MarineSafetyProfilesPage />} />
+        </Route>
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

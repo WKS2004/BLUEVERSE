@@ -119,7 +119,7 @@
     {
       "id": "auth-admin-entry",
       "status": "implemented",
-      "description": "Permission-aware administration entry for users who hold at least one current administration read grant.",
+      "description": "Permission-aware administration entry for users who hold at least one current administration read grant. React administration hides home-section marketing navigation while retaining account actions.",
       "web": {
         "route": "/admin",
         "source": "apps/web/src/app/routes.tsx"
@@ -135,7 +135,7 @@
     {
       "id": "auth-permission-administration",
       "status": "implemented",
-      "description": "Read the application-defined permission catalogue and follow its role assignments. Permission codes are managed by the service; role grants can be added or removed by authorized role editors.",
+      "description": "Read the application-defined permission catalogue and follow its role assignments. Permission codes are managed by the service; role grants can be added or removed by authorized role editors. React administration hides home-section marketing navigation while retaining account actions.",
       "web": {
         "route": "/admin/permissions",
         "source": "apps/web/src/app/routes.tsx"
@@ -151,7 +151,7 @@
     {
       "id": "auth-role-administration",
       "status": "implemented",
-      "description": "Read roles, create roles, update details and permission assignments, and delete eligible non-system roles. Read and action permissions are checked together on the server.",
+      "description": "Read roles, create roles, update details and permission assignments, and delete eligible non-system roles. Read and action permissions are checked together on the server. React administration hides home-section marketing navigation while retaining account actions.",
       "web": {
         "route": "/admin/roles",
         "source": "apps/web/src/app/routes.tsx"
@@ -172,7 +172,7 @@
     {
       "id": "auth-user-administration",
       "status": "implemented",
-      "description": "Read and manage user accounts, including details, active state, password resets and role assignments. Read and action grants are combined; system-role operations and account deletion rules are enforced on the server.",
+      "description": "Read and manage user accounts, including details, active state, password resets and role assignments. Read and action grants are combined; system-role operations and account deletion rules are enforced on the server. React administration hides home-section marketing navigation while retaining account actions.",
       "web": {
         "route": "/admin/users",
         "source": "apps/web/src/app/routes.tsx"
@@ -188,6 +188,63 @@
         "auth-user-delete",
         "auth-user-assign-roles",
         "auth-roles"
+      ]
+    },
+    {
+      "id": "marine-conditions",
+      "status": "implemented",
+      "description": "Shared React and Flutter marine lookup workflow with matching condition evidence and server-owned suitability outcomes; neither client reclassifies conditions. Both clients preserve signed decimal coordinates; Flutter does not replay ambiguous assessment writes. Both clients show activity data as unavailable with retry while preserving saved records and independent condition lookup; dependent profile draft/edit/review and evaluation actions are disabled until published activity data is available. Deactivation remains independent and typed error adapters retain availability metadata. React provides accessible workflow navigation, a location/time guide and plain-language explanations of unchanged server results. React offers a shared account-menu entry with the Marine read grant. React sidebar and page tabs use the same label: Coastal conditions (shared display-label source). React adds a responsive editorial hero with newly generated ocean swell and shoreline imagery. Imagery is decorative, not observed conditions, stored records or proof of safety. The React hero places its image above its text panel at every screen width. React uses a persistent shared heading and introduction, followed by the existing pill tabs above each stacked hero and content panel. Tabs stick below the site header during scrolling. Switching Marine tabs animates only the panel with reduced-motion support and uses inline initial-read feedback; first entry, explicit retries, writes and Auth retain normal loading feedback. Flutter uses one native Marine shell with the shared labels Coastal conditions, Coastal evidence and Activity safety limits, pinned navigation, stacked local photographic heroes and reduced-motion-aware panel transitions. Dashboard and account-menu entry require the read grant. Native public requests reuse the selected secure account credentials, and changing accounts or grants resets or removes protected content. Tab bootstrap reads remain inline; explicit reads and production writes retain shared loading feedback. Flutter renders sourced wind, wave, swell and rain values with units and explicit unavailable fields. UNKNOWN results survive absent condition evidence. Time input is normalized to UTC; pull-to-refresh reads conditions without creating another assessment.",
+      "web": {
+        "route": "/marine/conditions",
+        "source": "apps/web/src/app/routes.tsx"
+      },
+      "mobile": {
+        "route": "/marine/conditions",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": [
+        "marine-current",
+        "marine-evaluate",
+        "marine-activities"
+      ]
+    },
+    {
+      "id": "marine-condition-history",
+      "status": "implemented",
+      "description": "Shared React and Flutter history of stored marine conditions and suitability assessments, including immutable values, per-factor cited criteria and clear disclosure of incomplete legacy evidence. Coordinate filters preserve signed decimals and malformed nonblank input is rejected before querying. Both clients show activity data as unavailable with retry while preserving saved records and independent condition lookup; dependent profile draft/edit/review and evaluation actions are disabled until published activity data is available. Deactivation remains independent and typed error adapters retain availability metadata. React refresh/filter requests preserve independently successful datasets and distinguish unavailable history from empty results. React sidebar and page tabs use the same label: Coastal evidence (shared display-label source). React adds a responsive editorial hero with newly generated coastal field notebook and compass imagery. Imagery is decorative, not observed conditions, stored records or proof of safety. The React hero places its image above its text panel at every screen width. React uses a persistent shared heading and introduction, followed by the existing pill tabs above each stacked hero and content panel. Tabs stick below the site header during scrolling. Switching Marine tabs animates only the panel with reduced-motion support and uses inline initial-read feedback; first entry, explicit retries, writes and Auth retain normal loading feedback. Flutter uses one native Marine shell with the shared labels Coastal conditions, Coastal evidence and Activity safety limits, pinned navigation, stacked local photographic heroes and reduced-motion-aware panel transitions. Dashboard and account-menu entry require the read grant. Native public requests reuse the selected secure account credentials, and changing accounts or grants resets or removes protected content. Tab bootstrap reads remain inline; explicit reads and production writes retain shared loading feedback. Flutter loads readings and assessments independently, distinguishes failed from empty data, retains labelled last-loaded records after a failed refresh and provides retry.",
+      "web": {
+        "route": "/marine/history",
+        "source": "apps/web/src/app/routes.tsx"
+      },
+      "mobile": {
+        "route": "/marine/history",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": [
+        "marine-history",
+        "marine-assessments",
+        "marine-activities"
+      ]
+    },
+    {
+      "id": "marine-safety-profile-management",
+      "status": "implemented",
+      "description": "Shared React and Flutter profile workflow for evidence-backed immutable drafts, per-factor source and rationale, independent review and approval, effective-version history, and permission-matched deactivation. Both clients allow profile inspection with read permission; only mutations require manage. Limits accept at most two decimal places without silent rounding. Both clients show activity data as unavailable with retry while preserving saved records and independent condition lookup; dependent profile draft/edit/review and evaluation actions are disabled until published activity data is available. Deactivation remains independent and typed error adapters retain availability metadata. React groups limits and supporting evidence by factor and offers retry for unavailable saved profiles; browser input validates the shared precision, range and caution contract before submission. React sidebar and page tabs use the same label: Activity safety limits (shared display-label source). React adds a responsive editorial hero with newly generated kayak and safety equipment prepared on shore imagery. Imagery is decorative, not observed conditions, stored records or proof of safety. The React hero places its image above its text panel at every screen width. React uses a persistent shared heading and introduction, followed by the existing pill tabs above each stacked hero and content panel. Tabs stick below the site header during scrolling. Switching Marine tabs animates only the panel with reduced-motion support and uses inline initial-read feedback; first entry, explicit retries, writes and Auth retain normal loading feedback. Flutter uses one native Marine shell with the shared labels Coastal conditions, Coastal evidence and Activity safety limits, pinned navigation, stacked local photographic heroes and reduced-motion-aware panel transitions. Dashboard and account-menu entry require the read grant. Native public requests reuse the selected secure account credentials, and changing accounts or grants resets or removes protected content. Tab bootstrap reads remain inline; explicit reads and production writes retain shared loading feedback. Flutter exposes profile read retry, distinguishes unavailable from empty profiles, labels retained data and shows absent caution values as not configured. Create/version, independent review and confirmed deactivation retain the shared permission and evidence contract.",
+      "web": {
+        "route": "/marine/safety-profiles",
+        "source": "apps/web/src/app/routes.tsx"
+      },
+      "mobile": {
+        "route": "/marine/safety-profiles",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": [
+        "marine-safety-profiles",
+        "marine-safety-profile-create",
+        "marine-safety-profile-update",
+        "marine-safety-profile-deactivate",
+        "marine-safety-profile-review",
+        "marine-activities"
       ]
     },
     {
@@ -532,6 +589,87 @@
       "publicBoundary": "api",
       "ownerService": "auth",
       "operationId": "AssignRoles"
+    },
+    {
+      "id": "marine-current",
+      "method": "GET",
+      "path": "/api/marine/current",
+      "publicBoundary": "api",
+      "ownerService": "marine-safety",
+      "operationId": "GetCurrent"
+    },
+    {
+      "id": "marine-history",
+      "method": "GET",
+      "path": "/api/marine/history",
+      "publicBoundary": "api",
+      "ownerService": "marine-safety",
+      "operationId": "GetHistory"
+    },
+    {
+      "id": "marine-evaluate",
+      "method": "POST",
+      "path": "/api/marine/evaluate",
+      "publicBoundary": "api",
+      "ownerService": "marine-safety",
+      "operationId": "Evaluate"
+    },
+    {
+      "id": "marine-safety-profiles",
+      "method": "GET",
+      "path": "/api/marine/safety-profiles",
+      "publicBoundary": "api",
+      "ownerService": "marine-safety",
+      "operationId": "GetProfiles"
+    },
+    {
+      "id": "marine-safety-profile-create",
+      "method": "POST",
+      "path": "/api/marine/safety-profiles",
+      "publicBoundary": "api",
+      "ownerService": "marine-safety",
+      "operationId": "CreateProfile"
+    },
+    {
+      "id": "marine-safety-profile-update",
+      "method": "PUT",
+      "path": "/api/marine/safety-profiles/{id:guid}",
+      "publicBoundary": "api",
+      "ownerService": "marine-safety",
+      "operationId": "UpdateProfile"
+    },
+    {
+      "id": "marine-safety-profile-deactivate",
+      "method": "DELETE",
+      "path": "/api/marine/safety-profiles/{id:guid}",
+      "publicBoundary": "api",
+      "ownerService": "marine-safety",
+      "operationId": "DeactivateProfile"
+    },
+    {
+      "id": "marine-safety-profile-review",
+      "method": "POST",
+      "path": "/api/marine/safety-profiles/{id:guid}/review",
+      "publicBoundary": "api",
+      "ownerService": "marine-safety",
+      "operationId": "ReviewProfile"
+    },
+    {
+      "id": "marine-assessments",
+      "method": "GET",
+      "path": "/api/marine/assessments",
+      "publicBoundary": "api",
+      "ownerService": "marine-safety",
+      "operationId": "GetAssessments"
+    },
+    {
+      "id": "marine-activities",
+      "method": "GET",
+      "path": "/api/marine/activities",
+      "publicBoundary": "api",
+      "ownerService": "marine-safety",
+      "operationId": "GetActivities",
+      "status": "implemented"
     },
     {
       "id": "experience-activities-list",

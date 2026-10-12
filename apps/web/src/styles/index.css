@@ -21,6 +21,12 @@
   --animate-management-tab-exit-forward: management-tab-exit-forward 130ms ease-in both;
   --animate-management-tab-exit-backward: management-tab-exit-backward 130ms ease-in both;
   --animate-coast-menu: coast-menu 180ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-coast-tab-change: coast-tab-change 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes coast-tab-change {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes coast-arrive {

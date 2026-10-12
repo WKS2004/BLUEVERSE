@@ -24,6 +24,8 @@ ADRs capture significant architectural decisions and their rationale.
 18. `ADR-0018-assessment-evidence-storage-boundary.md`
 19. `ADR-0019-biodiversity-inference-integration-ownership.md`
 20. `ADR-0020-member-component-service-boundaries.md`
+21. `ADR-0021-marine-catalogue-and-gateway-actor-context.md`
+22. `ADR-0022-member-service-data-availability-and-fault-isolation.md`
 
 Some decisions remain **Proposed / Pending implementation choice** because the foundation does not invent decisions that have not yet been made.
 
@@ -49,3 +51,10 @@ ADR-0020 assigns one internal .NET microservice under `services/` to each v1
 member component. The existing API is integration-only for these services,
 Auth behavior is preserved, and the exact internal contracts are agreed at
 G00.
+
+ADR-0021 records Member 2's read-only canonical activity handoff and the signed
+actor/operation context issued by the public API after existing Auth checks.
+
+[ADR-0022](ADR-0022-member-service-data-availability-and-fault-isolation.md)
+records operation-level dependency availability and independent member-service
+readiness, implemented for Marine Safety on this branch.

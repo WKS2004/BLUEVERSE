@@ -84,6 +84,7 @@ Run from `apps/mobile`:
 
 ```bash
 flutter pub get
+flutter doctor -v
 flutter analyze
 flutter test
 flutter run
@@ -93,6 +94,11 @@ The Flutter project includes generated platform folders for Android, iOS,
 Linux, macOS, Windows and web. Platform-specific release configuration should
 be added only when that target is part of the delivery scope; it must not be
 used to exclude a product role from the mobile client.
+
+Android builds also need free space on the drive containing Gradle's user cache
+and on the workspace drive. A healthy `flutter doctor` report does not check
+whether engine extraction and APK packaging have enough disk space. Resolve
+`There is not enough space on the disk` before retrying a failed build.
 
 ## Native session renewal
 
@@ -123,15 +129,10 @@ flutter test --no-pub
 
 The helper reuses `gradle` and `pub` inside the chosen directory and sets both
 `TEMP` and `TMP` to its `temp` directory for this terminal and child processes.
-It leaves other applications' Windows temporary settings unchanged. Gradle
-wrapper downloads, dependency transforms, Pub packages and Flutter temporary
-compiler output then use D:. The Flutter SDK's own cache stays inside its SDK
-directory; this machine's SDK and repository build output are already on D:.
-An existing user-level `GRADLE_USER_HOME` or `PUB_CACHE` setting may not have
-reached an already-open terminal or Codex process, so run the helper explicitly.
-After changing `PUB_CACHE`, `flutter pub get` must run to regenerate local
-package references. Retain `pubspec.lock`; an older cache does not require
-upgrading dependencies or deleting reusable artifacts.
+Gradle wrapper downloads, dependency transforms, Pub packages and temporary
+compiler output use the selected cache drive. The Flutter SDK's own cache stays
+inside its SDK directory. After changing `PUB_CACHE`, run `flutter pub get`;
+retain `pubspec.lock` and reuse compatible cached dependencies.
 
 ## Android location permission
 
@@ -150,6 +151,17 @@ Location stays in memory and is used for the public
 nearby request; place search remains available after a permission denial.
 See Geolocator's [accuracy settings](https://pub.dev/documentation/geolocator/latest/geolocator/LocationAccuracy.html).
 
+For an ARM64 Android phone, avoid downloading other architectures during the
+first local validation build:
+
+```powershell
+flutter build apk --debug --target-platform=android-arm64 --dart-define=BLUEVERSE_API_BASE_URL=http://127.0.0.1:80
+adb reverse tcp:80 tcp:80
+```
+
+That gateway setting requires the USB reverse tunnel. Use the emulator/LAN
+settings below when the target is an emulator or a phone connected over Wi-Fi.
+
 ## API boundary
 
 The Auth workflow calls the public ASP.NET Core gateway using the host address
@@ -157,9 +169,9 @@ appropriate for the device or emulator and port `80`. Android `localhost`
 means the phone/emulator itself, not the laptop running Docker. For a standard
 Android emulator, explicitly set `BLUEVERSE_API_BASE_URL` to
 `http://10.0.2.2:80`; for a physical device, use the laptop's current LAN
-address. The explicit compile-time value overrides the checked-in
-standard Android emulator fallback (`10.0.2.2:80`). A physical phone still
-requires its laptop LAN address or the USB reverse tunnel below.
+address. Without an explicit compile-time value, Android tries the standard
+emulator host `10.0.2.2:80`, then the USB reverse tunnel at `127.0.0.1:80`.
+An explicit value overrides both defaults; no laptop LAN address is hardcoded.
 
 Set the address explicitly for both `flutter run` and `flutter build`:
 
@@ -225,3 +237,82 @@ Then run `flutter analyze`, the unit/widget tests and applicable
 session-management and registration, profile-management and coastal overview
 workflows. Add the public API contract and both client surfaces together for
 each future workflow.
+
+## Marine Safety input and recovery behavior
+
+### Open the Marine workspace
+
+Signed-in launch opens the standard Dashboard. Accounts with
+`marine.profile.read` can select **Marine & safety** on Dashboard or in the
+account menu. The three registered routes also open their matching initial tab:
+`/marine/conditions`, `/marine/history` and `/marine/safety-profiles`.
+The native shell has one app bar, pinned horizontally scrollable pill navigation
+and a vertically scrolling hero/form area. Labels match the Web app:
+**Coastal conditions**, **Coastal evidence**, **Activity safety limits**.
+The 260 ms panel transition is disabled by reduced-motion preferences.
+
+Marine requests obtain the selected account's bearer header through the existing
+Auth secure-storage adapter for every request; they do not copy tokens into
+widgets or cache another account's credentials. Changes to account identity or
+grants rebuild or remove protected content. The app owns and closes its Marine
+HTTP client. Dashboard, Profile, Administration and account switching remain
+reachable from the workspace.
+
+The three approved Marine photographs are bundled under
+`assets/coastal/marine/`; each hero stacks the photo above guidance and retains
+readable copy if image decoding fails. Photographs illustrate the workflow and
+do not represent live conditions or proof of safety. See the
+[asset provenance](assets/coastal/marine/README.md).
+
+Condition results show wind, waves, swell and rain with units, timestamps,
+sources and missing evidence. Plain-language explanations preserve all four
+server classifications, including UNKNOWN with no condition payload. UTC input
+rejects impossible dates and normalizes explicit offsets. Pulling to refresh
+the condition page performs a read and does not create another assessment.
+
+Saved readings and assessments load independently. One unavailable dataset
+does not hide the other; a failed refresh retains labelled last-loaded data and
+offers retry. Profile reads have explicit retry, an unavailable response is
+distinct from an empty list, and missing caution values show **Not configured**.
+Tab bootstrap reads use inline feedback; explicit condition/history/profile
+reads and production writes use shared loading feedback. Auth keeps its own
+transition messages. Draft/version creation, independent review and confirmed
+deactivation remain the same authorized actions as Web.
+
+The mobile suite includes synthetic API and widget evidence for these paths;
+physical-device and live gateway/provider integration remain separate checks.
+
+The 2026-10-10 recheck also covers the complete native profile workflow: invalid
+draft input makes no request; cited drafts and new versions stay inactive until
+a different manager reviews them; cancelling deactivation makes no DELETE.
+Closing the protected page cancels a pending dialog action, and replies from
+older profile reads cannot replace newer refreshed data. Unknown Marine paths
+are unmatched; profile details are shown within `/marine/safety-profiles`.
+All Marine tests now use the default `*_test.dart` discovery convention.
+
+An unavailable activity producer is shown as "Activity data unavailable" with
+retry. Stored records and independent condition lookup remain usable; only
+profile draft/edit/review and evaluation require available published activity
+data. Deactivation remains available to authorized managers. The HTTP error
+adapter retains the structured availability metadata; a successful empty
+catalogue stays distinct from a dependency failure. See the shared
+[availability contract](../../docs/api/marine-dependency-availability.md).
+
+React and Flutter expose all three Marine pages with `marine.profile.read`;
+profile mutation controls additionally require `marine.profile.manage`. Enter
+latitude/longitude as signed decimal WGS84 coordinates. Nonblank invalid filters
+are rejected before querying. Maximum and optional caution limits accept at most
+two decimal places, preserving the exact reviewed values.
+
+Condition reuse requires matching rounded coordinates, an applicable forecast
+from requested time minus 30 minutes through plus one hour, and retrieval within
+the preceding 15 minutes. Future retrieval timestamps cannot be reused.
+Acquisition/evaluation rejects UTC request times outside
+`0001-01-01T01:00:00Z`–`9999-12-31T22:59:59.9999999Z` with 400 before provider
+access; provider forecast availability still has its own limits.
+
+Flutter allows 45 seconds per request. An ambiguous timeout or connection failure
+after dispatching a write reports that its outcome is unconfirmed and makes no
+automatic second attempt. Check assessment history or the profile before retrying;
+a timeout does not cancel server work. Read requests may try another configured
+gateway candidate. Server-enforced mutation idempotency is not implemented.

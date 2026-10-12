@@ -2,9 +2,11 @@
 
 PostgreSQL infrastructure is present in Compose. The Auth EF Core model,
 migrations and application persistence code are checked in under
-`services/auth`. The Experience & Biodiversity feature branch also contains
-an EF Core model and initial migration for five component tables; shared G00
-data-ownership agreement and integrated acceptance remain pending.
+`services/auth`. Marine Safety owns its domain model and migrations under
+`services/marine-safety`; Experience & Biodiversity owns its model and initial
+migration for five component tables under `services/experience-biodiversity`.
+Each service applies only its own migrations. Shared G00 data-ownership
+agreement and integrated component acceptance remain pending.
 
 PostgreSQL is the authoritative relational database.
 The [v0 persistence component](../v0/components/postgresql-ef-core.md)

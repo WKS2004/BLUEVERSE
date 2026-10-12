@@ -860,4 +860,3 @@ test('WEB-EXP-010 discovery hub renders interactive coastal map and searches pla
     }
   }
 })
-

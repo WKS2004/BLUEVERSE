@@ -53,9 +53,9 @@ platform font fallback is expected.
 The gateway configuration accepts an explicit
 `BLUEVERSE_API_BASE_URL` at build time. For a standard local Android emulator,
 pass `http://10.0.2.2:80`; a physical device uses the development host's LAN
-address. This explicit value overrides the checked-in environment-specific
-Android fallback, which differs from the standard emulator host. Do not rely
-on that fallback for a device run. The client targets the public gateway
+address. This explicit value overrides the standard `10.0.2.2:80` emulator
+and `127.0.0.1:80` USB-reverse defaults. No laptop LAN address is hardcoded.
+The client targets the public gateway
 rather than a Docker service hostname.
 
 The current resolver accepts local plain HTTP on port `80` only and does not

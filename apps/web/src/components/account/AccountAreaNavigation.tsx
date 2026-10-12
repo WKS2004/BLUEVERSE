@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import { hasAnyPermission } from '../../features/authorization/permissions'
 import { useAuthSession } from '../../features/auth/authSession'
+import { marineWorkflowLabels } from '../../features/marine/marineWorkflowLabels'
 
-type Area = 'profile' | 'dashboard' | 'admin' | 'experiences'
+type Area = 'profile' | 'dashboard' | 'marine' | 'admin' | 'experiences'
 type ExperienceManagementTab = 'destinations' | 'activities' | 'offerings'
 type NavigationGroup = { id: Area; label: string; href: string; children: { label: string; href: string }[] }
 
@@ -23,6 +24,15 @@ function groupsFor(permissions: string[]): NavigationGroup[] {
       ],
     },
   ]
+  if (hasAnyPermission({ permissions }, ['marine.profile.read'])) {
+    groups.push({
+      id: 'marine', label: 'Marine & safety', href: '/marine/conditions', children: [
+        { label: marineWorkflowLabels.conditions, href: '/marine/conditions' },
+        { label: marineWorkflowLabels.history, href: '/marine/history' },
+        { label: marineWorkflowLabels.profiles, href: '/marine/safety-profiles' },
+      ],
+    })
+  }
   const adminLinks = [
     ...(hasAnyPermission({ permissions }, ['auth.permission.read']) ? [{ label: 'Permissions', href: '/admin/permissions' }] : []),
     ...(hasAnyPermission({ permissions }, ['auth.role.read']) ? [{ label: 'Roles', href: '/admin/roles' }] : []),

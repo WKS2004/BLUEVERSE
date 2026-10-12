@@ -1,13 +1,14 @@
 # API Foundation
 
 The routes in this page are the public gateway contract. The gateway is
-implemented at `services/api` and forwards the internal Auth service at
-`services/auth` without exposing its container directly.
+implemented at `services/api` and forwards to the internal Auth service at
+`services/auth` and Member 2's private marine-safety service at
+`services/marine-safety`, without exposing either container directly.
 The [v0 public API component guide](../v0/components/public-api-gateway.md)
 maps this contract to the owning source and extension rules.
 
 For the fastest complete inventory of frontend routes, gateway mappings,
-public API/Auth endpoints, test-only routes and Agentic AI endpoint status,
+public API/Auth/marine endpoints, test-only routes and Agentic AI endpoint status,
 see the [readable endpoint catalog](endpoint-catalog.md). Its
 [JSON source](endpoint-catalog.json) is checked against route declarations and
 the UI contract. This page provides the longer API behavior and session
@@ -173,7 +174,10 @@ dotnet test services/auth/tests/Blueverse.Auth.Tests/Blueverse.Auth.Tests.csproj
 ```
 
 The current test sources define 21 API cases and 77 default Auth cases. This
-documentation audit did not execute the suites. The PostgreSQL-backed Auth
+documentation audit did not execute those API/Auth suites. The marine-safety
+service has a separate test project. Its last completed run passed 117/117
+cases on 2026-10-03; the current source contains 118 authored cases, but the
+latest VSTest attempt timed out during testhost startup. The PostgreSQL-backed Auth
 concurrency test is opt-in and must receive its connection string through the
 environment; it is never committed to the repository.
 
@@ -194,11 +198,13 @@ in the local Postman session, and do not export or commit a collection after
 populating its runtime variables. A complete collection run clears its saved
 tokens; clear the Postman collection variables after an interrupted run.
 
-Additional ASP.NET services expose health routes through the same gateway convention:
+Other ASP.NET services expose health routes through the gateway convention:
 
 ```text
 GET /api/<service-name>/health
 ```
+
+Marine-safety uses the shorter registered public prefix `GET /api/marine/health`.
 
 Swagger/OpenAPI is exposed through the API gateway at:
 
@@ -207,13 +213,14 @@ GET /api/swagger
 GET /api/swagger/v1/swagger.json
 ```
 
-The Swagger UI is configured only in the API service and provides the public
-API, Auth API and Experience & Biodiversity service documents in one interface.
-The Auth OpenAPI document is available through the API boundary at
-`/api/auth/swagger/v1/swagger.json`; the Experience & Biodiversity document is
-available at `/api/experiences/swagger/v1/swagger.json`. The component uses
-the same Swashbuckle setup as API and Auth and does not emit a `servers` field.
-Both service containers remain internal-only.
+The Swagger UI is configured in the API service and lists the public API, Auth,
+Marine Safety and Experience & Biodiversity OpenAPI documents in one interface.
+The Auth document is available at `/api/auth/swagger/v1/swagger.json`, the
+Marine Safety document at `/api/marine/swagger/v1/swagger.json`, and the
+Experience & Biodiversity document at
+`/api/experiences/swagger/v1/swagger.json`. Both component services remain
+internal-only; their OpenAPI documents are exposed through the public API
+boundary.
 
 Use the `Authorize` button in the unified UI to enter a native-client JWT as
 `Bearer {token}`. Browser clients use the protected access-token cookie. The

@@ -128,6 +128,10 @@ workflow. Missing backend tests for a service source project are treated as a
 failure; an entirely empty foundation suite is reported as zero tests until
 that implementation exists.
 
+The React Web Tests workflow writes Node's `spec` reporter to the Actions log
+and JUnit to `test-results/web/junit.xml`. This keeps per-test progress visible
+while preserving the file used by the metrics reporter.
+
 `.github/scripts/report_test_metrics.py` parses JUnit, TRX and Flutter machine
 results. JUnit parsing removes terminal color escapes and XML-illegal control
 characters from reporter output while preserving test outcomes. Flutter output
@@ -151,7 +155,7 @@ Docker checks remain separate from source/test checks:
 |---|---|---|
 | `docker-web-build.yml` | Supported work branches; web/Docker/Compose paths | Synchronizes the React lockfile and builds the web image. |
 | `docker-backend-build.yml` | Supported work branches; service/Docker/Compose paths | Builds the public API first, then each discovered ASP.NET backend service. |
-| `docker-stack-health.yml` | Successful Docker build workflows for a PR targeting `main` only | Checks the complete Compose network, public health endpoints and API/Auth/Experience OpenAPI routes. |
+| `docker-stack-health.yml` | Successful Docker build workflows for a PR targeting `main` only | Checks the Compose network, public health endpoints, Swagger UI and configured API/Auth/Marine Safety/Experience OpenAPI routes. |
 
 The web and backend image workflows start only when their relevant application,
 service, Docker infrastructure, lockfile, Compose, global SDK or workflow
@@ -177,13 +181,16 @@ originating run was a pull request targeting `main`, determines which required
 image workflows were triggered for that exact comparison range, waits for
 those runs to succeed, and then checks out the exact commit. It validates
 `compose.yaml` or `docker-compose.yml`, starts the stack on host port `8080`,
-checks `/health`, `/api/health`, the Swagger UI and the API, Auth and Experience
-& Biodiversity OpenAPI documents, and each discovered backend health route.
-Its ephemeral Compose environment supplies the same PostgreSQL credentials to
-Auth and Experience & Biodiversity, which use the same database. Experience &
-Biodiversity uses the public alias `/api/experiences/health` while its internal
-service name remains `experience-biodiversity`. The workflow prints
-Compose diagnostics on failure and always tears the stack down.
+checks `/health`, `/api/health`, the Swagger UI and the API/Auth OpenAPI paths,
+then probes each discovered service using
+its public health route. The `experience-biodiversity` folder maps to
+`/api/experiences/health` and `marine-safety` maps to `/api/marine/health`.
+Experience & Biodiversity and Marine Safety OpenAPI documents are required
+when their service `Program.cs` exists. Absent member services are excluded
+from document checks; implemented services still must pass. The workflow
+creates masked ephemeral signing keys, supplies the shared PostgreSQL
+credentials to Auth and both services, prints Compose diagnostics on failure
+and always tears the stack down.
 
 ## GitHub configuration synchronization
 
@@ -220,3 +227,16 @@ git diff --check
 The GitHub runner is authoritative for Actions expression parsing, Docker,
 Flutter and hosted SDK behavior. Local validation should still be run before a
 pull request and its workflow results should be recorded in the PR template.
+
+## Marine Safety integration wiring
+
+Changes to `infrastructure/contracts/**` trigger backend build/test, UI/API
+contract checks and Docker backend builds for both push and pull-request events.
+Stack-health scope selection also recognizes the path. The regression checks in
+`.github/scripts/tests/test_marine_integration_wiring.py` cover both Docker event
+filters and executes the workflow's OpenAPI selection for no member sources,
+Marine alone and both Marine/Experiences sources. This shared source is compiled
+into the API and Marine Safety containers.
+Stack-health uses `/api/marine/health` for the `marine-safety` folder and
+creates masked ephemeral Auth/Marine signing keys for its isolated Compose
+run. Backup rescue and GitHub configuration synchronization are unchanged.

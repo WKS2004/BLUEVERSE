@@ -56,9 +56,9 @@ workflow is introduced; backend routes alone do not prove a client screen.
 | Boundary | Evidence |
 |---|---|
 | Client contract | Run the [UI integration validator](../development/ui-integration.md) and client tests for both surfaces. |
-| API/Auth route catalog | Run the [endpoint-catalog validator](../api/endpoint-catalog.md) and owning service tests. |
-| Persistence | Use Auth's deterministic tests and the explicit real-PostgreSQL path for migrations, constraints and concurrency. |
-| Local stack | Check gateway, API and Auth health plus both OpenAPI documents through the public entry point. |
+| API/Auth/marine route catalog | Run the [endpoint-catalog validator](../api/endpoint-catalog.md) and each owning service's tests. |
+| Persistence | Use provider-independent tests where appropriate and real-PostgreSQL evidence for provider-specific migrations, constraints, queries and concurrency. |
+| Local stack | Check gateway, API, Auth and marine-safety health plus all OpenAPI documents through the public entry point. |
 | Agent guidance | Run the [resource validator](../development/agent-resources.md) when instruction resources change. |
 
 The [test matrix](../testing/test-matrix.md) records current executed-suite

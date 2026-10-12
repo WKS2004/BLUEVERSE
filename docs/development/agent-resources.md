@@ -203,16 +203,20 @@ successful.
 
 ## Current repository boundary
 
-The current checkout contains the React and Flutter shared Auth workflow and
-the `services/api` and `services/auth` ASP.NET projects. See the
-[v0 foundation guide](../v0/README.md) for their component contracts.
-Executable Agentic AI services are not present. Ignored `bin/` and
+The current checkout contains the React and Flutter shared Auth workflow,
+`services/api`, `services/auth`, and Member 2's `services/marine-safety`
+ASP.NET service. React also implements marine-safety workflows; Flutter marine
+screens remain unimplemented. See the [v0 foundation guide](../v0/README.md)
+and the [marine component contract](../v1/components/member-2-marine-conditions-safety-intelligence.md)
+for implementation boundaries. Executable Agentic AI services are not present. Ignored `bin/` and
 `obj/` output is not implementation evidence. The
 [foundation gap analysis](../project/foundation-gap-analysis.md) records
 current evidence and next implementation gates.
 
-The current database implementation is the Auth EF Core/Npgsql model with
-checked-in PostgreSQL migrations. The default Auth tests intentionally use an
+The current database implementation includes the Auth and marine-safety EF
+Core/Npgsql models with checked-in PostgreSQL migrations. The default Auth tests intentionally use an
 isolated provider for deterministic provider-independent cases, while
 PostgreSQL-specific behavior is covered by explicitly enabled real-provider
-tests. Future domain and Agentic AI schemas remain unimplemented.
+tests. The marine authorization suite also uses deterministic identity and
+permission doubles, so its production Auth SQL remains unverified against
+PostgreSQL. Other member-domain and Agentic AI schemas remain unimplemented.

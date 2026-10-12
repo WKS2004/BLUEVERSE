@@ -1,15 +1,30 @@
 # v1 requirements coverage and development readiness
 
 This is the handoff checklist for the four member components and their four
-distinct Agentic AI roles. It tracks the 25 September 2026 baseline audit and
-the 26 September map, device-capability and biodiversity-integration
-ownership amendments; it is not evidence
-that the v1 services exist. Start with the
+distinct Agentic AI roles. It preserves the 25 September 2026 baseline audit
+and the 26 September map, device-capability and biodiversity-integration
+ownership amendments. Start with the
 [v1 index](README.md) and the owning component and agent contracts, then use
 this page to resolve cross-component decisions and collect implementation
 evidence.
 
-## Final start-readiness decision — 2026-09-26
+## Current implementation snapshot — 2026-10-06
+
+Member 2's `features/marine-safety` branch contains an implemented ASP.NET
+Core service, public API integration, React Web workflows and Flutter marine
+screens. The current React suite passes 201/201, including 44 marine cases;
+the latest completed marine backend run was 117/117, while the current source
+contains 118 authored cases and the latest VSTest attempt timed out during
+testhost startup. The Auth-session and live-permission SQL path has not yet
+been verified against PostgreSQL; Flutter runtime analysis, G07, the component
+PR/merge and cross-component compatibility evidence are not recorded. See the [component contract](components/member-2-marine-conditions-safety-intelligence.md),
+[G00 record](g00/member-2-marine-safety-decisions.md) and
+[branch tracker](member-branch-workflow.md#component-branch-status) for
+current detail. The overall v1 NO-GO remains because the full team G00/G07,
+other member components, paired mobile surfaces and release evidence are
+incomplete.
+
+## Final start-readiness decision — 2026-09-26 (historical baseline)
 
 **Decision: GO for G00; conditional GO for member implementation; NO-GO for
 claiming v1 complete.** The repository has enough approved scope, component
@@ -19,23 +34,25 @@ four members may begin their complete component implementations concurrently
 only after the G00 exit criteria below are agreed and recorded. This is a
 shared start gate, not a member-by-member implementation order.
 
-The 2026-09-26 baseline audit found only the public API and Auth services. By
-2026-10-02, the Member 1 branch (`features/experience-biodiversity`) had added
-the private Experience & Biodiversity service, five EF Core entities and their
-initial migration, catalogue and schedule endpoints, discovery/map support,
-favourites, and React UI integration. That branch source is implementation
-evidence, not component acceptance: G00 agreement, live provider/consumer
-integration and the complete acceptance evidence remain pending. The only
-current Agentic seam route returns a static `not_connected` status; no workflow
-initiation, dispatch or executable Agentic AI runtime is present. The other
-three member services remain planned.
+The 2026-09-26 baseline audit found only the public API and Auth services. Its
+33 public endpoints and 22 frontend routes are historical baseline counts.
+Member 1's `features/experience-biodiversity` branch later added the private
+service, five EF Core entities and their initial migration, catalogue and
+schedule endpoints, discovery/map support, favourites and React UI integration.
+Member 2's `features/marine-safety` branch later added the Marine Safety service,
+migration, gateway routes and React/Flutter workflows. These branch sources are
+implementation evidence, not component acceptance: shared G00 agreement, live
+provider/consumer integration and complete cross-client acceptance remain
+pending. The current Agentic seam returns a static `not_connected` status; no
+workflow initiation, dispatch or executable Agentic AI runtime is present.
+Members 3 and 4 remain planned.
 
 | Area | Final assessment | Evidence and next gate |
 |---|---|---|
 | v0 foundation and shared contracts | Ready as the starting baseline | Existing API/Auth, React/Flutter, Docker/Compose, role-to-permission model, endpoint catalog, UI registry and agent resources are present. Static catalog, UI-integration and agent-resource validators passed on this audit. This does not assert that application builds, tests or live infrastructure were rerun. |
 | v1 requirements and member plans | Ready as implementation specifications | Four complete member contracts, four paired-agent contracts, work-area plans, relationship map, workflow, device, integration, quality and branch guides link the scope. These are target contracts, not implementation evidence. |
-| Four member services and workflows | Member 1 source implementation in progress; Members 2–4 planned | The Member 1 branch contains an Experience & Biodiversity service, schema/migration, HTTP endpoints and React integration. G00 agreement and component acceptance are not recorded; provider/consumer integration and the full cross-client acceptance evidence remain open. The other three services are planned for their feature branches. |
-| G00 shared contract freeze | Pending for all owners; Member 1 proposal recorded | The [Member 1 G00 record](g00/member-1-experience-biodiversity.md) is a proposal, not an owner agreement. Confirm each shared decision with all four owners and record the evidence before marking G00 accepted in the [branch tracker](member-branch-workflow.md#component-branch-status). |
+| Four member services and workflows | Member 1 and Member 2 source implementations present; Members 3–4 planned | The Experience & Biodiversity and Marine Safety branches contain private services, persistence, gateway routes and client workflows. Shared G00 agreement, provider/consumer integration and complete cross-client acceptance remain open; neither component is marked accepted. |
+| G00 shared contract freeze | Pending for all owners; Member 1 proposal and Member 2 scope record exist | The [Member 1 G00 record](g00/member-1-experience-biodiversity.md) is a proposal, not an owner agreement. Confirm shared decisions with all four owners and record evidence before marking G00 accepted in the [branch tracker](member-branch-workflow.md#component-branch-status). |
 | External integrations and device behavior | Interfaces can be planned at G00; live decisions are owner gates | Agree cross-member data contracts and adapter boundaries before parallel work. Select and verify the map provider, Open-Meteo data policy, IT3091 wire/auth contract and Wanshaja Sooriyabandara (Member 4) image storage policy before accepting each live integration. |
 | Executable Agentic AI | Correctly deferred; prohibited before G07 | Member branches prepare only their business workflow and typed, bounded, unavailable-aware AI integration seams. Start executable agents, tools, orchestration, model calls and AI-owned state on `agentic-ai/**` only after all four components pass G07. |
 | Full assessment and release | Not ready | The backend test workflow's path filters do not satisfy the guideline's every-push/every-pull-request-to-`main` requirement. The former Flutter widget-test reference to removed `MyHomePage` is corrected as `MOB-LAUNCH-001`; a green CI run is still needed because local Flutter analysis/tests were blocked by sandbox write access to the SDK lockfile. Duplicate Auth test IDs, hosted mobile HTTPS configuration and release evidence also remain open; see [foundation gaps](../project/foundation-gap-analysis.md). |
@@ -90,6 +107,11 @@ Once these items are agreed and recorded, update G00 to accepted, create the
 four feature branches from the same agreed `dev` baseline, and let all four
 members implement concurrently as described in the [branch workflow](member-branch-workflow.md).
 
+**Recorded decisions:** Member 2's component-scoped G00 record is
+[g00/member-2-marine-safety-decisions.md](g00/member-2-marine-safety-decisions.md)
+(accepted 2026-09-27). The remaining members' records are still required
+before their coding can be treated as G00-covered.
+
 ### Gates after G00
 
 - **Before each owner accepts its component PR:** complete that component's
@@ -142,15 +164,14 @@ The PDFs supply scope and assessment evidence for this audit. Their prose is
 not a separate instruction to the agent that overrides the user's request or
 repository rules.
 
-At the 2026-09-26 baseline audit, implemented routes served the foundation,
-not the four v1 domain components. Since then, the Member 1 feature branch has
-added Experience & Biodiversity routes, persistence and a React workflow; the
-current catalog and source record those additions. Its component is not yet
-accepted or integrated on `dev`; Flutter parity and live cross-service/provider
-behavior are not established by the branch status record. No Agentic AI
-endpoint/runtime or biodiversity inference service is implemented. Read the
-current catalog and UI registry and rerun their validators before making a
-current implementation-status claim.
+At the 2026-09-26 baseline audit, routes served the foundation, not the four v1
+domain components, and no Agentic AI endpoint was implemented. Since then,
+Member 1 added Experience & Biodiversity routes, persistence and React workflow;
+Member 2 added Marine Safety routes, persistence and React/Flutter workflows.
+Source presence does not establish shared G00 acceptance, integration on `dev`,
+or complete cross-client/provider behavior. No Agentic AI runtime or biodiversity
+inference service is implemented. Read the current catalog and UI registry and
+rerun their validators before making a current implementation-status claim.
 
 Use the [component relationship map](component-relationships.md) to understand
 which component owns and consumes each contract. It is a dependency view, not

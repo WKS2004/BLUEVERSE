@@ -1,10 +1,11 @@
 # Service Boundaries
 
-The following boundaries are implemented for the current foundation. The edge,
-client starter projects with the shared Auth workflow, public API gateway and
-internal Auth service are checked in. The Member 1 branch also has a private
-service and database-connection scaffold; its domain workflow remains future
-implementation work.
+The current checkout includes the edge, client applications, public API,
+internal Auth service, and private Marine Safety and Experience & Biodiversity
+services. Their source implementations are present; shared G00 agreement and
+component acceptance remain pending. No executable Agentic AI runtime is
+included. Current branch and evidence status is tracked in the
+[member branch workflow](../v1/member-branch-workflow.md#component-branch-status).
 
 ## edge-nginx
 
@@ -48,11 +49,12 @@ Responsibilities:
 - public route/contract documentation and integration with private services
 - common request/response and gateway-level error handling
 
-Current foundation behavior includes `GET /api/health`, OpenAPI/Swagger
-publication, CORS, forwarded headers, JWT validation, RFC 7807-style gateway
-errors and YARP forwarding for `/api/auth/*`. Domain workflow responsibilities
-are implemented by the owning v1 component service and exposed through this
-public boundary.
+Current behavior includes `GET /api/health`, OpenAPI/Swagger publication,
+CORS, forwarded headers, JWT validation, RFC 7807-style gateway errors and
+YARP forwarding for `/api/auth/*`, `/api/marine/*` and `/api/experiences/*`.
+Both component workflows are implemented in their owning private services and
+exposed through this public boundary; shared G00 and acceptance evidence remain
+open.
 
 ### Stability for v1 member component branches
 
@@ -89,34 +91,34 @@ default is no Auth service change.
 ## v1 member component services
 
 These four separately owned internal services are the v1 target architecture.
-The Member 1 service at `services/experience-biodiversity/` is implemented with
-domain entities, EF Core migrations, full catalogue CRUD (Destinations, Activities,
-Offerings, Schedules), publication lifecycle evaluations and transitions, favourites,
-Haversine proximity discovery with keyword geocoding fallback, OpenFreeMap/MapLibre
-vector tile configuration, and a private Agentic AI typed access seam.
-Each member implements one complete service on the same `features/<component>` branch as
-its React and Flutter work. A completed service owns its component's domain
-operations, validation, application/data-access code, EF Core migrations and
-PostgreSQL records, third-party adapter, tests, health/readiness contract and
-prepared private Agentic AI client seam as required by its component contract.
+Member 1's `services/experience-biodiversity/` implementation includes domain
+entities, EF Core migrations, catalogue CRUD, publication lifecycle,
+favourites, nearby discovery, map tile configuration and a private Agentic AI
+access seam. Member 2's `services/marine-safety/` owns marine conditions,
+profiles and deterministic suitability. Each member implements one complete
+service on the same `features/<component>` branch as its React and Flutter work.
+A service owns its component's domain operations, validation, data access,
+migrations, adapters, tests, health/readiness contract and prepared private
+Agentic AI client seam as required by its component contract.
 
-| Owner | Service-owned responsibilities |
-|---|---|
-| Ushan Srinuka (Member 1) | Coastal catalogue/discovery, availability, favourites and the backend map-provider adapter |
-| Sanuda Abeysinghe (Member 2) | Open-Meteo acquisition, normalized marine conditions, safety profiles and deterministic suitability |
-| Adithya Gunawardana (Member 3) | Planning, recommendations, itineraries and the IT3091 biodiversity inference adapter/public result contract |
-| Wanshaja Sooriyabandara (Member 4) | BLUEVERSE-managed operational assessments, decisions, restrictions, alerts, audit and controlled execution |
+| Owner | Service | Current status | Service-owned responsibilities |
+|---|---|---|---|
+| Ushan Srinuka (Member 1) | `services/experience-biodiversity` | Service and React implementation present; G00 and acceptance pending | Coastal catalogue/discovery, availability, favourites and the backend map-provider adapter |
+| Sanuda Abeysinghe (Member 2) | `services/marine-safety` | Backend and React implementation present; G00 and acceptance pending | Open-Meteo acquisition, normalized marine conditions, safety profiles and deterministic suitability |
+| Adithya Gunawardana (Member 3) | — | Not implemented | Planning, recommendations, itineraries and the IT3091 biodiversity inference adapter/public result contract |
+| Wanshaja Sooriyabandara (Member 4) | — | Not implemented | BLUEVERSE-managed operational assessments, decisions, restrictions, alerts, audit and controlled execution |
 
 The services remain private on the approved Docker network. React and Flutter
 never call them directly; the public API authenticates/authorizes and routes
-or forwards client operations. Component services never call Auth directly.
-G00 must settle service identifiers, the API-to-service transport and route
-map, actor/permission propagation, PostgreSQL/schema ownership, and
-health/readiness semantics before parallel implementation. Keep each service
-isolated so its owner does not need to edit another member's service. The
-Member 1 branch currently uses Auth's shared database connection configuration
-and PostgreSQL default schema; G00 remains pending and this scaffold does not
-establish shared contract agreement.
+or forwards client operations. Component services do not call Auth directly.
+Marine Safety receives signed request-bound actor context from the API and
+does not read Auth tables or write identity data. Experience & Biodiversity
+validates Auth-issued JWTs and uses the shared PostgreSQL deployment with its
+own EF Core migration history. G00 still needs to settle service identifiers,
+API-to-service transport and route map, actor/permission propagation, data
+ownership and health/readiness semantics. Keep each service isolated so its
+owner does not need to edit another member's service. Executable Agentic AI
+remains gated by G07.
 
 ## postgres
 

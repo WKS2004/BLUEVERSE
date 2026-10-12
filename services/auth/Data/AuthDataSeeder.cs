@@ -57,6 +57,13 @@ public static class AuthDataSeeder
             [PermissionCodes.RoleCreate] = (Guid.Parse("11111111-1111-1111-1111-111111111110"), "Create roles"),
             [PermissionCodes.RoleUpdate] = (Guid.Parse("11111111-1111-1111-1111-111111111111"), "Update roles and assigned permissions"),
             [PermissionCodes.RoleDelete] = (Guid.Parse("11111111-1111-1111-1111-111111111112"), "Delete roles"),
+
+            // v1 marine-safety domain grants owned by the marine-safety
+            // component service; Admin receives them so role administration
+            // can delegate profile management without new Auth releases.
+            [PermissionCodes.MarineProfileRead] = (Guid.Parse("11111111-1111-1111-1111-111111111113"), "Read marine safety profiles"),
+            [PermissionCodes.MarineProfileManage] = (Guid.Parse("11111111-1111-1111-1111-111111111114"), "Manage marine safety profiles"),
+
             [PermissionCodes.ExperienceRead] = (Guid.Parse("11111111-1111-1111-1111-111111111113"), "View coastal experiences catalogue"),
             [PermissionCodes.ExperienceManage] = (Guid.Parse("11111111-1111-1111-1111-111111111114"), "Manage coastal destinations, activities, offerings and schedules")
         };
@@ -64,15 +71,21 @@ public static class AuthDataSeeder
         var permissions = await db.Permissions
             .Where(p => adminPermissions.Keys.Contains(p.Code))
             .ToListAsync(cancellationToken);
+        // Independently deployed member branches can have reused seed GUIDs.
+        // Codes identify grants; preserve every existing row and assignment.
+        var occupiedIds = (await db.Permissions.Select(p => p.Id)
+            .ToListAsync(cancellationToken)).ToHashSet();
 
         foreach (var (code, definition) in adminPermissions)
         {
             if (permissions.Any(p => p.Code == code))
                 continue;
 
+            var permissionId = definition.Id;
+            while (!occupiedIds.Add(permissionId)) permissionId = Guid.NewGuid();
             var permission = new Permission
             {
-                Id = definition.Id,
+                Id = permissionId,
                 Code = code,
                 Description = definition.Description,
                 CreatedAt = DateTime.UtcNow

@@ -19,7 +19,8 @@ public sealed class ApiWebApplicationFactory : WebApplicationFactory<Program>
     {
         var defaults = new Dictionary<string, string?>
         {
-            ["JWT_SIGNING_KEY"] = "api-test-only-signing-key-with-at-least-32-bytes"
+            ["JWT_SIGNING_KEY"] = "api-test-only-signing-key-with-at-least-32-bytes",
+            ["MARINE_ACTOR_SIGNING_KEY"] = "api-test-only-actor-key-with-at-least-32-bytes"
         };
 
         if (configurationOverrides is not null)
