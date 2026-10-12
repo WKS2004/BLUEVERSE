@@ -4,12 +4,15 @@
 
 On the integrated conflict-resolution tree, React lint and production build
 passed, and the serial web suite passed 384/384. Flutter analysis found no
-issues and the serial mobile suite passed 295/295. The focused Auth seeder suite
-passed 2/2, and the complete API test project passed 57/57. The endpoint catalog
+issues and the serial mobile suite passed 295/295. The full Auth suite passed
+85/85, the Coastal Operations suite passed 331 with 6 opt-in PostgreSQL tests
+skipped, and the complete API test project passed 57/57. The endpoint catalog
 and UI integration validators passed, and `docker compose config --quiet`
-accepted the combined services. Web tests use one worker on this Windows host
-to avoid its parallel Node memory limit. These are local checks; hosted Docker
-stack health remains a separate workflow result.
+accepted the combined services. The first hosted backend run exposed three
+remaining 16-permission Auth assertions and valid `/api/...` peer paths being
+rejected as absolute file URIs; both were corrected and covered by the complete
+local suites. The hosted follow-up run is pending. Web tests use one worker on
+this Windows host to avoid its parallel Node memory limit.
 
 ## Coastal Operations navigation and detailed activity — 2026-10-02
 

@@ -47,8 +47,8 @@ public sealed class AuthMemberPermissionSeedingTests
         var second = await db.Permissions.ToDictionaryAsync(p => p.Code, p => p.Id);
         Assert.Equal(first.Count, second.Count);
         foreach (var pair in first) Assert.Equal(pair.Value, second[pair.Key]);
-        Assert.Equal(16, await db.Permissions.CountAsync());
-        Assert.Equal(16, await db.RolePermissions.CountAsync(p => p.RoleId == role.Id));
+        Assert.Equal(36, await db.Permissions.CountAsync());
+        Assert.Equal(36, await db.RolePermissions.CountAsync(p => p.RoleId == role.Id));
         Assert.Single(await db.Users.ToListAsync());
     }
 
@@ -65,7 +65,7 @@ public sealed class AuthMemberPermissionSeedingTests
         var read = Assert.Single(await db.Permissions.Where(p => p.Code == PermissionCodes.MarineProfileRead).ToListAsync());
         Assert.Equal(id, read.Id);
         Assert.Equal("Existing Marine permission", read.Description);
-        Assert.Equal(16, await db.Permissions.CountAsync());
+        Assert.Equal(36, await db.Permissions.CountAsync());
         Assert.True(await db.RolePermissions.AnyAsync(p => p.PermissionId == id));
     }
 

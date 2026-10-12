@@ -369,8 +369,7 @@ public sealed class ComponentDependencyCollector(
             path.StartsWith("//", StringComparison.Ordinal) ||
             path.Contains('\\') ||
             path.Contains('#') ||
-            path.Contains('?') ||
-            Uri.TryCreate(path, UriKind.Absolute, out _))
+            path.Contains('?'))
         {
             return false;
         }
