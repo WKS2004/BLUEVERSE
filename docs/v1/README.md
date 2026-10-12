@@ -1,5 +1,7 @@
 # BLUEVERSE v1 documentation
 
+The latest [record navigation/activity follow-up](coastal-operations-record-navigation-and-audit.md) adds 500 ms search, pinned tabs, shared cards, record-specific cursor pagination, refresh-safe workspace intent and full details/actions from Logs. New audit events contain verified person/roles and exact field snapshots. This supersedes prior debounce/page-label descriptions; shared G00/G07 and live integration acceptance remain Pending.
+
 This directory is the human-readable and agent-readable implementation guide
 for the frozen v1 scope in [PROJECT_REQUIREMENTS.md](../../PROJECT_REQUIREMENTS.md).
 The per-member contracts explain the complete target component behavior,
@@ -15,6 +17,19 @@ distinction between pre-G07 integration seams and the later executable
 Agentic AI runtime.
 
 ## Authority, status and how to use these contracts
+
+The earlier titled-record follow-up is
+[Coastal Operations record experience](coastal-operations-record-experience.md):
+titled drafts and title search, named selection, database time-zone locations,
+stacked heroes, Advanced IDs and result metadata, with current check evidence
+and explicit missing catalogue/planner integration.
+
+Member 4's latest branch-local update is the
+[Coastal Operations publication and UI contract](coastal-operations-publication-and-ui.md),
+covering separate Assessment/Alert workspaces, explicit draft publication,
+permissions, scoped activity/search and durable assessment delivery. Its
+verification section separates implemented behavior from pending G00/G07 and
+live integration acceptance.
 
 The supplied **BLUEVERSE Simplified Team Guide** is an orientation document
 based on a 24 September 2026 repository snapshot. Its prose and imperatives

@@ -50,6 +50,13 @@ and G00 contracts for the internal transport and identity/permission context.
 
 ## What member branches implement
 
+Coastal Operations publication uses a durable business delivery envelope
+([ADR-0025](../adr/ADR-0025-coastal-assessment-publication-dispatch.md)).
+Published context feeds the typed Member 4 proposal port. Delivery attempts
+are transport state, not AI plans/steps or proof of completed analysis. Before
+G07 production stays disconnected; private routes/authentication still need
+accepted shared contracts.
+
 Each component owner prepares the complete backend-to-AI integration point
 for its paired role while implementing the ordinary feature:
 

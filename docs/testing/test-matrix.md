@@ -1,5 +1,105 @@
 # Test Matrix
 
+## PR #8 conflict-resolution verification — 2026-10-12
+
+On the integrated conflict-resolution tree, React lint and production build
+passed, and the serial web suite passed 384/384. Flutter analysis found no
+issues and the serial mobile suite passed 295/295. The full Auth suite passed
+85/85, the Coastal Operations suite passed 331 with 6 opt-in PostgreSQL tests
+skipped, and the complete API test project passed 57/57. The endpoint catalog
+and UI integration validators passed, and `docker compose config --quiet`
+accepted the combined services. The first hosted backend run exposed three
+remaining 16-permission Auth assertions and valid `/api/...` peer paths being
+rejected as absolute file URIs; both were corrected and covered by the complete
+local suites. The hosted follow-up run for `37ee55a` passed all 10
+PR-triggered GitHub Actions workflows. Docker Stack Health is scoped to pull
+requests targeting `main`, so it did not run for this maintenance-base PR; the
+combined Compose configuration passed locally. Web tests use one worker on
+this Windows host to avoid its parallel Node memory limit.
+
+## Coastal Operations navigation and detailed activity — 2026-10-02
+
+Latest evidence supersedes the historical totals/debounce below. Full web:
+**193 passed**; full Flutter: **121 passed**; Coastal Operations: **331 passed,
+6 opt-in PostgreSQL skipped, 0 failed**; API suite: **23 passed**. Approved
+existing test updates preserve unrelated assertions. New `WEB-OPS-NAV-001`–`005`,
+`MOB-OPS-NAV` cases and detailed activity tests cover 500 ms search, all page
+sizes and cursor reset, pinned controls, shared cards, Logs detail/edit/Back,
+create/edit restoration and invalid/denied/published recovery. Backend
+`COASTAL-AUDIT-DETAIL-001`–`003`, actor-context 009 and API signed-identity tests
+cover original values, attribution, legacy/system gaps, bounds, spoofing,
+tampering and atomic save failure. `COASTAL-POSTGRES-006` requires the guarded
+dedicated provider connection; it was skipped, not passed. Migration SQL/model
+checks and synthetic browser checks do not establish live provider acceptance.
+See [verification details](../v1/coastal-operations-record-navigation-and-audit.md).
+
+## Coastal Operations workspace UX polish — 2026-10-04
+
+Full web suite: **197 passed, 0 failed**. After the final Logs URL-state
+simplification, **19 focused web operations tests passed**; changed-source ESLint
+and the TypeScript/Vite production build passed. Full Flutter suite:
+**123 passed**, `flutter analyze` reported no issues. The shared UI integration
+validator and final `git diff --check` passed.
+
+New `WEB-OPS-UX-001`–`004` and `MOB-OPS-UX-001`–`002` cover responsive
+header-aligned tabs (including their first-row position before mobile account
+navigation), directional navigation, alert fields remaining
+read-only until Edit draft, route-restored Alert Logs, mutation-free Logs
+details, Logs-only correlation references without a separate actor/“Who” line,
+and activity absence in edit forms. The previous `WEB-OPS-NAV-005` expectation
+to edit a Logs record was stale against the read-only Logs contract; it now
+checks read-only detail and return navigation. The Flutter Logs route test
+fixture was updated to resolve the selected-category URL as the app does.
+Focused and complete package results are recorded in the
+[UX follow-up contract](../v1/coastal-operations-record-navigation-and-audit.md).
+
+### Sticky account rail correction — 2026-10-04
+
+The Coastal pages now use `AccountAreaNavigation` directly as a main-grid item,
+with the same sticky position, viewport height, max-height and internal
+overflow classes as Profile and Dashboard. Regression checks assert direct
+grid placement and the shared sizing classes. The full-suite result above
+predates this correction. After it, **11 focused React tests passed**; targeted
+ESLint, the production build, UI integration validation and `git diff --check`
+passed. The live app served `index-DkmV4bV_`; browser inspection confirmed the
+same base rail classes and direct main-grid placement on Assessments, Alerts
+and Logs, matching Profile and Dashboard.
+
+## Coastal Operations focused workspace follow-up — 2026-10-01
+
+The [focused workspace contract](../v1/coastal-operations-focused-workspaces.md)
+records the earlier hero/search/full-workspace change. User approval for affected
+existing-test updates arrived on 2026-10-02. That recheck and the Logs/evidence
+regressions passed; the one-second interval described in that historical run is
+superseded by the 500 ms behavior in the latest follow-up above.
+The earlier 178 web / 107 mobile totals are historical baselines.
+
+## Coastal Operations record experience — 2026-10-01
+
+`COASTAL-RECORD-001`–`006`, `COASTAL-TIMEZONE-001`/`002`,
+`COASTAL-OPTIONS-001`, `WEB-OPS-RECORD-001`–`006` and
+`MOB-OPS-RECORD-001`–`003` cover titled server-ID drafts, duplicate titles,
+legacy replay digests, own-draft discovery, title-only search/Advanced IDs,
+immutable title/zone publication context, unavailable/scoped associations,
+one DB zone, fractional/DST/invalid local times, option-loading failure/retry,
+native pickers and layout/navigation removal. The user approved replacing the
+affected existing client expectations for UUID inputs, two offset fields,
+objective search and bottom lookup; unrelated assertions were preserved.
+Current evidence and provider limitations are in the
+[record experience contract](../v1/coastal-operations-record-experience.md).
+
+## Coastal Operations publication update — 2026-10-01
+
+New requirement-based coverage: `COASTAL-PUBLICATION-001`–`007`,
+`COASTAL-SEARCH-001`–`003`, `COASTAL-AUDIT-001`, `COASTAL-PERMISSION-001`,
+`WEB-OPS-PAGES-001`–`004`, `MOB-OPS-PAGES-001`–`005` and
+`MOB-OPS-PERMISSION-001`. Coverage includes immutable full publication context,
+replay, finite transport retries/timeouts, draft/audit scopes, filtered cursors,
+distinct decision grants, separate page requests and grant-aware actions.
+The existing Auth seed expectation and PostgreSQL fixture cleanup were changed
+only after explicit user approval; original PostgreSQL assertions remain intact.
+See the [change contract](../v1/coastal-operations-publication-and-ui.md) for
+current results and the live PostgreSQL/peer/Agentic AI acceptance limitations.
 ## Flutter planner implementation — 2026-10-12
 
 Flutter now includes the same planner introduction, authenticated creation,
@@ -145,17 +245,17 @@ the minimum evidence expected as each component is introduced.
 
 | Area | Minimum evidence |
 |---|---|
-| API | `services/api/tests` covers current foundation behavior with stable cases `API-HEALTH-*`, `API-CONTRACT-*`, `API-CORS-*`, `API-EDGE-*`, `API-ERROR-*`, `API-PROXY-*` and `API-AUTH-*`: unit/HTTP health, non-versioned routing, public/Auth OpenAPI routing, CORS allow/deny/preflight, forwarded headers, safe gateway errors, JWT issuer/audience/lifetime/algorithm/cookie allow/deny and YARP forwarding/failure isolation. These foundation groups define 21 cases; the full API suite, including Marine integration, passes 54/54. |
-| Authentication | `services/auth/tests` currently defines 80 default cases for registration/login, validation and malformed-input problem details, server-issued installations and device proof, native/cookie transport and cookie cleanup, rotating refresh tokens and replay/expiry failures, one/30-day expiry, per-session revocation and cross-account isolation, active-session archival and refresh-token relinking, five-session account eviction, five-account device capacity, protected endpoints and safe errors, account/device/everywhere logout, profile-only updates, complete user/role/permission administration, administrative mutation authorization, strict assignment validation, system-role escalation, bootstrap seeding, token revocation, password hashing, JWT/configuration boundaries and persistence-model constraints. |
+| API | `services/api/tests` covers health, non-versioned public routing, API/Auth OpenAPI, CORS, safe gateway errors, JWT validation, signed actor-context forwarding (including Coastal Operations credential stripping), YARP routing and dependency isolation. Marine feature-branch API evidence is recorded separately; combined counts must come from the integrated run. |
+| Authentication | `services/auth/tests` cover registration, login, validation, sessions, refresh/revocation, administration, authorization and persistence boundaries. `AUTH-SEED-ADMIN-ALL-001` verifies idempotent Admin System Role grants for all 36 registered permissions, including Operations, Marine, Experience and Planner grants. |
 | Authorization | Permission allow/deny, policy-provider behavior, catalog isolation, administrative mutation protection and system-role escalation tests in `services/auth/tests` |
-| PostgreSQL | Auth and each component own checked-in EF Core migrations. The opt-in `AUTH-POSTGRES-SESSION-001` and planner `PLANNER-POSTGRES-001` use real PostgreSQL; the planner check covers migration upgrade, constraints, ordering, stale writes and review/item cascade deletion. Marine and Experience migration/provider evidence is tracked with their service suites. In-memory tests do not replace PostgreSQL evidence. |
-| React | `apps/web` uses Node 24 `node:test`; `npm run lint`, `npm run build` and `npm run test:ci` are the package gates. Separate feature-branch evidence recorded Marine at 246/246 (2026-10-09) and Planner at 221/221 (2026-10-12), with component-specific workflows and registered public `/api/...` requests. These are branch snapshots, not counts from the combined tree; run the suite after integration. |
-| Flutter | Coverage includes gateway/configuration, Auth, administration, onboarding, navigation, profile/security/session workflows and component screens. Separate branch evidence recorded Marine at 129/129 (2026-10-10) and Planner at 131/131 (2026-10-12), with clean analysis; these are not combined-tree results. No `integration_test` suite is checked in. |
-| Backend services | Matching test projects live under each `services/<service-name>/tests` folder and the backend workflow discovers them there. Coastal Planner includes 20 package-local peer, recommendation, itinerary, validation, re-evaluation and authorization cases. Marine Safety and Experience & Biodiversity keep their tests at their service boundaries. |
+| PostgreSQL | Auth and each component own checked-in EF Core migrations. Opt-in `AUTH-POSTGRES-SESSION-001` and planner `PLANNER-POSTGRES-001` exercise real-provider behavior; Coastal Operations has a recorded local migration/readiness check and five opt-in provider cases that require its dedicated test connection. Marine and Experience migration/provider evidence stays with their service suites. In-memory tests do not replace PostgreSQL evidence. |
+| React | `apps/web` uses Node 24 `node:test`; `npm run lint`, `npm run build` and `npm run test:ci` are the package gates. Separate branch snapshots recorded Operations 185, Marine 246 and Planner 221 cases; these are dated component evidence, not counts from the combined tree. Request and state tests target registered public `/api/...` routes, and component UI tests cover navigation and workflows. |
+| Flutter | Coverage includes gateway/configuration, Auth, administration, onboarding, navigation, profile/security/session workflows and all component screens. Separate branch snapshots recorded Operations 113, Marine 129 and Planner 131 cases; these are dated component evidence, not counts from the combined tree. No `integration_test` suite is checked in. |
+| Backend services | Matching test projects live under each `services/<service-name>/tests` folder and the backend workflow discovers them there. Coastal Planner has package-local peer, recommendation, itinerary, validation, re-evaluation and authorization cases; each other private service keeps its tests at its service boundary. |
 | v1 Ushan Srinuka (Member 1) | Experience & Biodiversity service, API integration and React/Flutter workflows are present in this integration branch. Shared G00 agreement, complete cross-client/provider evidence and integration acceptance remain pending; post-G07 agent execution is still gated. The agent route remains a static `not_connected` status. |
-| v1 Sanuda Abeysinghe (Member 2) | Marine Safety backend, API, React and Flutter workflows are present. Feature-branch verification recorded Marine 183/183, API 54/54, React 246/246 and Flutter 129/129, plus Auth permission-seeding readbacks. Marine tests use EF InMemory and transport doubles; PostgreSQL constraints/concurrency, live provider/device integration and G07 acceptance remain separate gates. |
+| v1 Sanuda Abeysinghe (Member 2) | Marine Safety backend, API, React and Flutter workflows are present. Feature-branch verification recorded Marine, API, React and Flutter test results plus Auth permission-seeding readbacks. Marine tests use EF InMemory and transport doubles; PostgreSQL constraints/concurrency, live provider/device integration and G07 acceptance remain separate gates. |
 | v1 Adithya Gunawardana (Member 3) | Coastal Planner backend, React/Flutter workflows, package-local tests and a real PostgreSQL migration/apply check are present. Live peer/IT3091 compatibility, hosted transport and G07 acceptance remain release gates. |
-| v1 Wanshaja Sooriyabandara (Member 4) | Assessment, proposal, operational state, approval/reject/revision, alerts, audit, concurrency and safe failure; backend, PostgreSQL, React, Flutter and agent evidence. Target, not implemented. |
+| v1 Wanshaja Sooriyabandara (Member 4) | Branch-local assessment and alert CRUD/publication, reviewer decisions, target state/history, private evidence, scoped activity/search and durable publication delivery are present. The service suite's last recorded result was 322 default cases; five opt-in PostgreSQL cases require the dedicated test connection. React and Flutter expose dedicated Assessment/Alert pages with shared authorization and workflow capabilities. Shared G00 producer acceptance and post-G07 live agents remain pending. |
 | UI integration contract | Dependency-free registry/validator checks that every product workflow has both React and Flutter routes and that client API literals resolve to declared public `/api/...` endpoints; role coverage and platform parity are verified in workflow tests |
 | Integration | React/Flutter against the same public API, gateway routing and cross-platform workflow; no client-to-client or internal-service calls |
 | Agentic AI | Contract, tool, safety and evaluation evidence for all four [v1 agent roles](../v1/README.md), plus the complete assessed workflow under each owning AI service’s local `tests/` directory. No executable agents currently exist. |
@@ -182,6 +282,36 @@ tests are delivered in the same change. Tests remain in their owning
 framework/service default directories; the repository must not grow a
 centralized root `test/` tree for these cases.
 
+## Coastal Operations Logs and evidence follow-up — 2026-10-02
+
+The user approved affected existing-test updates for the prior full-workspace
+changes and this Logs/search/evidence change. Client regression cases verify
+1,000 ms debounce/reset, quiet retained-card feedback, stale responses/retry,
+focused forms/details/chrome/Back, all five page sizes and cursor resets,
+permission-denied Logs, timeline reads and draft-only confirmed image removal.
+Backend evidence/log cases verify stored state/version/audit/bytes plus complete
+scope and failure outcomes. PostgreSQL cases 004/005 are opt-in provider tests.
+See [current checks and limits](../v1/coastal-operations-logs-and-evidence.md).
+
+Final evidence: **322 backend passed / 5 PostgreSQL skipped**, **185 web passed**,
+**113 mobile passed**, **35 validator tests passed**. TypeScript, Vite build,
+changed-source ESLint, Flutter analysis, EF model-drift checks, route/UI registry,
+agent resources and diff whitespace checks passed. Synthetic desktop/phone
+browser checks completed; live PostgreSQL, Docker, deployed gateway and real
+mobile device acceptance remain unavailable or unexecuted. No test was skipped
+or relaxed to fix a failing assertion; PostgreSQL skips use the existing opt-in
+connection gate. See the current contract for commands and limitations.
+
+## Coastal Operations Logs hero — 2026-10-04
+
+`WEB-OPS-LOGS-004` checks the Logs-specific coastal image, accessible image
+description, and that the hero precedes search and results. The corresponding
+asset prompt and design intent are recorded in the
+[Logs hero contract](../v1/coastal-operations-record-navigation-and-audit.md).
+The focused `OperationsLogs.component.test.js` run passed **8/8**. The React
+production build, changed-file ESLint and UI integration validator passed. The
+frontend container was rebuilt/restarted, and the browser confirmed the hero
+above the live Logs search and list.
 ### React planner navigation correction — 2026-10-12
 
 `WEB-PLANNER-UI-030` now verifies that the top desktop/mobile menus exclude

@@ -512,12 +512,16 @@ class AuthApiService {
   Future<Map<String, String>> authenticatedHeaders() => _authHeaders();
 
   Future<Map<String, String>> _authHeaders() async {
+    return {..._jsonHeaders, ...await publicApiAuthorizationHeaders()};
+  }
+
+  /// Returns the active account's bearer header for other public API features.
+  /// The token stays in secure storage and is never copied into view state.
+  Future<Map<String, String>> publicApiAuthorizationHeaders() async {
     final token = await accessTokenForRequest();
-    return {
-      ..._jsonHeaders,
-      if (token != null && token.isNotEmpty)
-        HttpHeaders.authorizationHeader: 'Bearer $token',
-    };
+    return token != null && token.isNotEmpty
+        ? {HttpHeaders.authorizationHeader: 'Bearer $token'}
+        : const {};
   }
 
   Future<void> _persist(AuthResponse auth) async {

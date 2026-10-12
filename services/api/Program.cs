@@ -1,9 +1,11 @@
 using System.Security.Claims;
 using System.Text;
+using Blueverse.Api.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using Yarp.ReverseProxy.Transforms;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -143,9 +145,21 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
-// YARP Reverse Proxy - dynamically forwards API requests to sub-services (Auth, AI, Domain)
+// YARP signs the authenticated actor and component permission claims for the
+// private Coastal Operations service. The client's JWT and cookies are not
+// forwarded across that boundary.
+var coastalActorContextKey = CoastalActorContextTransform.ReadKey(builder.Configuration["COASTAL_OPERATIONS_CONTEXT_KEY"]);
 builder.Services.AddReverseProxy()
-    .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
+    .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"))
+    .AddTransforms(transformBuilderContext =>
+    {
+        transformBuilderContext.AddRequestTransform(transformContext =>
+        {
+            if (transformContext.Path.StartsWithSegments("/api/operations"))
+                CoastalActorContextTransform.Apply(transformContext, coastalActorContextKey);
+            return ValueTask.CompletedTask;
+        });
+    });
 
 var app = builder.Build();
 
@@ -186,6 +200,7 @@ app.UseSwaggerUI(options =>
     options.DocumentTitle = "BLUEVERSE API Documentation";
     options.SwaggerEndpoint("/api/swagger/v1/swagger.json", "BLUEVERSE Public API");
     options.SwaggerEndpoint("/api/auth/swagger/v1/swagger.json", "BLUEVERSE Auth API");
+    options.SwaggerEndpoint("/api/operations/swagger/v1/swagger.json", "BLUEVERSE Coastal Operations API");
     options.SwaggerEndpoint("/api/planner/swagger/v1/swagger.json", "BLUEVERSE Coastal Planner API");
     options.SwaggerEndpoint("/api/marine/swagger/v1/swagger.json", "BLUEVERSE Marine Conditions & Safety API");
     options.SwaggerEndpoint(

@@ -4,6 +4,7 @@ import 'data/models/auth_models.dart';
 import 'data/repositories/auth_repository.dart';
 import 'data/repositories/experience_repository.dart';
 import 'data/services/auth_api_service.dart';
+import 'data/services/coastal_operations_api_service.dart';
 
 import 'package:http/http.dart' as http;
 
@@ -19,6 +20,8 @@ import 'ui/auth_registration_screen.dart';
 import 'ui/auth_screens.dart';
 import 'ui/auth_view_model.dart';
 import 'ui/blueverse_theme.dart';
+import 'ui/coastal_operations_screen.dart';
+import 'ui/coastal_operations_logs_screen.dart';
 import 'ui/experiences/catalogue_management_screen.dart';
 import 'ui/experiences/destination_detail_screen.dart';
 import 'ui/experiences/experience_view_model.dart';
@@ -55,6 +58,8 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   late final AuthViewModel _authViewModel;
+  late final AuthApiService _authApiService;
+  late final CoastalOperationsApiService _coastalOperationsApiService;
   late final ExperienceViewModel _experienceViewModel;
   bool _initialSessionHandled = false;
   String? _lastAuthenticatedUserId;
@@ -64,17 +69,19 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    final authApi = AuthApiService();
+    _authApiService = widget.authRepository?.apiService ?? AuthApiService();
+    _coastalOperationsApiService = CoastalOperationsApiService(
+      authApiService: _authApiService,
+    );
     _authViewModel = AuthViewModel(
-      repository:
-          widget.authRepository ?? AuthRepository(apiService: authApi),
+      repository: widget.authRepository ?? AuthRepository(apiService: _authApiService),
     )..addListener(_handleSessionChange);
     _marineService = _buildMarineService();
 
     _experienceViewModel = ExperienceViewModel(
       repository: ExperienceRepository(
         apiService: ExperienceApiService(
-          accessTokenProvider: authApi.accessTokenForRequest,
+          accessTokenProvider: _authApiService.accessTokenForRequest,
         ),
       ),
     );
@@ -90,6 +97,7 @@ class _MyAppState extends State<MyApp> {
     _authViewModel
       ..removeListener(_handleSessionChange)
       ..dispose();
+    _coastalOperationsApiService.close();
     _experienceViewModel.dispose();
     super.dispose();
   }
@@ -288,6 +296,38 @@ class _MyAppState extends State<MyApp> {
           );
         }
 
+        if (uri.path == '/operations/assessments' ||
+            uri.path == '/operations/alerts' ||
+            uri.path == '/operations/logs') {
+          final alerts =
+              uri.path == '/operations/alerts' ||
+              (uri.path == '/operations/logs' &&
+                  uri.queryParameters['kind'] == 'alerts');
+          final page = uri.path == '/operations/logs'
+              ? CoastalOperationsLogsScreen(
+                  viewModel: _authViewModel,
+                  apiService: _coastalOperationsApiService,
+                  initialAlerts: alerts,
+                )
+              : CoastalOperationsScreen(
+                  section: alerts
+                      ? CoastalOperationsSection.alerts
+                      : CoastalOperationsSection.assessments,
+                  viewModel: _authViewModel,
+                  apiService: _coastalOperationsApiService,
+                  initialView: uri.queryParameters['view'],
+                  initialRecordId: uri.queryParameters['id'],
+                  fromLogs: uri.queryParameters['origin'] == 'logs',
+                );
+          // Coastal Operations animates its content below fixed navigation.
+          // A route-wide slide would also move the shared chrome.
+          return PageRouteBuilder<void>(
+            settings: settings,
+            transitionDuration: Duration.zero,
+            reverseTransitionDuration: Duration.zero,
+            pageBuilder: (_, _, _) => page,
+          );
+        }
         return null;
       },
       onUnknownRoute: blueverseUnknownRoute,

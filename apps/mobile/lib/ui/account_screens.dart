@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../data/models/auth_models.dart';
 import 'auth_view_model.dart';
+import '../features/coastal_operations/coastal_operations_permissions.dart';
 import 'planner_components.dart';
 import 'marine/marine_permissions_guard.dart';
 
@@ -200,6 +201,46 @@ class AuthAdminNavigationMenu extends StatelessWidget {
   }
 }
 
+class AuthCoastalOperationsNavigationMenu extends StatelessWidget {
+  const AuthCoastalOperationsNavigationMenu({
+    required this.viewModel,
+    super.key,
+  });
+
+  final AuthViewModel viewModel;
+
+  @override
+  Widget build(BuildContext context) {
+    final permissions = viewModel.user?.permissions ?? const <String>[];
+    if (!CoastalOperationsPermissions.hasAccess(permissions)) {
+      return const SizedBox.shrink();
+    }
+    return PopupMenuButton<String>(
+      tooltip: 'Coastal operations',
+      onSelected: (route) => Navigator.pushNamed(context, route),
+      icon: const Icon(Icons.waves_outlined),
+      itemBuilder: (_) => [
+        const PopupMenuItem<String>(
+          enabled: false,
+          child: Text('Coastal Operations'),
+        ),
+        if (CoastalOperationsPermissions.hasAssessmentAccess(permissions))
+          const PopupMenuItem(
+            value: '/operations/assessments',
+            child: Text('Assessments'),
+          ),
+        if (CoastalOperationsPermissions.canReadLogs(permissions))
+          const PopupMenuItem(value: '/operations/logs', child: Text('Logs')),
+        if (CoastalOperationsPermissions.hasAlertAccess(permissions))
+          const PopupMenuItem(
+            value: '/operations/alerts',
+            child: Text('Alerts'),
+          ),
+      ],
+    );
+  }
+}
+
 class AuthProfileScreen extends StatefulWidget {
   const AuthProfileScreen({required this.viewModel, super.key});
 
@@ -278,6 +319,7 @@ class _AuthProfileScreenState extends State<AuthProfileScreen> {
             actions: [
               AuthAccountSwitcher(viewModel: widget.viewModel),
               AuthAdminNavigationMenu(viewModel: widget.viewModel),
+              AuthCoastalOperationsNavigationMenu(viewModel: widget.viewModel),
               PlannerNavigationMenu(user: user),
               IconButton(
                 tooltip: 'Open dashboard',
@@ -976,6 +1018,7 @@ class _AuthDashboardScreenState extends State<AuthDashboardScreen> {
             actions: [
               AuthAccountSwitcher(viewModel: widget.viewModel),
               AuthAdminNavigationMenu(viewModel: widget.viewModel),
+              AuthCoastalOperationsNavigationMenu(viewModel: widget.viewModel),
               PlannerNavigationMenu(user: user),
               if (user != null)
                 IconButton(

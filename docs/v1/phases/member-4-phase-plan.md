@@ -1,5 +1,14 @@
 # Wanshaja Sooriyabandara (Member 4) phase plan — Coastal Operations, Advisories & Alerts
 
+The 2026-10-01 [publication and UI change](../coastal-operations-publication-and-ui.md)
+requires documents first, then permission review, durable dispatch, scoped
+activity/search and separate equal client pages. G00/G07 remain pending.
+The [record experience follow-up](../coastal-operations-record-experience.md)
+adds titles, draft search fixes, named selector seams and seeded IANA locations
+to that work. Producer catalogue/planner integration remains pending; the
+completed client selectors explicitly report availability. Publication still
+requires a canonical target and actual agents remain gated by G07.
+
 **Assigned owner:** Wanshaja Sooriyabandara (`@WKS2004`). Feature branch:
 `features/coastal-operations`; Agentic AI branch after G07:
 `agentic-ai/safety-operations`.
@@ -99,11 +108,11 @@ merge.
 - durable objective/time context and references to affected managed target,
   Ushan Srinuka (Member 1) experience evidence, Sanuda Abeysinghe (Member 2) condition/suitability evidence and
   Adithya Gunawardana (Member 3) workflow identity;
-- optional operator image evidence on an assessment version: Flutter camera/
-  image selection and React image-file upload, public-API streaming, server
-  validation/inspection, private storage, reviewer-only authorized retrieval,
-  version immutability and audit; finalize format/count/size, storage,
-  sanitization and retention choices against [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md);
+- optional operator image evidence on an assessment version: the branch-local
+  backend upload/retrieval, strict PNG sanitization, private storage, versioned
+  metadata and retention are implemented per [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md).
+  React/Flutter capture and selection, parity tests, live PostgreSQL workflow
+  verification and producer acceptance remain to be completed;
 - proposal versions separated from actual operational state and from
   execution history;
 - reviewer-visible source, time/freshness, missing-evidence, validation,

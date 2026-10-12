@@ -16,14 +16,17 @@ order.
 | Wanshaja Sooriyabandara (Member 4, `@WKS2004`) | `features/coastal-operations` | `dev` |
 
 Owner names and branch assignments are confirmed in the
-[canonical owner map](../project/ai-team-members.md). At G00, complete the shared
-[start-readiness exit criteria](requirements-coverage-and-readiness.md#g00-exit-criteria):
-agree shared IDs, source-of-truth ownership, contract schemas, permissions,
+[canonical owner map](../project/ai-team-members.md). Before branch-local
+implementation, each owner records their scoped G00 decisions in a reviewable
+proposal against the [start-readiness criteria](requirements-coverage-and-readiness.md#g00-exit-criteria):
+shared IDs, source-of-truth ownership, contract schemas, permissions,
 error/status semantics, timestamps, service identities, delivery contracts
-and shared workflow identity against the
-[relationship map](component-relationships.md). Record the agreement before
-component coding, then create all four branches from the same agreed `dev`
-baseline. Each owner implements one new .NET service in
+and workflow identity against the [relationship map](component-relationships.md).
+Per the current branch workflow, owners may proceed on their separated
+component branches while the shared G00 tracker remains Pending. The four
+owners finalize shared acceptance after the component branches are merged into
+`dev`; unresolved handoffs remain provisional until that integration. Each
+owner implements one new .NET service in
 its own component-specific subfolder under `services/`, its data model, React
 and Flutter capabilities, paired backend Agentic AI access boundary, tests
 and documentation on that single branch. `services/api` remains the sole
@@ -133,9 +136,10 @@ checks both clients against the merged contracts.
 
 ## Pull requests and merged-branch compatibility
 
-1. Each member submits one complete component PR to `dev`. The branch may use
-   the G00-reviewed contracts and contract-level test doubles during parallel
-   development; a test double is not evidence of real integration.
+1. Each member submits one complete component PR to `dev`. During parallel
+   development, branches use their owner-recorded provisional G00 proposals;
+   note unresolved cross-component contracts. A test double is not evidence
+   of real integration or shared G00 acceptance.
    The PR describes its component-owned folders and lists every shared file
    changed, the specific integration need, and evidence that existing API/Auth
    behavior is preserved. It must include the applicable route/catalog and
@@ -172,7 +176,7 @@ turn-taking order.
 | Ushan Srinuka (Member 1) — Experience and Biodiversity | Ushan Srinuka | `Ushan-Srinuka` | Service and React/Flutter implementation present; acceptance pending | `features/experience-biodiversity` | Private service, EF Core migration, catalogue/schedule routes, discovery/favourites and both client workflows are present in this integration branch. G00 ratification, provider/cross-client evidence and `dev` acceptance remain open; the agent route is static `not_connected`. |
 | Sanuda Abeysinghe (Member 2) — Marine Conditions and Safety | Sanuda Abeysinghe | `sanudaabey` | Backend and React/Flutter Marine workflows implemented; integration pending | `features/marine-safety` | Service owns reviewed safety profiles, deterministic conditions/evaluation and immutable history; it reads Member 1's published catalogue. Latest recorded feature evidence and remaining PostgreSQL/provider/G07 gates are summarized in the [test matrix](../testing/test-matrix.md). |
 | Adithya Gunawardana (Member 3) — Planner and Itineraries | Adithya Gunawardana | `AdithyaGunawardana` | Implemented; integration pending | `features/coastal-planner` | Private service, React/Flutter workflows and real PostgreSQL evidence are recorded in `docs/development/coastal-planner.md`; live peer/IT3091 compatibility and G07 acceptance remain pending. |
-| Wanshaja Sooriyabandara (Member 4) — Coastal Operations | Wanshaja Sooriyabandara | `WKS2004` | Planned | `features/coastal-operations` | — |
+| Wanshaja Sooriyabandara (Member 4) — Coastal Operations | Wanshaja Sooriyabandara | `WKS2004` | In progress — partial backend | `features/coastal-operations` | Bounded peer calls, PostgreSQL persistence and image evidence are present in this integration branch; G00 remains pending, with producer handoff, full workflow acceptance, client parity and post-G07 proposal generation still open. |
 | G07 — Integrated component acceptance | All four assigned owners | — | Planned | `dev` | — |
 
 This process deliberately distinguishes relationship dependencies from work

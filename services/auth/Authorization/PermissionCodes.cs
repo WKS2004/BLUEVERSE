@@ -14,6 +14,26 @@ public static class PermissionCodes
     public const string RoleDelete = "auth.role.delete";
     public const string PermissionRead = "auth.permission.read";
     public const string SystemRoleManage = "auth.role.system.manage";
+    public const string OperationsAssessmentCreate = "operations.assessment.create";
+    public const string OperationsAssessmentRead = "operations.assessment.read";
+    public const string OperationsAssessmentQueueRead = "operations.assessment.queue.read";
+    public const string OperationsAssessmentUpdate = "operations.assessment.update";
+    public const string OperationsAssessmentDelete = "operations.assessment.delete";
+    public const string OperationsAssessmentSubmit = "operations.assessment.submit";
+    public const string OperationsAssessmentDecide = "operations.assessment.decide";
+    public const string OperationsTargetStatusRead = "operations.target.status.read";
+    public const string OperationsTargetHistoryRead = "operations.target.history.read";
+    public const string OperationsEvidenceUpload = "operations.evidence.upload";
+    public const string OperationsEvidenceRead = "operations.evidence.read";
+    public const string OperationsAlertCreate = "operations.alert.create";
+    public const string OperationsAlertUpdate = "operations.alert.update";
+    public const string OperationsAlertDelete = "operations.alert.delete";
+    public const string OperationsAlertPublish = "operations.alert.publish";
+    public const string OperationsAlertResolve = "operations.alert.resolve";
+    public const string OperationsAuditRead = "operations.audit.read";
+    public const string OperationsAlertRead = "operations.alert.read";
+    public const string OperationsAlertManage = "operations.alert.manage";
+    public const string OperationsAlertDecide = "operations.alert.decide";
 
     // v1 member-domain permission codes. The marine-safety component service
     // enforces these codes through its own permission policies; Auth seeds

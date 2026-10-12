@@ -64,13 +64,17 @@ services:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_HTTP_PORTS: ${API_HTTP_PORT:-8080}
       JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY in .env}
-      MARINE_ACTOR_SIGNING_KEY: ${MARINE_ACTOR_SIGNING_KEY:?Set MARINE_ACTOR_SIGNING_KEY in .env}
+      COASTAL_OPERATIONS_CONTEXT_KEY: ${COASTAL_OPERATIONS_CONTEXT_KEY:?Set COASTAL_OPERATIONS_CONTEXT_KEY in .env}
       ReverseProxy__Clusters__auth__Destinations__auth__Address: ${AUTH_SERVICE_URL:-http://auth:8080}
+      ReverseProxy__Clusters__coastal-operations__Destinations__coastal-operations__Address: ${COASTAL_OPERATIONS_SERVICE_URL:-http://coastal-operations:8080}
+      MARINE_ACTOR_SIGNING_KEY: ${MARINE_ACTOR_SIGNING_KEY:?Set MARINE_ACTOR_SIGNING_KEY in .env}
       ReverseProxy__Clusters__coastal-planner__Destinations__coastal-planner__Address: ${COASTAL_PLANNER_SERVICE_URL:-http://coastal-planner:8080}
       ReverseProxy__Clusters__marine-safety__Destinations__marine-safety__Address: ${MARINE_SAFETY_SERVICE_URL:-http://marine-safety:8080}
       ReverseProxy__Clusters__experience-biodiversity__Destinations__experience-biodiversity__Address: ${EXPERIENCE_BIODIVERSITY_SERVICE_URL:-http://experience-biodiversity:8080}
     depends_on:
       auth:
+        condition: service_started
+      coastal-operations:
         condition: service_started
       marine-safety:
         condition: service_started
@@ -134,6 +138,34 @@ services:
     networks:
       - blueverse_internal
       - blueverse_database
+
+  coastal-operations:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/coastal-operations/Dockerfile
+      args:
+        PROJECT_NAME: Blueverse.CoastalOperations
+    container_name: blueverse-coastal-operations
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_HTTP_PORTS: ${COASTAL_OPERATIONS_HTTP_PORT:-8080}
+      COASTAL_OPERATIONS_CONTEXT_KEY: ${COASTAL_OPERATIONS_CONTEXT_KEY:?Set COASTAL_OPERATIONS_CONTEXT_KEY in .env}
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-blueverse};Username=${POSTGRES_USER:-blueverse};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      ComponentDependencies__Member1Experience__BaseAddress: ${EXPERIENCE_SERVICE_URL:-http://experience-biodiversity:8080}
+      ComponentDependencies__Member2MarineSafety__BaseAddress: ${MARINE_SAFETY_SERVICE_URL:-http://marine-safety:8080}
+      ComponentDependencies__Member3CoastalPlanner__BaseAddress: ${COASTAL_PLANNER_SERVICE_URL:-http://coastal-planner:8080}
+      EvidenceStorage__RootPath: /var/lib/coastal-operations/evidence
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - blueverse_internal
+      - blueverse_database
+    volumes:
+      - blueverse_coastal_operations_evidence:/var/lib/coastal-operations/evidence
 
   coastal-planner:
     build:
@@ -210,7 +242,6 @@ services:
       IT3091_FAKE_API_KEY: ${BIODIVERSITY_ML_API_KEY:-}
     networks:
       - blueverse_internal
-
 networks:
   blueverse_edge:
     name: blueverse_edge
@@ -223,3 +254,5 @@ networks:
 volumes:
   blueverse_postgres_data:
     name: blueverse_postgres_data
+  blueverse_coastal_operations_evidence:
+    name: blueverse_coastal_operations_evidence

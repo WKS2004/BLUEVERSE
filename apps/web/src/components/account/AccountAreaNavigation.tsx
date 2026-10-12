@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import { hasAnyPermission } from '../../features/authorization/permissions'
 import { useAuthSession } from '../../features/auth/authSession'
+import { hasCoastalOperationsAccess, coastalNavigationLinks } from '../../features/coastalOperations/permissions'
 import { marineWorkflowLabels } from '../../features/marine/marineWorkflowLabels'
 
-type Area = 'profile' | 'dashboard' | 'marine' | 'admin' | 'experiences' | 'planner'
+type Area = 'profile' | 'dashboard' | 'marine' | 'admin' | 'experiences' | 'planner' | 'operations'
 type ExperienceManagementTab = 'destinations' | 'activities' | 'offerings'
 type NavigationGroup = { id: Area; label: string; href: string; children: { label: string; href: string }[] }
 
@@ -30,6 +31,11 @@ function groupsFor(permissions: string[], guest: boolean): NavigationGroup[] {
       ],
     },
   ]
+  if (hasCoastalOperationsAccess({ permissions })) {
+    groups.push({
+      id: 'operations', label: 'Coastal Operations', href: coastalNavigationLinks({ permissions })[0]?.href ?? '/operations/assessments', children: coastalNavigationLinks({ permissions }),
+    })
+  }
   if (hasAnyPermission({ permissions }, ['marine.profile.read'])) {
     groups.push({
       id: 'marine', label: 'Marine & safety', href: '/marine/conditions', children: [
@@ -113,7 +119,7 @@ function Disclosure({ group, expanded, onToggle, desktop = false, showChildren =
   </>
 }
 
-export default function AccountAreaNavigation({ active, onExperienceTabSelect }: { active: Area; onExperienceTabSelect?: (tab: ExperienceManagementTab) => void }) {
+export default function AccountAreaNavigation({ active, className = '', onExperienceTabSelect }: { active: Area; className?: string; onExperienceTabSelect?: (tab: ExperienceManagementTab) => void }) {
   const { user } = useAuthSession()
   const groups = groupsFor(user?.permissions ?? [], !user)
   const [expanded, setExpanded] = useState<Area | null>(active)
@@ -122,8 +128,8 @@ export default function AccountAreaNavigation({ active, onExperienceTabSelect }:
     setExpanded((current) => current === area ? null : area)
   }
 
-  return <aside aria-label="Account navigation" className="lg:sticky lg:top-[76px] lg:z-10 lg:h-[calc(100dvh-76px)] lg:max-h-[calc(100dvh-76px)] lg:w-full lg:self-start lg:overflow-y-auto lg:border-r lg:border-coast-line lg:bg-coast-paper/95 lg:px-4 lg:pb-6 lg:pt-6">
-    <nav aria-label="Profile, dashboard, coastal planner and administration">
+  return <aside aria-label="Account navigation" className={`lg:sticky lg:top-[76px] lg:z-10 lg:h-[calc(100dvh-76px)] lg:max-h-[calc(100dvh-76px)] lg:w-full lg:self-start lg:overflow-y-auto lg:border-r lg:border-coast-line lg:bg-coast-paper/95 lg:px-4 lg:pb-6 lg:pt-6 ${className}`}>
+    <nav aria-label="Profile, dashboard, coastal planner, marine safety, operations and administration">
       <div className="rounded-3xl border border-coast-line bg-white/80 p-2 shadow-sm lg:hidden">
         <div className="flex min-w-0 gap-1 overflow-x-auto">
           {groups.map((group) => <div className="shrink-0" key={group.id}><Disclosure group={group} expanded={expanded === group.id} onToggle={() => toggle(group.id)} showChildren={false} /></div>)}

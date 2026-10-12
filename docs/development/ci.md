@@ -155,7 +155,7 @@ Docker checks remain separate from source/test checks:
 |---|---|---|
 | `docker-web-build.yml` | Supported work branches; web/Docker/Compose paths | Synchronizes the React lockfile and builds the web image. |
 | `docker-backend-build.yml` | Supported work branches; service/Docker/Compose paths | Builds the public API first, then each discovered ASP.NET backend service. |
-| `docker-stack-health.yml` | Successful Docker build workflows for a PR targeting `main` only | Checks the Compose network, public health endpoints, Swagger UI and configured API/Auth/Marine Safety/Experience OpenAPI routes. |
+| `docker-stack-health.yml` | Successful Docker build workflows for a PR targeting `main` only | Generates masked temporary signing keys, checks the Compose network and public health endpoints, and validates API/Auth plus each implemented component's health and OpenAPI routes. |
 
 The web and backend image workflows start only when their relevant application,
 service, Docker infrastructure, lockfile, Compose, global SDK or workflow
@@ -188,9 +188,10 @@ its public health route. `coastal-planner` maps to `/api/planner/health`,
 maps to `/api/marine/health`. The component OpenAPI documents are required when
 their service `Program.cs` exists; absent member services are excluded from
 document checks, while implemented services must pass. The workflow creates
-masked ephemeral signing keys, supplies the shared PostgreSQL credentials to
-Auth and each service, prints Compose diagnostics on failure and always tears
-the stack down.
+masked ephemeral `JWT_SIGNING_KEY`, `MARINE_ACTOR_SIGNING_KEY` and
+`COASTAL_OPERATIONS_CONTEXT_KEY` values, supplies the shared PostgreSQL
+credentials to Auth and each service, prints Compose diagnostics on failure
+and always tears the stack down.
 
 ## GitHub configuration synchronization
 

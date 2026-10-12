@@ -6,6 +6,7 @@ Custom Dockerfiles remain here so application codebases can stay close to their 
 
 - `api/` — ASP.NET Core public API
 - `auth/` — ASP.NET Core Auth service
+- `coastal-operations/` — ASP.NET Core Coastal Operations service
 - `experience-biodiversity/` — ASP.NET Core private service host, health and OpenAPI bootstrap
 - `frontend/` — React build + static Nginx runtime
 - `edge-nginx/` — local reverse proxy configuration
@@ -27,6 +28,22 @@ service also joins the private database network and uses the same database
 connection configuration as Auth; it currently has no business tables or
 workflows.
 
+Coastal Operations is also private, has no host-published port, and is reachable
+through the API's `/api/operations/...` reverse-proxy route. The shared Swagger
+UI at `/api/swagger` loads its OpenAPI document through that gateway route.
+The API validates Auth JWTs, strips bearer tokens and cookies from forwarded
+Coastal Operations requests, and signs the actor ID plus `operations.*`
+permission claims with `COASTAL_OPERATIONS_CONTEXT_KEY`. The private service
+accepts only that short-lived, single-use signed context on authorized routes.
+
+The edge gateway permits request bodies up to 6 MiB on Coastal Operations
+assessment-item subroutes so evidence uploads can carry a 5 MiB PNG plus
+multipart framing; the service enforces the file-size and image-dimension
+limits.
+Coastal Operations stores accepted image bytes in the named
+`blueverse_coastal_operations_evidence` volume. It persists across
+`docker compose down` and is removed by `docker compose down --volumes`.
+
 Every ASP.NET backend service should keep its Dockerfile in a matching directory under `infrastructure/docker/<service-name>/Dockerfile`. The Docker backend workflow discovers first-level ASP.NET services under `services`, builds the public `api` service first, and then builds the remaining services one by one.
 
 The frontend Nginx file is a `server`-context configuration because the Dockerfile installs it under `/etc/nginx/conf.d/default.conf`. Global directives such as `worker_processes`, `events` and `http` belong only in the edge gateway's `/etc/nginx/nginx.conf`.
@@ -46,13 +63,15 @@ preserves API status codes and structured error bodies.
 ## Important
 
 The React/mobile application directories and ASP.NET service hosts are checked
-in. Their Docker build contexts are:
+in. The checked-in API/Auth applications and four component services have these
+Docker build contexts:
 
 ```text
 apps/web
 apps/mobile
 services/api
 services/auth
+services/coastal-operations
 services/experience-biodiversity
 ```
 

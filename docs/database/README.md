@@ -1,10 +1,23 @@
 # Database Foundation
 
 PostgreSQL infrastructure is present in Compose. The Auth EF Core model,
-migrations and application persistence code are checked in under
-`services/auth`. Marine Safety owns its domain model and migrations under
+migrations and application persistence code are checked in under `services/auth`.
+Coastal Operations has an EF Core `DbContext`, domain
+entities and migrations under `services/coastal-operations`. At startup it
+applies its migrations to the provisional `coastal_operations` schema using
+the Compose PostgreSQL connection. Shared acceptance of schema provisioning,
+dedicated role/credentials and migration ownership remains pending G00; the
+current local Compose connection uses the configured application database
+credentials rather than a dedicated Coastal Operations role. On
+2026-09-27, the branch image applied its checked-in evidence/alert-visibility
+migration to the existing local Compose PostgreSQL database, and
+`/api/operations/health/ready` returned HTTP 200. This verifies the current
+local schema upgrade and connection only; it does not establish production
+role provisioning, concurrency behavior or cross-component acceptance. Marine
+Safety owns its domain model and migrations under
 `services/marine-safety`; Experience & Biodiversity owns its model and initial
 migration for five component tables under `services/experience-biodiversity`.
+Coastal Planner owns its model and migrations under `services/coastal-planner`.
 Each service applies only its own migrations. Shared G00 data-ownership
 agreement and integrated component acceptance remain pending.
 
@@ -113,6 +126,9 @@ tool; a live PostgreSQL apply check is still required before integration.
 - seed only deliberate development/reference data
 - Auth applies `services/auth/Data/Migrations` at startup before bootstrap
   administrator seeding
+- Coastal Operations applies `services/coastal-operations/Data/Migrations`
+  at startup before reporting database readiness; its schema and provisioning
+  remain provisional pending shared G00 acceptance
 - Use the repository-pinned `dotnet-ef` tool manifest when creating or
   inspecting migrations
 - Review generated migration SQL and the existing-data upgrade path before

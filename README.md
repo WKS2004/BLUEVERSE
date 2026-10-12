@@ -1,6 +1,31 @@
 # BLUEVERSE
 
+The [2026-10-02 record navigation and activity update](docs/v1/coastal-operations-record-navigation-and-audit.md) adds 500 ms search, pinned category tabs, shared record cards and 5/10/25/50/100 Assessments/Alerts per page across all collections. Create/edit workspace intent survives refresh; unsaved inputs are not persisted. Logs opens the same full details/actions. New activity captures the verified person/roles and exact field changes; older missing details remain unavailable. Shared G00/G07 and live producer/agent acceptance remain pending.
+
 **Coastal Tourism & Marine Resilience**
+
+Coastal Operations publication, permissions, record activity and the separate
+Assessment/Alert client pages follow the [2026-10-01 contract](docs/v1/coastal-operations-publication-and-ui.md).
+Assessment publication uses submit and stores a durable business delivery
+envelope; before G07 no executable agent or live Agentic AI endpoint is called.
+Service startup applies the additive dispatch migration along with existing
+Coastal Operations migrations, including `20261001204558_CoastalDraftEvidenceRemoval`
+and `20261002081218_CoastalDetailedAudit`.
+Rebuild/restart both API and Coastal Operations with the documented Compose
+commands from the repository root (`docker compose up -d --build api coastal-operations`)
+to align the extended signed identity envelope and apply the additive audit
+columns. Use the same configured actor-context key; no new environment setting
+is required. The new migration has not been applied to a live database here.
+Existing images and audit rows are retained; old assessments are not retroactively dispatched.
+The Logs page is `/operations/logs` in both clients and requires audit plus
+record-read access. Unpublished evidence may be removed; published content is
+read only. Private-byte cleanup retries through the existing retention worker.
+The [record experience update](docs/v1/coastal-operations-record-experience.md)
+adds titled drafts, title search, named selectors and one database-backed IANA
+time-zone selector in both clients. Catalogue/planner services are not yet
+implemented: selectors report `NOT_CONNECTED`, drafts may remain unlinked,
+and publication requires a real coastal target. No stakeholder types an ID
+into a draft form. IDs remain visible in results and Advanced search.
 
 BLUEVERSE is an integrated coastal ecosystem platform combining coastal tourism, marine intelligence, environmental resilience, safety, sustainability and future coastal-livelihood capabilities.
 
@@ -8,12 +33,11 @@ The checked-in application provides the **v0 foundation** for the SE3090
 integrated full-stack and Agentic AI project. The submission target is
 **v0 plus v1**. React and Flutter implement the shared Auth registration and session workflows,
 backed by the public API gateway, internal Auth service and PostgreSQL. The
-Coastal Planner, Marine Safety, and Experience & Biodiversity private services
-and their React/Flutter workflows are implemented on this integration branch.
-Live peer/provider compatibility, the remaining Member 4 component, and
-executable agents remain integration targets. See [planner implementation
-status](docs/development/coastal-planner.md) and [Member 2 evidence](docs/v1/g00/member-2-marine-safety-decisions.md)
-for component scope and remaining dependencies.
+The four v1 member components, their private service sources and both client
+workflows are present on this integration branch. Live peer/provider
+compatibility, shared G00/G07 acceptance and executable agents remain
+integration targets. See the linked component contracts and implementation
+evidence for current scope and remaining dependencies.
 
 ## Project identity
 
@@ -43,15 +67,13 @@ React Web / Flutter Mobile
                       └──> Private Agentic AI runtime (after G07)
 ```
 
-The diagram combines the implemented v0 foundation, current v1 services and
-remaining target architecture. The API integrates Auth and routes Coastal
-Planner, Marine Safety and Experience & Biodiversity operations to their private
-services, which own their PostgreSQL-backed behavior and provider adapters.
-Each service owns its component business rules, persistence and accepted domain
-contract. The API remains the only client-facing boundary and receives only the
-authentication, permission and routing integration needed to expose those
-services. After all four member components pass G07, the owning service may
-dispatch to the private Agentic AI runtime.
+The diagram combines the implemented v0 foundation and the current v1 service
+sources. The API integrates Auth and routes Coastal Operations, Coastal Planner,
+Marine Safety, and Experience & Biodiversity operations to their private
+services, which own their PostgreSQL-backed behavior, provider adapters and
+component business rules. The API remains the only client-facing boundary and
+receives only the authentication, permission and routing integration needed to
+expose those services. Executable Agentic AI remains gated on accepted G07.
 React and Flutter never call member services or Agentic AI directly. See
 [ADR-0020](docs/adr/ADR-0020-member-component-service-boundaries.md), the
 [v1 documentation index](docs/v1/README.md) and the
@@ -112,6 +134,7 @@ BLUEVERSE/
 ├── services/                # ASP.NET Core services
 │   ├── api/                  # checked-in public API foundation
 │   ├── auth/                 # internal Auth service
+│   ├── coastal-operations/   # private Member 4 operations service
 │   ├── coastal-planner/      # private planning service
 │   ├── marine-safety/        # internal marine conditions & safety service (v1)
 │   └── experience-biodiversity/ # internal Experience & Biodiversity service
@@ -156,26 +179,32 @@ apps/web/          # React
 apps/mobile/       # Flutter
 ```
 
-`services/api/`, `services/auth/`, `services/coastal-planner/`,
-`services/marine-safety/` and `services/experience-biodiversity/` contain the
-checked-in backend projects. Compose, Dockerfiles and CI include these v1
-component services; hosted deployment is not yet evidenced. Experience &
-Biodiversity provides destinations, activities, offerings, schedules,
-publication lifecycle and nearby discovery; Agentic AI dispatch remains gated
-on accepted G07. Auth and component services remain internal and are reachable
-by clients only through the public API gateway. Keep all Dockerfiles under
-`infrastructure/docker/`.
+`services/api/`, `services/auth/`, and the Coastal Operations, Coastal Planner,
+Marine Safety, and Experience & Biodiversity projects contain the checked-in
+backend services. Compose, Dockerfiles and CI include these v1 component
+services; hosted deployment is not yet evidenced. They provide operations
+assessment/alert workflows, planning, marine conditions and safety, catalogue
+management, schedules, publication lifecycle, nearby discovery and map support.
+Coastal Operations makes bounded, read-only requests to provisional Member 1–3
+peer endpoints; missing peers do not gate its startup or readiness. Producer
+contracts and executable Agentic AI remain gated by G00/G07 decisions.
+Configure Docker-internal peer addresses in `.env`. The edge gateway allows
+6 MiB request bodies on assessment-item routes to carry a 5 MiB PNG with
+multipart framing; the service enforces the per-image limit. Auth and all
+component services remain internal and reachable by clients only through the
+public API gateway. Keep Dockerfiles under `infrastructure/docker/`.
 
 ## Local setup and deployment
 
 The supported local deployment runs the checked-in React client, public API,
-internal Auth, Coastal Planner, Marine Safety and Experience & Biodiversity
-services, and PostgreSQL with Docker Compose. The component services provide
-planning, marine conditions and safety, catalogue discovery and management,
-map vector tiles, and nearby geocoding through the public API gateway. Run
-Compose commands from the repository root (the directory containing
-`compose.yaml`). The public entry point is `edge-nginx`; clients use the
-gateway's `/api/...` routes and do not connect directly to internal services.
+internal Auth, Coastal Operations, Coastal Planner, Marine Safety and
+Experience & Biodiversity services, and PostgreSQL with Docker Compose. The
+component services provide assessment/alert workflows, planning, marine
+conditions and safety, catalogue discovery and management, map support, and
+nearby discovery through the public API gateway. Run Compose commands from the
+repository root (the directory containing `compose.yaml`). The public entry
+point is `edge-nginx`; clients use the gateway's `/api/...` routes and do not
+connect directly to internal services.
 
 See [Local Deployment](docs/deployment/local.md) for deployment topology and
 additional platform notes.
@@ -298,6 +327,18 @@ require verifiable offering schedules, marine suitability and operations
 evidence. Connect compatible owner services to enable genuine suggestions;
 see [the peer contract](docs/development/coastal-planner.md).
 
+Also set `COASTAL_OPERATIONS_CONTEXT_KEY` to Base64 for 32 random bytes. For
+PowerShell, generate a value with:
+
+```powershell
+[Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+```
+
+Store the value only in `.env`; Compose supplies it to the API gateway and
+Coastal Operations so the gateway can sign each authenticated actor/permission
+context for the private service. The API validates Auth-issued JWTs and strips
+the bearer token and browser cookies before forwarding the signed context.
+
 The gateway is published on host port `80` by default. On the development
 branch, PostgreSQL is published as `5432:5432`, which binds the host port on
 all network interfaces for the team's current development configuration.
@@ -401,19 +442,23 @@ docker compose ps
 ```
 
 The first build pulls the DHI base images and may take several minutes. Auth
-and component Dockerfiles reuse NuGet packages across builds with BuildKit cache
-mounts and restore dependencies before copying source. To build and run the full
-development stack, including the optional planner fake provider, use
-`docker compose --profile dev up --build`. Auth waits for PostgreSQL to become
-healthy, applies its migrations and seeds the configured administrator account.
-Coastal Planner, Marine Safety and Experience & Biodiversity use the shared
-database settings and apply their EF Core migrations at startup. Coastal Planner
-uses an exec-form .NET healthcheck compatible with the minimal DHI runtime; the
-API waits for planner readiness, while missing peer services do not prevent
-startup. No second database or PostgreSQL initialization script is required;
-see the [database setup guide](docs/database/README.md). Existing itineraries
-receive the Sri Lankan `Asia/Colombo` time zone when the planner migration is
-applied, preserving their UTC schedules and IDs.
+and component Dockerfiles reuse NuGet packages across builds with BuildKit
+cache mounts. To build and run the full development stack, including the
+optional planner fake provider, use `docker compose --profile dev up --build`.
+Auth and each component service apply their own EF Core migrations at startup;
+Coastal Operations reports ready only when PostgreSQL and its schema are
+available. Coastal Planner uses an exec-form healthcheck compatible with the
+minimal DHI runtime, and the API waits for planner readiness. Missing optional
+peer services do not block Coastal Operations startup or readiness. No second
+database or PostgreSQL initialization script is required; see the
+[database setup guide](docs/database/README.md). The operations migrations add
+assessment titles and IANA time-zone/location choices while retaining existing
+UTC instants; the planner migration supplies `Asia/Colombo` to existing
+itineraries without changing their IDs or schedules.
+
+The API signs the authenticated actor and `operations.*` permission claims with
+`COASTAL_OPERATIONS_CONTEXT_KEY`; bearer tokens and cookies are removed before
+the private-service request is sent.
 
 ### Verify the local deployment
 
@@ -431,6 +476,7 @@ curl.exe -f http://localhost/api/auth/health
 curl.exe -f http://localhost/api/marine/health
 curl.exe -f http://localhost/api/experiences/health
 curl.exe -f http://localhost/api/planner/health
+curl.exe -f http://localhost/api/operations/health/ready
 ```
 
 The marine-safety document is also listed directly in the unified Swagger UI
@@ -461,10 +507,10 @@ curl --fail --silent --show-error http://localhost/api/planner/health
 ```
 
 In `docker compose ps`, PostgreSQL should report `healthy` and the frontend,
-API, Auth, Coastal Planner, Marine Safety, Experience & Biodiversity and gateway
-containers should be running. The development Compose stack exposes PostgreSQL
-on host port `5432` across all interfaces; backend services connect over the
-Docker network. When promoting the Compose
+API, Auth, Coastal Operations, Coastal Planner, Marine Safety, Experience &
+Biodiversity and gateway containers should be running. The development Compose
+stack exposes PostgreSQL on host port `5432` across all interfaces; backend
+services connect over the Docker network. When promoting the Compose
 configuration from `dev` to `main`, change the host mapping to
 `127.0.0.1:5432:5432` so host access is loopback-only. Production databases
 remain privately managed and are not configured through this local binding.
@@ -472,7 +518,7 @@ remain privately managed and are not configured through this local binding.
 If a service does not start or a health URL fails, inspect its recent logs:
 
 ```text
-docker compose logs --tail=100 edge-nginx frontend api auth coastal-planner marine-safety experience-biodiversity postgres
+docker compose logs --tail=100 edge-nginx frontend api auth coastal-operations coastal-planner marine-safety experience-biodiversity postgres
 ```
 
 Common first-run causes are Docker Desktop not running, missing DHI registry
@@ -487,9 +533,10 @@ Stop containers and networks with:
 docker compose down
 ```
 
-The named PostgreSQL volume remains so local data survives a restart. Only use
-`docker compose down --volumes` when you intentionally want to permanently
-delete the local database and start from a clean state.
+The named PostgreSQL and Coastal Operations evidence volumes remain so local
+data survives a restart. Only use `docker compose down --volumes` when you
+intentionally want to permanently delete the local database and assessment
+images and start from a clean state.
 
 For Flutter on an Android emulator, explicitly pass the laptop gateway as
 `http://10.0.2.2:80` with
@@ -551,6 +598,14 @@ dependency caches on a drive with space; use a process-local temporary directory
 for the build. The [Windows cache setup](apps/mobile/README.md#windows-build-cache-location)
 records the configuration and the ARM64 phone build command.
 
+On the Windows development workstation, Flutter's Gradle and Pub caches use
+`D:\WKS\FlutterBuildCache\gradle` and `D:\WKS\FlutterBuildCache\pub`.
+The [mobile cache setup](apps/mobile/README.md#windows-caches-on-a-second-drive)
+documents persistent user environment settings, build-only temporary files
+and reuse of cached dependencies. For USB testing, pass
+`--dart-define=BLUEVERSE_API_BASE_URL=http://127.0.0.1:80` after setting up
+`adb reverse tcp:80 tcp:80`.
+
 ## CI
 
 GitHub Actions contains separate source, test, contract, repository-policy
@@ -587,17 +642,18 @@ tree for authoritative cases.
 
 - `docker-web-build.yml` synchronizes the React lockfile with the DHI Node 24 image, then builds the React web image.
 - `docker-backend-build.yml` builds the public API and discovered ASP.NET services one by one.
-- `docker-stack-health.yml` waits for both build workflows, starts the root Compose file and checks frontend/API/discovered-service health endpoints plus the public API/Auth Swagger routes. Member OpenAPI documents are required when their service source exists, allowing this Marine branch to run without an absent Experiences service.
+- `docker-stack-health.yml` waits for both build workflows, creates temporary Compose signing keys, starts the root stack and checks frontend/API/discovered-service health endpoints plus the API/Auth and each present member OpenAPI document.
 
 The web and backend build workflows run on supported branch families when their relevant application, service, Docker infrastructure, lockfile synchronization, Compose, workflow or build-context paths change. The stack-health workflow waits for the required image builds for the same commit and runs only for pull requests targeting `main`; it synchronizes the web lockfile again on its separate runner before running the Compose health checks. Backend build failures are collected across all services so later services are still checked before the workflow fails.
 
 The Docker backend workflow builds `services/api` first and then discovers and
-builds the other ASP.NET service directories, including Auth and
-marine-safety. The stack-health workflow maps the marine-safety folder to its actual
-`/api/marine/health` route and supplies masked ephemeral signing keys for the
-isolated CI stack. A hosted run is still required for deployment evidence.
-The backend test workflow fails if a service source project has no
-discovered service-local test project.
+builds the other ASP.NET service directories, including Auth and all four
+component services. The stack-health workflow maps each service folder to its
+public health route (including the `/api/operations/health` route), supplies
+masked ephemeral signing keys for the isolated CI stack, prints diagnostics
+on failure and tears down the stack. A hosted run is still required for
+deployment evidence. The backend test workflow fails if a service source
+project has no discovered service-local test project.
 
 `github-config-sync.yml` uses GitHub Actions to copy `.github/**` changes
 through focused pull requests and queues automatic squash merges when allowed

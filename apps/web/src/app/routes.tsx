@@ -7,6 +7,8 @@ import ProfilePage from '../pages/ProfilePage'
 import RegistrationPage from '../pages/RegistrationPage'
 import { NotFoundPage, ServerErrorPage } from '../pages/GlobalErrorPage'
 import { AdminAccessDenied, AdminIndexPage, AdminPermissionsPage, AdminRolesPage, AdminUsersPage } from '../pages/admin/AdminPages'
+import CoastalOperationsPage from '../pages/operations/CoastalOperationsPage'
+import OperationsLogsPage from '../pages/operations/OperationsLogsPage'
 import { MarineConditionsPage, MarineHistoryPage, MarineSafetyProfilesPage } from '../pages/marine/MarinePages'
 import MarineWorkspaceLayout from '../pages/marine/MarineWorkspaceLayout'
 import ExperiencesPage from '../pages/experiences/ExperiencesPage'
@@ -103,6 +105,9 @@ export default function AppRoutes() {
       <Route element={<RequireAuth />}>
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/operations/logs" element={<OperationsLogsPage />} />
+        <Route path="/operations/alerts" element={<CoastalOperationsPage section="alerts" />} />
+        <Route path="/operations/assessments" element={<CoastalOperationsPage section="assessments" />} />
         <Route path="/planner/plan" element={<PlannerPersonalPage />} />
         <Route path="/planner/saved" element={<PlannerPersonalPage />} />
         <Route path="/planner/itineraries/:itineraryId" element={<ItineraryPage />} />

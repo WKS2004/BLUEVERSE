@@ -1,5 +1,28 @@
 # BLUEVERSE Mobile
 
+The [2026-10-11 Coastal Operations rebuild](../../docs/v1/coastal-operations-mobile-reimplementation.md)
+refreshes Assessments, Alerts, Logs, record cards, forms, details, search and
+activity with native responsive layouts. Light photo-over-copy hero cards reuse
+the bundled coastal photographs. Pinned section/category tabs sit above a
+420 ms directional content transition that respects reduced motion. Full-page
+forms group related fields, record metadata wraps at large text sizes, and
+Logs retains read-only details and scoped activity. Existing public API
+permissions, publication, evidence and cursor workflows are preserved.
+
+The [2026-10-02 navigation/activity contract](../../docs/v1/coastal-operations-record-navigation-and-audit.md) updates all collections to 500 ms live search, fixed category tabs above scrolling content and shared white record cards. Assessments/Alerts per page offers 5/10/25/50/100 server cursor pages. Logs opens full read-only record details and activity. Named create/edit query routes restore current saved data after refresh; unsaved inputs are not persisted. Activity shows verified names/roles/time and before/after values; old missing snapshots stay explicit.
+The [focused workspace follow-up](../../docs/v1/coastal-operations-focused-workspaces.md) supplies distinct hero photographs and compact search beneath workspace actions. The latest contract supersedes its debounce interval. Reads retain records with a local spinner; full details/forms preserve shared chrome and Back. Existing public API permissions apply; published authored content remains read only and cancellation confirmations use red styling.
+
+Coastal Operations offers `/operations/assessments` and `/operations/alerts`,
+with native route/lifecycle tabs, grant-aware actions, server search/filtering,
+pagination, imagery and scoped activity. It shares publication semantics and
+capabilities with React through the [contract](../../docs/v1/coastal-operations-publication-and-ui.md).
+The [record experience follow-up](../../docs/v1/coastal-operations-record-experience.md)
+stacks hero and title search, removes the bottom UUID lookup, and adds title/
+named association fields and one database time-zone choice. Native date/time
+pickers submit local values for server resolution. IDs appear in result cards
+and Advanced search. Absent catalogue/planner services permit unlinked drafts,
+with publication blocked until a real target is selected.
+
 The mobile client is a Flutter/Dart application and an equal product surface
 for every authorized role and workflow. Its implemented workflows provide
 coastal onboarding, account registration and sign-in, saved-account switching,
@@ -13,15 +36,16 @@ the source boundaries and extension contract. Added domain workflows must
 preserve the same business capabilities as React; layout and device input
 may vary without assigning a stakeholder group to this client.
 
-`lib/main.dart` registers the global `/planner` introduction, protected
+`lib/main.dart` registers `/signin`, `/signup`, `/profile`, `/dashboard`,
+`/admin`, `/admin/permissions`, `/admin/roles`, `/admin/users`,
+`/operations/assessments`, `/operations/alerts`, `/operations/logs`, the global
+`/planner` introduction, protected
 `/planner/plan` creation and `/planner/saved` history pages, recommendation
-results and trip details, as well as `/signin`, `/signup`, `/profile`,
-`/dashboard`, `/admin`, `/admin/permissions`, `/admin/roles`, `/admin/users`,
-`/404` and `/500`. The launch screen is `/` and restores the saved account
-before showing onboarding. The onboarding carousel stays focused on the
-BLUEVERSE introduction and account choices. The global planner entry is
-available from sign-in, registration and account menus. Protected pages return
-guests to their intended page after successful sign-in.
+results and trip details, as well as `/404` and `/500`. The launch screen is `/`
+and restores the saved account before showing onboarding. The onboarding
+carousel stays focused on the BLUEVERSE introduction and account choices. The
+global planner entry is available from sign-in, registration and account menus.
+Protected pages return guests to their intended page after successful sign-in.
 
 The planner uses dedicated bundled coastal imagery and native Material 3
 heroes. Plan creation and history share permission-aware tabs and directional
@@ -113,7 +137,40 @@ flutter test
 flutter run
 ```
 
-For an Android debug build, use `-FlutterArgs @('build','apk','--debug','--dart-define=BLUEVERSE_API_BASE_URL=http://10.0.2.2:80')`. The wrapper preserves an existing cache and refuses to merge two build directories. On other platforms, use the standard Flutter commands with `PUB_CACHE` and `GRADLE_USER_HOME` configured for the chosen cache locations.
+### Windows caches on a second drive
+
+For this workstation, retain the existing caches in
+`D:\WKS\FlutterBuildCache`. Set both the current PowerShell session and the
+user environment so new terminals use the same directories:
+
+```powershell
+$env:GRADLE_USER_HOME = 'D:\WKS\FlutterBuildCache\gradle'
+$env:PUB_CACHE = 'D:\WKS\FlutterBuildCache\pub'
+[Environment]::SetEnvironmentVariable('GRADLE_USER_HOME', $env:GRADLE_USER_HOME, 'User')
+[Environment]::SetEnvironmentVariable('PUB_CACHE', $env:PUB_CACHE, 'User')
+New-Item -ItemType Directory -Force -Path $env:GRADLE_USER_HOME, $env:PUB_CACHE,
+  'D:\WKS\FlutterBuildCache\temp' | Out-Null
+$env:TEMP = 'D:\WKS\FlutterBuildCache\temp'
+$env:TMP = $env:TEMP
+flutter pub get --offline
+```
+
+Restart an already open IDE to pick up the user environment. `TEMP` and `TMP`
+above apply only to that shell and its build processes. Project build outputs
+remain under `apps/mobile/build` on D:, and the Flutter SDK keeps its own cache
+under its installation directory. Gradle and Pub select dependencies by
+version; existing cache entries do not need to be erased for this UI rebuild.
+An offline build requires every dependency for the selected Android ABI to be
+cached. If an artifact is missing, run the same build with network access to
+populate the D: cache rather than deleting it. Only remove an old C: Gradle
+directory after confirming the D: configuration and stopping builds that use
+the old directory.
+
+For an Android emulator debug build, use
+`-FlutterArgs @('build','apk','--debug','--dart-define=BLUEVERSE_API_BASE_URL=http://10.0.2.2:80')`.
+The wrapper preserves an existing cache and refuses to merge two build
+directories. On other platforms, use the standard Flutter commands with
+`PUB_CACHE` and `GRADLE_USER_HOME` configured for the chosen cache locations.
 
 The Flutter project includes generated platform folders for Android, iOS,
 Linux, macOS, Windows and web. Platform-specific release configuration should
@@ -239,6 +296,11 @@ On Linux or macOS, use:
 adb reverse tcp:80 tcp:80
 flutter run --dart-define=BLUEVERSE_API_BASE_URL=http://127.0.0.1:80
 ```
+
+This explicit USB address avoids waiting for the environment-specific Android
+fallback. The reverse tunnel must be reapplied after reconnecting the device.
+The client also tries `127.0.0.1:80` as its final fallback when no explicit
+`BLUEVERSE_API_BASE_URL` was embedded.
 
 To install a debug APK while preserving existing app data, use:
 

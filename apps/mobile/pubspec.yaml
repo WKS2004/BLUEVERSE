@@ -31,7 +31,9 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^1.5.0
+  http_parser: ^4.1.2
   flutter_secure_storage: ^9.2.4
+  image_picker: ^1.2.3
   # 14.0.2 stays compatible with flutter_secure_storage_windows 3.x (win32 5.x).
   geolocator: 14.0.2
   maplibre_gl: ^0.27.1

@@ -1529,6 +1529,967 @@ runtime lacks PyYAML.
 - AI output accepted/changed/rejected: Accepted the existing G00 conditional-start decision and G07 deferral of executable Agentic AI; changed only stale current-state test claims and audit evidence. Preserved historical contribution records and the separate duplicate Auth test-ID, backend CI path-filter, hosted-mobile and submission gaps.
 - Verification/evidence: Agent-resource validation passed for 23 repository skills; endpoint-catalog validation passed with 33 public endpoints, 22 frontend routes and no implemented AI endpoints; UI integration validation passed; all 35 contract-validator unit tests passed; local Markdown file-target check passed for 216 files and 981 links; `git diff --check` passed. Flutter analysis/tests, application builds, hosted CI and runtime deployments were not run. Local Flutter execution remains blocked because the sandbox cannot write the SDK cache lockfile under `D:\Program Files\Flutter\flutter`. Five documentation files were updated; no commit or push was made.
 
+## 2026-09-27 — Member 4 G00 coastal-operations contract proposal
+
+- Date/time or time range: 2026-09-27 10:35–10:45 (Asia/Colombo; Member 4 G00 proposal)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and Git
+- AI Model: GPT-6
+- Summary of the user's request: Complete the G00 work limited to the Coastal Operations component on `features/coastal-operations` and update the WKS2004 AI-usage log.
+- Summary of what the AI Agent did: Added a Member 4 G00 proposal to the Coastal Operations contract covering component/service identity, IDs and cross-component handoffs, candidate public routes and permissions, statuses/transitions, time/concurrency/error behavior, private service and AI seams, service health, and the minimum safe image-evidence boundary. Kept the shared G00 gate Pending because acceptance by all four owners is not recorded. No service or client implementation was added.
+- AI output accepted/changed/rejected: Accepted the user's branch/component scope and the existing G00-before-coding/G07-before-agent rules. Changed the component contract only as a reviewable proposal and left provider, image limit, storage and retention details at the owner integration gate. Rejected marking G00 accepted or adding candidate routes to the live endpoint/UI registries without shared agreement and implementation source.
+- Verification/evidence: Relative links in both changed documents resolve and `git diff --check` passed; no tests/builds were run for this documentation-only task. Preserved the pre-existing `apps/web/package-lock.json` working-tree change. No commit or push was made.
+
+## 2026-09-27 — Separate Member 4 G00 decision record
+
+- Date/time or time range: 2026-09-27 10:48–10:50 (Asia/Colombo; G00 documentation organization)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, apply_patch and Git
+- AI Model: GPT-6
+- Summary of the user's request: Move the Coastal Operations G00 decisions into a separate Markdown file under `docs/v1/g00` and update the Member 4 component contract accordingly.
+- Summary of what the AI Agent did: Created `docs/v1/g00/member-4-coastal-operations.md` as the standalone Member 4 decision proposal and updated the component contract to link to it, summarize the pending shared-review status and identify remaining owner integration gates.
+- AI output accepted/changed/rejected: Accepted the requested separation and kept the specific coastal decision proposals reviewable in their own file. Changed the component document from inline G00 content to a focused link and status summary. Rejected treating the proposal as accepted G00 or implemented service/API behavior; the global tracker remains Pending until all four owners agree.
+- Verification/evidence: Relative Markdown file links in the new decision record and component contract resolve; the new file has no trailing whitespace; `git diff --check` passed. Confirmed the shared G00 tracker still says Pending. This is documentation-only; no tests/builds were run. Preserved the pre-existing `apps/web/package-lock.json` working-tree change. No commit or push was made.
+
+## 2026-09-27 — Review Member 4 G00 completeness and scope
+
+- Date/time or time range: 2026-09-27 11:02 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, apply_patch and Git
+- AI Model: GPT-6
+- Summary of the user's request: Recheck whether the Coastal Operations G00 work is complete and aligned with the component scope.
+- Summary of what the AI Agent did: Compared the standalone G00 proposal with the Member 4 contract, frozen requirements, G00 exit criteria, relationship and Agentic AI boundaries, and the current checkout. Corrected the proposal's producer-ID ownership, alert draft/decision and operational-history coverage, state and idempotent-replay wording, response/persistence constraints and service-local test path. Updated the component contract's alert severity cross-reference and image-upload decision timing. Listed the shared agreements still needed for G00 acceptance.
+- AI output accepted/changed/rejected: Retained the Member 4 proposal status and G07 separation. Revised concrete inconsistencies and missing component capabilities. Rejected a claim of full G00 completion: the four-owner freeze remains Pending, exact shared schemas and handoffs are unratified, and the newly appeared untracked service directory is only a template scaffold with a project-name mismatch. Did not modify that scaffold or the pre-existing web lockfile change.
+- Verification/evidence: Compared source and documentation; relative Markdown file links resolve, the new G00 file has no trailing whitespace, and `git diff --check` passed. The component metadata remains `target_not_implemented` and the G00 tracker remains Pending. No application tests/builds were run for the documentation review. No commit or push was made.
+
+## 2026-09-27 — Align Coastal Operations project name
+
+- Date/time or time range: 2026-09-27 11:11 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, apply_patch and Git
+- AI Model: GPT-6
+- Summary of the user's request: Confirm `Blueverse.CoastalOperations` as the Coastal Operations .NET project name in place of the G00 proposal's `.Api` suffix.
+- Summary of what the AI Agent did: Updated the project identity in the standalone Member 4 G00 decision record to match `services/coastal-operations/Blueverse.CoastalOperations.csproj`.
+- AI output accepted/changed/rejected: Accepted the user's project-name correction and removed the proposed `.Api` suffix. Kept the shared G00 acceptance status Pending; the naming correction does not ratify the other shared contracts.
+- Verification/evidence: Confirmed the corrected name matches the existing project file, no stale `.Api` project name remains in the Member 4 G00/component documents, and `git diff --check` plus new-file whitespace review passed. No application tests/builds were needed for this documentation correction. No commit or push was made.
+
+## 2026-09-27 — Coastal Operations service infrastructure
+
+- Date/time or time range: 2026-09-27 11:36 (Asia/Colombo; implementation completion)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Python and Git
+- AI Model: GPT-6
+- Summary of the user's request: Add the Coastal Operations Dockerfile and Compose service, connect it to the public API, expose its Swagger document through `/api/swagger` with JWT Bearer authorization, and add PostgreSQL connectivity and a health controller while preserving the API/Auth service patterns.
+- Summary of what the AI Agent did: Added the private `Blueverse.CoastalOperations` container and Compose database/network configuration, YARP routing at `/api/operations`, Coastal Operations selection in the API-hosted Swagger UI, a Bearer JWT OpenAPI scheme, an EF Core/Npgsql context and database-backed health endpoint. Updated the endpoint catalog, stack-health workflow and deployment/database/component documentation. Kept Auth source unchanged because its existing API/Swagger setup already met the needed integration behavior.
+- AI output accepted/changed/rejected: Accepted the confirmed `Blueverse.CoastalOperations` project identity and existing API/Auth conventions. Kept the global G00 tracker Pending and limited this slice to hosting, gateway, Swagger, database connectivity and health; no business workflows, domain tables, migrations or actor-context handoff were added.
+- Verification/evidence: Endpoint catalog generation and validation passed (35 public endpoints, 22 frontend routes); the API project build passed with zero warnings/errors; JSON and project XML parsing plus `git diff --check` passed. The Coastal Operations build stopped during NuGet config loading because sandbox access to `C:\Users\MSI\AppData\Roaming\NuGet\NuGet.Config` is denied, before source compilation. Docker is unavailable locally, and the backend test workflow still needs the service-local Coastal Operations test project before its test-discovery gate can pass. No tests were added or run, and no commit or push was made.
+
+## 2026-09-27 — Coastal Operations branch backend implementation
+
+- Date/time or time range: 2026-09-27 12:52 (Asia/Colombo; implementation review completed)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, apply_patch, bundled Python and Git
+- AI Model: GPT-6
+- Summary of the user's request: Implement the Coastal Operations backend on its separated feature branch while shared G00 acceptance remains pending until component branches are merged into `dev`.
+- Summary of what the AI Agent did: Added assessment, review-decision, target-status/history and alert workflows; EF Core/PostgreSQL entities and migrations; permission-gated service routes; an API-to-service signed actor context; API/Auth permission catalogue integration; Compose and Docker configuration; health checks and gateway-hosted Swagger. Updated the Docker stack workflow to generate masked per-run signing keys and trigger on its own changes. Updated the Member 4 G00/component records, current branch workflow and owner map, readiness sequencing note, database/deployment documentation, endpoint catalog and this contribution log. Kept the work branch-local and provisional, with image evidence and executable proposal generation deferred by the owning gates.
+- AI output accepted/changed/rejected: Accepted the user's instruction to continue branch-local work with global G00 still Pending. Changed the initial forwarded-JWT approach to a signed actor context so the private service does not receive the client's JWT or cookies. Corrected malformed Compose environment indentation found during review. Rejected treating absent Member 1 target-state input, image evidence or pre-G07 proposal generation as implemented capabilities.
+- Verification/evidence: Coastal Operations, API and Auth builds succeeded with zero warnings/errors; EF Core reported no model changes since the last migration; endpoint catalog generation and validation passed with 47 public endpoints and 22 frontend routes; `git diff --check` passed. Docker Compose/runtime validation and workflow YAML parsing could not run because Docker and local YAML/actionlint tools are unavailable. No tests were added or run, and no commit or push was made.
+
+## 2026-09-27 — Isolate Coastal Operations from optional peer availability
+
+- Date/time or time range: 2026-09-27 13:17–13:31 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, apply_patch, .NET SDK/EF Core CLI and bundled Python
+- AI Model: GPT-6
+- Summary of the user's request: Make Coastal Operations request provisional data from Member 1–3 while remaining operational when those peer components or endpoints are absent, with explicit timeouts, retries and unavailable status.
+- Summary of what the AI Agent did: Added concurrent read-only peer clients with configurable internal addresses, 2-second attempt timeouts, two retries for network/timeouts and retryable HTTP failures, bounded typed response validation and explicit stale/unavailable outcomes. Persisted validated source results with assessments, exposed the latest source outcomes through health responses without making peers a readiness/startup dependency, added the EF Core migration, Compose environment settings and G00/deployment/schema documentation. Added a service-local test project with nine stable dependency and liveness cases.
+- AI output accepted/changed/rejected: Accepted the endpoint shapes as provisional Member 1–3 assumptions and recorded them for G00 review. Changed the initial implementation to strictly bound and validate peer results, report expired evidence as stale and retain database-only readiness. Rejected startup probes, Compose `depends_on` links to the absent peers and any claim that the provisional private routes or service-authentication contract are team-accepted.
+- Verification/evidence: Coastal Operations, API and Auth builds succeeded with zero warnings/errors; the Coastal Operations test project passed 9/9 cases; EF Core reported no pending model changes; endpoint catalog validation passed with 47 public endpoints and 22 frontend routes; `git diff --check` passed. Docker Compose and live PostgreSQL/peer integration could not be verified in this environment. Shared G00 remains Pending. No commit or push was made.
+
+## 2026-09-27 — Complete local Compose environment variables
+
+- Date/time or time range: 2026-09-27 13:41–13:44 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell
+- AI Model: GPT-6
+- Summary of the user's request: Confirm whether Coastal Operations can be built and exercised through API Swagger without implemented React/Flutter workflows, and add missing local environment variables by comparing `.env` with `.env.example`.
+- Summary of what the AI Agent did: Compared environment variable names without displaying local secret values and added the four missing local settings: the API-to-service context key and the optional Member 1–3 service URLs. Preserved existing `.env` entries, and confirmed Compose wires the API, Auth, PostgreSQL, edge gateway and Coastal Operations service while the deployment guide documents `/api/swagger`.
+- AI output accepted/changed/rejected: Accepted the Compose example values for optional peer addresses and generated a fresh local context key; no existing local values were replaced. Did not record the secret value.
+- Verification/evidence: Confirmed all 20 `.env.example` keys exist exactly once in ignored `.env`; the local context key decodes to 32 bytes, the JWT signing key meets the documented 32-byte minimum, and all Compose-required secret/admin values are set. `git diff --check` passed. Docker CLI is unavailable in this environment, so image build and live Swagger access were not run. No commit or push was made.
+
+## 2026-09-27 — Coastal Operations backend completeness audit
+
+- Date/time or time range: 2026-09-27 14:37 (Asia/Colombo; review completed)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, .NET SDK, bundled Python and Git
+- AI Model: GPT-6
+- Summary of the user's request: Recheck the Coastal Operations service against its full component scope and identify any incomplete required parts.
+- Summary of what the AI Agent did: Audited the frozen Member 4 requirements, G00 proposal, component/phase contracts, service/API/Auth source, persistence model/migrations, permissions, Docker/Compose wiring, endpoint and UI registries, tests and CI. Confirmed the branch remains partial: proposal and target-state writers, image evidence, producer status handoff, client workflows, service authorization/business/persistence tests and accepted shared G00 are still outstanding. Identified the API test startup-key gap and an unrelated cookie-token selection change in the API diff; made no application-source changes.
+- AI output accepted/changed/rejected: Retained the source-backed partial status and separated G07-deferred Agentic AI execution from current backend omissions. Rejected describing the component as complete based on successful builds or dependency-only tests.
+- Verification/evidence: Coastal Operations tests passed 9/9 and Auth tests passed 77/77. API tests failed 20/21 without `COASTAL_OPERATIONS_CONTEXT_KEY` and passed 21/21 with a process-local ephemeral test key. Coastal Operations, API and Auth Release builds passed with zero warnings/errors; EF Core reported no pending model changes; endpoint catalog (47 public endpoints, 22 frontend routes) and UI integration validators passed. Docker and PostgreSQL CLIs are unavailable, so Compose/runtime and live-provider checks were not run. `git diff --check` passed. No commit or push was made.
+
+## 2026-09-27 — Coastal Operations scope fixes and runtime verification
+
+- Date/time or time range: 2026-09-27 15:04–16:25 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Docker Desktop, .NET SDK/EF Core, bundled Python and Git
+- AI Model: GPT-6
+- Summary of the user's request: Audit Coastal Operations for remaining scope gaps, fix issues within the component branch, validate Docker/Swagger behavior, and explain why an Admin bearer token receives 403.
+- Summary of what the AI Agent did: Implemented private PNG assessment evidence with strict validation, metadata stripping, versioned persistence, permissioned retrieval and one-year retention; added public/operations alert visibility and confirmed-target baseline initialization. Fixed missing evidence authorization policies after runtime diagnosis found a 500, added policy allow/deny regression tests, and configured a test-only API actor-context key. Scoped the edge gateway's 6 MiB body allowance to the evidence upload route. Updated the endpoint catalog, G00/component/ADR/database/deployment/README/test records. Kept Platform Admin separate from Coastal Operations business permissions.
+- AI output accepted/changed/rejected: Accepted the user's permission to use Docker and the documented member-owned boundary. Changed the initial gateway body-size rule to apply only to Coastal Operations evidence uploads. Rejected granting implicit business permissions to the Admin role; its 403 is expected until an Operations role grants the specific `operations.*` permission. Kept producer-owned target-state handoff and proposal generation behind shared G00/G07 gates.
+- Verification/evidence: Coastal Operations tests passed 18/18, API tests 21/21 and Auth tests 77/77. Coastal Operations Release build and Docker image build passed; EF Core reported no pending model changes, and migration `20260927100442_CoastalOperationsEvidenceAndAlertVisibility` applied to the local Compose PostgreSQL database. Live health, readiness, Coastal Operations OpenAPI and `/api/swagger` returned HTTP 200. An anonymous 1.2 MiB multipart evidence request returned 401 through Nginx; a 1.2 MiB request on an unrelated Auth route remained limited at 413. `nginx -t`, endpoint catalog validation (49 public endpoints, 22 frontend routes), UI integration validation and `git diff --check` passed. Shared G00 remains Pending. No commit or push was made.
+
+## 2026-09-27 — Coastal Operations final audit and assessment coverage
+
+- Date/time or time range: 2026-09-27 16:39–16:47 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Docker Desktop, .NET SDK, bundled Python and Git
+- AI Model: GPT-6
+- Summary of the user's request: Continue the Coastal Operations scope audit, address remaining eligible gaps, verify the local Docker/Swagger path and investigate Admin-token authorization results.
+- Summary of what the AI Agent did: Fixed endpoint-catalog recognition for the bounded evidence-upload gateway route and regenerated its Markdown view. Added five EF Core InMemory application tests for assessment creation, idempotent replay/conflict, owner/queue scope, timestamp validation and rejecting decisions without a validated proposal. Updated component/test documentation to match the 23-case suite and audited `.env` variable names without displaying values.
+- AI output accepted/changed/rejected: Kept the bounded upload allowance within assessment subroutes and retained the role-to-permission boundary; a Platform Admin token still needs explicit `operations.*` permissions for business endpoints. Retained the honest partial/G00-pending status and the G07 restriction on production Agentic AI proposal generation.
+- Verification/evidence: Coastal Operations Release tests passed 23/23, API tests 21/21 and Auth tests 77/77. EF Core reports no pending model changes. Compose config, endpoint catalog (49 endpoints), UI integration validation, Nginx syntax, and `git diff --check` passed. All six public health/Swagger URLs returned HTTP 200. A 1.2 MiB anonymous evidence-path request returned 401 and the unrelated Auth request returned 413. All 20 `.env.example` keys are present in local `.env`; values were not printed. Shared G00, producer contract acceptance, PostgreSQL-backed workflow/concurrency acceptance and React/Flutter workflows remain outstanding; executable Agentic AI remains gated by G07. No commit or push was made.
+
+## 2026-09-27 — Coastal Operations gateway documentation sync
+
+- Date/time or time range: 2026-09-27 16:48–16:49 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Git
+- AI Model: GPT-6
+- Summary of the user's request: Keep the Coastal Operations implementation and deployment guidance aligned during the final service audit.
+- Summary of what the AI Agent did: Updated the root and Docker deployment documentation to describe the 6 MiB request allowance on Coastal Operations assessment-item subroutes, matching the catalog-verified Nginx prefix location.
+- AI output accepted/changed/rejected: Changed wording that incorrectly implied the allowance was limited to only the exact evidence-upload route.
+- Verification/evidence: `git diff --check` passed; the endpoint catalog and live gateway checks had passed in the same audit. No commit or push was made.
+
+## 2026-09-27 — Admin System Role permission grants
+
+- Date/time or time range: 2026-09-27 17:42–17:59 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Docker Desktop, .NET SDK and Git
+- AI Model: GPT-6
+- Summary of the user's request: Grant all permissions to the Admin System Role to resolve Coastal Operations authorization failures.
+- Summary of what the AI Agent did: Updated Auth startup seeding to assign all permissions registered in the Auth database to the Admin System Role using explicit role-permission rows. Added an idempotency regression case that includes an unrelated permission, and aligned deployment, permission, G00 and test-matrix documentation. Added the 11 missing grants to the authorized local PostgreSQL stack after verifying the registered permission set.
+- AI output accepted/changed/rejected: Accepted the request and retained named permission authorization without an Admin bypass. Changed the earlier guidance that separated Admin and Coastal Operations business grants.
+- Verification/evidence: Focused Auth test `AUTH-SEED-ADMIN-ALL-001` passed (1/1). The Auth suite reported 77 passed and one failure: the existing `AUTH-SEED-001` assertions still expect 12 permissions/grants while the new behavior yields 23; that protected test was not edited pending permission. `git diff --check` passed. The local database verified 23 registered permissions, 23 Admin grants and zero missing permissions. The Docker Auth image rebuild stalled at NuGet restore and was stopped before replacing the running container. No commit or push was made.
+
+## 2026-09-27 — Admin grant and Coastal Operations bearer-flow correction
+
+- Date/time or time range: 2026-09-27 18:00–19:00 (Asia/Colombo; approximate)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Docker Desktop, .NET SDK and Git
+- AI Model: GPT-6
+- Summary of the user's request: Recheck that every permission is seeded to the Admin System Role and fix the Coastal Operations authorization path that still rejected the Admin bearer token.
+- Summary of what the AI Agent did: Confirmed Auth startup seeds all registered permission rows to the Admin System Role idempotently, then fixed bearer precedence over stale cookies in API and Auth. Added a gateway regression check for signed Coastal Operations actor context and an Auth bearer/cookie regression test. Fixed the edge Nginx assessment collection route so the no-trailing-slash path no longer redirects and drops Authorization. Updated API/Auth test counts. Rebuilt the final local API and Coastal Operations images with the project's Docker Hardened runtime bases.
+- AI output accepted/changed/rejected: Corrected the earlier incomplete runtime diagnosis; the durable startup seeder and gateway fix are now verified without relying on a manual database grant. Kept normal role-to-permission authorization and did not add an Admin bypass. Did not change the existing `AUTH-SEED-001` assertion because repository instructions require approval before modifying an existing test.
+- Verification/evidence: The local database reports 23 registered permissions and 23 Admin grants with zero missing. A fresh Admin login returns 23 permissions including all 11 Coastal Operations codes; both `/api/operations/assessments` path forms return 200 with a valid bearer plus a deliberately stale cookie; API and Coastal Operations Swagger JSON return 200; logout returns 204. API tests pass 22/22 and Coastal Operations tests pass 23/23. Auth tests pass 78/79; the remaining existing `AUTH-SEED-001` test still hard-codes 12 where the required seeded count is 23. Docker image builds, `nginx -t`, and `git diff --check` passed. No commit or push was made.
+
+## 2026-09-27 — Correct Admin seeding test expectations
+
+- Date/time or time range: 2026-09-27 19:22–19:26 (Asia/Colombo; approximate)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, .NET SDK and Git
+- AI Model: GPT-6
+- Summary of the user's request: After authorizing the test change, correct the stale Admin permission-count assertions and rerun Auth verification.
+- Summary of what the AI Agent did: Updated `AUTH-SEED-001` to expect 23 registered permissions and to compare the Admin role grant count with the registered count. The old expectation of 12 covered only the prior Auth permission set and omitted the 11 Coastal Operations permissions. Kept `AUTH-SEED-ADMIN-ALL-001` as the broader boundary check for all registered permissions, an unrelated permission, uniqueness and repeat-seed idempotency.
+- AI output accepted/changed/rejected: Applied the user's approval to update the existing test; no production implementation changes were needed.
+- Verification/evidence: Focused seed tests passed 2/2 and the full Auth suite passed 79/79. `git diff --check` passed. No commit or push was made.
+
+## 2026-09-27 — Restore API/Auth flows and prevent Admin self-demotion
+
+- Date/time or time range: 2026-09-27 20:22 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, .NET SDK and Git
+- AI Model: GPT-6
+- Summary of the user's request: Restore the original API/Auth token flows and structure, retain only the Coastal Operations permission and gateway integrations, and prevent Admin from removing its own role.
+- Summary of what the AI Agent did: Removed the bearer-over-cookie override from API and Auth and restored API's original cookie fallback. Kept the narrow YARP actor-context transform and Auth Coastal Operations permission seeding. Added a service-level rejection for Admin self-demotion before role or session changes, an integration regression test, and matching endpoint documentation.
+- AI output accepted/changed/rejected: Kept role-to-permission authorization and Admin grants for every registered permission. Reverted the prior token-precedence behavior and removed its regression test because it diverged from the requested original Auth flow. No broad API/Auth refactor or Admin authorization bypass was added.
+- Verification/evidence: The Auth suite passed 79/79; the API suite passed 22/22, including the Coastal Operations actor-context test. The self-demotion regression passed and confirmed the Admin role and session remained usable. Endpoint catalog generation and validation passed (49 public endpoints, 22 frontend routes); `git diff --check` passed. No commit or push was made.
+
+## 2026-09-27 — Coastal Operations comprehensive test coverage
+
+- Date/time or time range: 2026-09-27 21:38 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, .NET SDK and Git
+- AI Model: GPT-6
+- Summary of the user's request: Add the full set of useful service-owned tests for Coastal Operations.
+- Summary of what the AI Agent did: Expanded the Coastal Operations suite to cover assessment and alert workflows, idempotency, target history, DTO validation, signed internal actor context and nonce replay, peer-call retries/timeouts and response bounds, PNG parser boundaries, evidence persistence/storage/retention, controller permission metadata, PostgreSQL model/migration metadata, health behavior and scheduled alert expiry. Added two guarded PostgreSQL migration/idempotency and assessment-concurrency cases. Updated the service test README and repository test matrix.
+- AI output accepted/changed/rejected: Kept the new cases additive and retained existing test files and assertions. Corrected test expectations where execution established the actual contract: blank optional cursors mean the first page, evidence scope checks return not-found, and audit counts include only persisted transitions. Did not claim EF Core InMemory proves PostgreSQL transaction or concurrency behavior; the two provider-specific tests require a dedicated database and were skipped because no connection was configured.
+- Verification/evidence: Coastal Operations Release tests passed 243 default cases; the two opt-in PostgreSQL cases skipped because `BLUEVERSE_CO_POSTGRES_TEST_CONNECTION` was not configured. `git diff --check` passed. Updated `services/coastal-operations/tests/README.md` and `docs/testing/test-matrix.md`. No commit or push was made.
+
+## 2026-09-27 — Coastal Operations final backend re-evaluation
+
+- Date/time or time range: 2026-09-27 22:30 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, .NET SDK and Git
+- AI Model: GPT-6
+- Summary of the user's request: Re-evaluate and finalize the Coastal Operations backend.
+- Summary of what the AI Agent did: Rechecked the service and its API/Auth integration, preserved the pre-G07 and pending shared-G00 boundaries, mapped optional AI availability transport failures to retryable unavailability, capped peer-call configuration at the provisional two-second/two-retry/32 KiB limits, added regression cases, and corrected the component implementation and test-count documentation.
+- AI output accepted/changed/rejected: Kept the backend changes inside Coastal Operations except the existing narrow API/Auth integration; retained the component's overall partial status because producer handoffs, React/Flutter workflows and shared G00 acceptance remain outstanding. No Auth token or role flow changes were made in this re-evaluation.
+- Verification/evidence: Coastal Operations tests passed 248/248 default cases; two opt-in PostgreSQL tests skipped because `BLUEVERSE_CO_POSTGRES_TEST_CONNECTION` was absent. API tests passed 22/22 and Auth tests passed 79/79. Coastal Operations Release build succeeded with zero warnings, EF reported no pending model changes, and `git diff --check` passed. Python and Docker CLIs were unavailable in the current shell, so endpoint/UI validators and Compose checks were not rerun; WSL launch was denied by the environment. No commit or push was made.
+
+## 2026-09-28 — Coastal Operations React and Flutter workflows
+
+- Date/time or time range: 2026-09-28 01:07 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Node.js, Flutter and Git
+- AI Model: GPT-6
+- Summary of the user's request: Analyze the repository and implement client workflows for the currently implemented Coastal Operations service, using the current branch-local Member 1 G00 contract provisionally while shared G00 remains pending.
+- Summary of what the AI Agent did: Added a permission-aware React workflow and Flutter workflow for assessments, target status/history, advisory drafts and decisions, and evidence upload/read. Connected both clients to the same registered public API workflow, preserved explicit timezone offsets, idempotency/version handling and the pre-G07 no-proposal behavior, used the current G00 producer references provisionally, and registered routes/endpoints in the UI integration and endpoint catalogs. Updated the navigation, contribution test matrix and Flutter image-picker dependency.
+- AI output accepted/changed/rejected: Kept the existing application architecture, UI patterns and DESIGN.md tokens; accepted the current G00 producer UUIDs only as branch-local integration inputs and left shared acceptance marked Pending. Corrected an off-screen tap in the new Flutter widget test after its first run. No proposal, executable agent, internal-service client route or cross-client call was added.
+- Verification/evidence: React production build and ESLint passed; the complete serialized Node test suite passed 167/167 cases. Flutter analysis passed and the complete Flutter suite passed 98/98 cases. Endpoint catalog validation passed with 49 public endpoints and 24 frontend routes; UI integration validation passed for paired routes and declared public API paths; `git diff --check` passed. No commit or push was made.
+
+## 2026-09-28 — Add full CRUD to Member 4 G00 proposal
+
+- Date/time or time range: 2026-09-28 02:08 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and Git
+- AI Model: GPT-6
+- Summary of the user's request: Change the Coastal Operations G00 contract to
+  include full CRUD; the user confirmed the acting account as `WKS2004`.
+- Summary of what the AI Agent did: Updated the Member 4 G00 proposal to define
+  full CRUD for caller-owned assessment drafts and proposed alert drafts,
+  including audited logical deletion, status transitions, version and
+  idempotency rules, and permissions. Clarified that these are proposed
+  contract changes and are not yet implemented on the partial branch.
+- AI output accepted/changed/rejected: Accepted the requested CRUD expansion;
+  limited deletion to drafts to preserve submitted workflow, approval, evidence
+  and audit history. Did not change implementation sources or the live endpoint
+  catalog.
+- Verification/evidence: `git diff --check` passed for the contract change;
+  no tests were run for this documentation-only task. No commit or push was
+  made.
+
+## 2026-09-28 — Implement Coastal Operations draft lifecycles
+
+- Date/time or time range: 2026-09-28 03:05 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, .NET SDK, Python and Git
+- AI Model: GPT-6
+- Summary of the user's request: Re-analyze the updated G00/component docs and
+  patch the Coastal Operations backend service.
+- Summary of what the AI Agent did: Implemented caller-owned assessment draft
+  update/cancel/submit and proposed-alert withdrawal, moved peer collection to
+  assessment submission, preserved bounded dependency-failure behavior and the
+  pre-G07 no-proposal state, added audit tombstones and lifecycle persistence,
+  registered the new permissions through Auth's existing role-permission
+  seeding, added migration and regression coverage, and synchronized the
+  endpoint catalog and affected implementation documentation.
+- AI output accepted/changed/rejected: Applied the revised Member 4 G00
+  proposal as branch-local behavior. Kept global G00 pending and left existing
+  API/Auth flows intact apart from the three required permission registrations.
+  Documented that existing React/Flutter flows do not yet call the new draft
+  lifecycle endpoints.
+- Verification/evidence: Coastal Operations tests passed 255/255 default
+  cases; three opt-in PostgreSQL cases were skipped because
+  `BLUEVERSE_CO_POSTGRES_TEST_CONNECTION` was not set. Auth tests passed
+  79/79. Endpoint catalog validation passed with 53 public endpoints and 24
+  frontend routes. No commit or push was made.
+
+## 2026-09-28 — Align Coastal Operations clients with draft lifecycles
+
+- Date/time or time range: 2026-09-28 07:03–07:05 (Asia/Colombo; approximate)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and Python
+- AI Model: GPT-6
+- Summary of the user's request: Re-analyze the updated Coastal Operations
+  documentation and backend, update both clients for the current setup, remove
+  technical “Canonical” wording, and make the React assessments route easier to
+  scan.
+- Summary of what the AI Agent did: Added React and Flutter requests and
+  permission-gated UI actions for assessment draft editing, submission and
+  cancellation plus proposed-advisory withdrawal. Matched evidence-upload
+  status/version behavior and queue/manager read scopes to the backend. Updated
+  user-facing coastal record copy, made the React assessment and advisory
+  sections roomier, and registered the four added public API operations in the
+  shared UI contract and endpoint catalog.
+- AI output accepted/changed/rejected: Applied the branch-local G00 lifecycle
+  behavior while preserving the existing app shells, public API boundary,
+  shared coastal design tokens, pending global G00 state and pre-G07 behavior
+  without automated proposals. Reworded labels and explanatory copy for
+  visitors and operators.
+- Verification/evidence: Endpoint catalog generation and validation passed
+  (53 public endpoints, 24 frontend routes); UI integration validation passed;
+  git diff --check passed. Test suites were not run for this UI follow-up.
+  No commit or push was made.
+
+## 2026-09-30 — Fix Admin cookie login through the edge proxy
+
+- Date/time or time range: 2026-09-30 04:00–04:06 (Asia/Colombo; approximate)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex and PowerShell
+- AI Model: GPT-6
+- Summary of the user's request: Find and quickly fix the Admin login failure that displayed Auth's generic error.
+- Summary of what the AI Agent did: Compared the Auth JSON login path with the browser-cookie path and increased the edge Nginx upstream response header buffer for `/api/` so the Admin JWT cookie response can pass through.
+- AI output accepted/changed/rejected: Kept Auth login and cookie behavior unchanged; applied only the gateway buffer adjustment.
+- Verification/evidence: Through the available HTTP proxy, the JSON login path returned 200 and its test session was logged out with 204, while the cookie login path returned 500. Docker Desktop reported no running containers, so the changed Nginx configuration could not be reloaded in a live stack. `git diff --check -- infrastructure/docker/edge-nginx/nginx.conf` reported no whitespace errors. No test suite or Nginx config test was run, and no commit or push was made.
+
+## 2026-09-30 — Correct edge proxy buffer configuration
+
+- Date/time or time range: 2026-09-30 04:35–04:43 (Asia/Colombo; approximate)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell and Docker Desktop
+- AI Model: GPT-6
+- Summary of the user's request: Diagnose and fix `ERR_CONNECTION_REFUSED` after the Admin cookie-login proxy change.
+- Summary of what the AI Agent did: Corrected the earlier no-container reading after locating the Docker CLI. Docker logs showed Nginx restart failures because the first `proxy_buffer_size` change left the related buffers inconsistent. Set `proxy_buffers` to `8 16k` and `proxy_busy_buffers_size` to `32k` alongside the `16k` header buffer.
+- AI output accepted/changed/rejected: Corrected the incomplete earlier proxy adjustment; left Auth and API code unchanged.
+- Verification/evidence: Docker reported the edge container running with 14 restarts before the correction and port 80 published. `docker compose config --quiet` and `nginx -t` passed after the correction. Direct `/`, `/health`, `/api/health` and `/api/auth/health` requests returned 200. Admin cookie login and `/api/auth/me` returned 200; logout cleanup returned 204. The catalog validator passed (53 public endpoints, 24 frontend routes), and `git diff --check` reported no whitespace errors. No test suite was run; no commit or push was made.
+
+## 2026-10-01 — Coastal Operations publication and separate client pages
+
+- Date/time or time range: 2026-10-01 16:40 (Asia/Colombo; completion record)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, .NET/EF Core, Node.js, Flutter/Dart,
+  Python and in-app browser
+- AI Model: GPT-6
+- Summary of the user's request: Update all necessary documents including G00
+  before implementation, review Coastal Operations permissions, support draft
+  CRUD/publication and complete assessment delivery, log changes, and provide
+  separate Assessment/Alert pages with tabs, search/filtering, imagery and good
+  UX in both clients. Approve the existing Auth seed test update and PostgreSQL
+  submission-fixture cleanup.
+- Summary of what the AI Agent did: Updated the branch-local G00 proposal,
+  publication contract, ADR-0022, schema, permissions, workflow, client,
+  endpoint and test documentation before coding. Added six granular grants,
+  scoped collection filters and audit timelines, a transactional publication
+  snapshot and additive migration, bounded service-owned delivery with safe
+  disconnected/failure outcomes, and dedicated React/Flutter navigation,
+  searchable pages, lifecycle tabs, hero imagery, actions and pagination.
+  Added requirement-based backend and client tests, and updated the two
+  existing tests only after explicit approval. Synchronized final documentation
+  with source and validation results.
+- AI output accepted/changed/rejected: Accepted the requested branch-local
+  lifecycle and UX changes. Revised audit ordering to use time plus ID,
+  protected pagination from stale responses, distinguished alert decision
+  grants, and preserved legacy permission compatibility. Kept production AI
+  disconnected because G07 is pending; rejected claims that publication means
+  agent execution or approval. Preserved original PostgreSQL assertions and
+  historical usage records; changed the obsolete seed count from 26 to 32
+  and removed only the submission fixture's own dispatch during cleanup.
+- Verification/evidence: Coastal Operations 280 passing cases and three opt-in
+  PostgreSQL skips; Auth 79 and public API 22 passing cases; React 171 and
+  Flutter 104 passing cases; 35 UI/catalog validator tests passed. TypeScript,
+  Vite production build, changed-source ESLint and Flutter analysis passed.
+  Endpoint validation passed with 55 public endpoints and 26 frontend routes;
+  UI integration validation passed. EF reported no model drift, and migration
+  SQL was generated and inspected. Synthetic browser review checked dedicated
+  pages and a phone-width alert layout without overflow. No dedicated
+  PostgreSQL connection was configured; live database/concurrency, Docker
+  startup, peer contracts and agent handoffs are not verified. Shared G00 and
+  G07 remain pending. See `docs/v1/coastal-operations-publication-and-ui.md`,
+  `PublicationAndSearchTests.cs`, `OperationsPages.component.test.js` and the
+  new mobile page/search tests. No commit or push was made.
+
+## 2026-10-01 — Coastal Operations titled drafts and record experience fixes
+
+- Date/time or time range: 2026-10-01 18:58 (Asia/Colombo; completion record)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, .NET/EF Core, Node.js, Flutter/Dart,
+  Python, official IANA data and in-app browser
+- AI Model: GPT-6
+- Summary of the user's request: Always update AI-Usage; fix missing draft
+  search, replace UUID-entry draft fields with titles/named dropdowns, create
+  global database-backed time zones with one selector for both dates, stack
+  heroes above title search, default to all record types, move IDs to Advanced
+  search, show title/UUID/created date, replace related-plan ID entry, remove
+  the bottom lookup and header menu, and update documentation. The user
+  explicitly approved updates to the affected existing client tests.
+- Summary of what the AI Agent did: Recorded the follow-up requirements before
+  source changes and synchronized G00, schema, workflow, UI, security, setup,
+  endpoint and test documents. Added assessment titles, scoped draft discovery,
+  explicit record-ID filters, a private named-reference seam and public
+  form-options endpoint. Seeded 419 IANA 2026e locations through an additive
+  migration, backfilled legacy titles and resolved local dates to UTC using
+  server time-zone rules. Updated React/Flutter forms, pickers, layouts,
+  navigation and result metadata; added backend/client regressions and made
+  the approved existing-test updates. Preserved legacy request replay digests
+  and immutable publication snapshots with title/zone context.
+- AI output accepted/changed/rejected: Retained the requested title/selector/
+  search/time-zone and layout changes. Revised error handling after TypeScript
+  detected an out-of-scope variable in the image-error path. Corrected a newly
+  authored regression's creation-action label to the established `CREATED`
+  audit contract while retaining its full state/side-effect assertions.
+  Rejected fabricated canonical target/plan choices: absent producer services
+  explicitly report `NOT_CONNECTED`; titled drafts can remain unlinked, but
+  cannot publish. Existing client assertions unrelated to obsolete inputs were
+  preserved. Historical AI usage entries were not edited; no individual
+  assessed reflection was authored.
+- Verification/evidence: Coastal Operations 299 passed with three opt-in
+  PostgreSQL skips; React 176, Flutter 107 and UI/catalog validator suites 35
+  passed. TypeScript, Vite build, changed-source ESLint and Flutter analysis
+  passed. UI registry and endpoint catalogue validation passed (56 public
+  endpoints, 26 frontend routes, no implemented AI endpoint). EF reported no
+  model drift; generated SQL was inspected for 419 seeds, title backfill,
+  indexes and restrictive zone foreign keys. Synthetic browser review checked
+  desktop/phone layouts, form selectors and no document horizontal overflow;
+  temporary preview files and server were removed. No dedicated PostgreSQL
+  connection was configured, so live migrations/provider queries/concurrency,
+  Docker rules and producer/agent handoffs remain unverified. G00/G07 remain
+  Pending. See `docs/v1/coastal-operations-record-experience.md`,
+  `RecordExperienceTests.cs`, `RecordExperience.component.test.js` and
+  `coastal_operations_record_experience_test.dart`. No commit or push was made.
+- Final same-task follow-up: React edit forms now use server-provided civil
+  times, matching Flutter, so an older browser time-zone database cannot shift
+  an edited period. Two `WEB-OPS-RECORD-006` cases verified both assessment and
+  alert edits with a server-known/browser-unknown synthetic zone. The final web
+  suite passed **178** cases; TypeScript, Vite, ESLint and both route validators
+  passed again. Other final counts remain 299 backend, 107 mobile and 35
+  validator cases, with three PostgreSQL skips. The current contract/test matrix
+  reflects the final totals; this note appends evidence without rewriting
+  earlier usage records.
+
+## 2026-10-01 — Coastal Operations focused workspaces and live search
+
+- Date/time or time range: 2026-10-01 22:10 (Asia/Colombo; completion of authorized implementation and static/browser review)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, built-in ImageGen, PowerShell, Node.js/TypeScript/Vite,
+  Flutter/Dart, Python and in-app browser
+- AI Model: GPT-6; the image-generation tool did not expose its model name.
+- Summary of the user's request: Create distinct Assessment/Alert hero images,
+  move workspace actions below the hero, merge minimal icon search with records,
+  keep lifecycle headings/tabs, fetch two seconds after typing, replace blocking
+  search loading with a local spinner, and provide whole-workspace record/form
+  views with Back while retaining header/footer/navigation. Always update AI-Usage.
+- Summary of what the AI Agent did: Recorded the focused-workspace contract and
+  G00 links before coding, generated two coastal photographs, and copied the
+  assets unchanged into React and Flutter. Implemented compact expandable
+  filters/reset/search icons, debounced automatic requests, quiet collection
+  reads with retained cards and stale-response guards, and focused create/edit/
+  detail views with Back and preserved list state. Reused scoped public routes,
+  permissions and existing validated forms; synchronized UI registry, endpoint
+  catalogue, client/component/readiness docs and regression acceptance notes.
+- AI output accepted/changed/rejected: Accepted the requested layout and photo
+  direction. Fixed synchronous-effect linting, sticky-header Back positioning,
+  paused pending timers during focused views, retained independent mobile
+  filters, added deterministic Advanced ID validation even with collapsed
+  controls, and revalidated alert details after mutation without a new endpoint.
+  Corrected the synthetic preview fixture's missing required detail arrays.
+  No stock/evidence claim was made for generated illustrations. Existing tests
+  were preserved while the required approval was pending; historical usage
+  entries and student-authored reflection were not changed.
+- Verification/evidence: TypeScript, Vite production build, changed-source
+  ESLint, Flutter formatting/static analysis, endpoint catalogue and UI registry
+  validators passed. Catalogue totals remain 56 public endpoints and 26 frontend
+  routes with no implemented AI endpoint. Synthetic browser review covered both
+  heroes, automatic search, disclosure/reset, full creation/details, Back/chrome
+  and phone views without horizontal overflow. Temporary preview files/server
+  were removed. Automated regression edits/additions/execution await the user
+  approval requested under AGENTS.md; earlier task suite counts are not reused
+  as current evidence. No live backend/provider/Docker or real-device acceptance
+  was run. Shared G00/G07 remain pending. No commit or push was made. Full image
+  prompts, provenance and saved asset paths are recorded in
+  `docs/v1/coastal-operations-focused-workspaces.md`.
+
+
+## 2026-10-02 — Coastal Operations Logs, evidence removal and workspace recheck
+
+- Date/time or time range: 2026-10-02 03:04 (Asia/Colombo; completion record)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, .NET/EF Core, Node.js/TypeScript/Vite,
+  Flutter/Dart, Python and in-app browser
+- AI Model: GPT-6
+- Summary of the user's request: Recheck the previous hero/search/full-workspace
+  task, add Coastal Operations Logs with Assessment/Alert switches and compact
+  search, expose retained active/inactive activity, offer 5/10/25/50/100 cards
+  per page, allow draft image removal only before publication, make cancelling
+  actions/confirmations red, reduce search debounce to one second and keep
+  documentation/AI-Usage current. The user approved the affected existing tests.
+- Summary of what the AI Agent did: Recorded requirements and ADR-0023 before
+  source updates. Added scoped public Logs collections, audit-aware retained
+  record queries, corresponding React/Flutter navigation/workspaces and server
+  cursor pagination. Added owner/draft/version-checked image removal, durable
+  REMOVED metadata/audit and post-commit private-byte cleanup with worker retry;
+  restricted uploads to drafts and supplied an additive EF migration. Updated
+  search timing, quiet activity loading, destructive styling and shared route/
+  API registry, schema, security, G00/component, setup and test documentation.
+  Rechecked the previous task, fixed hidden focused-form search controls,
+  mobile nested scrolling and creator-only saves, and updated approved tests.
+- AI output accepted/changed/rejected: Retained the requested Logs, pagination,
+  draft-only image management and one-second feedback behavior. Revised the
+  Logs grid/pagination after phone screenshots exposed horizontal overflow.
+  Corrected synthetic preview status data that omitted required API fields.
+  Rejected deleting image bytes before the authorized database commit; retained
+  metadata so audit associations survive. Changed obsolete existing test
+  interactions only under the user's approval and preserved unrelated assertions.
+  An earlier parallel web test run exhausted Windows resources/cache writes;
+  reran the complete suite serially without weakening expectations. No historical
+  usage entries or student-authored individual reflection were rewritten.
+- Verification/evidence: Coastal Operations **322 passed, 5 opt-in PostgreSQL
+  skipped, 0 failed**; complete web **185 passed**; complete Flutter **113
+  passed**; route/UI validator suites **35 passed**. TypeScript, Vite build,
+  changed-source ESLint, Flutter analysis/formatting, endpoint/UI registry,
+  agent-resource validation and diff checks passed. Catalogue records 59 public
+  endpoints/28 frontend routes and no implemented AI endpoint. EF reported no
+  model drift; idempotent SQL was generated/inspected, including safe expired
+  metadata on rollback. Synthetic desktop/390px phone browser checks covered
+  Logs/search/switches/page-size/full-workspace/Back/chrome/red confirmation;
+  final phone content width 375px, with no horizontal overflow. Temporary preview
+  files, server and tab were removed. No dedicated PostgreSQL test connection
+  or local Docker runtime was available, so live migrations/provider concurrency
+  remain unverified. No deployed gateway, real device, producer or agent
+  acceptance is claimed; shared G00/G07 remain Pending. Evidence is summarized
+  in `docs/v1/coastal-operations-logs-and-evidence.md`, the component test files
+  and `docs/testing/test-matrix.md`. No commit or push was made.
+
+## 2026-10-02 — Coastal record navigation and detailed activity
+
+- Date/time or time range: 2026-10-02 14:50 (Asia/Colombo; completion record)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, .NET/EF Core, Node.js/TypeScript/Vite,
+  Flutter/Dart, Python and in-app browser
+- AI Model: GPT-6
+- Summary of the user's request: Add record-specific page sizes to Assessments
+  and Alerts, update Logs empty copy, reduce searches to 500 ms, pin category
+  tabs, preserve create/edit workspaces after refresh, share the Logs card
+  design and full record detail behavior, and show complete person/role/time
+  and field-change activity. Keep documentation and AI-Usage current. The user
+  approved affected existing-test updates while retaining unrelated assertions.
+- Summary of what the AI Agent did: Recorded the change contract before source
+  changes. Added shared record cards/pagination and pinned controls in React
+  and Flutter, public-route query intent restoration with current grant/draft
+  checks, full details/actions from Logs and 500 ms searches. Added atomic
+  allowlisted audit snapshots, additive PostgreSQL migration and optional
+  bounded signed display identity from verified API JWT claims. Preserved Auth
+  logic, permission authorization and the disconnected pre-G07 boundary.
+  Updated G00/component contracts, ADR-0024, schema, security, route/UI registry,
+  setup, readiness and test documentation.
+- AI output accepted/changed/rejected: Accepted the requested pagination,
+  navigation, shared cards and rich activity. Fixed startup edit restoration,
+  recovery Back labels, Logs-to-edit routing and mobile return/scroll behavior
+  after regression evidence. Corrected test tap timing for offscreen controls
+  without removing assertions. Added safe empty-array migration defaults.
+  Rejected reconstructing older history from current values or persisting
+  unsaved form contents in URLs/storage. Display identity is signature-bound,
+  never accepted from client headers. Historical contribution records and the
+  student's individual reflection were not rewritten.
+- Verification/evidence: Full web **193 passed**, Flutter **121 passed**,
+  Coastal Operations **331 passed, 6 opt-in PostgreSQL skipped, 0 failed**,
+  API **23 passed**, validator regression suite **35 passed**. TypeScript,
+  changed-source ESLint, Vite build, Flutter analysis, endpoint/UI contract,
+  agent-resource validation and diff checks passed. Catalogue: 59 public
+  endpoints/28 frontend routes/no implemented AI endpoint. EF model drift
+  check passed and idempotent SQL was generated/inspected. Synthetic browser
+  checks verified create/edit refresh and saved values, full details/activity,
+  sticky Logs tabs at 80 px and 390 px phone layout without horizontal overflow
+  (375 px content/client width). Temporary preview sources/server/tab and
+  viewport override were cleaned up. No dedicated PostgreSQL connection or
+  Docker runtime was available; live migration/provider concurrency remains
+  unverified. No deployment, physical device, producer or agent acceptance is
+  claimed. Older audit details remain unavailable; refresh preserves view and
+  saved data, not unsaved typing. Shared G00/G07 remain Pending. Evidence:
+  `docs/v1/coastal-operations-record-navigation-and-audit.md`, navigation/audit
+  tests and `docs/testing/test-matrix.md`. No commit or push was made.
+
+## 2026-10-03 — Coastal Operations workspace cleanup
+
+- Date/time or time range: 2026-10-03 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex and PowerShell
+- AI Model: GPT-6
+- Summary of the user's request: Recheck completed Coastal Operations work and
+  remove unnecessary files.
+- Summary of what the AI Agent did: Reviewed the worktree inventory and recent
+  documentation for conflicting superseded search intervals. Removed only
+  generated migration SQL, test output logs and the temporary synthetic browser
+  screenshot. Confirmed temporary preview source files were already absent.
+  Kept implementation, generated migration source/snapshot, requested hero
+  assets, tests and documentation. Left pre-existing ignored build directories
+  untouched.
+- AI output accepted/changed/rejected: Kept project and test deliverables;
+  removed only exact temporary artifacts created for verification. Updated old
+  documentation pointers so the 500 ms contract supersedes earlier timing.
+  No historical AI usage entries or student-authored reflections were changed.
+- Verification/evidence: Endpoint catalog (59 public endpoints, 28 frontend
+  routes, no implemented AI endpoint), UI integration validation, agent
+  resources and 35 validator tests passed during the associated recheck; the
+  full web, mobile, Coastal Operations and API suites also passed with six
+  opt-in PostgreSQL tests skipped. `git diff --check` passed. Exact temporary
+  files and previews are absent; requested source/assets remain in the worktree.
+
+## 2026-10-04 — Coastal Operations navigation and Logs UX fixes
+
+- Date/time or time range: 2026-10-04 20:01 (Asia/Colombo; completion record)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Node.js/Vite, Flutter/Dart and Python
+- AI Model: GPT-6
+- Summary of the user's request: Fix the Assessment/Alert and Logs tab position,
+  reduce refresh-like page flicker, animate category changes directionally,
+  preserve Alert Logs after refresh, keep saved details read-only until explicit
+  editing, and make activity/reference UI appropriate to Logs.
+- Summary of what the AI Agent did: Aligned sticky tabs to the shared 76 px
+  header; scoped directional motion to Coastal Operations panels; made Logs
+  category derive from its URL and persist across refresh; retained local search
+  results/progress; added read-only detail intros and hid Logs mutations and its
+  separate actor/“Who” line while keeping correlation references in Logs. Kept
+  activity out of edit forms in both clients. Restored the shared loading helper
+  import required by API writes and made the mobile Logs route test resolve the
+  same query route as the app. Updated the UX contract and test matrix.
+- AI output accepted/changed/rejected: Applied the requested UX and read-only
+  behavior. Replaced whole-browser snapshot motion with a directional animation
+  limited to the changing content panel, so the header/footer stay still. With
+  prior approval for affected test changes, replaced the stale Logs-edit
+  expectation with assertions for read-only detail and Back to Logs. No
+  unrelated test assertions or earlier contribution entries were changed.
+- Verification/evidence: Full web suite **197 passed, 0 failed**; after the
+  final Logs URL-state change, **19 focused web tests passed**. Changed-source
+  ESLint, TypeScript/Vite production build, and UI integration validation
+  passed. Full Flutter suite **123 passed** and `flutter analyze` reported no
+  issues. `git diff --check` and the changed-path inventory are recorded with
+  the final workspace verification. No commit or push was made.
+
+## 2026-10-04 — Coastal Operations tab placement refinement
+
+- Date/time or time range: 2026-10-04 20:13 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Node.js/Vite and Python
+- AI Model: GPT-6
+- Summary of the user's request: Remove the visual gap between the shared
+  header and Coastal Operations tabs on Assessment, Alert and Logs pages.
+- Summary of what the AI Agent did: Put the single tab row directly after the
+  header and before the account rail on narrow layouts; placed it in the
+  content column on desktop. Updated the regression assertions, UX contract,
+  and test matrix without changing the shared workflow or API routes.
+- AI output accepted/changed/rejected: Kept the original sticky behavior and
+  directional panel transitions while moving tabs outside the animated
+  workspace panel. Rejected a visual claim based on the already-running local
+  page because it served the older build; the source layout is covered by
+  browser-component assertions instead.
+- Verification/evidence: Full web suite **197 passed, 0 failed**; focused
+  Coastal Operations tests **19 passed**; changed-source ESLint, TypeScript/Vite
+  production build, UI integration validator, and `git diff --check` passed.
+  No commit or push was made.
+
+## 2026-10-04 — Coastal Operations sticky account rail correction
+
+- Date/time or time range: 2026-10-04 20:47 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Node.js/Vite, Python and in-app browser
+- AI Model: GPT-6
+- Summary of the user's request: Fix the left navigation rail so it remains
+  locked correctly while using the Assessment, Alert and Logs pages.
+- Summary of what the AI Agent did: Measured the current sticky sidebar at the
+  bottom of the Assessment page, found its forced viewport height exceeded its
+  grid boundary, and added an option for Coastal Operations to use natural
+  height capped by the available viewport. Added sizing assertions, updated the
+  UX contract and test matrix, and kept other account-page layouts unchanged.
+- AI output accepted/changed/rejected: Applied the content-height fix to all
+  three Coastal Operations routes. Kept the shared fixed-height behavior for
+  Profile, Dashboard and Administration pages.
+- Verification/evidence: **26 focused web tests passed**; changed-source ESLint,
+  TypeScript/Vite production build, UI integration validator and
+  `git diff --check` passed. The full 197-test web suite passed before this
+  sizing-only correction. No commit or push was made.
+
+## 2026-10-04 — Coastal Operations sticky rail runtime follow-up
+
+- Date/time or time range: 2026-10-04 21:13 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Node.js/Vite, Docker Compose and in-app browser
+- AI Model: GPT-6
+- Summary of the user's request: Correct the left navigation rail in the running
+  React app after the earlier source change had not fixed the issue.
+- Summary of what the AI Agent did: Inspected live scroll geometry, found the
+  desktop grid slot was not stretching and the localhost frontend still served
+  an older image, then stretched the slot, measured the available rail height
+  between the header and footer, and enabled internal scrolling when needed.
+  Rebuilt and replaced only the frontend container; updated the UX and test
+  evidence documents.
+- AI output accepted/changed/rejected: Replaced the earlier assumption that a
+  natural-height sticky rail alone was sufficient after browser measurements
+  showed footer-boundary clipping. Kept non-Coastal account navigation layouts
+  unchanged.
+- Verification/evidence: **11 focused React tests passed**; changed-source
+  ESLint, TypeScript/Vite build, Compose configuration validation, frontend
+  image build, UI integration validator, and `git diff --check` passed. The live
+  browser served `index-DH08Otbu.js`; at the bottom of Assessments, Alerts and
+  Logs the rail stayed at 76 px and ended above the footer. No commit or push
+  was made.
+
+## 2026-10-04 — Match Coastal Operations navigation to account pages
+
+- Date/time or time range: 2026-10-04 21:32 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Node.js/Vite, Docker Compose and in-app browser
+- AI Model: GPT-6
+- Summary of the user's request: Inspect the working Profile/Dashboard sidebar
+  and use that same implementation on Coastal Operations pages.
+- Summary of what the AI Agent did: Removed Coastal-only sidebar sizing logic,
+  restored the shared sticky viewport-height classes, and made the shared
+  AccountAreaNavigation the direct grid item on Assessments, Alerts and Logs.
+  Kept Coastal's tab/workspace grid positions and mobile tab-first order.
+- AI output accepted/changed/rejected: Followed the existing Profile/Dashboard
+  implementation after the user corrected the prior Coastal-specific approach.
+  No changes were made to Profile or Dashboard navigation behavior.
+- Verification/evidence: **11 focused React tests passed**; changed-source
+  ESLint, production build, UI integration validation and `git diff --check`
+  passed. Rebuilt and restarted only the local frontend container. Browser
+  inspection confirmed the same base sticky classes and direct main-grid item
+placement on Profile, Dashboard, Assessments, Alerts and Logs. No commit or
+push was made.
+
+## 2026-10-04 — Coastal Operations Logs hero
+
+- Date/time or time range: 2026-10-04 22:42 (Asia/Colombo; completion record)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, built-in image generation, PowerShell, React/Vite,
+  Docker Compose and in-app browser
+- AI Model: GPT-6
+- Summary of the user's request: Add a Logs hero with an image suited to the
+  coastal project, the existing UI and audit-history content.
+- Summary of what the AI Agent did: Generated a wide editorial photograph of
+  coastal stewards comparing shoreline notes; optimized it to WebP at
+  `apps/web/src/assets/coastal/operations-logs-hero.webp`; added an accessible
+  hero above the Logs search and records; documented the design and prompt;
+  added regression coverage and refreshed the local frontend container.
+- AI output accepted/changed/rejected: Accepted the generated coastal field-
+  notes scene and composed it with the existing deep-ocean gradient. Converted
+  the original PNG to WebP to reduce the bundled image to 169 KB. No API or
+  route change was needed.
+- Verification/evidence: Focused Logs component tests **8 passed, 0 failed**;
+  React production build and changed-file ESLint passed; UI integration
+  validation and `git diff --check` passed. Rebuilt/restarted only the local
+  frontend container, and the browser showed the new hero above search and
+  results. Asset, intent and prompt: `apps/web/src/assets/coastal/operations-logs-hero.webp`
+  and `docs/v1/coastal-operations-record-navigation-and-audit.md`. No commit or
+  push was made.
+
+## 2026-10-11 — Coastal Operations React section introductions
+
+- Date/time or time range: 2026-10-11 16:58 (Asia/Colombo; completion record)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, React/Vite, Docker and in-app browser
+- AI Model: GPT-6
+- Summary of the user's request: Improve the Coastal Operations React section
+  tops using the supplied experience/biodiversity screenshots, keep current
+  tab styles, and retain appropriate existing hero images or add scoped images.
+- Summary of what the AI Agent did: Added page introductions and a shared
+  photo-above-light-card hero to Assessment, Alert and Logs list views. Kept
+  existing photos, pill tabs, sticky placement and workflow controls. Logs hero
+  labels follow the selected category. Updated the existing UI registrations,
+  web README and current presentation documentation; added three new component
+  cases without modifying existing tests. Identity was confirmed by the user.
+- AI output accepted/changed/rejected: Retained coastal fieldwork, visitor-
+  guidance and shared field-note images. Replaced the dark text-over-photo
+  presentation with the requested light editorial layout. Preserved tab styles
+  and current header-adjacent placement. No new image assets were needed.
+- Verification/evidence: All 38 Coastal Operations component cases passed with
+  test concurrency set to one, including `WEB-OPS-HERO-001` through `003`.
+  Full web lint and production build passed. UI integration and endpoint catalog
+  checks passed; all 35 validator cases passed using a writable temporary folder.
+  Initial concurrent Node checks exhausted local process memory; serial checks
+  passed. Initial validator fixtures hit sandbox temporary-folder permissions;
+  a writable temporary folder resolved them without changing tests. The Docker
+  rebuild stalled during dependency installation and was cancelled; the verified
+  local production build was copied into the existing local frontend container.
+  Browser review confirmed all three section images and both Logs category
+  labels at desktop and 390 px widths, with no page horizontal overflow. Current
+  live record reads displayed a session-refresh/sign-in message, so live data
+  acceptance is not claimed. Saved preview: `coastal-operations-assessments.png`
+  in the task visualization directory. `git diff --check` passed. No commit or
+  push was made.
+
+## 2026-10-11 — Bidirectional Coastal Operations tab animation
+
+- Date/time or time range: 2026-10-11 17:10 (Asia/Colombo; completion record)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, React/Vite, Docker and in-app browser
+- AI Model: GPT-6
+- Summary of the user's request: Animate switching between Assessments and
+  Alerts in both directions, and between Assessment Logs and Alert Logs in
+  both directions.
+- Summary of what the AI Agent did: Extended the directional slide-and-fade
+  to 420 ms and 2 rem, animated the full Logs content column including its hero,
+  kept the category panel from receiving a second nested animation, prevented
+  active-section clicks from setting a new transition direction, and clipped
+  transient horizontal motion overflow. Preserved tab styles and all public
+  routes/actions. Added two new navigation regression cases, updated existing
+  workflow descriptions and presentation documentation, and refreshed the local
+  frontend with the verified production build.
+- AI output accepted/changed/rejected: Accepted the directional transition,
+  stationary chrome/tabs and reduced-motion behavior. Kept the existing Logs
+  hero DOM after regression evidence showed that remounting the entire column
+  broke its category-label continuity. Existing test files were preserved.
+- Verification/evidence: All 40 Coastal Operations component tests passed.
+  The six transition/sticky-navigation cases passed again after the overflow
+  fix. Full web lint and production build, UI integration and endpoint catalog
+  validators, and `git diff --check` passed. Browser computed styles confirmed
+  repeated forward/back animation names and 0.42 s durations for both tab pairs,
+  no header/tab/nested record animation, and animation=none with reduced-motion
+  emulation. The temporary preference and viewport overrides were reset.
+  At 390 px viewport width, both forward section and Logs transitions kept
+  document content width equal to the 375 px client width after clipping.
+  New cases: `WEB-OPS-MOTION-001` and `002`. Screenshot:
+  `coastal-operations-transitions.png` in the task visualization directory.
+  No commit or push was made.
+
+
+## 2026-10-11 — Rebuild Flutter Coastal Operations
+
+- Date/time: 2026-10-11 23:20 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: Codex desktop; Flutter/Dart, Gradle and local Python validators
+- AI Model: GPT-6
+- Summary of the user's request: Fully re-implement the Flutter mobile Coastal
+  Operations component, carrying forward the coastal presentation and transitions
+  requested for the React experience.
+- Summary of what the AI Agent did: Rebuilt the native workspace presentation for
+  Assessments, Alerts and Logs, shared responsive introductions and light hero
+  cards, pinned accessible navigation, directional content entrances, record
+  cards, grouped full-page forms, readable details/search/activity, and generic
+  save recovery. Reused suitable bundled photos and preserved the public API
+  service, models, grants, draft/publication/evidence workflows, route intent,
+  server cursor paging, Logs read-only behavior and pre-G07 disconnected context.
+  Added 21 rebuild regression cases and updated the mobile README, workflow
+  registry and mobile experience documentation. Generated local widget previews
+  and built an ARM64 Android debug APK without changing platform configuration.
+- AI output accepted/changed/rejected: Accepted the rebuilt native presentation
+  and retained domain/API implementation. Changed narrow metadata layout and
+  removed repeated legacy objective/title copy after review. Replaced route-wide
+  motion with content-only entry that honors reduced motion. With explicit user
+  approval, added only visibility/frame waits to four existing test files;
+  existing assertions were preserved. Rejected an indefinite universal build
+  wait on external downloads; an offline diagnosis identified the uncached
+  x86-64 engine and the cached ARM64 build succeeded instead.
+- Verification/evidence: `flutter pub get`, final `flutter analyze` and Dart
+  formatting passed. The complete mobile suite passed 143 tests before the last
+  small presentation refinement; 28 focused rebuild/navigation checks passed
+  after the context-date layout change, and the added save-failure/retry case
+  plus final font-loaded phone previews passed. Rebuild tests cover 320/390/768
+  layouts, doubled text, narrow read-only details, forms, fixed tabs, both
+  transition directions, query persistence, reduced motion and denied access.
+  UI integration validation, all 35 validator tests, endpoint catalog validation
+  and `git diff --check` passed. Gradle offline ARM64 `assembleDebug` succeeded;
+  the fresh `apps/mobile/build/app/outputs/flutter-apk/app-debug.apk` contains
+  `lib/arm64-v8a/libflutter.so` and the Dart bundle. Universal Android packaging
+  remains unverified because its x86-64 engine download stalled and was absent
+  from cache. The connected phone was not authorized for USB debugging, so no
+  device installation/camera/gallery verification was performed. Preview and
+  full-suite output are in the task visualization directory. No commit or push
+  was made.
+
+## 2026-10-11 — Recheck Flutter on Android and verify D: build caches
+
+- Date/time or time range: 2026-10-11 23:51 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Flutter/Dart, Gradle, Android Debug Bridge,
+  Docker Desktop and repository validators
+- AI Model: GPT-6
+- Summary of the user's request: Verify that the rebuilt Flutter Coastal
+  Operations implementation works, remove the old C: Gradle cache, and use the
+  existing `D:\WKS\FlutterBuildCache` caches because of disk-space constraints.
+- Summary of what the AI Agent did: Confirmed persistent user Gradle and Pub
+  settings already target D:, verified no package references point to C:,
+  resolved packages offline, reran the complete mobile suite and static checks,
+  and built the current ARM64 debug APK offline. Checked the usual and other
+  likely C: Gradle directories; they were already absent, so nothing was
+  deleted. Used D: temporary files for the verification commands. Started the
+  local Docker gateway, installed and launched the APK on the now-authorized
+  Android 16 phone, and checked signed-in collections, both navigation
+  directions, pinned scrolling tabs, live empty states and both create forms.
+  Corrected a shared description that referred only to assessments. Rebuilt
+  and reinstalled the final APK, checked cold-launch account restoration, and
+  documented cache setup, the explicit USB gateway command and validation.
+- AI output accepted/changed/rejected: Accepted reuse of the existing D:
+  caches after successful offline resolution/builds. Changed the workspace
+  wording to coastal records. Retained the established API and permission
+  implementation and all existing test assertions. Rejected unnecessary
+  cache deletion because the old C: locations were absent; no universal cache
+  reset or package upgrades were performed. The user entered credentials on
+  the phone; no credentials were requested or recorded.
+- Verification/evidence: The final `flutter test test --concurrency=1` passed
+  all 144 tests; `flutter analyze` found no issues. Formatting, UI integration
+  validation, endpoint catalogue validation and `git diff --check` passed.
+  `flutter pub get --offline` preserved the lockfile. Final ARM64 offline
+  `assembleDebug` succeeded in 12 seconds with 189 tasks up to date; the APK
+  contains the ARM64 Flutter engine and Dart bundle. Device installation,
+  signed-in navigation, forms and cold launch passed with no Flutter/Android
+  crash errors in the app process log. Gateway, API, Auth and Coastal
+  Operations readiness checks passed. The live lists were empty; no domain
+  records were created or changed, and populated records/camera/gallery were
+  not tested on the device. The x86-64 engine JAR remains uncached, so offline
+  universal/emulator packaging is unverified. Verification logs are under
+  `D:\WKS\FlutterBuildCache\temp`; screenshots are in the task visualization
+  directory. See `docs/v1/coastal-operations-mobile-reimplementation.md` and
+  the root/mobile READMEs. No commit or push was made.
 ## 2026-10-12 — Resolve PR #7 component merge conflicts
 
 - Date/time or time range: 2026-10-12 18:10 (Asia/Colombo; PR conflict-resolution session)
@@ -1541,3 +2502,16 @@ runtime lacks PyYAML.
 - Summary of what the AI Agent did: Fetched the current PR source and target refs, confirmed the merge blocker, and combined the component routes, mobile route handling, API configuration, Compose services, endpoint/UI contracts and shared documentation. Preserved the Marine admin shell while restoring planner navigation across the shared account/site contexts. Renumbered the planner ADR to avoid the Marine ADR collision and regenerated the endpoint Markdown with the repository validator. After hosted CI exposed a parallel Coastal Planner fixture environment race, scoped the fixture's existing test-only connection and JWT values to the backend test step.
 - AI output accepted/changed/rejected: Kept the behavior and files from both component branches, made the smallest manual conflict edits needed for shared integration, and fixed the duplicated Flutter route handler and shared header conditions. Kept every test assertion unchanged; added only stable test-only environment values to the backend test runner. No existing AI usage entry or individual reflection was changed.
 - Verification/evidence: Web lint and production build passed; the complete web CI suite passed (338/338); endpoint-catalog and UI-integration validators passed; Docker Compose configuration and the Marine workflow wiring suite passed (6/6); API, coastal-planner, experience-biodiversity and marine-safety .NET builds passed. After the first hosted backend run exposed nine Coastal Planner fixture startup failures from cleared test configuration, the scoped test-only environment fix was rerun successfully: Backend Microservices Tests passed 545/545. All 10 GitHub Actions workflows for the follow-up commit passed, and PR #7 is mergeable. Local API tests could not start VSTest testhost before timeout; Flutter analysis stalled locally, while direct Dart formatting parsed the two merged Dart files without writing them; hosted Flutter CI and tests passed. The merge and CI follow-up commits are `905eece` and `ad0e5d3`.
+
+## 2026-10-12 — Resolve PR #8 component merge conflicts
+
+- Date/time or time range: 2026-10-12 19:33–19:43 (Asia/Colombo; PR conflict-resolution and CI follow-up)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop, Git, PowerShell, bundled Python and Dart SDK, npm, GitHub connector
+- AI Model: GPT-6
+- Summary of the user's request: Resolve PR #8 conflicts while preserving experience-biodiversity, marine-safety, coastal-planner and coastal-operations behavior and workflows; update AI usage as Wanshaja, then commit and push the fix.
+- Summary of what the AI Agent did: Confirmed PR #8 and the local merge blocker, fetched the latest maintenance base and merged it into the feature branch. Combined the four components' routes, API gateway registrations, Compose services, workflow checks, shared contracts, lockfiles and documentation. Renumbered colliding Coastal Operations ADRs and, after hosted CI exposed the missing counts and invalid path validation, updated the affected Auth seeding expectations and corrected peer endpoint validation.
+- AI output accepted/changed/rejected: Preserved changes from both branches and their component workflows; combined duplicate integration points into shared registrations. Replaced a machine-specific Flutter gateway address with the emulator-safe default. Updated all affected permission-count assertions to 36 with user approval. Removed URI parsing that incorrectly rejected rooted `/api/...` paths while retaining the public API path checks. No tests were skipped or weakened, and no prior AI usage entry was edited.
+- Verification/evidence: Endpoint catalog and UI integration validators, Docker Compose configuration, JSON parsing and `git diff --check` passed. React lint/build passed and the serial web suite passed 384/384; Flutter analysis passed and the serial mobile suite passed 295/295; API tests passed 57/57; the complete Auth suite passed 85/85; the Coastal Operations suite passed 331 with 6 opt-in PostgreSQL tests skipped. The first hosted run passed 9 of 10 workflows; Backend Microservices Tests exposed three outdated 16-permission expectations and 23 false `MISCONFIGURED` peer outcomes. After fixing these, the hosted run for `37ee55a` passed all 10 PR-triggered workflows, including Backend Microservices Tests, and PR #8 is mergeable. See PR #8 and commits `b1f8c04` and `37ee55a`.

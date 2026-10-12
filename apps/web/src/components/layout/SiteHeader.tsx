@@ -6,7 +6,7 @@ import { preserveAuthLoadingContextForReload } from '../../features/loading/back
 import { hasAnyPermission } from '../../features/authorization/permissions'
 
 type SiteHeaderProps = {
-  active?: 'home' | 'login' | 'register' | 'profile' | 'dashboard' | 'experiences' | 'planner'
+  active?: 'home' | 'login' | 'register' | 'profile' | 'dashboard' | 'experiences' | 'planner' | 'operations'
   compactMobile?: boolean
 }
 
