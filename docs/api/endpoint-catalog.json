@@ -2865,7 +2865,7 @@
       "docs/agentic-ai"
     ],
     "entries": [],
-    "notes": "The repository contains Agentic AI architecture and workflow documentation but no executable AI service or AI API endpoint. Do not invent or expose target routes. When an AI service is implemented, add each endpoint here and keep clients behind the public API boundary."
+    "notes": "The repository contains Agentic AI architecture and workflow documentation plus runtime-only DHI Python image shells under the opt-in Compose profile; it has no executable AI service, agent or AI API endpoint. Do not invent or expose target routes. When an AI service is implemented, add each endpoint here and keep clients behind the public API boundary."
   },
   "forbiddenPatterns": [
     "/api/v1",

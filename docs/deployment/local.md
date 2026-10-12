@@ -84,6 +84,21 @@ bash scripts/Unix/bash/sync-web-lockfile.sh
 docker compose --profile dev build
 ```
 
+The four future Agentic AI image shells are excluded from the local runtime
+stack. To build the DHI Python images without starting them:
+
+```bash
+docker compose --profile agentic-ai build \
+  agent-experience-biodiversity \
+  agent-marine-conditions \
+  agent-planning-coordination \
+  agent-safety-operations
+```
+
+They contain no executable agent code and only print the Python version when
+started. Keep the profile out of `up` until G07 is accepted and the assigned
+agent branches provide their workloads and readiness behavior.
+
 ## Start
 
 ```bash
