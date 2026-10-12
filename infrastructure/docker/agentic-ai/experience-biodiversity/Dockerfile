@@ -1,12 +1,19 @@
 # syntax=docker/dockerfile:1
 
-# Runtime-only image shell. The executable agent remains gated on G07 and its
-# implementation belongs on agentic-ai/experience-biodiversity.
+# Coastal Experience & Biodiversity Agent (Member 1 — Ushan Srinuka)
+# Executable Agentic AI role runtime using Hardened Alpine Python 3.13 image.
 FROM dhi.io/python:3.13-alpine
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH="/app/src" \
+    PORT=8080
 
 WORKDIR /app
 
-CMD ["python3", "--version"]
+# Copy application source code
+COPY services/agents/experience-biodiversity/src/ /app/src/
+
+EXPOSE 8080
+
+CMD ["python3", "-m", "blueverse_experience_agent.server"]
