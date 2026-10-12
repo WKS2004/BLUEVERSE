@@ -8,9 +8,11 @@ machine and in GitHub Actions before the backend service projects exist.
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import re
 import sys
+from functools import cache
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -174,19 +176,23 @@ def _extract_api_literals(text: str) -> list[tuple[str, bool]]:
     return values
 
 
-def _composed_controller_path_exists(endpoint_path: str, source: str) -> bool:
-    """Recognize controller paths composed from a class prefix and action template."""
-    segments = _normalise_path(endpoint_path).strip("/").split("/")
-    first_parameter = next(
-        (index for index, segment in enumerate(segments) if segment.startswith("{") and segment.endswith("}")),
-        None,
-    )
-    if first_parameter is None:
-        return False
-    prefix = "/".join(segments[:first_parameter])
-    if not prefix or prefix not in source:
-        return False
-    return all(segment in source for segment in segments[first_parameter:])
+@cache
+def _endpoint_discovery_module():
+    """Share the catalog's exact C# route parser instead of guessing from text."""
+    source = DEFAULT_REPO_ROOT / ".agents/scripts/validate_endpoint_catalog.py"
+    spec = importlib.util.spec_from_file_location("blueverse_endpoint_discovery", source)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("cannot load the endpoint catalog route parser")
+    module = importlib.util.module_from_spec(spec)
+    # Import the shared parser without writing bytecode into protected agent
+    # resources. The agent-resource validator forbids caches in that tree.
+    previous = sys.dont_write_bytecode
+    try:
+        sys.dont_write_bytecode = True
+        spec.loader.exec_module(module)
+    finally:
+        sys.dont_write_bytecode = previous
+    return module
 
 
 def _internal_target_pattern(manifest: dict) -> re.Pattern[str]:
@@ -359,6 +365,9 @@ def _backend_files(repo_root: Path, service_name: str) -> list[Path]:
 def _validate_backend_contract(repo_root: Path, endpoint_map: dict[str, dict], errors: list[str]) -> None:
     """Require checked-in service/OpenAPI evidence for registered endpoints."""
 
+    if not endpoint_map:
+        return
+    discovered = _endpoint_discovery_module().discover_endpoints(repo_root, errors)
     by_service: dict[str, list[tuple[str, dict]]] = {}
     for endpoint_id, endpoint in endpoint_map.items():
         owner_service = endpoint.get("ownerService")
@@ -390,20 +399,41 @@ def _validate_backend_contract(repo_root: Path, endpoint_map: dict[str, dict], e
                 )
                 continue
             endpoint_path = endpoint.get("path")
-            path_candidates = (
-                endpoint_path,
-                endpoint_path[1:] if isinstance(endpoint_path, str) and endpoint_path.startswith("/") else None,
+            # OpenAPI is evidence only when method, full path and operation ID
+            # belong to the same operation, rather than occurring somewhere in
+            # a document or test fixture.
+            openapi_exists = False
+            for file, content in contents:
+                if file.suffix != '.json' or 'tests' in file.relative_to(repo_root).parts:
+                    continue
+                try:
+                    document = json.loads(content)
+                    paths = document.get('paths', {}) if isinstance(document, dict) else {}
+                    openapi_exists |= any(
+                        _normalise_path(path) == _normalise_path(endpoint_path)
+                        and isinstance(operations, dict)
+                        and isinstance(operations.get(endpoint.get('method', '').lower()), dict)
+                        and operations[endpoint['method'].lower()].get('operationId') == operation_id
+                        for path, operations in paths.items()
+                    ) if isinstance(paths, dict) and isinstance(endpoint_path, str) else False
+                except (ValueError, TypeError):
+                    continue
+            route_exists = isinstance(endpoint_path, str) and any(
+                method == endpoint.get("method")
+                and path == _normalise_path(endpoint_path)
+                and evidence["ownerService"] == service_name
+                and evidence["section"] == "publicApiEndpoints"
+                and (evidence["operationId"] == operation_id or (
+                    not evidence["operationId"]
+                    and any(_relative(file, repo_root) == source and re.search(
+                                r'\bMap' + re.escape(endpoint.get('method', '').title())
+                                + r'\s*\(\s*"' + re.escape(endpoint_path)
+                                + r'"\s*,\s*' + re.escape(operation_id) + r'\b', content)
+                            for file, content in contents)
+                ))
+                for (source, method, path), evidence in discovered.items()
             )
-            if not isinstance(endpoint_path, str) or not (
-                any(
-                    candidate and any(candidate in content for _, content in contents)
-                    for candidate in path_candidates
-                )
-                or any(
-                    _composed_controller_path_exists(endpoint_path, content)
-                    for _, content in contents
-                )
-            ):
+            if not route_exists and not openapi_exists:
                 errors.append(
                     f"endpoint {endpoint_id} public path {endpoint_path!r} is absent from services/{service_name} source/OpenAPI evidence"
                 )

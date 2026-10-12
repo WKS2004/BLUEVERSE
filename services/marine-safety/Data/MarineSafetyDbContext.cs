@@ -1,0 +1,200 @@
+using Microsoft.EntityFrameworkCore;
+using Blueverse.MarineSafety.Models;
+
+namespace Blueverse.MarineSafety.Data;
+
+public class MarineSafetyDbContext : DbContext
+{
+    public MarineSafetyDbContext(DbContextOptions<MarineSafetyDbContext> options) : base(options)
+    {
+    }
+
+    public DbSet<MarineActivity> MarineActivities => Set<MarineActivity>();
+    public DbSet<SafetyProfile> SafetyProfiles => Set<SafetyProfile>();
+    public DbSet<ConditionSnapshot> ConditionSnapshots => Set<ConditionSnapshot>();
+    public DbSet<SuitabilityAssessmentRecord> SuitabilityAssessments => Set<SuitabilityAssessmentRecord>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        // Non-authoritative projection of Member 1 activities and preserved legacy labels.
+        modelBuilder.Entity<MarineActivity>(entity =>
+        {
+            entity.HasKey(a => a.Id);
+            entity.HasIndex(a => a.Name);
+            entity.Property(a => a.Name).IsRequired().HasMaxLength(128);
+            entity.Property(a => a.ActivityType).IsRequired().HasMaxLength(100);
+            entity.Property(a => a.IsActive).IsRequired();
+            entity.Property(a => a.CreatedAt).IsRequired();
+        });
+
+        // Safety profiles: one active profile per activity, every limit a
+        // positive decimal with fixed precision. Caution limits are optional
+        // and must sit below their hard limit when present.
+        modelBuilder.Entity<SafetyProfile>(entity =>
+        {
+            entity.HasKey(p => p.Id);
+            entity.HasIndex(p => new { p.ActivityId, p.IsActive })
+                .HasFilter("\"IsActive\"")
+                .IsUnique();
+            entity.HasIndex(p => new { p.ActivityId, p.Version }).IsUnique();
+            entity.Property(p => p.ActivityId).IsRequired();
+            entity.Property(p => p.MaxWindSpeed).HasPrecision(6, 2);
+            entity.Property(p => p.MaxWaveHeight).HasPrecision(5, 2);
+            entity.Property(p => p.MaxSwellHeight).HasPrecision(5, 2);
+            entity.Property(p => p.CautionWindSpeed).HasPrecision(6, 2);
+            entity.Property(p => p.CautionWaveHeight).HasPrecision(5, 2);
+            entity.Property(p => p.CautionSwellHeight).HasPrecision(5, 2);
+            entity.Property(p => p.WindCriteriaSource).HasMaxLength(512);
+            entity.Property(p => p.WindCriteriaRationale).HasMaxLength(2000);
+            entity.Property(p => p.WaveCriteriaSource).HasMaxLength(512);
+            entity.Property(p => p.WaveCriteriaRationale).HasMaxLength(2000);
+            entity.Property(p => p.SwellCriteriaSource).HasMaxLength(512);
+            entity.Property(p => p.SwellCriteriaRationale).HasMaxLength(2000);
+            entity.Property(p => p.IsActive).IsRequired();
+            entity.Property(p => p.Version).IsRequired();
+            entity.Property(p => p.CreatedAt).IsRequired();
+            entity.Property(p => p.UpdatedAt).IsRequired();
+
+            entity.HasOne(p => p.Activity)
+                .WithMany(a => a.SafetyProfiles)
+                .HasForeignKey(p => p.ActivityId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.ToTable("SafetyProfiles", table =>
+            {
+                table.HasCheckConstraint("CK_SafetyProfiles_MaxWindSpeed_Positive", "\"MaxWindSpeed\" > 0");
+                table.HasCheckConstraint("CK_SafetyProfiles_MaxWaveHeight_Positive", "\"MaxWaveHeight\" > 0");
+                table.HasCheckConstraint("CK_SafetyProfiles_MaxSwellHeight_Positive", "\"MaxSwellHeight\" > 0");
+                table.HasCheckConstraint(
+                    "CK_SafetyProfiles_CautionWindSpeed_BelowMax",
+                    "\"CautionWindSpeed\" IS NULL OR \"CautionWindSpeed\" < \"MaxWindSpeed\"");
+                table.HasCheckConstraint(
+                    "CK_SafetyProfiles_CautionWaveHeight_BelowMax",
+                    "\"CautionWaveHeight\" IS NULL OR \"CautionWaveHeight\" < \"MaxWaveHeight\"");
+                table.HasCheckConstraint(
+                    "CK_SafetyProfiles_CautionSwellHeight_BelowMax",
+                    "\"CautionSwellHeight\" IS NULL OR \"CautionSwellHeight\" < \"MaxSwellHeight\"");
+            });
+        });
+
+        // Provider-derived condition snapshots. Rows are immutable through the
+        // public API; the location/forecast index serves the "nearest snapshot
+        // for a place and time" query and the retrieval index serves history.
+        modelBuilder.Entity<ConditionSnapshot>(entity =>
+        {
+            entity.HasKey(s => s.Id);
+            entity.HasIndex(s => new { s.Latitude, s.Longitude, s.ForecastTime });
+            entity.HasIndex(s => new { s.Latitude, s.Longitude, s.RetrievedAt });
+            entity.HasIndex(s => s.RetrievedAt);
+            entity.Property(s => s.Latitude).HasPrecision(8, 5);
+            entity.Property(s => s.Longitude).HasPrecision(9, 5);
+            entity.Property(s => s.ForecastTime).IsRequired();
+            entity.Property(s => s.RetrievedAt).IsRequired();
+            entity.Property(s => s.WindSpeed).HasPrecision(6, 2);
+            entity.Property(s => s.WaveHeight).HasPrecision(5, 2);
+            entity.Property(s => s.SwellHeight).HasPrecision(5, 2);
+            entity.Property(s => s.Rain).HasPrecision(6, 2);
+            entity.Property(s => s.Source).IsRequired().HasMaxLength(64);
+            entity.Property(s => s.FreshnessStatus).IsRequired().HasMaxLength(16);
+        });
+
+        // Suitability assessment history. No FK to ConditionSnapshot or
+        // SafetyProfile rows: history must survive provider-retention pruning
+        // and later profile deletion, so it stores the version and evidence
+        // references by value.
+        modelBuilder.Entity<SuitabilityAssessmentRecord>(entity =>
+        {
+            entity.HasKey(r => r.Id);
+            entity.HasIndex(r => new { r.ActivityId, r.RequestedTime });
+            entity.HasIndex(r => r.EvaluatedAt);
+            entity.Property(r => r.ActivityId).IsRequired();
+            entity.Property(r => r.ActivityName).HasMaxLength(128);
+            entity.Property(r => r.ProfileVersion).IsRequired();
+            entity.Property(r => r.Latitude).HasPrecision(8, 5);
+            entity.Property(r => r.Longitude).HasPrecision(9, 5);
+            entity.Property(r => r.RequestedTime).IsRequired();
+            entity.Property(r => r.EvaluatedAt).IsRequired();
+            entity.Property(r => r.Result).IsRequired().HasMaxLength(16);
+            entity.Property(r => r.Source).IsRequired().HasMaxLength(64);
+            entity.Property(r => r.FreshnessStatus).IsRequired().HasMaxLength(16);
+            entity.Property(r => r.ConditionRetrievedAt);
+            entity.Property(r => r.WindSpeed).HasPrecision(6, 2);
+            entity.Property(r => r.WaveHeight).HasPrecision(5, 2);
+            entity.Property(r => r.SwellHeight).HasPrecision(5, 2);
+            entity.Property(r => r.Rain).HasPrecision(6, 2);
+            entity.Property(r => r.ConditionMissingFields).IsRequired();
+            entity.Property(r => r.EvidenceCompleteness).IsRequired().HasMaxLength(24).HasDefaultValue("LEGACY_INCOMPLETE");
+            entity.Property(r => r.MaxWindSpeed).HasPrecision(6, 2);
+            entity.Property(r => r.MaxWaveHeight).HasPrecision(5, 2);
+            entity.Property(r => r.MaxSwellHeight).HasPrecision(5, 2);
+            entity.Property(r => r.CautionWindSpeed).HasPrecision(6, 2);
+            entity.Property(r => r.CautionWaveHeight).HasPrecision(5, 2);
+            entity.Property(r => r.CautionSwellHeight).HasPrecision(5, 2);
+            entity.Property(r => r.WindCriteriaSource).HasMaxLength(512);
+            entity.Property(r => r.WindCriteriaRationale).HasMaxLength(2000);
+            entity.Property(r => r.WaveCriteriaSource).HasMaxLength(512);
+            entity.Property(r => r.WaveCriteriaRationale).HasMaxLength(2000);
+            entity.Property(r => r.SwellCriteriaSource).HasMaxLength(512);
+            entity.Property(r => r.SwellCriteriaRationale).HasMaxLength(2000);
+            entity.Property(r => r.SafetyProfileId).IsRequired();
+            entity.Property(r => r.ConditionSnapshotId).IsRequired();
+            entity.Property(r => r.CreatedAt).IsRequired();
+
+            entity.HasOne(r => r.Activity)
+                .WithMany()
+                .HasForeignKey(r => r.ActivityId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        SeedReferenceActivities(modelBuilder);
+    }
+
+    private static void SeedReferenceActivities(ModelBuilder modelBuilder)
+    {
+        var seedDate = new DateTime(2026, 9, 26, 0, 0, 0, DateTimeKind.Utc);
+
+        modelBuilder.Entity<MarineActivity>().HasData(
+            new MarineActivity
+            {
+                Id = Guid.Parse("33333333-3333-3333-3333-333333333301"),
+                Name = "Surfing",
+                ActivityType = "Surfing",
+                IsActive = true,
+                CreatedAt = seedDate
+            },
+            new MarineActivity
+            {
+                Id = Guid.Parse("33333333-3333-3333-3333-333333333302"),
+                Name = "Snorkeling",
+                ActivityType = "Snorkeling",
+                IsActive = true,
+                CreatedAt = seedDate
+            },
+            new MarineActivity
+            {
+                Id = Guid.Parse("33333333-3333-3333-3333-333333333303"),
+                Name = "Scuba Diving",
+                ActivityType = "Diving",
+                IsActive = true,
+                CreatedAt = seedDate
+            },
+            new MarineActivity
+            {
+                Id = Guid.Parse("33333333-3333-3333-3333-333333333304"),
+                Name = "Whale and Dolphin Watching",
+                ActivityType = "BoatTour",
+                IsActive = true,
+                CreatedAt = seedDate
+            },
+            new MarineActivity
+            {
+                Id = Guid.Parse("33333333-3333-3333-3333-333333333305"),
+                Name = "Coastal Boat Tour",
+                ActivityType = "BoatTour",
+                IsActive = true,
+                CreatedAt = seedDate
+            });
+    }
+}

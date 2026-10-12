@@ -1,0 +1,6 @@
+export default function OperationsPagination({ kind, size, count, page, busy, previous, next, onSize }: { kind: 'assessments' | 'alerts'; size: number; count: number; page: number; busy: boolean; previous?: () => void; next?: () => void; onSize: (size: number) => void }) {
+  return <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-coast-line pt-4">
+    <label className="flex flex-wrap items-center gap-3 text-sm">{kind === 'assessments' ? 'Assessments' : 'Alerts'} per page<select className="min-h-11 rounded-xl border border-coast-line bg-white px-3" value={size} onChange={(event) => onSize(Number(event.target.value))}>{[5, 10, 25, 50, 100].map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
+    <div className="flex flex-wrap items-center gap-3 text-sm"><span>{count} {kind} · Page {page + 1}</span><button className="min-h-11 rounded-full border border-coast-line px-4 disabled:opacity-40" disabled={busy || !previous} onClick={previous} type="button">Previous</button><button className="min-h-11 rounded-full border border-coast-line px-4 disabled:opacity-40" disabled={busy || !next} onClick={next} type="button">Next</button></div>
+  </div>
+}

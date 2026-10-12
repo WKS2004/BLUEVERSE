@@ -7,13 +7,21 @@ services:
     restart: unless-stopped
     ports:
       - "${BLUEVERSE_HTTP_PORT:-80}:80"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-T", "3", "-O", "/dev/null", "http://127.0.0.1/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     volumes:
       - ./infrastructure/docker/edge-nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./apps/web/public/404.html:/usr/share/nginx/html/404.html:ro
       - ./apps/web/public/500.html:/usr/share/nginx/html/500.html:ro
     depends_on:
-      - frontend
-      - api
+      frontend:
+        condition: service_started
+      api:
+        condition: service_healthy
     networks:
       - blueverse_edge
       - blueverse_internal
@@ -40,7 +48,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-blueverse}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 12
@@ -60,16 +68,68 @@ services:
     restart: unless-stopped
     expose:
       - "8080"
+    healthcheck:
+      test: ["CMD", "dotnet", "Blueverse.Api.dll", "--healthcheck"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_HTTP_PORTS: ${API_HTTP_PORT:-8080}
       JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY in .env}
+      COASTAL_OPERATIONS_CONTEXT_KEY: ${COASTAL_OPERATIONS_CONTEXT_KEY:?Set COASTAL_OPERATIONS_CONTEXT_KEY in .env}
       ReverseProxy__Clusters__auth__Destinations__auth__Address: ${AUTH_SERVICE_URL:-http://auth:8080}
+      ReverseProxy__Clusters__coastal-operations__Destinations__coastal-operations__Address: ${COASTAL_OPERATIONS_SERVICE_URL:-http://coastal-operations:8080}
+      MARINE_ACTOR_SIGNING_KEY: ${MARINE_ACTOR_SIGNING_KEY:?Set MARINE_ACTOR_SIGNING_KEY in .env}
+      ReverseProxy__Clusters__coastal-planner__Destinations__coastal-planner__Address: ${COASTAL_PLANNER_SERVICE_URL:-http://coastal-planner:8080}
+      ReverseProxy__Clusters__marine-safety__Destinations__marine-safety__Address: ${MARINE_SAFETY_SERVICE_URL:-http://marine-safety:8080}
+      ReverseProxy__Clusters__experience-biodiversity__Destinations__experience-biodiversity__Address: ${EXPERIENCE_BIODIVERSITY_SERVICE_URL:-http://experience-biodiversity:8080}
     depends_on:
       auth:
-        condition: service_started
+        condition: service_healthy
+      coastal-operations:
+        condition: service_healthy
+      marine-safety:
+        condition: service_healthy
+      experience-biodiversity:
+        condition: service_healthy
+      coastal-planner:
+        condition: service_healthy
     networks:
       - blueverse_internal
+
+  marine-safety:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/marine-safety/Dockerfile
+      args:
+        PROJECT_NAME: Blueverse.MarineSafety
+    container_name: blueverse-marine-safety
+    restart: unless-stopped
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD", "dotnet", "Blueverse.MarineSafety.dll", "--healthcheck"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_HTTP_PORTS: ${MARINE_SAFETY_HTTP_PORT:-8080}
+      MARINE_ACTOR_SIGNING_KEY: ${MARINE_ACTOR_SIGNING_KEY:?Set MARINE_ACTOR_SIGNING_KEY in .env}
+      EXPERIENCE_CATALOGUE_URL: ${EXPERIENCE_CATALOGUE_URL:-http://experience-biodiversity:8080}
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-blueverse};Username=${POSTGRES_USER:-blueverse};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      OpenMeteo__WeatherBaseUrl: ${OPEN_METEO_WEATHER_URL:-https://api.open-meteo.com/}
+      OpenMeteo__MarineBaseUrl: ${OPEN_METEO_MARINE_URL:-https://marine-api.open-meteo.com/}
+      OpenMeteo__FreshnessMaxAgeMinutes: ${OPEN_METEO_FRESHNESS_MINUTES:-60}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - blueverse_internal
+      - blueverse_database
 
   auth:
     build:
@@ -81,6 +141,12 @@ services:
     restart: unless-stopped
     expose:
       - "8080"
+    healthcheck:
+      test: ["CMD", "dotnet", "Blueverse.Auth.dll", "--healthcheck"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_HTTP_PORTS: ${AUTH_HTTP_PORT:-8080}
@@ -88,6 +154,7 @@ services:
       Jwt__AccessTokenMinutes: ${AUTH_ACCESS_TOKEN_MINUTES:-15}
       AuthSession__DefaultLifetimeDays: ${AUTH_DEFAULT_SESSION_DAYS:-1}
       AuthSession__RememberMeLifetimeDays: ${AUTH_REMEMBER_ME_SESSION_DAYS:-30}
+      AuthSession__SelfServicePlannerAccess: ${AUTH_SELF_SERVICE_PLANNER_ACCESS:-true}
       ADMIN_EMAIL: ${ADMIN_EMAIL:?Set ADMIN_EMAIL in .env}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-blueverse};Username=${POSTGRES_USER:-blueverse};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
@@ -98,6 +165,120 @@ services:
       - blueverse_internal
       - blueverse_database
 
+  coastal-operations:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/coastal-operations/Dockerfile
+      args:
+        PROJECT_NAME: Blueverse.CoastalOperations
+    container_name: blueverse-coastal-operations
+    restart: unless-stopped
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD", "dotnet", "Blueverse.CoastalOperations.dll", "--healthcheck"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_HTTP_PORTS: ${COASTAL_OPERATIONS_HTTP_PORT:-8080}
+      COASTAL_OPERATIONS_CONTEXT_KEY: ${COASTAL_OPERATIONS_CONTEXT_KEY:?Set COASTAL_OPERATIONS_CONTEXT_KEY in .env}
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-blueverse};Username=${POSTGRES_USER:-blueverse};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      ComponentDependencies__Member1Experience__BaseAddress: ${EXPERIENCE_SERVICE_URL:-http://experience-biodiversity:8080}
+      EvidenceStorage__RootPath: /var/lib/coastal-operations/evidence
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - blueverse_internal
+      - blueverse_database
+    volumes:
+      - blueverse_coastal_operations_evidence:/var/lib/coastal-operations/evidence
+
+  coastal-planner:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/coastal-planner/Dockerfile
+      args:
+        PROJECT_NAME: Blueverse.CoastalPlanner
+    container_name: blueverse-coastal-planner
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_HTTP_PORTS: ${COASTAL_PLANNER_HTTP_PORT:-8080}
+      PeerServices__ExperienceCatalogueUrl: ${EXPERIENCE_CATALOGUE_URL:-http://api:8080}
+      PeerServices__MarineConditionsUrl: ${MARINE_CONDITIONS_URL:-http://api:8080}
+      PeerServices__CoastalOperationsUrl: ${COASTAL_OPERATIONS_URL:-http://api:8080}
+      PeerServices__BiodiversityMlUrl: ${BIODIVERSITY_ML_URL:-http://it3091-fake:8080}
+      PeerServices__BiodiversityApiKey: ${BIODIVERSITY_ML_API_KEY:-}
+      PeerServices__BiodiversityEnabled: ${BIODIVERSITY_ML_ENABLED:-true}
+      PeerServices__BiodiversityExpectedModelVersion: ${BIODIVERSITY_ML_MODEL_VERSION:-fake-v1}
+      JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY in .env}
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-blueverse};Username=${POSTGRES_USER:-blueverse};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    healthcheck:
+      test: ["CMD", "dotnet", "Blueverse.CoastalPlanner.dll", "--healthcheck"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - blueverse_internal
+      - blueverse_database
+
+  experience-biodiversity:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/experience-biodiversity/Dockerfile
+      args:
+        PROJECT_NAME: Blueverse.ExperienceBiodiversity
+    container_name: blueverse-experience-biodiversity
+    restart: unless-stopped
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD", "dotnet", "Blueverse.ExperienceBiodiversity.dll", "--healthcheck"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_HTTP_PORTS: 8080
+      JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY in .env}
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-blueverse};Username=${POSTGRES_USER:-blueverse};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      Services__MarineSafetyUrl: ${MARINE_SAFETY_SERVICE_URL:-http://marine-safety:8080}
+      Services__PlannerServiceUrl: ${PLANNER_SERVICE_URL:-http://coastal-planner:8080}
+      Services__OperationsServiceUrl: ${OPERATIONS_SERVICE_URL:-http://coastal-operations:8080}
+      Services__PublicApiUrl: ${PUBLIC_API_URL:-http://api:8080}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - blueverse_internal
+      - blueverse_database
+
+  it3091-fake:
+    profiles: ["dev"]
+    build:
+      context: .
+      dockerfile: infrastructure/docker/coastal-planner/fake-it3091.Dockerfile
+    container_name: blueverse-it3091-fake
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      PORT: 8080
+      IT3091_FAKE_BEHAVIOR: ${IT3091_FAKE_BEHAVIOR:-valid}
+      IT3091_FAKE_API_KEY: ${BIODIVERSITY_ML_API_KEY:-}
+    networks:
+      - blueverse_internal
 networks:
   blueverse_edge:
     name: blueverse_edge
@@ -110,3 +291,5 @@ networks:
 volumes:
   blueverse_postgres_data:
     name: blueverse_postgres_data
+  blueverse_coastal_operations_evidence:
+    name: blueverse_coastal_operations_evidence

@@ -1,8 +1,8 @@
 # ADR-0018: Operational Assessment Image-Evidence Boundary
 
-**Status:** Accepted for ownership and security boundary; image formats,
-limits, storage provider and retention policy must be decided before Wanshaja Sooriyabandara (Member 4)
-implements uploads.
+**Status:** Accepted for the Member 4 branch implementation; shared G00
+acceptance remains pending. The selected format, limits, storage configuration
+and retention policy below are branch-local decisions until that review.
 
 **Date:** 2026-09-26
 
@@ -27,24 +27,35 @@ sharing or environmental incident reporting.
    public API, which routes the operation to Wanshaja Sooriyabandara's private .NET service.
    Clients never receive storage credentials, access a storage host directly
    or use public static file URLs.
-3. Wanshaja Sooriyabandara's service owns PostgreSQL attachment metadata, ownership,
-   assessment/version association, status and audit references. Image bytes
-   live in private backend-controlled storage behind that service's storage
-   interface; the concrete storage provider and development/deployment
-   configuration are not selected by this ADR.
-4. The Wanshaja Sooriyabandara (Member 4) service validates actual file content, not just client name
-   or MIME; it enforces agreed type/count/size limits, rejects unsafe or
-   malformed images, and makes evidence available to reviewers only after
-   accepted inspection/sanitization succeeds. The existing API remains a
-   thin authenticated/authorized routing integration.
-5. Evidence associated with a submitted assessment version cannot be
-   silently replaced or removed. Supplemental evidence is separately
-   authorized, versioned and auditable. Retention and deletion follow the
-   final documented assessment schedule.
-6. Raw images and storage references are not inputs to the post-G07 Agentic
-   AI roles. A future model-vision/OCR capability requires a separate reviewed
-   contract and explicit safety/evaluation work.
-7. This decision excludes video, arbitrary documents, profile images, general
+3. The service stores attachment metadata in PostgreSQL and image bytes in a
+   private filesystem storage adapter. Compose mounts the named
+   `blueverse_coastal_operations_evidence` volume at
+   `/var/lib/coastal-operations/evidence`; the volume is not published or
+   served as static content. Production storage may be replaced behind the
+   adapter after deployment needs are reviewed.
+4. Accept only static, non-interlaced, 8-bit truecolor PNG (RGB or RGBA), at
+   most 5 MiB, at most 4096 pixels in either dimension and at most 12 million
+   pixels. The service validates PNG chunk checksums and structure, inflates
+   the expected scanline data, rejects unsupported animation/critical chunks,
+   and strips ancillary metadata before storage. MIME type alone is not
+   trusted. The API and edge gateway enforce request limits above the file
+   limit to allow multipart framing.
+5. An assessment accepts at most five images. Upload is allowed only to its
+   initiating operator while the assessment is `SUBMITTED` or
+   `REVISION_REQUESTED`; each attachment is immutable and increments the
+   assessment version. The assessment owner and a caller with the queue/evidence
+   review grants may retrieve content through the API. No storage URL is
+   returned.
+6. The service retains images for 365 days, then a background worker deletes
+   the bytes and marks metadata `EXPIRED` with an audit entry. Content length
+   and SHA-256 must match persisted metadata on retrieval. A missing/corrupt
+   file or storage outage returns a safe service error, not a false success.
+   Local volume deletion is destructive to evidence as well as database data.
+7. The existing API remains a thin authenticated/authorized routing
+   integration. Raw images and storage references are not inputs to the
+   post-G07 Agentic AI roles. A future model-vision/OCR capability requires a
+   separate reviewed contract and explicit safety/evaluation work.
+8. This decision excludes video, arbitrary documents, profile images, general
    file sharing, pollution/environmental incident submissions, emergency
    dispatch and government closure requests.
 
@@ -54,11 +65,9 @@ sharing or environmental incident reporting.
   internal service under `services/`, cross-platform capture/selection,
   upload and reviewer experience, private storage adapter, persistence,
   public API integration, failure behavior, tests and documentation.
-- Before implementation, Wanshaja Sooriyabandara (Member 4) records the accepted image formats,
-  maximum file count/bytes, scanning/sanitization approach, provider/config,
-  retention/deletion behavior, assessment-version lifecycle, permissions and
-  exact API contracts. Those concrete choices must be reflected in the
-  endpoint catalog and security/operational docs when implemented.
+- The endpoint catalog records the implemented upload and retrieval
+  operations. The current service accepts a deliberately limited PNG subset;
+  malware scanning and arbitrary image formats are not part of this contract.
 - Storage outage or failed validation cannot create a false attachment
   record or claim success. Optional evidence remains optional unless a
   separately documented assessment rule requires it.

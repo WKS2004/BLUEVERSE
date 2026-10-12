@@ -5,8 +5,8 @@
 The React 19, TypeScript and Vite browser client lives in
 [apps/web](../../../apps/web/README.md). It is an equal product surface for
 every authorized role and workflow. The current route table declares the home,
-sign-in, registration, profile, dashboard, Auth administration and branded
-recovery pages. Their
+sign-in, registration, profile, dashboard, Auth administration, marine
+conditions/history/safety-profile pages and branded recovery pages. Their
 shared workflow IDs and public API references are recorded in the
 [UI integration registry](../../contracts/ui-integration.json).
 
@@ -28,8 +28,10 @@ The implemented account experience includes registration, sign-in, saved-
 account switching, session recovery, scoped sign-out, profile and password
 management, session review/revocation and protected account deletion. The
 permission-aware Auth administration screens manage users, roles and
-permissions. A coastal overview dashboard presents current account details and
-labels service areas that are not implemented as future work.
+permissions. Marine routes display server-owned conditions and suitability,
+history and safety-profile management through the public API. A coastal
+overview dashboard presents current account details and labels other
+unimplemented service areas as future work.
 
 ## Visual system and styling
 

@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 
 import '../data/models/auth_models.dart';
 import 'auth_view_model.dart';
+import '../features/coastal_operations/coastal_operations_permissions.dart';
+import 'planner_components.dart';
+import 'marine/marine_permissions_guard.dart';
 
 const _coastInk = Color(0xFF18394C);
 const _coastDeep = Color(0xFF205C79);
@@ -94,6 +97,8 @@ class AuthAccountSwitcher extends StatelessWidget {
           Navigator.pushNamed(context, '/signin');
         } else if (value == 'add-register') {
           Navigator.pushNamed(context, '/signup');
+        } else if (value == 'marine') {
+          Navigator.pushNamed(context, '/marine/conditions');
         } else if (value.startsWith('switch:')) {
           final userId = value.substring('switch:'.length);
           if (userId != viewModel.user?.id) {
@@ -102,6 +107,11 @@ class AuthAccountSwitcher extends StatelessWidget {
         }
       },
       itemBuilder: (context) => [
+        if (hasMarineReadAccess(viewModel.user))
+          const PopupMenuItem<String>(
+            value: 'marine',
+            child: Text('Marine & safety'),
+          ),
         ...viewModel.accounts.map(
           (account) => PopupMenuItem<String>(
             value: 'switch:${account.id}',
@@ -191,6 +201,46 @@ class AuthAdminNavigationMenu extends StatelessWidget {
   }
 }
 
+class AuthCoastalOperationsNavigationMenu extends StatelessWidget {
+  const AuthCoastalOperationsNavigationMenu({
+    required this.viewModel,
+    super.key,
+  });
+
+  final AuthViewModel viewModel;
+
+  @override
+  Widget build(BuildContext context) {
+    final permissions = viewModel.user?.permissions ?? const <String>[];
+    if (!CoastalOperationsPermissions.hasAccess(permissions)) {
+      return const SizedBox.shrink();
+    }
+    return PopupMenuButton<String>(
+      tooltip: 'Coastal operations',
+      onSelected: (route) => Navigator.pushNamed(context, route),
+      icon: const Icon(Icons.waves_outlined),
+      itemBuilder: (_) => [
+        const PopupMenuItem<String>(
+          enabled: false,
+          child: Text('Coastal Operations'),
+        ),
+        if (CoastalOperationsPermissions.hasAssessmentAccess(permissions))
+          const PopupMenuItem(
+            value: '/operations/assessments',
+            child: Text('Assessments'),
+          ),
+        if (CoastalOperationsPermissions.canReadLogs(permissions))
+          const PopupMenuItem(value: '/operations/logs', child: Text('Logs')),
+        if (CoastalOperationsPermissions.hasAlertAccess(permissions))
+          const PopupMenuItem(
+            value: '/operations/alerts',
+            child: Text('Alerts'),
+          ),
+      ],
+    );
+  }
+}
+
 class AuthProfileScreen extends StatefulWidget {
   const AuthProfileScreen({required this.viewModel, super.key});
 
@@ -269,6 +319,8 @@ class _AuthProfileScreenState extends State<AuthProfileScreen> {
             actions: [
               AuthAccountSwitcher(viewModel: widget.viewModel),
               AuthAdminNavigationMenu(viewModel: widget.viewModel),
+              AuthCoastalOperationsNavigationMenu(viewModel: widget.viewModel),
+              PlannerNavigationMenu(user: user),
               IconButton(
                 tooltip: 'Open dashboard',
                 onPressed: () => Navigator.pushNamed(context, '/dashboard'),
@@ -758,11 +810,7 @@ class _ProfileDeleteAccountCard extends StatelessWidget {
     if (confirmed != true || !context.mounted) return;
     final deleted = await viewModel.deleteAccount();
     if (deleted && context.mounted && viewModel.user != null) {
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/dashboard',
-        (_) => false,
-      );
+      Navigator.pushNamedAndRemoveUntil(context, '/dashboard', (_) => false);
     }
   }
 
@@ -930,9 +978,14 @@ class _ProfileMessage extends StatelessWidget {
 }
 
 class AuthDashboardScreen extends StatefulWidget {
-  const AuthDashboardScreen({required this.viewModel, super.key});
+  const AuthDashboardScreen({
+    required this.viewModel,
+    this.experienceViewModel,
+    super.key,
+  });
 
   final AuthViewModel viewModel;
+  final Object? experienceViewModel;
 
   @override
   State<AuthDashboardScreen> createState() => _AuthDashboardScreenState();
@@ -965,6 +1018,8 @@ class _AuthDashboardScreenState extends State<AuthDashboardScreen> {
             actions: [
               AuthAccountSwitcher(viewModel: widget.viewModel),
               AuthAdminNavigationMenu(viewModel: widget.viewModel),
+              AuthCoastalOperationsNavigationMenu(viewModel: widget.viewModel),
+              PlannerNavigationMenu(user: user),
               if (user != null)
                 IconButton(
                   tooltip: 'Edit your profile',
@@ -1027,16 +1082,58 @@ class _AuthDashboardScreenState extends State<AuthDashboardScreen> {
                       style: TextStyle(color: Colors.white70, height: 1.5),
                     ),
                     const SizedBox(height: 18),
-                    FilledButton.tonalIcon(
-                      onPressed: () => Navigator.pushNamed(context, '/profile'),
-                      icon: const Icon(Icons.edit_outlined),
-                      label: const Text('Edit your profile'),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        FilledButton.tonalIcon(
+                          key: const Key('btn-explore-experiences'),
+                          onPressed: () => Navigator.pushNamed(context, '/experiences'),
+                          icon: const Icon(Icons.explore),
+                          label: const Text('Explore Experiences'),
+                        ),
+                        FilledButton.tonalIcon(
+                          key: const Key('btn-dashboard-favourites'),
+                          onPressed: () => Navigator.pushNamed(context, '/experiences/favourites'),
+                          icon: const Icon(Icons.bookmark_outline),
+                          label: const Text('Saved Wishlist'),
+                        ),
+                        if (user.permissions.contains('experiences.catalogue.manage') ||
+                            user.permissions.contains('auth.role.system.manage'))
+                          FilledButton.tonalIcon(
+                            key: const Key('btn-dashboard-catalogue-manage'),
+                            onPressed: () => Navigator.pushNamed(context, '/experiences/manage'),
+                            icon: const Icon(Icons.tune),
+                            label: const Text('Manage Experiences'),
+                          ),
+                        FilledButton.tonalIcon(
+                          onPressed: () => Navigator.pushNamed(context, '/profile'),
+                          icon: const Icon(Icons.edit_outlined),
+                          label: const Text('Edit your profile'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 16),
               const SizedBox(height: 28),
+              if (hasMarineReadAccess(user))
+                Card(
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.waves_outlined,
+                      color: _coastDeep,
+                    ),
+                    title: const Text('Marine & safety'),
+                    subtitle: const Text(
+                      'Coastal conditions, saved evidence and activity safety limits.',
+                    ),
+                    trailing: const Icon(Icons.arrow_forward),
+                    onTap: () =>
+                        Navigator.pushNamed(context, '/marine/conditions'),
+                  ),
+                ),
               Text(
                 'What’s ahead',
                 style: Theme.of(context).textTheme.titleLarge

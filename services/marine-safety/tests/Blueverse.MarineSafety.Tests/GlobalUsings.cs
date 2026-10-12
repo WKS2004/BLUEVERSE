@@ -1,0 +1,17 @@
+global using System.Net;
+global using System.Net.Http.Json;
+global using System.Text.Json;
+global using Blueverse.MarineSafety.Tests.Fixtures;
+global using Blueverse.MarineSafety.Authorization;
+global using Blueverse.MarineSafety.Data;
+global using Blueverse.MarineSafety.Dtos;
+global using Blueverse.MarineSafety.Models;
+global using Blueverse.MarineSafety.Providers;
+global using Blueverse.MarineSafety.Services;
+global using Microsoft.AspNetCore.Hosting;
+global using Microsoft.AspNetCore.Mvc.Testing;
+global using Microsoft.EntityFrameworkCore;
+global using Microsoft.Extensions.DependencyInjection;
+global using Microsoft.Extensions.DependencyInjection.Extensions;
+global using Microsoft.Extensions.Logging.Abstractions;
+global using Xunit;

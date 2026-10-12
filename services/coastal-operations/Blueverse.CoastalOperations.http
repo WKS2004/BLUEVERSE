@@ -1,0 +1,4 @@
+@Blueverse.CoastalOperations_HostAddress = http://localhost:5058
+
+GET {{Blueverse.CoastalOperations_HostAddress}}/api/operations/health
+Accept: application/json

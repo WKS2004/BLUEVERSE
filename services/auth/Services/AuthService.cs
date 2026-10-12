@@ -60,6 +60,13 @@ public class AuthService : IAuthService
         };
 
         _dbContext.Users.Add(user);
+        if (_sessionOptions.SelfServicePlannerAccess)
+        {
+            var travellerRole = await _dbContext.Roles.SingleOrDefaultAsync(r =>
+                r.Name == PlannerPermissionsSeeder.TravellerRole && !r.IsSystemRole);
+            if (travellerRole is null) throw new InvalidOperationException("Personal planning is temporarily unavailable.");
+            user.UserRoles.Add(new UserRole { UserId = user.Id, RoleId = travellerRole.Id, AssignedAt = DateTime.UtcNow });
+        }
         var session = await CreateOrReactivateSessionAsync(
             user.Id,
             dto.DeviceId,
@@ -691,6 +698,18 @@ public class AuthService : IAuthService
         if (changesSystemRole && !await HasPermissionAsync(actorUserId, PermissionCodes.SystemRoleManage))
         {
             throw new UnauthorizedAccessException("The caller is not allowed to assign or remove system roles.");
+        }
+
+        var currentAdminRole = user.UserRoles
+            .Select(userRole => userRole.Role)
+            .FirstOrDefault(role =>
+                role.IsSystemRole &&
+                role.Name.Equals("Admin", StringComparison.OrdinalIgnoreCase));
+        if (actorUserId == user.Id &&
+            currentAdminRole is not null &&
+            roles.All(role => role.Id != currentAdminRole.Id))
+        {
+            throw new InvalidOperationException("Administrators cannot remove their own Admin system role.");
         }
 
         _dbContext.UserRoles.RemoveRange(user.UserRoles);

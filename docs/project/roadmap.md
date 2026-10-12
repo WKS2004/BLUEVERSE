@@ -5,8 +5,17 @@
 Authentication, authorization, permissions, API/Auth, PostgreSQL, React/Flutter
 foundations, the shared UI route/API integration contract, Docker, gateway, CI
 and documentation. The public API/Auth foundation and shared Auth workflow are
-checked in. The [v0 guide](../v0/README.md) maps their component contracts;
-domain endpoints are introduced with their owning later workflows.
+checked in. Marine domain endpoints are now implemented by their owning service
+on `features/marine-safety`; other domain endpoints are introduced with their
+owning member workflows. The [v0 guide](../v0/README.md) maps the foundation
+contracts.
+
+**Implementation snapshot — 2026-10-03:** Member 2's marine backend and React
+workflows are present on `features/marine-safety`; the Flutter marine surface,
+the other three member components and integrated Agentic AI remain outstanding.
+The [component contract](../v1/components/member-2-marine-conditions-safety-intelligence.md)
+and [branch tracker](../v1/member-branch-workflow.md#component-branch-status)
+record current verification and open evidence.
 
 Every authorized business workflow belongs in both React Web and Flutter
 Mobile. Presentation and device input may differ without changing role,

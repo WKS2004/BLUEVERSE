@@ -1,5 +1,18 @@
 # UI integration contract and verification
 
+The latest [navigation/activity contract](../v1/coastal-operations-record-navigation-and-audit.md) specifies 500 ms live search, pinned collection tabs, shared cards and record-specific 5/10/25/50/100 cursor pagination. Existing route query parameters preserve create/edit/detail workspace intent across refresh. Logs delegates to the same authorized full details/actions and forms, so its registry includes those public API references. Unsaved form values are not stored. Both clients render richer scoped audit snapshots and honest legacy gaps.
+
+The 2026-10-01 Coastal Operations change registers separate Assessment and Alert
+pages at `/operations/assessments` and `/operations/alerts` for React and Flutter.
+Both use searchable lifecycle tabs and scoped activity via public API only.
+See [the detailed contract](../v1/coastal-operations-publication-and-ui.md).
+Both workflows also register `GET /api/operations/form-options` for database
+time zones and named association choices. The
+[record experience contract](../v1/coastal-operations-record-experience.md)
+defines title search, result metadata, stacked heroes, Advanced ID filtering,
+native date/time controls and unavailable producer selectors. Both clients
+save unlinked titled drafts and enforce server publication outcomes.
+
 BLUEVERSE treats a UI as a cross-layer change, not only a screen change. Every
 new, generated or modified React or Flutter surface must be connected to the
 same workflow contract, the correct frontend route and the public ASP.NET Core
@@ -81,9 +94,14 @@ Endpoint paths use the gateway's `/api/...` namespace. Prefer relative
 `/api/...` URLs. An absolute URL is valid only when its host is explicitly
 listed in `publicApi.allowedAbsoluteHosts`; the foundation allowlist contains
 loopback hosts for local smoke tests, not Docker service names. Do not add
-`/api/v1` or call a service's Docker hostname. The public API remains
-responsible for authentication, permission checks, validation, business rules
-and forwarding to internal services.
+`/api/v1` or call a service's Docker hostname. The public API remains the only
+client-facing boundary and forwards requests to internal services.
+Authentication, current permission resolution, domain validation and business
+rules are enforced at the owning service boundary under the accepted contract;
+the public API verifies current Auth sessions and role permissions, then
+marine-safety validates the signed request-bound actor context and enforces
+its permission policies. Both clients read published canonical activities
+through `/api/marine/activities`.
 
 ## Implementation sequence
 
@@ -114,20 +132,24 @@ internal target, versioned API path or missing shared surface must be fixed in
 the change that introduced it. A client may not hide its API host or path in
 an unresolved variable and rely on CI to infer the intended service.
 
-The current clients register the shared `foundation-home` entry and implement
+Both clients register the shared `foundation-home` entry and implement
 the `auth-session-management`, `auth-registration`, `auth-profile-management`,
 `coastal-overview-dashboard`, `auth-admin-entry`,
 `auth-permission-administration`, `auth-role-administration`,
 `auth-user-administration`, `not-found-recovery` and
-`server-error-recovery` workflows in both React and Flutter. Profile
+`server-error-recovery` workflows in both React and Flutter. React also
+implements `marine-conditions`, `marine-condition-history` and
+`marine-safety-profile-management`. Flutter implements the corresponding
+marine conditions, history and safety-profile screens through the same public
+API and permission grants. Profile
 management includes profile editing, password changes, session review and
 revocation, and account deletion. Administration routes expose permission-
 checked user, role and permission actions. The dashboard uses current-account
-information and clearly marks coastal service areas as future work because
-those services are not available yet. Registration uses the same public
-`POST /api/auth/register` endpoint in both clients; the clients preserve their
-platform-specific cookie and secure-storage session handling. Each public Auth
-endpoint used by an implemented workflow is listed in the same manifest.
+information and marks service areas other than marine-safety as future work.
+Registration uses the same public `POST /api/auth/register` endpoint in both
+clients; the clients preserve their platform-specific cookie and secure-storage
+session handling. Public Auth and marine endpoints used by implemented
+workflows are listed in the manifest.
 
 Run locally from the repository root:
 
@@ -139,3 +161,16 @@ Run locally from the repository root:
 
 The repository's bundled Python path is reported by the workspace dependency
 loader. If a system Python is available, `python` can be used instead.
+
+## Coastal Operations Logs — 2026-10-02
+
+`coastal-operations-logs` registers React and Flutter `/operations/logs`, the
+scoped public log-record collections and existing audit timelines. Evidence
+removal is registered in `coastal-operations-assessment`. Search now waits
+500 ms after typing, retaining records and rendering a local spinner; this
+supersedes the earlier one-second interval.
+Logs use bounded server cursors with previous-page cursor positions and matching
+page-size controls. Focused create/detail views keep shared chrome, preserve
+collection state and pause collection search. Creator-only grants must not cause
+an unauthorized detail fetch after saving. Product clients never use internal
+hosts, and no executable agent is introduced by these UI changes.

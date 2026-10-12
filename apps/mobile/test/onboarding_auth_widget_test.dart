@@ -51,6 +51,28 @@ void main() {
     );
 
     testWidgets(
+      'MOB-HOME-006 keeps the planner shortcut off onboarding slides',
+      (tester) async {
+        await tester.pumpWidget(
+          mobileTestApp(home: const BlueverseOnboardingScreen()),
+        );
+
+        expect(find.text('The planner'), findsNothing);
+        expect(find.text('Closer to the coast.'), findsOneWidget);
+
+        await tester.tap(find.text('Skip'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('The planner'), findsNothing);
+        expect(find.text('Create your account'), findsOneWidget);
+        expect(
+          find.text('I already have an account · Sign in'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
       'MOB-HOME-002 swipe, side arrows and Back reach adjacent slides',
       (tester) async {
         await tester.pumpWidget(

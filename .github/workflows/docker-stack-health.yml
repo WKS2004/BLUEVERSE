@@ -52,7 +52,7 @@ jobs:
                 apps/web/*|infrastructure/docker/frontend/*|scripts/Unix/bash/sync-web-lockfile.sh|scripts/Windows/powershell/sync-web-lockfile.ps1)
                   needs_web=true
                   ;;
-                services/*|infrastructure/docker/*/*|.dockerignore|global.json)
+                services/*|infrastructure/contracts/*|infrastructure/docker/*/*|.dockerignore|global.json)
                   needs_backend=true
                   ;;
                 compose.yaml|docker-compose.yml)
@@ -63,6 +63,9 @@ jobs:
                   needs_web=true
                   ;;
                 .github/workflows/docker-backend-build.yml)
+                  needs_backend=true
+                  ;;
+                .github/workflows/docker-stack-health.yml)
                   needs_backend=true
                   ;;
               esac
@@ -146,6 +149,21 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
+      - name: Generate temporary Compose signing keys
+        if: steps.scope.outputs.required == 'true'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          jwt_signing_key="$(openssl rand -hex 32)"
+          coastal_context_key="$(openssl rand -base64 32 | tr -d '\n')"
+          echo "::add-mask::$jwt_signing_key"
+          echo "::add-mask::$coastal_context_key"
+          {
+            printf 'JWT_SIGNING_KEY=%s\n' "$jwt_signing_key"
+            printf 'COASTAL_OPERATIONS_CONTEXT_KEY=%s\n' "$coastal_context_key"
+          } >> "$GITHUB_ENV"
+
       - name: Log in to Docker Hardened Images registry
         if: steps.scope.outputs.required == 'true'
         uses: docker/login-action@v3
@@ -193,6 +211,13 @@ jobs:
             echo "::error::Docker Compose is unavailable on the GitHub Actions runner."
             exit 1
           fi
+
+          # Ephemeral signing keys for this isolated CI stack; never persist them.
+          JWT_SIGNING_KEY="$(openssl rand -hex 32)"
+          MARINE_ACTOR_SIGNING_KEY="$(openssl rand -hex 32)"
+          echo "::add-mask::$JWT_SIGNING_KEY"
+          echo "::add-mask::$MARINE_ACTOR_SIGNING_KEY"
+          export JWT_SIGNING_KEY MARINE_ACTOR_SIGNING_KEY
 
           if docker compose --file "$compose_file" config --quiet; then
             :
@@ -274,7 +299,20 @@ jobs:
             show_compose_diagnostics "$status"
           fi
 
-          for swagger_path in /api/swagger /api/swagger/v1.json /api/auth/swagger/v1/swagger.json; do
+          swagger_paths=(/api/swagger /api/swagger/v1.json /api/auth/swagger/v1/swagger.json)
+          if [[ -f services/coastal-operations/Program.cs ]]; then
+            swagger_paths+=(/api/operations/swagger/v1/swagger.json)
+          fi
+          if [[ -f services/coastal-planner/Program.cs ]]; then
+            swagger_paths+=(/api/planner/swagger/v1/swagger.json)
+          fi
+          if [[ -f services/experience-biodiversity/Program.cs ]]; then
+            swagger_paths+=(/api/experiences/swagger/v1/swagger.json)
+          fi
+          if [[ -f services/marine-safety/Program.cs ]]; then
+            swagger_paths+=(/api/marine/swagger/v1/swagger.json)
+          fi
+          for swagger_path in "${swagger_paths[@]}"; do
             if check_endpoint "$base_url$swagger_path"; then
               :
             else
@@ -319,7 +357,18 @@ jobs:
                 continue
               fi
 
-              endpoint="$base_url/api/${service_name}/health"
+              public_route="$service_name"
+              if [[ "$service_name" == "experience-biodiversity" ]]; then
+                public_route="experiences"
+              elif [[ "$service_name" == "marine-safety" ]]; then
+                public_route="marine"
+              elif [[ "$service_name" == "coastal-planner" ]]; then
+                public_route="planner"
+              elif [[ "$service_name" == "coastal-operations" ]]; then
+                public_route="operations"
+              fi
+
+              endpoint="$base_url/api/${public_route}/health"
               if check_endpoint "$endpoint"; then
                 :
               else

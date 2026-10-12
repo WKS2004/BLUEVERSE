@@ -31,12 +31,12 @@ recommendations, the ML adapter, or operational restriction state.
 
 ## Component work areas
 
-| Area | Work |
-|---:|---|
-| 1 | Catalogue identities and relational foundation |
-| 2 | Catalogue lifecycle, schedule and effective availability |
-| 3 | Search, map-assisted nearby discovery and favourites |
-| 4 | Agentic backend boundary, component acceptance and consumer handoff |
+| Area | Work | Status | Implementation Evidence |
+|---:|---|---|---|
+| 1 | Catalogue identities and relational foundation | Implemented on branch; acceptance pending | Destination, Activity, Offering, Schedule and Favourite entities, an EF Core migration, CRUD endpoints and seed data exist in source. G00 data-ownership agreement and integrated acceptance remain pending. |
+| 2 | Catalogue lifecycle, schedule and effective availability | Implemented on branch; acceptance pending | Publication and schedule validation/evaluation paths exist. The public API and private service now enforce authenticated Auth-issued identity and catalogue permission claims; integrated acceptance evidence remains pending. |
+| 3 | Search, map-assisted nearby discovery and favourites | Partial; acceptance pending | Haversine proximity, Sri Lanka location fallback, map presentation and user-scoped favourite routes exist. Live map-provider acceptance, cross-service integration and full React/Flutter parity are not established by current branch evidence. |
+| 4 | Agentic backend boundary, component acceptance and consumer handoff | Partial (status seam only) | `GET /api/experiences/agent/context` returns a static `not_connected` status. A workflow initiation/status lifecycle, private dispatch adapter and dispatch failure handling are not implemented; executable Agentic AI remains gated on G07. |
 
 Use the single branch `features/experience-biodiversity` for all four
 work areas and submit one complete feature PR to `dev`. Agree shared schemas

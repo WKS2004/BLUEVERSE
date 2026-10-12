@@ -1,0 +1,6 @@
+@Blueverse.CoastalPlanner_HostAddress = http://localhost:5211
+
+GET {{Blueverse.CoastalPlanner_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

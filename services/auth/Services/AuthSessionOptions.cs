@@ -6,6 +6,7 @@ public sealed class AuthSessionOptions
 
     public int DefaultLifetimeDays { get; set; } = 1;
     public int RememberMeLifetimeDays { get; set; } = 30;
+    public bool SelfServicePlannerAccess { get; set; }
 
     public TimeSpan GetLifetime(bool rememberMe)
     {

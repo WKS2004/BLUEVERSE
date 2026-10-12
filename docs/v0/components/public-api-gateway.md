@@ -6,28 +6,32 @@
 boundary called by React and Flutter. `Program.cs` configures controllers,
 JWT bearer and access-cookie validation, CORS, forwarded headers, OpenAPI,
 Swagger UI, RFC 7807-style unexpected-error handling and YARP reverse
-proxying. `appsettings.json` maps `/api/auth/{**catch-all}` to internal
-Auth. `Controllers/HealthController.cs` owns `GET /api/health`.
+proxying. `appsettings.json` maps `/api/auth/{**catch-all}` to internal Auth
+and `/api/marine/{**catch-all}` to the private marine-safety service.
+`Controllers/HealthController.cs` owns `GET /api/health`.
 
 The API validates signing key, issuer, audience, expiry and HS256 algorithm.
-Auth remains responsible for checking active account/session state on its
-protected routes. Do not infer that public API signature validation alone
-provides immediate Auth session revocation for every future domain endpoint;
-the [Auth boundary ADR](../../adr/ADR-0011-authentication-service-boundary.md)
-records this distinction.
+Auth checks active account/session state on its protected routes. Marine-safety
+also validates Auth-issued identity against current Auth account/session data
+and resolves current role permissions before protected operations. The
+[Auth boundary ADR](../../adr/ADR-0011-authentication-service-boundary.md)
+records the distinction between gateway token validation and service-owned
+current-session checks.
 
 ## Public contract
 
 All client-facing operations use `/api/...` without a path-version segment.
-The API forwards Auth under `/api/auth/...` while keeping its container
-private. The public Swagger UI at `/api/swagger` includes API and Auth
-documents. The [endpoint catalog](../../api/endpoint-catalog.md) is the exact
+The API forwards Auth under `/api/auth/...` and marine-safety under
+`/api/marine/...`, keeping both containers private. The public Swagger UI at
+`/api/swagger` includes API, Auth and marine-safety documents. The
+[endpoint catalog](../../api/endpoint-catalog.md) is the exact
 current inventory; the [API reference](../../api/README.md) explains
 transport and session semantics.
 
-New domain operations are implemented in the owning private member service:
-that service owns domain DTO handling, validation, business/application
-logic, persistence and service-local tests. `services/api` keeps only the
+The marine operations are implemented in the owning private member service;
+the other member operations remain future work. Each owning service handles
+its domain DTOs, validation, business/application logic, persistence and
+service-local tests. `services/api` keeps only the
 necessary public route, existing authentication/permission integration,
 service routing/forwarding and gateway error/OpenAPI integration. A new
 internal service is registered behind that boundary; a client must never call

@@ -3,9 +3,11 @@
 FROM dhi.io/dotnet:10-sdk-alpine AS build
 
 ARG PROJECT_NAME=Blueverse.Api
-WORKDIR /src
+WORKDIR /src/services/api
 
+COPY global.json /src/global.json
 COPY services/api/ ./
+COPY infrastructure/contracts/ /src/infrastructure/contracts/
 
 RUN dotnet restore "${PROJECT_NAME}.csproj"
 RUN dotnet publish "${PROJECT_NAME}.csproj" \

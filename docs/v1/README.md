@@ -1,5 +1,7 @@
 # BLUEVERSE v1 documentation
 
+The latest [record navigation/activity follow-up](coastal-operations-record-navigation-and-audit.md) adds 500 ms search, pinned tabs, shared cards, record-specific cursor pagination, refresh-safe workspace intent and full details/actions from Logs. New audit events contain verified person/roles and exact field snapshots. This supersedes prior debounce/page-label descriptions; shared G00/G07 and live integration acceptance remain Pending.
+
 This directory is the human-readable and agent-readable implementation guide
 for the frozen v1 scope in [PROJECT_REQUIREMENTS.md](../../PROJECT_REQUIREMENTS.md).
 The per-member contracts explain the complete target component behavior,
@@ -15,6 +17,19 @@ distinction between pre-G07 integration seams and the later executable
 Agentic AI runtime.
 
 ## Authority, status and how to use these contracts
+
+The earlier titled-record follow-up is
+[Coastal Operations record experience](coastal-operations-record-experience.md):
+titled drafts and title search, named selection, database time-zone locations,
+stacked heroes, Advanced IDs and result metadata, with current check evidence
+and explicit missing catalogue/planner integration.
+
+Member 4's latest branch-local update is the
+[Coastal Operations publication and UI contract](coastal-operations-publication-and-ui.md),
+covering separate Assessment/Alert workspaces, explicit draft publication,
+permissions, scoped activity/search and durable assessment delivery. Its
+verification section separates implemented behavior from pending G00/G07 and
+live integration acceptance.
 
 The supplied **BLUEVERSE Simplified Team Guide** is an orientation document
 based on a 24 September 2026 repository snapshot. Its prose and imperatives
@@ -58,22 +73,26 @@ human-readable structure and make the scope discoverable for agents. Logical
 input/output tables describe semantics, not frozen DTO schemas; implementation
 must define actual contracts before shipping.
 
-`target_not_implemented` means the requirement is specified but no executable
-v1 business implementation is present in the current foundation. Update that
-status only when source and tests provide evidence. The member numbers are
-stable trace labels; the assigned people and accounts are listed in the
-[canonical owner map](../project/ai-team-members.md).
+`target_not_implemented` means no executable v1 business implementation is
+present. `in_progress` means implementation source exists on the assigned
+feature branch; it does not mean the shared G00 gate, component acceptance,
+merge, integration or tests are complete. Use the readiness review and branch
+tracker for those decisions, based on current source and evidence. The member
+numbers are stable trace labels; the assigned people and accounts are listed
+in the [canonical owner map](../project/ai-team-members.md).
 
-## Implementation start gate
+## Implementation start gate (2026-09-26 decision)
 
-The final repository audit gives a **GO for G00** and a **conditional GO for
-member coding after G00**. The contracts and existing v0 foundation are ready
-to support the shared contract freeze; parallel feature coding must wait until
-the owners record the shared IDs, API/service and permission contracts, data
-ownership, delivery identities, client registrations and failure semantics.
-After G00, all four complete member components can proceed concurrently on
-their single feature branches. Executable Agentic AI remains gated on G07 by
-design. The repository is not yet v1 complete or ready for final assessment.
+The 2026-09-26 repository audit gave a **GO for G00** and a **conditional GO
+for member coding after G00**. Member 2's component scope was accepted at its
+own G00 review on 2026-09-27, and its backend and React implementation are now
+present on `features/marine-safety`; the shared team G00 remains in progress.
+See the [current status snapshot](requirements-coverage-and-readiness.md#current-implementation-snapshot--2026-10-03)
+and [branch tracker](member-branch-workflow.md#component-branch-status).
+After the full G00 exit criteria are satisfied, all four complete member
+components can proceed concurrently on their single feature branches.
+Executable Agentic AI remains gated on G07 by design. The repository is not
+yet v1 complete or ready for final assessment.
 See the detailed [final start-readiness decision and exit
 criteria](requirements-coverage-and-readiness.md#final-start-readiness-decision--2026-09-26).
 
@@ -117,8 +136,10 @@ typed logical inputs and outputs, candidate allowlisted tools, handoffs,
 workflow state, safety limits, recovery and evaluation.
 
 Each member contributes one internal ASP.NET Core component service with
-PostgreSQL/EF Core data, React, Flutter, tests, documentation, Git/GitHub and
-the prepared Agentic AI integration seam. Each component must contain
+PostgreSQL/EF Core data, React, Flutter, tests, documentation and Git/GitHub.
+A typed Agentic AI integration seam may be included before G07 when it is
+accepted by that component's G00 scope; Member 2's accepted G00 decision defers
+its AI workflow and typed adapter. Each component must contain
 meaningful relational data, at least four meaningful public API endpoints
 exposed through `services/api`, and a business operation beyond CRUD. This
 index and the contracts do not name unimplemented routes or declare target
@@ -137,9 +158,9 @@ plans group the full scope into work areas.
 ## Shared system behavior
 
 - [Member feature integration with Agentic AI](agentic-ai-integration-boundary.md)
-  defines the backend access seam and not-connected/unavailable behavior
-  implemented in member features, separate from the actual post-G07 AI
-  runtime and agents.
+  defines the optional pre-G07 backend access seam and not-connected/unavailable
+  behavior separately from the actual post-G07 AI runtime and agents. Follow
+  each component's accepted G00 scope; Member 2's decision defers this seam.
 - [ADR-0020](../adr/ADR-0020-member-component-service-boundaries.md) assigns
   component business logic and persistence to one private service per member;
   `services/api` is the public integration boundary and Auth remains reused.

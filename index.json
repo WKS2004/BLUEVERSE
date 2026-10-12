@@ -1,0 +1,1 @@
+{"schemaVersion":2,"mediaType":"application/vnd.oci.image.index.v1+json","manifests":[{"mediaType":"application/vnd.oci.image.index.v1+json","digest":"sha256:220d511cb2c1c780bcaa6529f8a788146f1cb71270433b27be535567ed10850d","size":856,"annotations":{"io.containerd.image.name":"docker.io/library/blueverse-coastal-planner:latest","org.opencontainers.image.ref.name":"latest"}}]}

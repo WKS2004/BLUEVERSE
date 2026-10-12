@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'auth_view_model.dart';
+import 'planner_components.dart';
 
 class AuthRegistrationScreen extends StatefulWidget {
   const AuthRegistrationScreen({required this.viewModel, super.key});
@@ -33,7 +34,10 @@ class _AuthRegistrationScreenState extends State<AuthRegistrationScreen> {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Create account')),
+      appBar: AppBar(
+        title: const Text('Create account'),
+        actions: [PlannerNavigationMenu(user: widget.viewModel.user)],
+      ),
       body: ListenableBuilder(
         listenable: widget.viewModel,
         builder: (context, _) {

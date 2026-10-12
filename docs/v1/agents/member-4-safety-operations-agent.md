@@ -14,6 +14,13 @@ business_component: "../components/member-4-coastal-operations-advisories-alerts
 
 # Wanshaja Sooriyabandara (Member 4) — Safety & Operations Agent
 
+The user-directed publication handoff is specified in
+[the component publication contract](../coastal-operations-publication-and-ui.md).
+The future entry point consumes the stable dispatch ID and immutable published
+assessment/context snapshot, deduplicates delivery and correlates results with
+the business workflow. Raw assessment photos are not agent inputs. No runtime
+route is claimed before G07; alerts do not independently dispatch this agent.
+
 **Target status:** there is no executable v1 Safety & Operations agent/runtime
 in the current foundation. This contract describes recommendation behavior;
 it does not claim the operations service, approval workflow or tool set is
