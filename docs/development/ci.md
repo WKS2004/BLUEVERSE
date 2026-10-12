@@ -183,14 +183,14 @@ those runs to succeed, and then checks out the exact commit. It validates
 `compose.yaml` or `docker-compose.yml`, starts the stack on host port `8080`,
 checks `/health`, `/api/health`, the Swagger UI and the API/Auth OpenAPI paths,
 then probes each discovered service using
-its public health route. The `experience-biodiversity` folder maps to
-`/api/experiences/health` and `marine-safety` maps to `/api/marine/health`.
-Experience & Biodiversity and Marine Safety OpenAPI documents are required
-when their service `Program.cs` exists. Absent member services are excluded
-from document checks; implemented services still must pass. The workflow
-creates masked ephemeral signing keys, supplies the shared PostgreSQL
-credentials to Auth and both services, prints Compose diagnostics on failure
-and always tears the stack down.
+its public health route. `coastal-planner` maps to `/api/planner/health`,
+`experience-biodiversity` maps to `/api/experiences/health`, and `marine-safety`
+maps to `/api/marine/health`. The component OpenAPI documents are required when
+their service `Program.cs` exists; absent member services are excluded from
+document checks, while implemented services must pass. The workflow creates
+masked ephemeral signing keys, supplies the shared PostgreSQL credentials to
+Auth and each service, prints Compose diagnostics on failure and always tears
+the stack down.
 
 ## GitHub configuration synchronization
 

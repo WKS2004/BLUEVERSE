@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'planner_motion.dart';
+
 abstract final class BlueversePalette {
   static const coastPaper = Color(0xFFF7F6F0);
   static const coastSand = Color(0xFFE9EFF0);
@@ -42,6 +44,15 @@ abstract final class BlueverseTheme {
 
     return ThemeData(
       useMaterial3: true,
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: PlannerPageMotion(),
+          TargetPlatform.iOS: PlannerPageMotion(),
+          TargetPlatform.windows: PlannerPageMotion(),
+          TargetPlatform.macOS: PlannerPageMotion(),
+          TargetPlatform.linux: PlannerPageMotion(),
+        },
+      ),
       colorScheme: colors,
       scaffoldBackgroundColor: BlueversePalette.coastPaper,
       textTheme: baseText.copyWith(

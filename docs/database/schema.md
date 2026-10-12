@@ -1,9 +1,9 @@
 # Schema Design Status
 
-The complete four-component v1 business schema is still being delivered. The
-Auth foundation defines the identity schema, and Marine Safety and Experience
-& Biodiversity own their implemented PostgreSQL/EF Core domain schemas. Each
-has checked-in migrations; shared G00 data-ownership and integrated component
+Auth, Coastal Planner, Marine Safety and Experience & Biodiversity have
+PostgreSQL/EF Core schemas with checked-in migrations under their owning
+service directories. Coastal Operations and shared Agentic AI workflow-state
+tables remain deferred; shared G00 data-ownership and integrated component
 acceptance remain pending.
 
 The Auth schema contains users, roles, permissions, device installations,
@@ -63,6 +63,42 @@ sessions without losing history. Existing valid rows are moved to
 refresh-token references are transferred to the corresponding log rows when a
 session is archived.
 
+## Coastal Planner tables
+
+`services/coastal-planner/Data/Migrations` owns the `coastal_planner` schema.
+Actor IDs are stored as opaque UUID references; the planner does not add
+cross-service foreign keys to Auth or other components.
+
+| Table | Important fields and constraints |
+|---|---|
+| `planning_workflows` | Workflow ID, actor ID, type, status and lifecycle timestamps; indexes on actor, status and creation time; status check limits values to `PENDING`, `PROCESSING`, `COMPLETED` and `FAILED`. |
+| `recommendations` | Unique workflow ID, owner ID, destination, UTC window, duration, candidate snapshot and uncertainty-note snapshot; checks enforce a positive window and duration; indexed by owner. |
+| `itineraries` | Owner ID, title, optional description, UTC window, optimistic `ConcurrencyVersion`, and created/updated timestamps; check enforces end after start; indexed by owner and creation time. |
+| `itinerary_items` | Ordered destination/activity/offering reference, UTC schedule, last known availability/suitability/operations states, and advisory; cascades from its itinerary; unique `(ItineraryId, OrderIndex)` and checks enforce a non-negative order and positive schedule interval. New items begin as `UNKNOWN`. |
+| `biodiversity_predictions_cache` | Destination/activity, validated provider and model/version, prediction timestamp, expiration, prediction snapshot, uncertainty text and limitations; indexed by destination/activity/model version. Cache lookup requires the configured expected model version; TTL is six hours pending provider approval. |
+| `itinerary_evaluations` | Evaluation ID, owning itinerary ID, UTC review time and structured result snapshot with previous/current evidence; indexed by itinerary/time; cascades from its itinerary. |
+
+`20261005163837_ItineraryReviewHistory` adds itinerary/item `TimeZone`
+columns, recommendation `Outcome` and the review table. Legacy rows retain
+their IDs, ownership, versions and UTC times; their display zone defaults to
+`Asia/Colombo` and legacy recommendation outcomes remain `LEGACY_RESULT`.
+New search outcomes distinguish matches, no matches and unavailable evidence.
+Itinerary edits and reviews increment the optimistic version. Reorder updates
+use unused temporary orders in a transaction before applying final orders.
+
+The workflow owns at most one recommendation result. Itinerary reads and
+mutations are scoped by `OwnerUserId`; recommendation and workflow reads are
+scoped by their owner/initiator IDs. Cached predictions expire six hours after
+the source inference timestamp and are never synthesized when the ML endpoint
+is unavailable.
+
+```mermaid
+erDiagram
+    planning_workflows ||--o| recommendations : produces
+    itineraries ||--o{ itinerary_items : contains
+    itineraries ||--o{ itinerary_evaluations : records
+```
+
 The eventual schema documentation must include:
 
 - ER diagram
@@ -82,8 +118,9 @@ The v1 target schema must support four member-owned domains:
   statuses, favourites and relevant biodiversity context.
 - Marine conditions and safety: sourced snapshots, freshness, activity
   safety profiles and deterministic suitability results.
-- Coastal planning: recommendation requests, constraints, recommendations,
-  itineraries and ordered items.
+- Coastal planning: recommendation workflows and result snapshots,
+  itineraries and ordered items (implemented in the Coastal Planner feature
+  branch; cross-component acceptance is still pending).
 - Coastal operations: assessments, proposals, operational state, approval
   decisions, advisories, alerts and execution history.
 
@@ -91,8 +128,23 @@ Shared structured Agentic AI workflow state must retain only the objective,
 plan, steps, outputs or auditable summaries, validation, errors, bounded
 retries, approvals, result and timestamps required to operate and audit the
 workflow. Do not store hidden reasoning, passwords, bearer tokens or
-unnecessary sensitive data.
+unnecessary sensitive data. The remaining member-owned schemas still require
+their own migrations. Feature-branch implementation is not evidence of shared
+G00/G07 acceptance or merged deployment.
 
+See the [v1 component and agent index](../v1/README.md). Business-domain
+schema should be introduced with its owning implementation rather than
+prematurely in the v0 foundation.
+
+
+## Planner provider evidence — 2026-10-12
+
+The opt-in `PLANNER-POSTGRES-001` check passed against the local DHI PostgreSQL
+16 container. It upgraded a legacy itinerary, applied pending migrations,
+preserved ownership/title/version, reordered stable item IDs under the unique
+index, rejected stale writes and invalid constraints, and checked review/item
+cascade deletion. The runner created and dropped only its uniquely named test
+database. No application volume reset or production database access occurred.
 ## Marine conditions and safety tables (implemented)
 
 The marine-safety component service
@@ -126,7 +178,6 @@ migrations still require separate provider-backed evidence.
 name rule and expanding category length from 64 to 100. Downgrade requires
 reconciling duplicate names and long categories before shrinking constraints.
 
-See the [v1 component and agent index](../v1/README.md). Marine-safety is the
-first implemented v1 business schema. Introduce schemas for the other member
-components with their service implementations rather than prematurely in the
-v0 foundation.
+See the [v1 component and agent index](../v1/README.md). Each component service
+owns its business schema; introduce future schemas with their service
+implementations rather than prematurely in the v0 foundation.

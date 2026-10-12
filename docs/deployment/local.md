@@ -48,13 +48,13 @@ PostgreSQL volume.
 
 ```bash
 bash scripts/Unix/bash/sync-web-lockfile.sh
-docker compose build
+docker compose --profile dev build
 ```
 
 ## Start
 
 ```bash
-docker compose up -d
+docker compose --profile dev up -d
 ```
 
 ## Inspect
@@ -86,16 +86,17 @@ http://localhost/api/health
 http://localhost/api/auth/health
 http://localhost/api/marine/health
 http://localhost/api/experiences/health
+http://localhost/api/planner/health
 ```
 
 Other ASP.NET services are checked through the API gateway at:
 
 ```text
-http://localhost/api/<service-name>/health
+http://localhost/api/<service-route>/health
 ```
 
-Marine-safety has a shorter public prefix than its service folder name; use
-`http://localhost/api/marine/health` for that service.
+Use `planner` for Coastal Planner, `marine` for Marine Safety (the shorter
+public prefix), and `experiences` for Experience & Biodiversity.
 
 Swagger UI:
 
@@ -103,10 +104,10 @@ Swagger UI:
 http://localhost/api/swagger
 ```
 
-The Marine Safety and Experience & Biodiversity OpenAPI documents are available
-through the same gateway at `/api/marine/swagger/v1/swagger.json` and
-`/api/experiences/swagger/v1/swagger.json`; both appear in the unified Swagger
-UI.
+The Coastal Planner, Marine Safety and Experience & Biodiversity OpenAPI
+documents are available at `/api/planner/swagger/v1/swagger.json`,
+`/api/marine/swagger/v1/swagger.json` and
+`/api/experiences/swagger/v1/swagger.json`; all appear in the unified Swagger UI.
 
 The local gateway uses host port `80`. The CI health workflow overrides the
 Compose host mapping to `http://127.0.0.1:8080` on the runner. For Android,
@@ -128,11 +129,10 @@ mobile build remains unresolved.
 ## Marine activity integration
 
 `MARINE_ACTOR_SIGNING_KEY` is shared by the API and private Marine Safety
-service. Auth continues using `JWT_SIGNING_KEY`. Configure Member 1's private
-catalogue base URL with `EXPERIENCE_CATALOGUE_URL`. That service is supplied by
-the Member 1 branch and is not copied into this Compose file. Its absence
-disables only activity-dependent Marine operations with 503/Retry-After.
-Condition-only reads and history remain available. See the root README for
+service. Auth continues using `JWT_SIGNING_KEY`. Compose configures the private
+catalogue base URL with `EXPERIENCE_CATALOGUE_URL`; if the catalogue is
+unavailable, activity-dependent Marine operations return 503/Retry-After while
+condition-only reads and history remain available. See the root README for
 canonical profile setup and the forward-only migration caveat.
 
 For the Marine Web entry, open **Account → Marine & safety** after the current
@@ -143,3 +143,11 @@ bootstrap seeder adds missing Marine codes, preserves existing permissions and
 assignments, and allocates a free ID if a preferred seed ID is occupied. This
 requires the configured bootstrap credentials; it does not change user passwords
 or clear sessions/data. Do not remove the PostgreSQL volume to repair navigation.
+
+Coastal Planner uses an exec-form .NET healthcheck and applies its own EF Core
+migrations. The API waits for its database readiness. Compose seeds planner
+permissions and enables traveller access for new registrations by default;
+configure `AUTH_SELF_SERVICE_PLANNER_ACCESS=false` for administrator assignment.
+Peer URLs use the private environment settings in `.env.example`. Missing
+catalogue, marine, operations or ML peers do not prevent startup, but can limit
+suggestions. See [planner deployment details](../development/coastal-planner.md).

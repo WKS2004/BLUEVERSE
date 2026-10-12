@@ -12,6 +12,7 @@ import {
   resetTestBrowser,
   screen,
   userEvent,
+  within,
 } from '../../testSupport/reactTestHarness.js'
 
 const [{ default: SiteHeader }, { default: AccountAreaNavigation }] = await Promise.all([
@@ -29,6 +30,45 @@ afterEach(() => {
 after(async () => closeWebTestServer())
 
 function account(id, fullName, email) { return { id, fullName, email } }
+
+test('WEB-UI-NAV-018 the public planner appears in both top menus across site areas and account states (ui-integration: planner-recommendations)', () => {
+  const areas = [['/', 'home'], ['/signin', 'login'], ['/signup', 'register'], ['/profile', 'profile'], ['/dashboard', 'dashboard'], ['/admin/users', 'dashboard'], ['/404', undefined], ['/planner', 'planner'], ['/planner/plan', 'planner'], ['/planner/saved', 'planner'], ['/planner/itineraries/example', 'planner'], ['/planner/recommendations/example', 'planner']]
+  for (const status of ['signed-out', 'checking', 'unavailable', 'signed-in']) {
+    for (const [path, active] of areas) {
+      renderInApp(createElement(SiteHeader, { active }), { path, auth: makeAuthSessionValue({ status, user: status === 'signed-in' ? makeAuthUser({ permissions: [] }) : null }) })
+      if (path === '/planner' || path.startsWith('/planner/')) {
+        assert.equal(screen.queryByRole('link', { name: 'The planner' }), null)
+        assert.equal(screen.queryByRole('navigation', { name: 'Main navigation' }), null)
+        cleanup(); resetTestBrowser(); continue
+      }
+      for (const name of ['Main navigation', 'Mobile navigation']) {
+        const menu = within(screen.getByRole('navigation', { name }))
+        const planner = menu.getByRole('link', { name: 'The planner' })
+        assert.equal(planner.getAttribute('href'), '/planner')
+        assert.equal(planner.getAttribute('aria-current'), null)
+        assert.equal(menu.queryByRole('link', { name: 'Create a plan' }), null)
+        assert.equal(menu.queryByRole('link', { name: 'Plan history' }), null)
+      }
+      cleanup(); resetTestBrowser()
+    }
+  }
+})
+
+test('WEB-UI-NAV-020 account sidebar Coastal planner opens creation directly (ui-integration: planner-plan)', () => {
+  renderInApp(createElement(AccountAreaNavigation, { active: 'dashboard' }), { path: '/dashboard', auth: makeAuthSessionValue({ status: 'signed-in', user: makeAuthUser({ permissions: ['planner.recommendations.create', 'planner.itineraries.manage'] }) }) })
+  const links = screen.getAllByRole('link', { name: 'Coastal planner' })
+  assert.ok(links.every(link => link.getAttribute('href') === '/planner/plan'))
+  fireEvent.click(links[0])
+  assert.equal(screen.getByTestId('router-location').textContent, '/planner/plan')
+})
+
+test('WEB-UI-NAV-019 global planner menu navigation closes the mobile menu and needs no sign-in (ui-integration: planner-recommendations)', () => {
+  renderInApp(createElement(SiteHeader, { active: 'login' }), { path: '/signin', auth: makeAuthSessionValue({ status: 'signed-out', user: null }) })
+  fireEvent.click(screen.getByRole('button', { name: 'Open menu' }))
+  fireEvent.click(within(screen.getByRole('navigation', { name: 'Mobile navigation' })).getByRole('link', { name: 'The planner' }))
+  assert.equal(screen.getByTestId('router-location').textContent, '/planner')
+  assert.equal(screen.getByRole('button', { name: 'Open menu' }).getAttribute('aria-expanded'), 'false')
+})
 
 test('WEB-UI-NAV-001 guest header exposes sign-in and registration routes for desktop and mobile (ui-integration: home)', () => {
   renderInApp(createElement(SiteHeader, { active: 'home' }), { path: '/?campaign=shore' })

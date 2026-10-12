@@ -6,30 +6,30 @@ This document is the implementation plan for adding traceable automated test
 cases across the complete BLUEVERSE repository. It complements
 [`strategy.md`](strategy.md) and [`test-matrix.md`](test-matrix.md).
 
-The plan remains staged because the checkout contains the v0 foundation plus
-Member 2's partial v1 marine-safety implementation:
+The plan remains staged while shared G00 ratification, Member 4 implementation,
+live peer/provider compatibility, cross-client acceptance and G07 evidence are
+pending. The integration branch contains the v0 foundation plus Members 1–3:
 
-- `apps/web` is a Vite React client with an implemented cookie-based Auth
-  session workflow and Member 2's marine condition, suitability, history and
-  safety-profile pages, plus lint/build scripts and a Node 24 native test
-  runner. Its tests include mocked public-API contracts and JSDOM/React Testing
-  Library coverage for pages, navigation, routing and shared shell components.
+- `apps/web` is a Vite React client with cookie-based Auth, Experience &
+  Biodiversity, Marine Safety and Coastal Planner workflows, plus lint/build
+  scripts and a Node 24 native test runner. Its tests include mocked public-API
+  contracts and JSDOM/React Testing Library coverage for pages, navigation,
+  routing and shared shell components.
 - `apps/mobile` is a Flutter client with public-API and in-memory
   credential-store tests, Auth/session view-model and widget coverage, and
-  dashboard, profile/security, onboarding and permission-aware administration
-  workflows. Marine workflow IDs are registered, but marine screens are not
-  implemented. Device-dependent behavior still requires live device evidence.
-- `services/api`, `services/auth` and `services/marine-safety` are checked-in
-  ASP.NET services with package-local test projects under their owning
-  service directories.
+  dashboard, profile/security, onboarding, administration, Experience &
+  Biodiversity, Marine Safety and Coastal Planner workflows. Device-dependent
+  behavior still requires live device evidence.
+- `services/api`, `services/auth`, `services/experience-biodiversity`,
+  `services/marine-safety` and `services/coastal-planner` are checked-in ASP.NET
+  services with package-local test projects under their owning directories.
 - No executable Agentic AI service is present yet; the AI documentation defines
   the target boundary and safety contract only.
 - Test workflows use each framework’s normal package/service test locations;
   no repository-root `test/` directory is used for authoritative cases.
 
-The remaining phases describe future Flutter marine parity, other domain
-components and Agentic AI coverage; current suite evidence is recorded in
-`test-matrix.md`. Every
+The remaining phases describe Member 4, live cross-component compatibility and
+Agentic AI coverage; current suite evidence is recorded in `test-matrix.md`. Every
 authorized role and business action in a v1 domain workflow must be exercised
 through React Web and Flutter Mobile, with equivalent outcomes and permission
 semantics. Layout and device interactions may have additional cases.
@@ -573,3 +573,11 @@ The recommended order for the repository is:
 7. add shared cross-platform and Docker acceptance tests;
 8. enforce coverage, safety and missing-suite gates in CI;
 9. publish test and evaluation evidence with each release/assessment milestone.
+
+The Member 3 feature branch now includes planner application/HTTP tests,
+named catalogue and non-executing AI adapter tests, saved-trip React workflows,
+and an explicit isolated PostgreSQL migration/concurrency suite. See the
+[dated test matrix](test-matrix.md) and
+[planner verification commands](../development/coastal-planner.md).
+Real peer integration, Flutter planner parity and post-G07 execution remain
+separate acceptance work.

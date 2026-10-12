@@ -13,10 +13,22 @@ the source boundaries and extension contract. Added domain workflows must
 preserve the same business capabilities as React; layout and device input
 may vary without assigning a stakeholder group to this client.
 
-`lib/main.dart` registers `/signin`, `/signup`, `/profile`, `/dashboard`,
-`/admin`, `/admin/permissions`, `/admin/roles`, `/admin/users`, `/404` and
-`/500`; the launch screen is `/` and restores the saved account before showing
-onboarding.
+`lib/main.dart` registers the global `/planner` introduction, protected
+`/planner/plan` creation and `/planner/saved` history pages, recommendation
+results and trip details, as well as `/signin`, `/signup`, `/profile`,
+`/dashboard`, `/admin`, `/admin/permissions`, `/admin/roles`, `/admin/users`,
+`/404` and `/500`. The launch screen is `/` and restores the saved account
+before showing onboarding. The onboarding carousel stays focused on the
+BLUEVERSE introduction and account choices. The global planner entry is
+available from sign-in, registration and account menus. Protected pages return
+guests to their intended page after successful sign-in.
+
+The planner uses dedicated bundled coastal imagery and native Material 3
+heroes. Plan creation and history share permission-aware tabs and directional
+transitions that honor reduced-motion settings. History provides status and
+conditions filters, search, page sizing and paging. Destination-local times
+are resolved with the IANA time-zone database and daylight-saving gaps or
+overlaps must be corrected before a recommendation request is sent.
 
 Flutter applies the same palette, typography hierarchy, imagery, spacing,
 component character and interaction states documented in the shared
@@ -80,7 +92,18 @@ model predictions, not species observations. Schedules are interpreted in
 
 ## Commands
 
-Run from `apps/mobile`:
+On Windows, run from the repository root through the cache wrapper. It sets
+`GRADLE_USER_HOME`, `PUB_CACHE`, temporary files and the Flutter build
+directory under `D:\WKS\FlutterBuildCache`:
+
+```powershell
+.\scripts\Windows\Invoke-FlutterCached.ps1 -FlutterArgs @('pub','get')
+.\scripts\Windows\Invoke-FlutterCached.ps1 -FlutterArgs @('analyze','--no-pub')
+.\scripts\Windows\Invoke-FlutterCached.ps1 -FlutterArgs @('test','--no-pub')
+.\scripts\Windows\Invoke-FlutterCached.ps1 -FlutterArgs @('run','--dart-define=BLUEVERSE_API_BASE_URL=http://10.0.2.2:80')
+```
+
+On Linux or macOS, use the standard Flutter commands from `apps/mobile`:
 
 ```bash
 flutter pub get
@@ -89,6 +112,8 @@ flutter analyze
 flutter test
 flutter run
 ```
+
+For an Android debug build, use `-FlutterArgs @('build','apk','--debug','--dart-define=BLUEVERSE_API_BASE_URL=http://10.0.2.2:80')`. The wrapper preserves an existing cache and refuses to merge two build directories. On other platforms, use the standard Flutter commands with `PUB_CACHE` and `GRADLE_USER_HOME` configured for the chosen cache locations.
 
 The Flutter project includes generated platform folders for Android, iOS,
 Linux, macOS, Windows and web. Platform-specific release configuration should
@@ -169,9 +194,10 @@ appropriate for the device or emulator and port `80`. Android `localhost`
 means the phone/emulator itself, not the laptop running Docker. For a standard
 Android emulator, explicitly set `BLUEVERSE_API_BASE_URL` to
 `http://10.0.2.2:80`; for a physical device, use the laptop's current LAN
-address. Without an explicit compile-time value, Android tries the standard
-emulator host `10.0.2.2:80`, then the USB reverse tunnel at `127.0.0.1:80`.
-An explicit value overrides both defaults; no laptop LAN address is hardcoded.
+address or the USB reverse address below. Without an explicit compile-time
+value, Android tries the standard emulator host `10.0.2.2:80`, then the USB
+reverse tunnel at `127.0.0.1:80`. An explicit value overrides both defaults;
+no laptop LAN address is hardcoded.
 
 Set the address explicitly for both `flutter run` and `flutter build`:
 
@@ -196,16 +222,36 @@ production build.
 
 Some managed or campus Wi-Fi networks isolate clients even when both devices
 show addresses in the same subnet. If the phone cannot reach the laptop's LAN
-address, use the attached USB device with an ADB reverse tunnel:
+address, use the attached USB device with an ADB reverse tunnel. Enable USB
+debugging, accept the phone's authorization prompt and put Android platform-tools
+(`adb`) on PATH. On Windows, replace the device ID and run from the repository root:
+
+```powershell
+adb devices
+$mobileDevice = 'REPLACE_WITH_DEVICE_ID'
+adb -s $mobileDevice reverse tcp:80 tcp:80
+.\scripts\Windows\Invoke-FlutterCached.ps1 -FlutterArgs @('run','-d',$mobileDevice,'--dart-define=BLUEVERSE_API_BASE_URL=http://127.0.0.1:80')
+```
+
+On Linux or macOS, use:
 
 ```bash
 adb reverse tcp:80 tcp:80
 flutter run --dart-define=BLUEVERSE_API_BASE_URL=http://127.0.0.1:80
 ```
 
-The client tries `127.0.0.1:80` only as this final USB-reverse fallback when no
-explicit `BLUEVERSE_API_BASE_URL` was embedded. It does not make Android
-`localhost` the normal network target.
+To install a debug APK while preserving existing app data, use:
+
+```powershell
+.\scripts\Windows\Invoke-FlutterCached.ps1 -FlutterArgs @('build','apk','--debug','--no-pub','--dart-define=BLUEVERSE_API_BASE_URL=http://127.0.0.1:80')
+adb -s $mobileDevice install -r 'D:\WKS\FlutterBuildCache\projects\blueverse-adi\build\app\outputs\flutter-apk\app-debug.apk'
+```
+
+Keep USB connected for gateway access. Remove the tunnel with
+`adb -s $mobileDevice reverse --remove tcp:80` when finished. Without an explicit
+base URL, Android tries the emulator address followed by the USB reverse
+address; the explicit USB setting avoids probing the emulator address on a
+physical phone. A Wi-Fi build instead needs the laptop's current LAN address.
 
 The Auth adapter stores the server-issued device ID, device proof key,
 short-lived access token and rotating refresh token in platform secure storage.

@@ -44,6 +44,8 @@ class AuthRepository {
     }
   }
 
+  Future<AuthUser> refreshSession() async => (await apiService.refresh()).user;
+
   Future<AuthUser> updateCurrentUser({required String fullName}) =>
       apiService.updateCurrentUser(fullName: fullName);
 

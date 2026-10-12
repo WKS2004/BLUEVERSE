@@ -29,6 +29,9 @@ import 'ui/experiences/offering_detail_screen.dart';
 import 'ui/feedback/blueverse_error_screen.dart';
 import 'ui/feedback/blueverse_loading_screen.dart';
 import 'ui/feedback/loading_screen_controller.dart';
+import 'ui/planner_screens.dart';
+import 'ui/planner_workflow_screens.dart';
+import 'data/services/planner_api_service.dart';
 import 'ui/marine/marine_auth_navigation.dart';
 import 'ui/marine/marine_permissions_guard.dart';
 import 'ui/marine/marine_route_table.dart';
@@ -131,6 +134,17 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  PlannerApiService _plannerApi() => PlannerApiService(
+    onSessionRefreshRequired: _authViewModel.refreshActiveSession,
+    onRequestStarted: () => blueverseLoadingScreenController.begin(
+      message: const LoadingScreenMessage(
+        mode: LoadingScreenMode.coastal,
+        title: 'Preparing your coastal day',
+        detail: 'Checking your trip information.',
+      ),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -161,6 +175,23 @@ class _MyAppState extends State<MyApp> {
         '/dashboard': (_) => AuthDashboardScreen(
           viewModel: _authViewModel,
           experienceViewModel: _experienceViewModel,
+        ),
+        '/planner': (_) =>
+            PlannerHomeScreen(api: _plannerApi(), user: _authViewModel.user),
+        '/planner/plan': (context) => PlannerPlanScreen(
+          user: _authViewModel.user,
+          api: _plannerApi(),
+          routeArguments: ModalRoute.of(context)?.settings.arguments,
+        ),
+        '/planner/saved': (_) => PlannerSavedTripsScreen(
+          api: _plannerApi(),
+          user: _authViewModel.user,
+        ),
+        '/planner/itinerary': (context) => PlannerItineraryScreen(
+          api: _plannerApi(),
+          user: _authViewModel.user,
+          itineraryId:
+              ModalRoute.of(context)?.settings.arguments as String? ?? '',
         ),
         '/admin': (_) => AuthAdminLandingScreen(viewModel: _authViewModel),
         '/admin/permissions': (_) => AuthAdminScreen(
@@ -201,41 +232,62 @@ class _MyAppState extends State<MyApp> {
       },
       onGenerateRoute: (settings) {
         final uri = Uri.tryParse(settings.name ?? '');
-        if (uri != null) {
-          final segments = uri.pathSegments;
-          if (segments.length == 3 &&
-              segments[0] == 'experiences' &&
-              segments[1] == 'destinations') {
-            return MaterialPageRoute(
-              settings: settings,
-              builder: (_) => ExperienceDetailScope(
-                parent: _experienceViewModel,
-                auth: _authViewModel,
-                builder: (detailModel) => DestinationDetailScreen(
-                  destinationId: segments[2],
-                  viewModel: detailModel,
-                  authViewModel: _authViewModel,
-                ),
-              ),
-            );
+        if (uri == null) return null;
+
+        final segments = uri.pathSegments;
+        if (segments.length == 3 &&
+            segments[0] == 'planner' &&
+            segments[1] == 'recommendations') {
+          final recommendationId = segments[2];
+          if (!RegExp(
+            r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+          ).hasMatch(recommendationId)) {
+            return null;
           }
-          if (segments.length == 3 &&
-              segments[0] == 'experiences' &&
-              segments[1] == 'offerings') {
-            return MaterialPageRoute(
-              settings: settings,
-              builder: (_) => ExperienceDetailScope(
-                parent: _experienceViewModel,
-                auth: _authViewModel,
-                builder: (detailModel) => OfferingDetailScreen(
-                  offeringId: segments[2],
-                  viewModel: detailModel,
-                  authViewModel: _authViewModel,
-                ),
-              ),
-            );
-          }
+          return MaterialPageRoute<void>(
+            settings: settings,
+            builder: (_) => PlannerRecommendationScreen(
+              api: _plannerApi(),
+              user: _authViewModel.user,
+              recommendationId: recommendationId,
+            ),
+          );
         }
+
+        if (segments.length == 3 &&
+            segments[0] == 'experiences' &&
+            segments[1] == 'destinations') {
+          return MaterialPageRoute(
+            settings: settings,
+            builder: (_) => ExperienceDetailScope(
+              parent: _experienceViewModel,
+              auth: _authViewModel,
+              builder: (detailModel) => DestinationDetailScreen(
+                destinationId: segments[2],
+                viewModel: detailModel,
+                authViewModel: _authViewModel,
+              ),
+            ),
+          );
+        }
+
+        if (segments.length == 3 &&
+            segments[0] == 'experiences' &&
+            segments[1] == 'offerings') {
+          return MaterialPageRoute(
+            settings: settings,
+            builder: (_) => ExperienceDetailScope(
+              parent: _experienceViewModel,
+              auth: _authViewModel,
+              builder: (detailModel) => OfferingDetailScreen(
+                offeringId: segments[2],
+                viewModel: detailModel,
+                authViewModel: _authViewModel,
+              ),
+            ),
+          );
+        }
+
         return null;
       },
       onUnknownRoute: blueverseUnknownRoute,

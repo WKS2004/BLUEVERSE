@@ -1,5 +1,12 @@
 # v1 requirements coverage and development readiness
 
+**Member 3 branch update, 2026-10-05:** Coastal Planner and its React workflows
+now have the implementation and verification described in
+[the planner guide](../development/coastal-planner.md). Other owner services,
+live provider compatibility, Flutter planner parity, shared G00 acceptance
+and G07 remain outstanding. This dated branch evidence does not mark v1
+complete or replace the baseline readiness decision below.
+
 This is the handoff checklist for the four member components and their four
 distinct Agentic AI roles. It preserves the 25 September 2026 baseline audit
 and the 26 September map, device-capability and biodiversity-integration
@@ -8,7 +15,17 @@ ownership amendments. Start with the
 this page to resolve cross-component decisions and collect implementation
 evidence.
 
-## Current implementation snapshot — 2026-10-06
+## Current integration branch evidence — 2026-10-12
+
+Members 1–3 now have service and React/Flutter workflow implementations on this
+integration branch. Member 3 also has a passing real PostgreSQL persistence
+check and restored DHI packaging. Adithya's G00 input is recorded, but the
+Member 3 record remains a proposal until all four owners ratify the shared
+freeze. Remaining peer/provider compatibility, the Member 4 component, hosted
+transport and G07 evidence remain release gates. Dated branch snapshots below
+describe evidence at their recorded dates and do not override this update.
+
+## Member 2 implementation snapshot — 2026-10-06 (historical)
 
 Member 2's `features/marine-safety` branch contains an implemented ASP.NET
 Core service, public API integration, React Web workflows and Flutter marine
@@ -45,14 +62,15 @@ implementation evidence, not component acceptance: shared G00 agreement, live
 provider/consumer integration and complete cross-client acceptance remain
 pending. The current Agentic seam returns a static `not_connected` status; no
 workflow initiation, dispatch or executable Agentic AI runtime is present.
-Members 3 and 4 remain planned.
+Member 4 remained planned at that snapshot. Member 3's later implementation is
+recorded in the current integration-branch update above.
 
 | Area | Final assessment | Evidence and next gate |
 |---|---|---|
 | v0 foundation and shared contracts | Ready as the starting baseline | Existing API/Auth, React/Flutter, Docker/Compose, role-to-permission model, endpoint catalog, UI registry and agent resources are present. Static catalog, UI-integration and agent-resource validators passed on this audit. This does not assert that application builds, tests or live infrastructure were rerun. |
 | v1 requirements and member plans | Ready as implementation specifications | Four complete member contracts, four paired-agent contracts, work-area plans, relationship map, workflow, device, integration, quality and branch guides link the scope. These are target contracts, not implementation evidence. |
-| Four member services and workflows | Member 1 and Member 2 source implementations present; Members 3–4 planned | The Experience & Biodiversity and Marine Safety branches contain private services, persistence, gateway routes and client workflows. Shared G00 agreement, provider/consumer integration and complete cross-client acceptance remain open; neither component is marked accepted. |
-| G00 shared contract freeze | Pending for all owners; Member 1 proposal and Member 2 scope record exist | The [Member 1 G00 record](g00/member-1-experience-biodiversity.md) is a proposal, not an owner agreement. Confirm shared decisions with all four owners and record evidence before marking G00 accepted in the [branch tracker](member-branch-workflow.md#component-branch-status). |
+| Four member services and workflows | Members 1–3 implementation sources are present; Member 4 remains planned | Experience & Biodiversity, Marine Safety and Coastal Planner have private services, persistence, public API integration and React/Flutter workflows in this integration branch. G00 owner agreement, live provider/consumer compatibility and complete cross-client acceptance remain open; implementation presence is not acceptance. |
+| G00 shared contract freeze | Pending all-four-owner ratification | Adithya's Member 3 input is recorded; the Member 3 record remains a proposal. The Member 1 proposal and Member 2 scope record also exist, and the Member 4 record says it still requires ratification. Confirm the shared decisions with all four owners and record evidence before marking G00 accepted in the [branch tracker](member-branch-workflow.md#component-branch-status). |
 | External integrations and device behavior | Interfaces can be planned at G00; live decisions are owner gates | Agree cross-member data contracts and adapter boundaries before parallel work. Select and verify the map provider, Open-Meteo data policy, IT3091 wire/auth contract and Wanshaja Sooriyabandara (Member 4) image storage policy before accepting each live integration. |
 | Executable Agentic AI | Correctly deferred; prohibited before G07 | Member branches prepare only their business workflow and typed, bounded, unavailable-aware AI integration seams. Start executable agents, tools, orchestration, model calls and AI-owned state on `agentic-ai/**` only after all four components pass G07. |
 | Full assessment and release | Not ready | The backend test workflow's path filters do not satisfy the guideline's every-push/every-pull-request-to-`main` requirement. The former Flutter widget-test reference to removed `MyHomePage` is corrected as `MOB-LAUNCH-001`; a green CI run is still needed because local Flutter analysis/tests were blocked by sandbox write access to the SDK lockfile. Duplicate Auth test IDs, hosted mobile HTTPS configuration and release evidence also remain open; see [foundation gaps](../project/foundation-gap-analysis.md). |

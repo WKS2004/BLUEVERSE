@@ -7,11 +7,13 @@ BLUEVERSE is an integrated coastal ecosystem platform combining coastal tourism,
 The checked-in application provides the **v0 foundation** for the SE3090
 integrated full-stack and Agentic AI project. The submission target is
 **v0 plus v1**. React and Flutter implement the shared Auth registration and session workflows,
-backed by the public API gateway, internal Auth service and PostgreSQL. Member 2's marine-safety backend and corresponding React/Flutter workflows
-are implemented on `features/marine-safety`. Other member implementations must
-be integrated from their own branches; four executable agents remain gated
-on accepted G07. Current Member 2 evidence is recorded in
-[the G00 decision record](docs/v1/g00/member-2-marine-safety-decisions.md).
+backed by the public API gateway, internal Auth service and PostgreSQL. The
+Coastal Planner, Marine Safety, and Experience & Biodiversity private services
+and their React/Flutter workflows are implemented on this integration branch.
+Live peer/provider compatibility, the remaining Member 4 component, and
+executable agents remain integration targets. See [planner implementation
+status](docs/development/coastal-planner.md) and [Member 2 evidence](docs/v1/g00/member-2-marine-safety-decisions.md)
+for component scope and remaining dependencies.
 
 ## Project identity
 
@@ -41,24 +43,25 @@ React Web / Flutter Mobile
                       └──> Private Agentic AI runtime (after G07)
 ```
 
-The diagram combines the current partial v1 implementation and remaining
-target architecture. The API integrates Auth and routes marine operations to
-Member 2's private service, which owns its PostgreSQL-backed behavior and
-Open-Meteo adapter. The other three member services remain planned. Each
-service owns its component business rules, persistence and assigned provider
-adapters. The API remains the only client-facing boundary; each service
-enforces its accepted domain contract. After all four member components pass
-G07, the owning service may dispatch to the private Agentic AI runtime.
+The diagram combines the implemented v0 foundation, current v1 services and
+remaining target architecture. The API integrates Auth and routes Coastal
+Planner, Marine Safety and Experience & Biodiversity operations to their private
+services, which own their PostgreSQL-backed behavior and provider adapters.
+Each service owns its component business rules, persistence and accepted domain
+contract. The API remains the only client-facing boundary and receives only the
+authentication, permission and routing integration needed to expose those
+services. After all four member components pass G07, the owning service may
+dispatch to the private Agentic AI runtime.
 React and Flutter never call member services or Agentic AI directly. See
 [ADR-0020](docs/adr/ADR-0020-member-component-service-boundaries.md), the
 [v1 documentation index](docs/v1/README.md) and the
 [Agentic AI integration boundary](docs/v1/agentic-ai-integration-boundary.md).
 
-React Web and Flutter Mobile are equally complete product surfaces. Every
-participating role can perform every permitted business workflow in either
-client. Both use the same workflow intent, role → permission model, data and
-public API contract. Screen layout or device input may differ without
-restricting a role, action or result.
+React Web and Flutter Mobile must provide equal business capability at release.
+Auth and planner workflows are present in both clients. Planner includes
+persisted suggestions, full draft editing, lifecycle actions and condition
+review history. Live owner-service compatibility remains an integration gate. Both use the same workflow intent, role → permission
+model, data and public API contract.
 Both clients follow the shared visual system in [`DESIGN.md`](DESIGN.md): React
 maps it to Tailwind styles in `apps/web`, and Flutter maps it to native theme
 and widgets in `apps/mobile`.
@@ -109,6 +112,7 @@ BLUEVERSE/
 ├── services/                # ASP.NET Core services
 │   ├── api/                  # checked-in public API foundation
 │   ├── auth/                 # internal Auth service
+│   ├── coastal-planner/      # private planning service
 │   ├── marine-safety/        # internal marine conditions & safety service (v1)
 │   └── experience-biodiversity/ # internal Experience & Biodiversity service
 ├── AGENTS.md
@@ -152,25 +156,26 @@ apps/web/          # React
 apps/mobile/       # Flutter
 ```
 
-`services/api/`, `services/auth/`, `services/marine-safety/` and
-`services/experience-biodiversity/` contain the checked-in backend projects.
-Compose, Dockerfiles and CI include both v1 component services; hosted deployment
-is not yet evidenced. Experience & Biodiversity provides destinations,
-activities, offerings, schedules, publication lifecycle, nearby discovery and
-pre-G07 Agentic AI dispatch seams. Auth and both component services remain
-internal and are reachable by clients only through the public API gateway.
-Keep all Dockerfiles under `infrastructure/docker/`.
+`services/api/`, `services/auth/`, `services/coastal-planner/`,
+`services/marine-safety/` and `services/experience-biodiversity/` contain the
+checked-in backend projects. Compose, Dockerfiles and CI include these v1
+component services; hosted deployment is not yet evidenced. Experience &
+Biodiversity provides destinations, activities, offerings, schedules,
+publication lifecycle and nearby discovery; Agentic AI dispatch remains gated
+on accepted G07. Auth and component services remain internal and are reachable
+by clients only through the public API gateway. Keep all Dockerfiles under
+`infrastructure/docker/`.
 
 ## Local setup and deployment
 
 The supported local deployment runs the checked-in React client, public API,
-internal Auth, marine-safety and Experience & Biodiversity services, and
-PostgreSQL with Docker Compose. The component services provide marine conditions
-and safety, catalogue discovery and management, map vector tiles, and nearby
-geocoding through the public API gateway. Run Compose commands from the repository
-root (the directory containing `compose.yaml`). The public entry point is
-`edge-nginx`; clients use the gateway's `/api/...` routes and do not connect
-directly to internal services.
+internal Auth, Coastal Planner, Marine Safety and Experience & Biodiversity
+services, and PostgreSQL with Docker Compose. The component services provide
+planning, marine conditions and safety, catalogue discovery and management,
+map vector tiles, and nearby geocoding through the public API gateway. Run
+Compose commands from the repository root (the directory containing
+`compose.yaml`). The public entry point is `edge-nginx`; clients use the
+gateway's `/api/...` routes and do not connect directly to internal services.
 
 See [Local Deployment](docs/deployment/local.md) for deployment topology and
 additional platform notes.
@@ -273,6 +278,26 @@ commit `.env`. Keep
 the Docker-internal API-to-service addresses. `ADMIN_EMAIL` and
 `ADMIN_PASSWORD` are used for the local administrator account.
 
+Compose defaults `AUTH_SELF_SERVICE_PLANNER_ACCESS=true`: new registrations
+receive the non-administrative **Coastal traveller** role with five planner
+permissions. Set it to `false` to require administrator assignment. Existing
+accounts retain their roles; an administrator can assign Coastal traveller
+through the existing role administration screen. The configured Admin role
+also receives planner grants at startup. Sign in again or refresh the session
+after grants change to obtain updated permission claims.
+
+The optional `EXPERIENCE_CATALOGUE_URL`, `MARINE_CONDITIONS_URL`,
+`COASTAL_OPERATIONS_URL` and `BIODIVERSITY_ML_URL` settings identify private
+peer services. Other peer services are not supplied by this branch. The
+synthetic IT3091 fake runs only with the `dev` Compose profile; it does not
+represent the real provider. The local `.env.example` points the planner to
+that fake for development. Real ML URL, key, enabled flag, and expected model
+version remain environment-configured. Without destination data,
+`/planner` shows a recoverable unavailable state. Recommendations
+require verifiable offering schedules, marine suitability and operations
+evidence. Connect compatible owner services to enable genuine suggestions;
+see [the peer contract](docs/development/coastal-planner.md).
+
 The gateway is published on host port `80` by default. On the development
 branch, PostgreSQL is published as `5432:5432`, which binds the host port on
 all network interfaces for the team's current development configuration.
@@ -370,19 +395,25 @@ Validate the environment and build/start the Compose deployment:
 
 ```bash
 docker compose --env-file .env config --quiet
-docker compose build
-docker compose up -d
+  docker compose --profile dev build
+  docker compose --profile dev up -d
 docker compose ps
 ```
 
-The first build pulls the DHI base images and may take several minutes. To
-build and run in the foreground while watching logs, use
-`docker compose up --build`. Auth waits for PostgreSQL to become healthy,
-applies its migrations and seeds the configured administrator account.
-Marine-safety and Experience & Biodiversity use the same database settings and
-apply their own EF Core migrations at startup. No second database or PostgreSQL
-initialization script is required for new or existing volumes; see the
-[database setup guide](docs/database/README.md) for migration configuration.
+The first build pulls the DHI base images and may take several minutes. Auth
+and component Dockerfiles reuse NuGet packages across builds with BuildKit cache
+mounts and restore dependencies before copying source. To build and run the full
+development stack, including the optional planner fake provider, use
+`docker compose --profile dev up --build`. Auth waits for PostgreSQL to become
+healthy, applies its migrations and seeds the configured administrator account.
+Coastal Planner, Marine Safety and Experience & Biodiversity use the shared
+database settings and apply their EF Core migrations at startup. Coastal Planner
+uses an exec-form .NET healthcheck compatible with the minimal DHI runtime; the
+API waits for planner readiness, while missing peer services do not prevent
+startup. No second database or PostgreSQL initialization script is required;
+see the [database setup guide](docs/database/README.md). Existing itineraries
+receive the Sri Lankan `Asia/Colombo` time zone when the planner migration is
+applied, preserving their UTC schedules and IDs.
 
 ### Verify the local deployment
 
@@ -391,7 +422,7 @@ Open the web app at `http://localhost` (or the port configured by
 `http://localhost/api/swagger` and includes the Marine Safety and Experience &
 Biodiversity documents at `/api/marine/swagger/v1/swagger.json` and
 `/api/experiences/swagger/v1/swagger.json`. Check the frontend, public API,
-Auth and both component health routes; each should return HTTP 200:
+Auth and all three component health routes; each should return HTTP 200:
 
 ```powershell
 curl.exe -f http://localhost/health
@@ -399,6 +430,7 @@ curl.exe -f http://localhost/api/health
 curl.exe -f http://localhost/api/auth/health
 curl.exe -f http://localhost/api/marine/health
 curl.exe -f http://localhost/api/experiences/health
+curl.exe -f http://localhost/api/planner/health
 ```
 
 The marine-safety document is also listed directly in the unified Swagger UI
@@ -425,13 +457,14 @@ curl --fail --silent --show-error http://localhost/api/health
 curl --fail --silent --show-error http://localhost/api/auth/health
 curl --fail --silent --show-error http://localhost/api/marine/health
 curl --fail --silent --show-error http://localhost/api/experiences/health
+curl --fail --silent --show-error http://localhost/api/planner/health
 ```
 
 In `docker compose ps`, PostgreSQL should report `healthy` and the frontend,
-API, Auth, Marine Safety, Experience & Biodiversity and gateway containers
-should be running. The development Compose stack exposes PostgreSQL on host
-port `5432` across all interfaces; backend services connect over the Docker
-network. When promoting the Compose
+API, Auth, Coastal Planner, Marine Safety, Experience & Biodiversity and gateway
+containers should be running. The development Compose stack exposes PostgreSQL
+on host port `5432` across all interfaces; backend services connect over the
+Docker network. When promoting the Compose
 configuration from `dev` to `main`, change the host mapping to
 `127.0.0.1:5432:5432` so host access is loopback-only. Production databases
 remain privately managed and are not configured through this local binding.
@@ -439,7 +472,7 @@ remain privately managed and are not configured through this local binding.
 If a service does not start or a health URL fails, inspect its recent logs:
 
 ```text
-docker compose logs --tail=100 edge-nginx frontend api auth marine-safety experience-biodiversity postgres
+docker compose logs --tail=100 edge-nginx frontend api auth coastal-planner marine-safety experience-biodiversity postgres
 ```
 
 Common first-run causes are Docker Desktop not running, missing DHI registry
@@ -461,16 +494,30 @@ delete the local database and start from a clean state.
 For Flutter on an Android emulator, explicitly pass the laptop gateway as
 `http://10.0.2.2:80` with
 `--dart-define=BLUEVERSE_API_BASE_URL=http://10.0.2.2:80`. A physical Android
-device must use the laptop's current Wi-Fi/LAN address with the same
-compile-time setting. Without an explicit value, Android tries the standard
-emulator host `10.0.2.2:80`, then the USB reverse tunnel at `127.0.0.1:80`.
-An explicit value overrides it for physical-device runs. The current mobile
+device can use the laptop's current Wi-Fi/LAN address or a USB reverse tunnel
+with the compile-time setting. Without an explicit value, Android tries the
+standard emulator host `10.0.2.2:80`, then the USB reverse tunnel at
+`127.0.0.1:80`; an explicit value overrides those defaults. The current mobile
 resolver accepts local HTTP on port `80` only,
 so a deployment HTTPS configuration remains future work. The Flutter
 resolver also has a fixed port-80 limit; changing `BLUEVERSE_HTTP_PORT` does
 not update the mobile client's accepted port. Keep the gateway on port 80 for
 Flutter or update the resolver before changing that setting. If managed Wi-Fi
-isolates the phone from the laptop, use `adb reverse tcp:80 tcp:80` over USB.
+isolates the phone from the laptop, use the USB workflow below. Enable USB
+debugging, accept the phone's authorization prompt and put Android platform-tools
+(`adb`) on PATH. Replace the device ID with the one reported by `adb devices`.
+On Windows the wrapper keeps Gradle, pub, temporary and app build caches under
+`D:\WKS\FlutterBuildCache`:
+
+```powershell
+adb devices
+$mobileDevice = 'REPLACE_WITH_DEVICE_ID'
+adb -s $mobileDevice reverse tcp:80 tcp:80
+.\scripts\Windows\Invoke-FlutterCached.ps1 -FlutterArgs @('run','-d',$mobileDevice,'--dart-define=BLUEVERSE_API_BASE_URL=http://127.0.0.1:80')
+```
+
+Keep USB connected for gateway access. Remove the tunnel with
+`adb -s $mobileDevice reverse --remove tcp:80` when it is no longer needed.
 See [Mobile setup](apps/mobile/README.md) for the full device workflow and
 current limitations. Kotlin incremental compilation is disabled in the mobile
 Gradle configuration to avoid cache errors across Windows drive roots; keep
@@ -604,6 +651,48 @@ Use `.env.example` for variable names and safe example values only.
 
 This repository structure follows the SE3090 requirement for an integrated React + Flutter + ASP.NET Core + PostgreSQL + Agentic AI system, Git/GitHub, CI, testing, documentation, ADRs and deployment evidence.
 
+## Planner verification and hosted packaging update — 2026-10-12
+
+The Flutter planner supports saved recommendation URLs, permitted workflow
+progress, paged saved trips, adding suggestions to a draft, native trip/stop
+clock editing, stable-ID reorder/removal, confirmation, and before/after
+condition review history. Its requests use the shared public API, scoped
+credentials, a 55-second budget for the 40-second planner search, and no
+connectivity replay for writes. The app uses the shared loading screen.
+Android emulators use `10.0.2.2`; physical devices still require the explicit
+HTTP `BLUEVERSE_API_BASE_URL` override described above.
+
+All three backend Dockerfiles use `dhi.io/aspnetcore:10-alpine` with exec-form
+startup. The Render Blueprint now includes the private planner and public API
+forwarding. Its Auth and Planner compute plans are billable. Supply each
+backend's `ConnectionStrings__DefaultConnection` as a secret Npgsql key/value
+string using the managed private database values; Render's PostgreSQL URL is
+not directly accepted. Auth owns the shared JWT key referenced by the other
+services. See [Render setup](docs/deployment/render.md) for grants, readiness,
+peer/provider configuration and remaining hosted-client gates. No cloud
+resources have been deployed by this change.
+
+From `apps/mobile`, run `flutter analyze` and `flutter test`. From the root,
+run the planner/API/Auth test projects and contract checks in
+[the planner guide](docs/development/coastal-planner.md). The optional real
+PostgreSQL test creates and drops only its own uniquely named test database;
+use local test credentials. Preserve the application volume when stopping.
+
+
+### React planner experience — 2026-10-12
+
+Open `/planner` for the public introduction, `/planner/plan` to create a plan,
+and `/planner/saved` for personal plan history. Guests who choose creation or
+history sign in first and return to the requested page; authorized users enter
+directly. The shared top menu opens The planner as a full-width public page
+without an account sidebar or redundant self-link. Creation and personal
+history use the shared account sidebar; its Coastal planner entry opens the
+creation page directly. Personal create/history pages use route tabs and wide
+coastal hero cards. History supports Draft, Confirmed and Past views, search and
+condition-check refinement on the displayed page, reset and selectable page size.
+The redesign
+retains existing public API contracts and permission checks. Flutter design
+changes are deferred until requested. See [the web guide](apps/web/README.md).
 ## Marine Safety input and recovery behavior
 
 React and Flutter expose all three Marine pages with `marine.profile.read`;

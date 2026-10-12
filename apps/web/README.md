@@ -107,6 +107,68 @@ New workflows must
 continue to register both client surfaces and their public API references
 together.
 
+## Coastal Planner feature branch
+
+React now provides `/planner`, persistent recommendation details,
+`/planner/saved` and owner itinerary management. Destination/activity choices
+come from the public catalogue projection by name. Saved trips support notes,
+schedule edits, stable stop reordering/removal with undo, condition reviews
+and durable history. Permissions use Auth-issued claims; private service hosts
+never appear in client requests. See
+[planner setup and integration limits](../../docs/development/coastal-planner.md).
+Live operations/IT3091 peers and cross-component compatibility remain pending;
+Flutter planner workflows are implemented on the integration branch.
+
+2026-10-05 verification: lint and production build passed; all 201 React tests
+passed with `node --experimental-strip-types --test --test-concurrency=2`.
+The bounded worker count was needed during concurrent Docker builds after an
+unconstrained run exhausted local memory. No tests were skipped. Browser checks
+of the local Docker gateway verified the missing-catalogue recovery and saved
+trip empty state at desktop and phone widths; live recommendations still need
+compatible owner services.
+
+
+## Coastal Planner React experience
+
+- `/planner` introduces the planner to guests and signed-in users, explains
+  the three-step process and offers creation actions and optional live ideas.
+- `/planner/plan` is the separate authenticated builder. Guests sign in and
+  return to this page; authorized users enter directly. Suggestions remain
+  linked to the caller's snapshot, with explicit selection and draft save/append.
+- `/planner/saved` is personal plan history, with Draft, Confirmed and Past
+  views, search on the displayed page and pagination.
+- `/planner/recommendations/:recommendationId` revisits suggestions;
+  `/planner/itineraries/:itineraryId` displays the itinerary timeline and
+  preserves draft editing, confirmation and condition-review history.
+
+Shared top menus expose The planner from home, sign-in, account, administration
+and recovery pages. The public `/planner` introduction has no account sidebar
+and omits the redundant top self-link. Personal planner pages also omit the
+standalone top planner link. Create a plan and Plan history appear in the
+shared account sidebar, alongside Profile, Dashboard and authorized Administration
+links; this sidebar becomes an in-page navigation panel at narrow widths. The
+current planner action is highlighted. The sidebar's Coastal planner entry opens
+`/planner/plan` directly. Creation and history load together on demand, so
+switching their tabs has no intermediate loading screen. Their catalogue/history
+reads show status within the page; other planner work uses the shared loading
+screen. A 320ms directional fade-and-slide introduces either page, with motion
+disabled when reduced motion is requested. Live catalogue availability remains a data
+dependency; the public introduction stays useful during an outage. This
+navigation redesign is React-specific; Flutter retains its native presentation
+and registered planner workflows.
+
+Create a plan and Plan history share permission-aware route tabs and a wide
+image hero card, following the supplied Coastal Operations layout. History has
+one unified panel with status filters, live per-page search, reset, condition-check
+refinement, a 10/20/25/50 page-size selector and pagination. Empty results use a
+text state and one authorized creation action below the controls; the hero is the
+only image. Counts describe the current page because the API does not return a
+global total. Full returned pages enable Next even when local filters hide rows.
+
+Dedicated imagery for discovery, guided experiences, trip preparation and saved
+memories is in [`src/assets/planner`](src/assets/planner/README.md). These are
+illustrative AI-generated scenes, separate from live recommendation evidence.
+
 ## Marine Safety web workflows
 
 The implementation lives in `src/features/marine/` (typed public API adapter

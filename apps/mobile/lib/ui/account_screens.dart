@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../data/models/auth_models.dart';
 import 'auth_view_model.dart';
+import 'planner_components.dart';
 import 'marine/marine_permissions_guard.dart';
 
 const _coastInk = Color(0xFF18394C);
@@ -277,6 +278,7 @@ class _AuthProfileScreenState extends State<AuthProfileScreen> {
             actions: [
               AuthAccountSwitcher(viewModel: widget.viewModel),
               AuthAdminNavigationMenu(viewModel: widget.viewModel),
+              PlannerNavigationMenu(user: user),
               IconButton(
                 tooltip: 'Open dashboard',
                 onPressed: () => Navigator.pushNamed(context, '/dashboard'),
@@ -974,6 +976,7 @@ class _AuthDashboardScreenState extends State<AuthDashboardScreen> {
             actions: [
               AuthAccountSwitcher(viewModel: widget.viewModel),
               AuthAdminNavigationMenu(viewModel: widget.viewModel),
+              PlannerNavigationMenu(user: user),
               if (user != null)
                 IconButton(
                   tooltip: 'Edit your profile',

@@ -154,6 +154,3 @@ public sealed record SafetyCriterionSnapshotDto(
     decimal? Caution,
     string? Source,
     string? Rationale);
-
-
-

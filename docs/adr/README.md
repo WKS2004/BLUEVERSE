@@ -26,6 +26,7 @@ ADRs capture significant architectural decisions and their rationale.
 20. `ADR-0020-member-component-service-boundaries.md`
 21. `ADR-0021-marine-catalogue-and-gateway-actor-context.md`
 22. `ADR-0022-member-service-data-availability-and-fault-isolation.md`
+23. `ADR-0023-planner-access-and-review-history.md`
 
 Some decisions remain **Proposed / Pending implementation choice** because the foundation does not invent decisions that have not yet been made.
 
@@ -54,6 +55,9 @@ G00.
 
 ADR-0021 records Member 2's read-only canonical activity handoff and the signed
 actor/operation context issued by the public API after existing Auth checks.
+
+ADR-0023 records Coastal Planner's permission-aware access, catalogue reads,
+durable itinerary reviews and schedule/time-zone behavior.
 
 [ADR-0022](ADR-0022-member-service-data-availability-and-fault-isolation.md)
 records operation-level dependency availability and independent member-service

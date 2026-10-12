@@ -15,6 +15,7 @@ class AuthViewModel extends ChangeNotifier {
   bool isLoading = false;
   bool hasRestoredSession = false;
   bool _isRestoringSession = false;
+  Future<void>? _sessionRefreshFuture;
   String? errorMessage;
 
   Future<void> signIn({
@@ -104,6 +105,66 @@ class AuthViewModel extends ChangeNotifier {
       _isRestoringSession = false;
       hasRestoredSession = true;
       notifyListeners();
+    }
+  }
+
+  /// Refreshes an expiring token without changing the active account.
+  /// Concurrent planner requests share one refresh to protect rotating tokens.
+  Future<void> refreshActiveSession(String expectedUserId) {
+    final activeRefresh = _sessionRefreshFuture;
+    if (activeRefresh != null) return activeRefresh;
+    if (isLoading) {
+      return Future<void>.error(
+        const AuthApiException(
+          409,
+          'Your account is updating. Please try again in a moment.',
+        ),
+      );
+    }
+    if (user?.id != expectedUserId) {
+      return Future<void>.error(
+        const AuthApiException(
+          401,
+          'Your active account changed. Please sign in again.',
+        ),
+      );
+    }
+
+    late final Future<void> pending;
+    pending =
+        Future<void>.microtask(() => _refreshActiveSession(expectedUserId))
+            .whenComplete(() {
+              if (identical(_sessionRefreshFuture, pending)) {
+                _sessionRefreshFuture = null;
+              }
+            });
+    _sessionRefreshFuture = pending;
+    return pending;
+  }
+
+  Future<void> _refreshActiveSession(String expectedUserId) async {
+    final finishLoading = blueverseLoadingScreenController.begin(
+      message: const LoadingScreenMessage.restoreSession(),
+    );
+    isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+    try {
+      final refreshedUser = await repository.refreshSession();
+      if (user?.id != expectedUserId || refreshedUser.id != expectedUserId) {
+        throw const AuthApiException(
+          401,
+          'Your active account changed. Please sign in again.',
+        );
+      }
+      user = refreshedUser;
+    } on Object catch (error) {
+      errorMessage = error.toString();
+      rethrow;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+      finishLoading();
     }
   }
 

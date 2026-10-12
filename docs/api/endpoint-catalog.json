@@ -8,6 +8,7 @@
     "backendSources": [
       "services/api",
       "services/auth",
+      "services/coastal-planner",
       "services/marine-safety",
       "services/experience-biodiversity"
     ],
@@ -33,6 +34,16 @@
     "Run .agents/scripts/validate_endpoint_catalog.py after source or catalog changes."
   ],
   "frontendRoutes": [
+    {
+      "id": "react-planner-plan",
+      "client": "react",
+      "route": "/planner/plan",
+      "source": "apps/web/src/app/routes.tsx",
+      "workflowId": "planner-plan",
+      "status": "implemented",
+      "description": "Separate protected plan builder with route tabs, a wide coastal hero, destination/time/pace sections, suggestion selection and draft save/append.",
+      "usage": "Default destination of Coastal planner in the account sidebar. Requires sign-in and recommendation-create permission; itinerary management enables saving. Uses current snapshot references and validated public API helpers. Creation/history tab navigation uses a shared deferred module and directional motion (disabled for reduced motion); read status stays within the page without an intermediate loading screen."
+    },
     {
       "id": "web-home",
       "client": "react",
@@ -254,6 +265,96 @@
       "usage": "Explains the temporary interruption, provides retry and home actions, and keeps implementation details hidden."
     },
     {
+      "id": "react-planner-recommendations",
+      "client": "react",
+      "route": "/planner",
+      "source": "apps/web/src/app/routes.tsx",
+      "workflowId": "planner-recommendations",
+      "status": "implemented",
+      "description": "Public coastal planner introduction, three-step planning guide, benefits, optional real highlights and creation CTA.",
+      "usage": "Available from global top desktop/mobile menus to guests, signed-in users and accounts without planner grants. The introduction is a full-width public page without an account sidebar or redundant top self-link. Create actions target /planner/plan; guests authenticate and return there. Personal pages omit the standalone top planner link and retain the account sidebar, whose Coastal planner entry opens /planner/plan directly."
+    },
+    {
+      "id": "flutter-planner-recommendations",
+      "client": "flutter",
+      "route": "/planner",
+      "source": "apps/mobile/lib/main.dart",
+      "workflowId": "planner-recommendations",
+      "status": "implemented",
+      "description": "Flutter recommendation home with public coastal highlights and a Plan a trip action.",
+      "usage": "Shows current public highlights through the public API and opens the protected planning form."
+    },
+    {
+      "id": "react-planner-result",
+      "client": "react",
+      "route": "/planner/recommendations/:recommendationId",
+      "source": "apps/web/src/app/routes.tsx",
+      "workflowId": "planner-recommendation-result",
+      "status": "implemented",
+      "description": "Revisit a caller-owned search and save or append a suggested experience.",
+      "usage": "Revisit a caller-owned search and save or append a suggested experience."
+    },
+    {
+      "id": "react-planner-saved",
+      "client": "react",
+      "route": "/planner/saved",
+      "source": "apps/web/src/app/routes.tsx",
+      "workflowId": "planner-saved-trips",
+      "status": "implemented",
+      "description": "Authenticated personal plan history with draft, confirmed and past views, title/notes search on the current page and pagination.",
+      "usage": "Personal route tabs and a wide hero lead into the history panel. The API scopes plans to the caller; status, search and condition-check filters operate only on the current returned page. Select 10/20/25/50 plans per page using the existing page/pageSize query contract; counts describe the returned page, not a global total. Open a plan to edit its draft or review confirmed details. Creation/history tab navigation uses a shared deferred module and directional motion (disabled for reduced motion); read status stays within the page without an intermediate loading screen."
+    },
+    {
+      "id": "react-planner-trip",
+      "client": "react",
+      "route": "/planner/itineraries/:itineraryId",
+      "source": "apps/web/src/app/routes.tsx",
+      "workflowId": "planner-trip-management",
+      "status": "implemented",
+      "description": "Plan detail and itinerary timeline, draft lifecycle and condition review history.",
+      "usage": "Edit, reorder, remove and reschedule stops; delete a trip; review conditions and read its history."
+    },
+    {
+      "id": "flutter-planner-result",
+      "client": "flutter",
+      "route": "/planner/recommendations/:recommendationId",
+      "source": "apps/mobile/lib/main.dart",
+      "workflowId": "planner-recommendation-result",
+      "status": "implemented",
+      "description": "Persisted trip ideas, workflow progress, uncertainty and save/append actions.",
+      "usage": "Revisit a caller-owned snapshot with recommendation read permission; management permission enables saving or appending."
+    },
+    {
+      "id": "flutter-planner-saved",
+      "client": "flutter",
+      "route": "/planner/saved",
+      "source": "apps/mobile/lib/main.dart",
+      "workflowId": "planner-saved-trips",
+      "status": "implemented",
+      "description": "Flutter saved-trip list with Draft and Confirmed lifecycle labels.",
+      "usage": "Lists caller-owned trips through the public API."
+    },
+    {
+      "id": "flutter-planner-trip",
+      "client": "flutter",
+      "route": "/planner/itinerary",
+      "source": "apps/mobile/lib/main.dart",
+      "workflowId": "planner-trip-management",
+      "status": "implemented",
+      "description": "Trip details, full native draft editing, add/remove/reorder, confirmation, condition comparisons and review history.",
+      "usage": "Permission-gated owner trip management through the public API; confirmed trips remain read-only."
+    },
+    {
+      "id": "flutter-planner-plan",
+      "client": "flutter",
+      "route": "/planner/plan",
+      "source": "apps/mobile/lib/main.dart",
+      "workflowId": "planner-plan",
+      "status": "implemented",
+      "description": "Flutter planning form with destination, activity, local date/time selection, recommendations and draft save.",
+      "usage": "Creates recommendations and saves selected experiences as caller-owned draft trips through the public API."
+    },
+    {
       "id": "react-marine-conditions",
       "client": "react",
       "route": "/marine/conditions",
@@ -456,16 +557,6 @@
       "usage": "Forwards client API requests to the API gateway; clients must not target Auth, Agentic AI, database, or other internal hosts directly."
     },
     {
-      "id": "marine-safety-yarp-route",
-      "method": "ANY",
-      "path": "/api/marine/{**catch-all}",
-      "type": "reverse-proxy",
-      "upstream": "marine-safety",
-      "source": "services/api/appsettings.json",
-      "description": "API-gateway route that verifies current Auth sessions and permissions before forwarding protected Marine operations with a signed actor context.",
-      "usage": "Keeps Marine Safety private. Protected requests replace client credentials with a request-bound actor context; anonymous health and Swagger requests are forwarded without an actor context. Missing Auth verification or unreachable/timed-out Marine returns structured availability metadata; unrelated routes and received upstream errors are preserved. Ambiguous proxy writes are not retryable and have no Retry-After hint."
-    },
-    {
       "id": "auth-yarp-route",
       "method": "ANY",
       "path": "/api/auth/{**catch-all}",
@@ -476,34 +567,14 @@
       "usage": "Keeps Auth internal while exposing its approved endpoints through the public API boundary."
     },
     {
-      "id": "experience-biodiversity-health-yarp-route",
+      "id": "planner-yarp-route",
       "method": "ANY",
-      "path": "/api/experiences/health",
+      "path": "/api/planner/{**catch-all}",
       "type": "reverse-proxy",
-      "upstream": "experience-biodiversity",
+      "upstream": "coastal-planner",
       "source": "services/api/appsettings.json",
-      "description": "Anonymous API-gateway route for Experience & Biodiversity service and database readiness.",
-      "usage": "Forwards the health endpoint without requiring an Auth-issued JWT; it reports database availability while keeping the private service host inaccessible to clients."
-    },
-    {
-      "id": "experience-biodiversity-swagger-yarp-route",
-      "method": "ANY",
-      "path": "/api/experiences/swagger/{documentName}/swagger.json",
-      "type": "reverse-proxy",
-      "upstream": "experience-biodiversity",
-      "source": "services/api/appsettings.json",
-      "description": "Anonymous API-gateway route for the Experience & Biodiversity OpenAPI document.",
-      "usage": "Exposes the service contract to the unified Swagger UI without requiring a JWT or exposing the private service host."
-    },
-    {
-      "id": "experience-biodiversity-protected-yarp-route",
-      "method": "ANY",
-      "path": "/api/experiences/{**catch-all}",
-      "type": "reverse-proxy",
-      "upstream": "experience-biodiversity",
-      "source": "services/api/appsettings.json",
-      "description": "Authenticated API-gateway fallback route to the private Experience & Biodiversity service.",
-      "usage": "Requires an Auth-issued JWT validated by the API gateway and private service for component paths not matched by the public-read or named-permission routes."
+      "description": "API-gateway route that forwards public Coastal Planner paths to the internal coastal-planner service.",
+      "usage": "Forwards planning, recommendations, itinerary, biodiversity prediction, health, and Swagger requests to the internal coastal-planner service."
     },
     {
       "id": "public-swagger-ui",
@@ -512,7 +583,7 @@
       "type": "documentation-ui",
       "upstream": "api",
       "source": "services/api/Program.cs",
-      "description": "API Swagger UI mounted below the public API boundary; lists the public API, Auth and marine-safety OpenAPI documents.",
+      "description": "API Swagger UI mounted below the public API boundary. API Swagger UI mounted below the public API boundary; lists the public API, Auth and marine-safety OpenAPI documents.",
       "usage": "Provides interactive API documentation for local development and contract inspection. The marine-safety document is served through the /api/marine YARP route and listed in this UI."
     },
     {
@@ -596,6 +667,46 @@
       "usage": "Serves the branded temporary-error page when the frontend Nginx layer raises a server error."
     },
     {
+      "id": "marine-safety-yarp-route",
+      "method": "ANY",
+      "path": "/api/marine/{**catch-all}",
+      "type": "reverse-proxy",
+      "upstream": "marine-safety",
+      "source": "services/api/appsettings.json",
+      "description": "API-gateway route that verifies current Auth sessions and permissions before forwarding protected Marine operations with a signed actor context.",
+      "usage": "Keeps Marine Safety private. Protected requests replace client credentials with a request-bound actor context; anonymous health and Swagger requests are forwarded without an actor context. Missing Auth verification or unreachable/timed-out Marine returns structured availability metadata; unrelated routes and received upstream errors are preserved. Ambiguous proxy writes are not retryable and have no Retry-After hint."
+    },
+    {
+      "id": "experience-biodiversity-health-yarp-route",
+      "method": "ANY",
+      "path": "/api/experiences/health",
+      "type": "reverse-proxy",
+      "upstream": "experience-biodiversity",
+      "source": "services/api/appsettings.json",
+      "description": "Anonymous API-gateway route for Experience & Biodiversity service and database readiness.",
+      "usage": "Forwards the health endpoint without requiring an Auth-issued JWT; it reports database availability while keeping the private service host inaccessible to clients."
+    },
+    {
+      "id": "experience-biodiversity-swagger-yarp-route",
+      "method": "ANY",
+      "path": "/api/experiences/swagger/{documentName}/swagger.json",
+      "type": "reverse-proxy",
+      "upstream": "experience-biodiversity",
+      "source": "services/api/appsettings.json",
+      "description": "Anonymous API-gateway route for the Experience & Biodiversity OpenAPI document.",
+      "usage": "Exposes the service contract to the unified Swagger UI without requiring a JWT or exposing the private service host."
+    },
+    {
+      "id": "experience-biodiversity-protected-yarp-route",
+      "method": "ANY",
+      "path": "/api/experiences/{**catch-all}",
+      "type": "reverse-proxy",
+      "upstream": "experience-biodiversity",
+      "source": "services/api/appsettings.json",
+      "description": "Authenticated API-gateway fallback route to the private Experience & Biodiversity service.",
+      "usage": "Requires an Auth-issued JWT validated by the API gateway and private service for component paths not matched by the public-read or named-permission routes."
+    },
+    {
       "id": "experience-biodiversity-public-destinations-yarp-route",
       "method": "ANY",
       "path": "/api/experiences/destinations/{**catch-all}",
@@ -668,6 +779,39 @@
   ],
   "publicApiEndpoints": [
     {
+      "id": "planner-recommendations-highlights",
+      "method": "GET",
+      "path": "/api/planner/recommendations/highlights",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "operationId": "GetHighlights",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Public coastal highlight cards derived from current destination, experience offering, marine suitability, and operational-status data. Returns 503 when required catalogue or offering data is unavailable; returns an empty list when available data has no eligible highlights. Partial cards include uncertainty notes when some destination data is unavailable.",
+      "usage": "Provides curated highlight cards for the public coastal planner home page. Clients can distinguish a genuine empty result from unavailable peer-service data and display a retryable unavailable state.",
+      "source": "services/coastal-planner/Controllers/RecommendationsController.cs",
+      "uiWorkflowIds": [
+        "planner-recommendations"
+      ]
+    },
+    {
+      "id": "planner-itineraries-confirm",
+      "method": "POST",
+      "path": "/api/planner/itineraries/{itineraryId:guid}/confirm",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "operationId": "ConfirmItinerary",
+      "auth": "permission:planner.itineraries.manage",
+      "description": "Confirm a caller-owned draft itinerary so it can be processed.",
+      "usage": "Changes a draft trip to confirmed. Used by the trip detail page and the planning page when the user confirms a newly created trip.",
+      "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
+      "status": "implemented",
+      "uiWorkflowIds": [
+        "planner-trip-management",
+        "planner-plan"
+      ]
+    },
+    {
       "id": "api-health",
       "method": "GET",
       "path": "/api/health",
@@ -718,6 +862,653 @@
       "description": "Serves the interactive Swagger UI for the public API.",
       "usage": "Used by developers and contract tooling to inspect the API without accessing an internal service host.",
       "source": "services/api/Program.cs"
+    },
+    {
+      "id": "auth-swagger-ui-document",
+      "method": "GET",
+      "path": "/api/auth/swagger/{documentName}/swagger.json",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "AuthSwaggerDocument",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Returns the Auth service OpenAPI document through its public documentation path.",
+      "usage": "Used for Auth contract inspection without exposing the Auth service host directly.",
+      "source": "services/auth/Program.cs"
+    },
+    {
+      "id": "auth-register",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "Register",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Creates a new user account and establishes the initial authentication result.",
+      "usage": "Creates accounts from the shared React and Flutter registration workflow and returns the first session through browser cookies or native credentials.",
+      "source": "services/auth/Controllers/AuthController.cs"
+    },
+    {
+      "id": "auth-login",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "Login",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Authenticates credentials and returns the access and refresh session result.",
+      "usage": "Primary sign-in operation for the React and Flutter Auth workflow.",
+      "source": "services/auth/Controllers/AuthController.cs",
+      "uiWorkflowIds": [
+        "auth-session-management"
+      ]
+    },
+    {
+      "id": "auth-refresh",
+      "method": "POST",
+      "path": "/api/auth/refresh",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "Refresh",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Refreshes an access token using an approved refresh token and can activate a previously signed-in browser account.",
+      "usage": "Keeps an existing client session alive and lets the React browser account switcher select one of its protected account-scoped cookie sessions without replacing other accounts.",
+      "source": "services/auth/Controllers/AuthController.cs",
+      "uiWorkflowIds": [
+        "auth-session-management",
+        "foundation-home"
+      ]
+    },
+    {
+      "id": "auth-logout",
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "Logout",
+      "status": "implemented",
+      "auth": "authenticated",
+      "description": "Ends only the authenticated account's current-device session.",
+      "usage": "Signs out the active account from this device while leaving other accounts on the same browser and this account's sessions on other devices active.",
+      "source": "services/auth/Controllers/AuthController.cs",
+      "uiWorkflowIds": [
+        "auth-session-management",
+        "foundation-home"
+      ]
+    },
+    {
+      "id": "auth-logout-account",
+      "method": "POST",
+      "path": "/api/auth/logout/{id:guid}",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "LogoutAccount",
+      "status": "implemented",
+      "auth": "authenticated",
+      "description": "Ends the authenticated account's session on the current device; an account cannot end a different account's session.",
+      "usage": "Provides a guarded account-specific current-device sign-out route for the authenticated account only.",
+      "source": "services/auth/Controllers/AuthController.cs"
+    },
+    {
+      "id": "auth-remove-account",
+      "method": "POST",
+      "path": "/api/auth/logout-account",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "LogoutSelectedAccount",
+      "status": "implemented",
+      "auth": "authenticated",
+      "description": "Ends only the authenticated account's session on the current device; other signed-in accounts must sign out separately.",
+      "usage": "Used by the React and Flutter account menus to sign out the active account while keeping other saved accounts and sessions available; requests targeting a different account are forbidden.",
+      "source": "services/auth/Controllers/AuthController.cs",
+      "uiWorkflowIds": [
+        "auth-session-management",
+        "foundation-home"
+      ]
+    },
+    {
+      "id": "auth-logout-all-devices",
+      "method": "POST",
+      "path": "/api/auth/logout-all-devices",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "LogoutAllDevices",
+      "status": "implemented",
+      "auth": "authenticated",
+      "description": "Revokes all sessions for the authenticated account across devices after verifying the current password.",
+      "usage": "Available only from Login Sessions in the Profile workflows; password verification is required before any session is revoked.",
+      "source": "services/auth/Controllers/AuthController.cs",
+      "uiWorkflowIds": [
+        "auth-profile-management"
+      ]
+    },
+    {
+      "id": "auth-sessions",
+      "method": "GET",
+      "path": "/api/auth/sessions",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "GetSessions",
+      "status": "implemented",
+      "auth": "authenticated",
+      "description": "Lists active sessions for the authenticated account.",
+      "usage": "Used by Profile in React Web and Flutter Mobile to review and end login sessions for the current account.",
+      "source": "services/auth/Controllers/AuthController.cs",
+      "uiWorkflowIds": [
+        "auth-profile-management"
+      ]
+    },
+    {
+      "id": "auth-revoke-session",
+      "method": "DELETE",
+      "path": "/api/auth/sessions/{sessionId:guid}",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "RevokeSession",
+      "status": "implemented",
+      "auth": "authenticated",
+      "description": "Revokes one selected authenticated session; the current session may be ended directly, while another device session requires current-password verification.",
+      "usage": "Supports Profile in React Web and Flutter Mobile with session-scoped end actions and server-verified password confirmation for remote devices.",
+      "source": "services/auth/Controllers/AuthController.cs",
+      "uiWorkflowIds": [
+        "auth-profile-management"
+      ]
+    },
+    {
+      "id": "auth-change-password",
+      "method": "POST",
+      "path": "/api/auth/change-password",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "ChangePassword",
+      "status": "implemented",
+      "auth": "authenticated",
+      "description": "Changes the authenticated user's password after validating the current credential.",
+      "usage": "Used by the Profile account-security section in React Web and Flutter Mobile.",
+      "source": "services/auth/Controllers/AuthController.cs",
+      "uiWorkflowIds": [
+        "auth-profile-management"
+      ]
+    },
+    {
+      "id": "auth-me",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "GetCurrentUser",
+      "status": "implemented",
+      "auth": "authenticated",
+      "description": "Returns the current authenticated user's profile and authorization context.",
+      "usage": "Used by the React and Flutter Auth workflow to restore the signed-in account, by profile management to show server-owned details, and by the dashboard to personalize the account overview.",
+      "source": "services/auth/Controllers/AuthController.cs",
+      "uiWorkflowIds": [
+        "auth-session-management",
+        "foundation-home",
+        "auth-profile-management",
+        "coastal-overview-dashboard"
+      ]
+    },
+    {
+      "id": "auth-update-me",
+      "method": "PUT",
+      "path": "/api/auth/me",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "UpdateCurrentUser",
+      "status": "implemented",
+      "auth": "authenticated",
+      "description": "Updates editable profile data for the current authenticated user.",
+      "usage": "Updates the current user's editable full name from the shared React and Flutter profile-management workflow.",
+      "source": "services/auth/Controllers/AuthController.cs",
+      "uiWorkflowIds": [
+        "auth-profile-management"
+      ]
+    },
+    {
+      "id": "auth-delete-me",
+      "method": "DELETE",
+      "path": "/api/auth/me",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "DeleteCurrentUser",
+      "status": "implemented",
+      "auth": "authenticated",
+      "description": "Deletes the current authenticated account, except accounts assigned a system role, which are prohibited from self-deletion.",
+      "usage": "Called after the user confirms the red account-deletion warning in Profile; a denied deletion names the system role or roles assigned to that account.",
+      "source": "services/auth/Controllers/AuthController.cs",
+      "uiWorkflowIds": [
+        "auth-profile-management"
+      ]
+    },
+    {
+      "id": "auth-health",
+      "method": "GET",
+      "path": "/api/auth/health",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "Get",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Reports Auth service and database readiness.",
+      "usage": "Used by the API gateway and Docker-stack health diagnostics.",
+      "source": "services/auth/Controllers/HealthControllers.cs"
+    },
+    {
+      "id": "auth-permissions",
+      "method": "GET",
+      "path": "/api/auth/permissions",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "GetPermissions",
+      "status": "implemented",
+      "auth": "permission:auth.permission.read",
+      "description": "Lists permissions available to an authorized administration caller.",
+      "usage": "Supports authorization administration and permission discovery.",
+      "source": "services/auth/Controllers/PermissionsController.cs"
+    },
+    {
+      "id": "auth-permission-by-id",
+      "method": "GET",
+      "path": "/api/auth/permissions/{id:guid}",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "GetPermissionById",
+      "status": "implemented",
+      "auth": "permission:auth.permission.read",
+      "description": "Returns one permission by identifier.",
+      "usage": "Supports authorization administration and permission detail views.",
+      "source": "services/auth/Controllers/PermissionsController.cs"
+    },
+    {
+      "id": "auth-roles",
+      "method": "GET",
+      "path": "/api/auth/roles",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "GetRoles",
+      "status": "implemented",
+      "auth": "permission:auth.role.read",
+      "description": "Lists roles for authorized administration callers.",
+      "usage": "Supports role administration and authorization inspection.",
+      "source": "services/auth/Controllers/RolesController.cs"
+    },
+    {
+      "id": "auth-role-by-id",
+      "method": "GET",
+      "path": "/api/auth/roles/{id:guid}",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "GetRoleById",
+      "status": "implemented",
+      "auth": "permission:auth.role.read",
+      "description": "Returns one role by identifier.",
+      "usage": "Supports role detail and authorization administration screens.",
+      "source": "services/auth/Controllers/RolesController.cs"
+    },
+    {
+      "id": "auth-role-create",
+      "method": "POST",
+      "path": "/api/auth/roles",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "CreateRole",
+      "status": "implemented",
+      "auth": "permission:all(auth.role.read,auth.role.create)",
+      "description": "Creates a role when the caller has both role-read and role-create permission.",
+      "usage": "Supports authorized role administration.",
+      "source": "services/auth/Controllers/RolesController.cs"
+    },
+    {
+      "id": "auth-role-update",
+      "method": "PUT",
+      "path": "/api/auth/roles/{id:guid}",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "UpdateRole",
+      "status": "implemented",
+      "auth": "permission:all(auth.role.read,auth.role.update)",
+      "description": "Updates role details when the caller has both role-read and role-update permission.",
+      "usage": "Supports authorized role administration.",
+      "source": "services/auth/Controllers/RolesController.cs"
+    },
+    {
+      "id": "auth-role-delete",
+      "method": "DELETE",
+      "path": "/api/auth/roles/{id:guid}",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "DeleteRole",
+      "status": "implemented",
+      "auth": "permission:all(auth.role.read,auth.role.delete)",
+      "description": "Deletes an eligible non-system role when the caller has both role-read and role-delete permission.",
+      "usage": "Supports authorized role administration.",
+      "source": "services/auth/Controllers/RolesController.cs"
+    },
+    {
+      "id": "auth-role-assign-permissions",
+      "method": "POST",
+      "path": "/api/auth/roles/{id:guid}/permissions",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "AssignPermissions",
+      "status": "implemented",
+      "auth": "permission:all(auth.role.read,auth.role.update,auth.permission.read)",
+      "description": "Replaces a non-system role's permission set. Requires role read, role update and permission catalogue read together; system-role grants remain protected. Replaces a non-system role’s permission set. Requires role read, role update and permission catalogue read together; system-role grants remain protected.",
+      "usage": "Role editors can grant or remove permissions from eligible non-system roles. The Auth service checks the caller's current role assignments and invalidates affected user sessions. Role editors can grant or remove permissions from eligible non-system roles. The Auth service checks the caller’s current role assignments and invalidates affected user sessions.",
+      "source": "services/auth/Controllers/RolesController.cs"
+    },
+    {
+      "id": "auth-users",
+      "method": "GET",
+      "path": "/api/auth/users",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "GetAllUsers",
+      "status": "implemented",
+      "auth": "permission:auth.user.read",
+      "description": "Lists users for authorized administration callers.",
+      "usage": "Supports user administration and authorization inspection.",
+      "source": "services/auth/Controllers/UsersController.cs"
+    },
+    {
+      "id": "auth-user-by-id",
+      "method": "GET",
+      "path": "/api/auth/users/{id:guid}",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "GetUserById",
+      "status": "implemented",
+      "auth": "permission:auth.user.read",
+      "description": "Returns one user by identifier.",
+      "usage": "Supports authorized user administration detail views.",
+      "source": "services/auth/Controllers/UsersController.cs"
+    },
+    {
+      "id": "auth-user-create",
+      "method": "POST",
+      "path": "/api/auth/users",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "CreateUser",
+      "status": "implemented",
+      "auth": "permission:all(auth.user.read,auth.user.create)",
+      "description": "Creates an account with user read and user create grants together; assigning initial roles also requires role read and any applicable system-role grant.",
+      "usage": "Supports authorized user administration.",
+      "source": "services/auth/Controllers/UsersController.cs"
+    },
+    {
+      "id": "auth-user-update",
+      "method": "PUT",
+      "path": "/api/auth/users/{id:guid}",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "UpdateUser",
+      "status": "implemented",
+      "auth": "permission:all(auth.user.read,auth.user.update)",
+      "description": "Updates account details, active state or password with user read and user update grants together.",
+      "usage": "Supports authorized user administration.",
+      "source": "services/auth/Controllers/UsersController.cs"
+    },
+    {
+      "id": "auth-user-delete",
+      "method": "DELETE",
+      "path": "/api/auth/users/{id:guid}",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "DeleteUser",
+      "status": "implemented",
+      "auth": "permission:all(auth.user.read,auth.user.delete)",
+      "description": "Deletes an account with user read and user delete grants together, subject to protected system-role rules.",
+      "usage": "Supports authorized user administration; a protected account's assigned system role names are included in the deletion rejection.",
+      "source": "services/auth/Controllers/UsersController.cs"
+    },
+    {
+      "id": "auth-user-assign-roles",
+      "method": "POST",
+      "path": "/api/auth/users/{id:guid}/roles",
+      "ownerService": "auth",
+      "publicBoundary": "api",
+      "operationId": "AssignRoles",
+      "status": "implemented",
+      "auth": "permission:all(auth.user.read,auth.user.update,auth.role.read)",
+      "description": "Replaces an account's roles with user read, user update and role read grants together; system-role changes require the dedicated grant. Replaces an account’s roles with user read, user update and role read grants together; system-role changes require the dedicated grant.",
+      "usage": "Authorized user editors can add or remove user roles; the service checks current caller grants, system-role constraints and invalidates the affected account sessions.",
+      "source": "services/auth/Controllers/UsersController.cs"
+    },
+    {
+      "id": "planner-recommendations-create",
+      "method": "POST",
+      "path": "/api/planner/recommendations",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "operationId": "CreateRecommendations",
+      "status": "implemented",
+      "auth": "permission:planner.recommendations.create",
+      "description": "Submit coastal preferences and generate candidates from validated catalogue, marine, and operations evidence.",
+      "usage": "Fits verified offering intervals and experience levels; records MATCHES_FOUND, NO_MATCHES or DEPENDENCIES_UNAVAILABLE within a 40-second budget. Candidate responses include destination-local display clocks alongside immutable UTC instants and the IANA zone; older snapshots are enriched on read.",
+      "source": "services/coastal-planner/Controllers/RecommendationsController.cs",
+      "uiWorkflowIds": [
+        "planner-plan"
+      ]
+    },
+    {
+      "id": "planner-recommendations-get",
+      "method": "GET",
+      "path": "/api/planner/recommendations/{recommendationId:guid}",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "operationId": "GetRecommendation",
+      "status": "implemented",
+      "auth": "permission:planner.recommendations.read",
+      "description": "Retrieve recommendation candidate details, suitability, and evidence.",
+      "usage": "Retrieves the candidates and peer status notes for a recommendation session. Candidate responses include destination-local display clocks alongside immutable UTC instants and the IANA zone; older snapshots are enriched on read.",
+      "source": "services/coastal-planner/Controllers/RecommendationsController.cs",
+      "uiWorkflowIds": [
+        "planner-recommendations",
+        "planner-recommendation-result",
+        "planner-plan"
+      ]
+    },
+    {
+      "id": "planner-biodiversity-predictions",
+      "method": "GET",
+      "path": "/api/planner/biodiversity/predictions",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "operationId": "GetPredictions",
+      "status": "implemented",
+      "auth": "permission:planner.biodiversity.read",
+      "description": "Return versioned, validated biodiversity context with the closed available/not_requested/unavailable/invalid/stale status set.",
+      "usage": "Clients call only this public route with planner.biodiversity.read; unknown statuses are unavailable, and optional ML context never changes safety, eligibility, availability, or operational decisions.",
+      "source": "services/coastal-planner/Controllers/BiodiversityController.cs",
+      "uiWorkflowIds": [
+        "planner-recommendations",
+        "planner-recommendation-result",
+        "planner-plan"
+      ]
+    },
+    {
+      "id": "planner-workflows-get",
+      "method": "GET",
+      "path": "/api/planner/workflows/{workflowId:guid}",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "operationId": "GetWorkflow",
+      "status": "implemented",
+      "auth": "permission:planner.workflows.read",
+      "description": "Get status and lifecycle of a planning workflow.",
+      "usage": "Reads owner-scoped business lifecycle separately from private AI dependency availability and NOT_STARTED execution before accepted G07.",
+      "source": "services/coastal-planner/Controllers/WorkflowsController.cs",
+      "uiWorkflowIds": [
+        "planner-recommendations",
+        "planner-recommendation-result",
+        "planner-plan"
+      ]
+    },
+    {
+      "id": "planner-itineraries-create",
+      "method": "POST",
+      "path": "/api/planner/itineraries",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "operationId": "CreateItinerary",
+      "status": "implemented",
+      "auth": "permission:planner.itineraries.manage",
+      "description": "Create a user-owned saved itinerary.",
+      "usage": "Saves an owner itinerary with time zones; an optional recommendationId validates new selections against the owner snapshot and 15-minute lifetime. New itineraries can be created as drafts or confirmed at creation time.",
+      "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
+      "uiWorkflowIds": [
+        "planner-recommendation-result",
+        "planner-plan"
+      ]
+    },
+    {
+      "id": "planner-itineraries-list",
+      "method": "GET",
+      "path": "/api/planner/itineraries",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "operationId": "ListItineraries",
+      "status": "implemented",
+      "auth": "permission:planner.itineraries.manage",
+      "description": "List the caller's saved itineraries.",
+      "usage": "Returns paginated itineraries owned by the calling user. Used by the saved trips page and by the planning page when appending to an existing trip.",
+      "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
+      "uiWorkflowIds": [
+        "planner-recommendation-result",
+        "planner-saved-trips",
+        "planner-plan"
+      ]
+    },
+    {
+      "id": "planner-itineraries-history",
+      "method": "GET",
+      "path": "/api/planner/itineraries/{itineraryId:guid}/re-evaluations",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "operationId": "GetEvaluationHistory",
+      "status": "implemented",
+      "auth": "permission:planner.itineraries.manage",
+      "description": "Returns the latest 20 persisted condition review snapshots for a caller-owned trip.",
+      "usage": "Shows previous/current evidence, review actions and timestamps without changing selected experiences.",
+      "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
+      "uiWorkflowIds": [
+        "planner-trip-management"
+      ]
+    },
+    {
+      "id": "planner-itineraries-get",
+      "method": "GET",
+      "path": "/api/planner/itineraries/{itineraryId:guid}",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "operationId": "GetItinerary",
+      "status": "implemented",
+      "auth": "permission:planner.itineraries.manage",
+      "description": "Retrieve a specific itinerary with ordered items.",
+      "usage": "Gets details of an itinerary owned by the authenticated caller.",
+      "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
+      "uiWorkflowIds": [
+        "planner-recommendation-result",
+        "planner-trip-management",
+        "planner-plan"
+      ]
+    },
+    {
+      "id": "planner-catalogue",
+      "method": "GET",
+      "path": "/api/planner/catalogue",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "operationId": "GetCatalogue",
+      "status": "implemented",
+      "auth": "permission:planner.recommendations.create",
+      "description": "Returns named destination and activity choices from the canonical experience catalogue.",
+      "usage": "Clients select names; canonical IDs remain inside requests. An absent or invalid source returns UNAVAILABLE without invented destinations. The protected dedicated planning page reads this endpoint.",
+      "source": "services/coastal-planner/Controllers/CatalogueController.cs",
+      "uiWorkflowIds": [
+        "planner-plan"
+      ]
+    },
+    {
+      "id": "planner-itineraries-update",
+      "method": "PUT",
+      "path": "/api/planner/itineraries/{itineraryId:guid}",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "operationId": "UpdateItinerary",
+      "status": "implemented",
+      "auth": "permission:planner.itineraries.manage",
+      "description": "Update editable itinerary details, reorder items, or adjust dates.",
+      "usage": "Preserves stop identity while editing and reordering; checks concurrencyVersion, rejects overlapping/duplicate stops and resets stale evidence after schedule changes. Confirmed trips cannot be edited.",
+      "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
+      "uiWorkflowIds": [
+        "planner-recommendation-result",
+        "planner-trip-management",
+        "planner-plan"
+      ]
+    },
+    {
+      "id": "planner-itineraries-delete",
+      "method": "DELETE",
+      "path": "/api/planner/itineraries/{itineraryId:guid}",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "operationId": "DeleteItinerary",
+      "status": "implemented",
+      "auth": "permission:planner.itineraries.manage",
+      "description": "Delete a caller-owned itinerary.",
+      "usage": "Removes a caller-owned draft itinerary. Confirmed trips cannot be cancelled.",
+      "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
+      "uiWorkflowIds": [
+        "planner-trip-management"
+      ]
+    },
+    {
+      "id": "planner-itineraries-reevaluate",
+      "method": "POST",
+      "path": "/api/planner/itineraries/{itineraryId:guid}/re-evaluations",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "operationId": "ReEvaluateItinerary",
+      "status": "implemented",
+      "auth": "permission:planner.itineraries.manage",
+      "description": "Evaluate existing itinerary against current marine suitability, availability, and operational restrictions.",
+      "usage": "Atomically records previous/current evidence, review snapshot and a new optimistic version; HasChanges and RequiresReview have separate meanings. Available for both draft and confirmed itineraries.",
+      "source": "services/coastal-planner/Controllers/ItinerariesController.cs",
+      "uiWorkflowIds": [
+        "planner-trip-management"
+      ]
+    },
+    {
+      "id": "planner-health",
+      "method": "GET",
+      "path": "/api/planner/health",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "operationId": "Get",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Reports Coastal Planner service and database readiness.",
+      "usage": "Used by the exec-form .NET Docker readiness probe, API startup dependency and gateway diagnostics; missing peers do not prevent readiness.",
+      "source": "services/coastal-planner/Controllers/HealthController.cs"
+    },
+    {
+      "id": "planner-swagger-document",
+      "method": "GET",
+      "path": "/api/planner/swagger/{documentName}/swagger.json",
+      "ownerService": "coastal-planner",
+      "publicBoundary": "api",
+      "operationId": "SwaggerDocument",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Returns the Coastal Planner OpenAPI document through the public API gateway.",
+      "usage": "Used by the unified Swagger UI and contract inspection without exposing the internal service host.",
+      "source": "services/coastal-planner/Program.cs"
     },
     {
       "id": "marine-safety-swagger-document",
@@ -962,240 +1753,6 @@
       "source": "services/marine-safety/Controllers/AssessmentsController.cs"
     },
     {
-      "id": "auth-swagger-ui-document",
-      "method": "GET",
-      "path": "/api/auth/swagger/{documentName}/swagger.json",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "AuthSwaggerDocument",
-      "status": "implemented",
-      "auth": "anonymous",
-      "description": "Returns the Auth service OpenAPI document through its public documentation path.",
-      "usage": "Used for Auth contract inspection without exposing the Auth service host directly.",
-      "source": "services/auth/Program.cs"
-    },
-    {
-      "id": "auth-register",
-      "method": "POST",
-      "path": "/api/auth/register",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "Register",
-      "status": "implemented",
-      "auth": "anonymous",
-      "description": "Creates a new user account and establishes the initial authentication result.",
-      "usage": "Creates accounts from the shared React and Flutter registration workflow and returns the first session through browser cookies or native credentials.",
-      "source": "services/auth/Controllers/AuthController.cs"
-    },
-    {
-      "id": "auth-login",
-      "method": "POST",
-      "path": "/api/auth/login",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "Login",
-      "status": "implemented",
-      "auth": "anonymous",
-      "description": "Authenticates credentials and returns the access and refresh session result.",
-      "usage": "Primary sign-in operation for the React and Flutter Auth workflow.",
-      "source": "services/auth/Controllers/AuthController.cs",
-      "uiWorkflowIds": [
-        "auth-session-management"
-      ]
-    },
-    {
-      "id": "auth-refresh",
-      "method": "POST",
-      "path": "/api/auth/refresh",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "Refresh",
-      "status": "implemented",
-      "auth": "anonymous",
-      "description": "Refreshes an access token using an approved refresh token and can activate a previously signed-in browser account.",
-      "usage": "Keeps an existing client session alive and lets the React browser account switcher select one of its protected account-scoped cookie sessions without replacing other accounts.",
-      "source": "services/auth/Controllers/AuthController.cs",
-      "uiWorkflowIds": [
-        "auth-session-management",
-        "foundation-home"
-      ]
-    },
-    {
-      "id": "auth-logout",
-      "method": "POST",
-      "path": "/api/auth/logout",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "Logout",
-      "status": "implemented",
-      "auth": "authenticated",
-      "description": "Ends only the authenticated account's current-device session.",
-      "usage": "Signs out the active account from this device while leaving other accounts on the same browser and this account's sessions on other devices active.",
-      "source": "services/auth/Controllers/AuthController.cs",
-      "uiWorkflowIds": [
-        "auth-session-management",
-        "foundation-home"
-      ]
-    },
-    {
-      "id": "auth-logout-account",
-      "method": "POST",
-      "path": "/api/auth/logout/{id:guid}",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "LogoutAccount",
-      "status": "implemented",
-      "auth": "authenticated",
-      "description": "Ends the authenticated account's session on the current device; an account cannot end a different account's session.",
-      "usage": "Provides a guarded account-specific current-device sign-out route for the authenticated account only.",
-      "source": "services/auth/Controllers/AuthController.cs"
-    },
-    {
-      "id": "auth-remove-account",
-      "method": "POST",
-      "path": "/api/auth/logout-account",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "LogoutSelectedAccount",
-      "status": "implemented",
-      "auth": "authenticated",
-      "description": "Ends only the authenticated account's session on the current device; other signed-in accounts must sign out separately.",
-      "usage": "Used by the React and Flutter account menus to sign out the active account while keeping other saved accounts and sessions available; requests targeting a different account are forbidden.",
-      "source": "services/auth/Controllers/AuthController.cs",
-      "uiWorkflowIds": [
-        "auth-session-management",
-        "foundation-home"
-      ]
-    },
-    {
-      "id": "auth-logout-all-devices",
-      "method": "POST",
-      "path": "/api/auth/logout-all-devices",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "LogoutAllDevices",
-      "status": "implemented",
-      "auth": "authenticated",
-      "description": "Revokes all sessions for the authenticated account across devices after verifying the current password.",
-      "usage": "Available only from Login Sessions in the Profile workflows; password verification is required before any session is revoked.",
-      "source": "services/auth/Controllers/AuthController.cs",
-      "uiWorkflowIds": [
-        "auth-profile-management"
-      ]
-    },
-    {
-      "id": "auth-sessions",
-      "method": "GET",
-      "path": "/api/auth/sessions",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "GetSessions",
-      "status": "implemented",
-      "auth": "authenticated",
-      "description": "Lists active sessions for the authenticated account.",
-      "usage": "Used by Profile in React Web and Flutter Mobile to review and end login sessions for the current account.",
-      "source": "services/auth/Controllers/AuthController.cs",
-      "uiWorkflowIds": [
-        "auth-profile-management"
-      ]
-    },
-    {
-      "id": "auth-revoke-session",
-      "method": "DELETE",
-      "path": "/api/auth/sessions/{sessionId:guid}",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "RevokeSession",
-      "status": "implemented",
-      "auth": "authenticated",
-      "description": "Revokes one selected authenticated session; the current session may be ended directly, while another device session requires current-password verification.",
-      "usage": "Supports Profile in React Web and Flutter Mobile with session-scoped end actions and server-verified password confirmation for remote devices.",
-      "source": "services/auth/Controllers/AuthController.cs",
-      "uiWorkflowIds": [
-        "auth-profile-management"
-      ]
-    },
-    {
-      "id": "auth-change-password",
-      "method": "POST",
-      "path": "/api/auth/change-password",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "ChangePassword",
-      "status": "implemented",
-      "auth": "authenticated",
-      "description": "Changes the authenticated user's password after validating the current credential.",
-      "usage": "Used by the Profile account-security section in React Web and Flutter Mobile.",
-      "source": "services/auth/Controllers/AuthController.cs",
-      "uiWorkflowIds": [
-        "auth-profile-management"
-      ]
-    },
-    {
-      "id": "auth-me",
-      "method": "GET",
-      "path": "/api/auth/me",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "GetCurrentUser",
-      "status": "implemented",
-      "auth": "authenticated",
-      "description": "Returns the current authenticated user's profile and authorization context.",
-      "usage": "Used by the React and Flutter Auth workflow to restore the signed-in account, by profile management to show server-owned details, and by the dashboard to personalize the account overview.",
-      "source": "services/auth/Controllers/AuthController.cs",
-      "uiWorkflowIds": [
-        "auth-session-management",
-        "foundation-home",
-        "auth-profile-management",
-        "coastal-overview-dashboard"
-      ]
-    },
-    {
-      "id": "auth-update-me",
-      "method": "PUT",
-      "path": "/api/auth/me",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "UpdateCurrentUser",
-      "status": "implemented",
-      "auth": "authenticated",
-      "description": "Updates editable profile data for the current authenticated user.",
-      "usage": "Updates the current user's editable full name from the shared React and Flutter profile-management workflow.",
-      "source": "services/auth/Controllers/AuthController.cs",
-      "uiWorkflowIds": [
-        "auth-profile-management"
-      ]
-    },
-    {
-      "id": "auth-delete-me",
-      "method": "DELETE",
-      "path": "/api/auth/me",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "DeleteCurrentUser",
-      "status": "implemented",
-      "auth": "authenticated",
-      "description": "Deletes the current authenticated account, except accounts assigned a system role, which are prohibited from self-deletion.",
-      "usage": "Called after the user confirms the red account-deletion warning in Profile; a denied deletion names the system role or roles assigned to that account.",
-      "source": "services/auth/Controllers/AuthController.cs",
-      "uiWorkflowIds": [
-        "auth-profile-management"
-      ]
-    },
-    {
-      "id": "auth-health",
-      "method": "GET",
-      "path": "/api/auth/health",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "Get",
-      "status": "implemented",
-      "auth": "anonymous",
-      "description": "Reports Auth service and database readiness.",
-      "usage": "Used by the API gateway and Docker-stack health diagnostics.",
-      "source": "services/auth/Controllers/HealthControllers.cs"
-    },
-    {
       "id": "experience-biodiversity-health",
       "method": "GET",
       "path": "/api/experiences/health",
@@ -1220,188 +1777,6 @@
       "description": "Returns the Experience & Biodiversity Swashbuckle document through the API gateway.",
       "usage": "Supports the unified Swagger UI and service contract inspection without exposing the private service host or requiring a JWT.",
       "source": "services/experience-biodiversity/Program.cs"
-    },
-    {
-      "id": "auth-permissions",
-      "method": "GET",
-      "path": "/api/auth/permissions",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "GetPermissions",
-      "status": "implemented",
-      "auth": "permission:auth.permission.read",
-      "description": "Lists permissions available to an authorized administration caller.",
-      "usage": "Supports authorization administration and permission discovery.",
-      "source": "services/auth/Controllers/PermissionsController.cs"
-    },
-    {
-      "id": "auth-permission-by-id",
-      "method": "GET",
-      "path": "/api/auth/permissions/{id:guid}",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "GetPermissionById",
-      "status": "implemented",
-      "auth": "permission:auth.permission.read",
-      "description": "Returns one permission by identifier.",
-      "usage": "Supports authorization administration and permission detail views.",
-      "source": "services/auth/Controllers/PermissionsController.cs"
-    },
-    {
-      "id": "auth-roles",
-      "method": "GET",
-      "path": "/api/auth/roles",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "GetRoles",
-      "status": "implemented",
-      "auth": "permission:auth.role.read",
-      "description": "Lists roles for authorized administration callers.",
-      "usage": "Supports role administration and authorization inspection.",
-      "source": "services/auth/Controllers/RolesController.cs"
-    },
-    {
-      "id": "auth-role-by-id",
-      "method": "GET",
-      "path": "/api/auth/roles/{id:guid}",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "GetRoleById",
-      "status": "implemented",
-      "auth": "permission:auth.role.read",
-      "description": "Returns one role by identifier.",
-      "usage": "Supports role detail and authorization administration screens.",
-      "source": "services/auth/Controllers/RolesController.cs"
-    },
-    {
-      "id": "auth-role-create",
-      "method": "POST",
-      "path": "/api/auth/roles",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "CreateRole",
-      "status": "implemented",
-      "auth": "permission:all(auth.role.read,auth.role.create)",
-      "description": "Creates a role when the caller has both role-read and role-create permission.",
-      "usage": "Supports authorized role administration.",
-      "source": "services/auth/Controllers/RolesController.cs"
-    },
-    {
-      "id": "auth-role-update",
-      "method": "PUT",
-      "path": "/api/auth/roles/{id:guid}",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "UpdateRole",
-      "status": "implemented",
-      "auth": "permission:all(auth.role.read,auth.role.update)",
-      "description": "Updates role details when the caller has both role-read and role-update permission.",
-      "usage": "Supports authorized role administration.",
-      "source": "services/auth/Controllers/RolesController.cs"
-    },
-    {
-      "id": "auth-role-delete",
-      "method": "DELETE",
-      "path": "/api/auth/roles/{id:guid}",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "DeleteRole",
-      "status": "implemented",
-      "auth": "permission:all(auth.role.read,auth.role.delete)",
-      "description": "Deletes an eligible non-system role when the caller has both role-read and role-delete permission.",
-      "usage": "Supports authorized role administration.",
-      "source": "services/auth/Controllers/RolesController.cs"
-    },
-    {
-      "id": "auth-role-assign-permissions",
-      "method": "POST",
-      "path": "/api/auth/roles/{id:guid}/permissions",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "AssignPermissions",
-      "status": "implemented",
-      "auth": "permission:all(auth.role.read,auth.role.update,auth.permission.read)",
-      "description": "Replaces a non-system role’s permission set. Requires role read, role update and permission catalogue read together; system-role grants remain protected.",
-      "usage": "Role editors can grant or remove permissions from eligible non-system roles. The Auth service checks the caller’s current role assignments and invalidates affected user sessions.",
-      "source": "services/auth/Controllers/RolesController.cs"
-    },
-    {
-      "id": "auth-users",
-      "method": "GET",
-      "path": "/api/auth/users",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "GetAllUsers",
-      "status": "implemented",
-      "auth": "permission:auth.user.read",
-      "description": "Lists users for authorized administration callers.",
-      "usage": "Supports user administration and authorization inspection.",
-      "source": "services/auth/Controllers/UsersController.cs"
-    },
-    {
-      "id": "auth-user-by-id",
-      "method": "GET",
-      "path": "/api/auth/users/{id:guid}",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "GetUserById",
-      "status": "implemented",
-      "auth": "permission:auth.user.read",
-      "description": "Returns one user by identifier.",
-      "usage": "Supports authorized user administration detail views.",
-      "source": "services/auth/Controllers/UsersController.cs"
-    },
-    {
-      "id": "auth-user-create",
-      "method": "POST",
-      "path": "/api/auth/users",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "CreateUser",
-      "status": "implemented",
-      "auth": "permission:all(auth.user.read,auth.user.create)",
-      "description": "Creates an account with user read and user create grants together; assigning initial roles also requires role read and any applicable system-role grant.",
-      "usage": "Supports authorized user administration.",
-      "source": "services/auth/Controllers/UsersController.cs"
-    },
-    {
-      "id": "auth-user-update",
-      "method": "PUT",
-      "path": "/api/auth/users/{id:guid}",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "UpdateUser",
-      "status": "implemented",
-      "auth": "permission:all(auth.user.read,auth.user.update)",
-      "description": "Updates account details, active state or password with user read and user update grants together.",
-      "usage": "Supports authorized user administration.",
-      "source": "services/auth/Controllers/UsersController.cs"
-    },
-    {
-      "id": "auth-user-delete",
-      "method": "DELETE",
-      "path": "/api/auth/users/{id:guid}",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "DeleteUser",
-      "status": "implemented",
-      "auth": "permission:all(auth.user.read,auth.user.delete)",
-      "description": "Deletes an account with user read and user delete grants together, subject to protected system-role rules.",
-      "usage": "Supports authorized user administration; a protected account's assigned system role names are included in the deletion rejection.",
-      "source": "services/auth/Controllers/UsersController.cs"
-    },
-    {
-      "id": "auth-user-assign-roles",
-      "method": "POST",
-      "path": "/api/auth/users/{id:guid}/roles",
-      "ownerService": "auth",
-      "publicBoundary": "api",
-      "operationId": "AssignRoles",
-      "status": "implemented",
-      "auth": "permission:all(auth.user.read,auth.user.update,auth.role.read)",
-      "description": "Replaces an account’s roles with user read, user update and role read grants together; system-role changes require the dedicated grant.",
-      "usage": "Authorized user editors can add or remove user roles; the service checks current caller grants, system-role constraints and invalidates the affected account sessions.",
-      "source": "services/auth/Controllers/UsersController.cs"
     },
     {
       "id": "marine-safety-profile-review",

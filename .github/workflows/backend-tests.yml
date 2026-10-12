@@ -90,6 +90,9 @@ jobs:
         id: tests
         if: steps.scope.outputs.affected == 'true'
         shell: bash
+        env:
+          ConnectionStrings__DefaultConnection: "Host=localhost;Database=planner-tests;Username=planner;Password=test-only"
+          JWT_SIGNING_KEY: "planner-integration-test-signing-key-32-bytes"
         run: |
           set +e
           mkdir -p test-results/backend

@@ -65,6 +65,7 @@ flutter:
 
   assets:
     - assets/coastal/onboarding/
+    - assets/coastal/planner/
     - assets/coastal/marine/
     - assets/coastal/experiences/
 

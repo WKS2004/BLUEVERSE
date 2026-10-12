@@ -197,7 +197,7 @@ After execution completes, restore the restricted policy:
 Set-ExecutionPolicy Restricted
 ```
 
-With the checked-in API, Auth and marine-safety projects running in the stack,
+With the checked-in API, Auth and component projects running in the stack,
 verify:
 
 ```text
@@ -205,8 +205,11 @@ GET http://localhost/health
 GET http://localhost/api/health
 GET http://localhost/api/auth/health
 GET http://localhost/api/marine/health
+GET http://localhost/api/experiences/health
+GET http://localhost/api/planner/health
 GET http://localhost/api/swagger/v1.json
 GET http://localhost/api/auth/swagger/v1/swagger.json
+GET http://localhost/api/planner/swagger/v1/swagger.json
 ```
 
 Open the unified Swagger UI at:
@@ -217,13 +220,26 @@ http://localhost/api/swagger
 
 There is no public `/auth/...` or `/health` backend route. Auth requests must use `/api/auth/...` and are forwarded by the API service.
 
-The marine-safety OpenAPI document is listed in the unified Swagger UI and
-exposed under `/api/marine/swagger`. Other ASP.NET services follow the public
-gateway health convention:
+The Marine Safety and Experience & Biodiversity OpenAPI documents are listed in
+the unified Swagger UI and exposed under `/api/marine/swagger` and
+`/api/experiences/swagger`. Other ASP.NET services follow the public gateway
+health convention:
 
 ```text
-GET http://localhost/api/<service-name>/health
+GET http://localhost/api/<service-route>/health
 ```
 
-Marine-safety uses the shorter public route
-`GET http://localhost/api/marine/health` rather than a folder-name-derived path.
+Planner setup now includes an exec-form .NET readiness probe and its own
+migrations; the API waits for planner database readiness. New local
+registrations receive the non-system Coastal traveller role when
+`AUTH_SELF_SERVICE_PLANNER_ACCESS=true` (Compose default). Set it to false
+to require administrator assignment. Existing accounts need explicit role
+assignment and a refreshed session to receive new permission claims.
+The private catalogue/marine/operations/ML URL variables are in `.env.example`;
+the Compose stack includes Experience & Biodiversity and Marine Safety peers,
+while Operations and ML provider compatibility remain separate integration
+gates. See
+[planner operations and pending contracts](coastal-planner.md).
+
+Marine Safety uses the shorter public route `/api/marine/health` rather than a
+folder-name-derived path.

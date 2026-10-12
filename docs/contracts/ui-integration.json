@@ -117,6 +117,59 @@
       ]
     },
     {
+      "id": "planner-plan",
+      "status": "implemented",
+      "description": "Authenticated creation page with permission-aware Create a plan/Plan history tabs, reduced-motion-aware directional transitions without an intermediate loading screen, inline catalogue status and a coastal hero, destination-local date and time validation, optional interests, returned suggestions, explicit choice and snapshot-linked draft save/append. Guests return here after sign-in. React and Flutter use the same public API and permissions with responsive web and native layouts.",
+      "web": {
+        "route": "/planner/plan",
+        "source": "apps/web/src/app/routes.tsx",
+        "status": "implemented"
+      },
+      "mobile": {
+        "route": "/planner/plan",
+        "source": "apps/mobile/lib/main.dart",
+        "status": "implemented"
+      },
+      "apiRefs": [
+        "auth-me",
+        "auth-refresh",
+        "planner-catalogue",
+        "planner-recommendations-create",
+        "planner-recommendations-get",
+        "planner-workflows-get",
+        "planner-biodiversity-predictions",
+        "planner-itineraries-create",
+        "planner-itineraries-list",
+        "planner-itineraries-get",
+        "planner-itineraries-update",
+        "planner-itineraries-confirm"
+      ]
+    },
+    {
+      "id": "planner-recommendations",
+      "status": "implemented",
+      "description": "Public planner introduction for signed-in and signed-out visitors: what planning offers, how it works, optional live inspiration and CTA to the protected creation page. The public introduction has no account sidebar or redundant self-link. The planner is globally reachable from web navigation and mobile account, sign-in, onboarding and planner menus. Personal planning pages use permission-aware Create a plan and Plan history links. Dedicated illustrative planner images support each section.",
+      "web": {
+        "route": "/planner",
+        "source": "apps/web/src/app/routes.tsx",
+        "status": "implemented"
+      },
+      "mobile": {
+        "route": "/planner",
+        "source": "apps/mobile/lib/main.dart",
+        "status": "implemented"
+      },
+      "apiRefs": [
+        "auth-me",
+        "auth-refresh",
+        "planner-recommendations-highlights",
+        "planner-recommendations-create",
+        "planner-recommendations-get",
+        "planner-workflows-get",
+        "planner-biodiversity-predictions"
+      ]
+    },
+    {
       "id": "auth-admin-entry",
       "status": "implemented",
       "description": "Permission-aware administration entry for users who hold at least one current administration read grant. React administration hides home-section marketing navigation while retaining account actions.",
@@ -191,6 +244,105 @@
       ]
     },
     {
+      "id": "not-found-recovery",
+      "status": "implemented",
+      "description": "Global, branded not-found recovery. React unknown paths stay in the address bar and render inside the shared site shell; Flutter presents the recovery page within its app navigation. Both offer a clear return to the coastal home page.",
+      "web": {
+        "route": "/404",
+        "source": "apps/web/src/app/routes.tsx"
+      },
+      "mobile": {
+        "route": "/404",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": []
+    },
+    {
+      "id": "server-error-recovery",
+      "status": "implemented",
+      "description": "Global, branded server and rendering-error recovery with retry and home navigation. React renders the recovery content in its shared header/main/footer shell; Flutter uses its app navigation layout.",
+      "web": {
+        "route": "/500",
+        "source": "apps/web/src/app/routes.tsx"
+      },
+      "mobile": {
+        "route": "/500",
+        "source": "apps/mobile/lib/main.dart"
+      },
+      "apiRefs": []
+    },
+    {
+      "id": "planner-recommendation-result",
+      "status": "implemented",
+      "description": "Revisit a caller-owned search, inspect permitted workflow progress and evidence, and save or append a suggestion through the shared public API.",
+      "web": {
+        "route": "/planner/recommendations/:recommendationId",
+        "source": "apps/web/src/app/routes.tsx",
+        "status": "implemented"
+      },
+      "mobile": {
+        "route": "/planner/recommendations/:recommendationId",
+        "source": "apps/mobile/lib/main.dart",
+        "status": "implemented"
+      },
+      "apiRefs": [
+        "auth-me",
+        "auth-refresh",
+        "planner-recommendations-get",
+        "planner-workflows-get",
+        "planner-biodiversity-predictions",
+        "planner-itineraries-create",
+        "planner-itineraries-list",
+        "planner-itineraries-get",
+        "planner-itineraries-update"
+      ]
+    },
+    {
+      "id": "planner-saved-trips",
+      "status": "implemented",
+      "description": "Caller-owned plan history with Create a plan/Plan history tabs, reduced-motion-aware directional transitions without an intermediate loading screen, inline history-read status and a coastal hero, draft/confirmed/past filters, per-page search, reset, condition-check refinement, 10/20/25/50 page-size selection, and paged plan cards. React and Flutter preserve owner scoping and use the shared public API.",
+      "web": {
+        "route": "/planner/saved",
+        "source": "apps/web/src/app/routes.tsx",
+        "status": "implemented"
+      },
+      "mobile": {
+        "route": "/planner/saved",
+        "source": "apps/mobile/lib/main.dart",
+        "status": "implemented"
+      },
+      "apiRefs": [
+        "auth-me",
+        "auth-refresh",
+        "planner-itineraries-list"
+      ]
+    },
+    {
+      "id": "planner-trip-management",
+      "status": "implemented",
+      "description": "Plan details with a clearer itinerary timeline, draft editing/reorder/remove, confirmation, deletion and condition review/history. Existing shared backend behavior and Flutter workflows are preserved.",
+      "web": {
+        "route": "/planner/itineraries/:itineraryId",
+        "source": "apps/web/src/app/routes.tsx",
+        "status": "implemented"
+      },
+      "mobile": {
+        "route": "/planner/itinerary",
+        "source": "apps/mobile/lib/main.dart",
+        "status": "implemented"
+      },
+      "apiRefs": [
+        "auth-me",
+        "auth-refresh",
+        "planner-itineraries-get",
+        "planner-itineraries-update",
+        "planner-itineraries-delete",
+        "planner-itineraries-confirm",
+        "planner-itineraries-reevaluate",
+        "planner-itineraries-history"
+      ]
+    },
+    {
       "id": "marine-conditions",
       "status": "implemented",
       "description": "Shared React and Flutter marine lookup workflow with matching condition evidence and server-owned suitability outcomes; neither client reclassifies conditions. Both clients preserve signed decimal coordinates; Flutter does not replay ambiguous assessment writes. Both clients show activity data as unavailable with retry while preserving saved records and independent condition lookup; dependent profile draft/edit/review and evaluation actions are disabled until published activity data is available. Deactivation remains independent and typed error adapters retain availability metadata. React provides accessible workflow navigation, a location/time guide and plain-language explanations of unchanged server results. React offers a shared account-menu entry with the Marine read grant. React sidebar and page tabs use the same label: Coastal conditions (shared display-label source). React adds a responsive editorial hero with newly generated ocean swell and shoreline imagery. Imagery is decorative, not observed conditions, stored records or proof of safety. The React hero places its image above its text panel at every screen width. React uses a persistent shared heading and introduction, followed by the existing pill tabs above each stacked hero and content panel. Tabs stick below the site header during scrolling. Switching Marine tabs animates only the panel with reduced-motion support and uses inline initial-read feedback; first entry, explicit retries, writes and Auth retain normal loading feedback. Flutter uses one native Marine shell with the shared labels Coastal conditions, Coastal evidence and Activity safety limits, pinned navigation, stacked local photographic heroes and reduced-motion-aware panel transitions. Dashboard and account-menu entry require the read grant. Native public requests reuse the selected secure account credentials, and changing accounts or grants resets or removes protected content. Tab bootstrap reads remain inline; explicit reads and production writes retain shared loading feedback. Flutter renders sourced wind, wave, swell and rain values with units and explicit unavailable fields. UNKNOWN results survive absent condition evidence. Time input is normalized to UTC; pull-to-refresh reads conditions without creating another assessment.",
@@ -246,34 +398,6 @@
         "marine-safety-profile-review",
         "marine-activities"
       ]
-    },
-    {
-      "id": "not-found-recovery",
-      "status": "implemented",
-      "description": "Global, branded not-found recovery. React unknown paths stay in the address bar and render inside the shared site shell; Flutter presents the recovery page within its app navigation. Both offer a clear return to the coastal home page.",
-      "web": {
-        "route": "/404",
-        "source": "apps/web/src/app/routes.tsx"
-      },
-      "mobile": {
-        "route": "/404",
-        "source": "apps/mobile/lib/main.dart"
-      },
-      "apiRefs": []
-    },
-    {
-      "id": "server-error-recovery",
-      "status": "implemented",
-      "description": "Global, branded server and rendering-error recovery with retry and home navigation. React renders the recovery content in its shared header/main/footer shell; Flutter uses its app navigation layout.",
-      "web": {
-        "route": "/500",
-        "source": "apps/web/src/app/routes.tsx"
-      },
-      "mobile": {
-        "route": "/500",
-        "source": "apps/mobile/lib/main.dart"
-      },
-      "apiRefs": []
     },
     {
       "id": "experience-discovery",
@@ -406,6 +530,22 @@
     }
   ],
   "endpoints": [
+    {
+      "id": "planner-recommendations-highlights",
+      "method": "GET",
+      "path": "/api/planner/recommendations/highlights",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "GetHighlights"
+    },
+    {
+      "id": "planner-itineraries-confirm",
+      "method": "POST",
+      "path": "/api/planner/itineraries/{itineraryId:guid}/confirm",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "ConfirmItinerary"
+    },
     {
       "id": "auth-register",
       "method": "POST",
@@ -589,6 +729,102 @@
       "publicBoundary": "api",
       "ownerService": "auth",
       "operationId": "AssignRoles"
+    },
+    {
+      "id": "planner-recommendations-create",
+      "method": "POST",
+      "path": "/api/planner/recommendations",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "CreateRecommendations"
+    },
+    {
+      "id": "planner-recommendations-get",
+      "method": "GET",
+      "path": "/api/planner/recommendations/{recommendationId:guid}",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "GetRecommendation"
+    },
+    {
+      "id": "planner-workflows-get",
+      "method": "GET",
+      "path": "/api/planner/workflows/{workflowId:guid}",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "GetWorkflow"
+    },
+    {
+      "id": "planner-biodiversity-predictions",
+      "method": "GET",
+      "path": "/api/planner/biodiversity/predictions",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "GetPredictions"
+    },
+    {
+      "id": "planner-itineraries-create",
+      "method": "POST",
+      "path": "/api/planner/itineraries",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "CreateItinerary"
+    },
+    {
+      "id": "planner-itineraries-list",
+      "method": "GET",
+      "path": "/api/planner/itineraries",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "ListItineraries"
+    },
+    {
+      "id": "planner-itineraries-get",
+      "method": "GET",
+      "path": "/api/planner/itineraries/{itineraryId:guid}",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "GetItinerary"
+    },
+    {
+      "id": "planner-itineraries-update",
+      "method": "PUT",
+      "path": "/api/planner/itineraries/{itineraryId:guid}",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "UpdateItinerary"
+    },
+    {
+      "id": "planner-itineraries-delete",
+      "method": "DELETE",
+      "path": "/api/planner/itineraries/{itineraryId:guid}",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "DeleteItinerary"
+    },
+    {
+      "id": "planner-itineraries-reevaluate",
+      "method": "POST",
+      "path": "/api/planner/itineraries/{itineraryId:guid}/re-evaluations",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "ReEvaluateItinerary"
+    },
+    {
+      "id": "planner-catalogue",
+      "method": "GET",
+      "path": "/api/planner/catalogue",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "GetCatalogue"
+    },
+    {
+      "id": "planner-itineraries-history",
+      "method": "GET",
+      "path": "/api/planner/itineraries/{itineraryId:guid}/re-evaluations",
+      "publicBoundary": "api",
+      "ownerService": "coastal-planner",
+      "operationId": "GetEvaluationHistory"
     },
     {
       "id": "marine-current",
