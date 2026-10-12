@@ -1299,3 +1299,29 @@ Member 2, Marine Conditions & Safety Intelligence, branch `features/marine-safet
   to start in this environment (exit code 3221225794); the updated expectation
   will be checked by the follow-up GitHub Actions run. PR:
   https://github.com/WKS2004/BLUEVERSE/pull/6.
+
+## 2026-10-12 — Align merged Auth seed count assertions
+
+- Date/time or time range: 2026-10-12 14:20 (Asia/Colombo; follow-up)
+- GitHub Username: `sanudaabey`
+- Team Member Name (actual): Sanuda Abeysinghe
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-6
+- Summary of the user's request: Keep the merged Experience and Marine
+  components working and make the follow-up CI suite pass.
+- Summary of what the AI Agent did: Reviewed Backend Microservices Tests run
+  82. The two remaining failures were stale Auth permission-seed totals in
+  `AuthMemberPermissionSeedingTests`; the Experience permissions are already
+  part of the merged baseline, so existing entries do not increase the total.
+  Updated the permission and admin-grant totals to 16 while retaining the
+  identity, collision, description, grant, and repeated-seeding assertions.
+- AI output accepted/changed/rejected: Applied the user's earlier approval to
+  update the existing seeder expected totals from 14 to 16. No assertions were
+  removed or relaxed.
+- Verification/evidence: Backend Microservices run 82 reported 2 Auth
+  expectation failures (expected 14 and 15, actual 16); API passed 55/55,
+  Experience passed 95/95, and Marine Safety passed 183/183. The updated Auth
+  assertions await the next GitHub Actions run. React Web Tests run 83 ended
+  after a GitHub Actions runner shutdown signal (exit 143) before producing
+  test results. PR: https://github.com/WKS2004/BLUEVERSE/pull/6.
