@@ -128,6 +128,10 @@ workflow. Missing backend tests for a service source project are treated as a
 failure; an entirely empty foundation suite is reported as zero tests until
 that implementation exists.
 
+The React Web Tests workflow writes Node's `spec` reporter to the Actions log
+and JUnit to `test-results/web/junit.xml`. This keeps per-test progress visible
+while preserving the file used by the metrics reporter.
+
 `.github/scripts/report_test_metrics.py` parses JUnit, TRX and Flutter machine
 results. JUnit parsing removes terminal color escapes and XML-illegal control
 characters from reporter output while preserving test outcomes. Flutter output

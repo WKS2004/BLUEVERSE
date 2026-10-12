@@ -1325,3 +1325,23 @@ Member 2, Marine Conditions & Safety Intelligence, branch `features/marine-safet
   assertions await the next GitHub Actions run. React Web Tests run 83 ended
   after a GitHub Actions runner shutdown signal (exit 143) before producing
   test results. PR: https://github.com/WKS2004/BLUEVERSE/pull/6.
+
+## 2026-10-12 — Stream React test progress in CI logs
+
+- Date/time or time range: 2026-10-12 15:34 (Asia/Colombo)
+- GitHub Username: `sanudaabey`
+- Team Member Name (actual): Sanuda Abeysinghe
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-6
+- Summary of the user's request: Prepare a visible file change for the React
+  Web Tests workflow issue, without committing or pushing it.
+- Summary of what the AI Agent did: Kept the JUnit reporter and added Node's
+  `spec` reporter to stdout so each test's progress is visible in the Actions
+  log. Documented the reporting behavior in the CI guide.
+- AI output accepted/changed/rejected: Accepted this diagnostic-only workflow
+  improvement. It does not claim to prevent an externally stopped runner or
+  change test pass/fail semantics.
+- Verification/evidence: Reviewed the current Node.js v24.21.0 documentation
+  for multiple reporters and verified reporter flags in local Node v24.11.1;
+  `git diff --check` passed. Tests were not run. No commit or push was created.
