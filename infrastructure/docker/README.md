@@ -10,6 +10,7 @@ Custom Dockerfiles remain here so application codebases can stay close to their 
 - `coastal-planner/` — ASP.NET Core Coastal Planner service
 - `experience-biodiversity/` — ASP.NET Core Experience & Biodiversity service
 - `marine-safety/` — ASP.NET Core Marine Safety service
+- `agentic-ai/` — four private Python runtime image shells for the paired v1 agent roles
 - `frontend/` — React build + static Nginx runtime
 - `edge-nginx/` — local reverse proxy configuration
 
@@ -55,6 +56,25 @@ Compose uses Docker Hardened Images for Node 24, Nginx 1.30, .NET 10 SDK and
 ASP.NET Core 10 runtime, and PostgreSQL 16. The ASP.NET Dockerfiles use
 multi-stage builds and exec-form runtime entry points; their health probes call
 the service's built-in `--healthcheck` mode.
+
+The four future Agentic AI images use `dhi.io/python:3.13-alpine` and are
+available under the opt-in `agentic-ai` Compose profile. They are runtime-only
+image shells: no agent source, dependencies, listener, health endpoint, model
+configuration or tool implementation is included. Their default command only
+prints the Python version and exits. Build them with:
+
+```sh
+docker compose --profile agentic-ai build \
+  agent-experience-biodiversity \
+  agent-marine-conditions \
+  agent-planning-coordination \
+  agent-safety-operations
+```
+
+All four services join only the internal Docker network and publish no host
+ports. Keep them out of runtime deployments until G07 is accepted and their
+assigned `agentic-ai/**` branches add the executable workloads and reviewed
+health/readiness behavior.
 
 Every ASP.NET backend service should keep its Dockerfile in a matching directory under `infrastructure/docker/<service-name>/Dockerfile`. The Docker backend workflow discovers first-level ASP.NET services under `services`, builds the public `api` service first, and then builds the remaining services one by one.
 
