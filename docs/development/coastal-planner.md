@@ -4,7 +4,7 @@
 
 The private ASP.NET Core service owns recommendation snapshots, workflows,
 itineraries, condition review history and validated biodiversity caching.
-React uses only the public API through edge-nginx. Destination and activity
+React and Flutter use only the public API through edge-nginx. Destination and activity
 selection uses canonical names from the catalogue projection; users do not
 enter UUIDs. Suggestions have persistent URLs, evidence, cautions and optional
 wildlife context. Users can save a named trip, add a suggestion to an existing
@@ -58,8 +58,9 @@ stopping; `down --volumes` intentionally deletes local data.
 
 ## Required owner contracts — acceptance pending
 
-These are consumer requirements implemented on this branch, **not accepted
-G00 contracts or evidence that the other services exist**. Owners must confirm
+These are consumer requirements implemented on this branch. Shared G00
+acceptance was confirmed by Adithya on 2026-10-12, but that confirmation is
+not live compatibility evidence or approval of the private IT3091 wire contract. Owners must confirm
 paths, payloads and service-to-service authorization before integration.
 The peer adapters forward the authenticated caller's bearer context and a
 correlation ID. They never expose private hostnames in client requests.
@@ -100,12 +101,20 @@ is separate from `aiDependencyStatus` and `aiExecutionStatus`; the latter
 remains `NOT_STARTED`. The future health path is a proposed private contract,
 not an implemented AI endpoint.
 
-Flutter now provides planner home, planning and saved-trip routes through the
-same public API contract. Recommendation-result and itinerary-detail routes
-remain planned. The whole workflow is marked `in_progress`; equal-client
-capability and G00/G07 acceptance must be completed before claiming release
-readiness. This branch does not implement the other owners' services or mark
-their gates accepted.
+Flutter provides planner home, planning, saved recommendation, paged saved
+trips and itinerary details through the same public contract. Full draft
+editing preserves stable item IDs, concurrency versions and snapshot
+references; native date/time pickers submit wall clocks with the owning IANA
+zone. Confirmed trips remain read-only. Condition reviews show prior/current
+availability, marine and operating evidence with suggested actions and history.
+Permissions gate each capability independently. Saved suggestion clocks are
+computed by the service, including for older snapshots, without rewriting
+stored instants. Shared loading completes on both success and failure.
+
+The UI registry records implemented client workflows. Component release still
+requires genuine peer/provider compatibility and G07 integration evidence.
+The G00 confirmation is recorded in the Member 3 checklist and shared trackers.
+This branch does not implement the other owners' services or executable AI.
 
 ## Verification commands
 
@@ -150,3 +159,108 @@ Existing planner tests were corrected with the user's explicit approval:
 UUID-entry expectations became named selection; missing schedules no longer
 qualify as offers; duplicates fail validation; repeated caution and actual
 evidence changes are distinct. Authorization and failure coverage are retained.
+
+## Scope fixes and evidence — 2026-10-12
+
+React's biodiversity normalizer now returns a validated typed result. The two
+older request-contract fixtures were corrected with explicit user approval to
+include contract version 1 and required provenance/model fields; request
+assertions and malformed-response tests were preserved. The UI validator binds
+method, full route, service and operation together and has regression cases
+for wrong prefixes/methods, misleading comments, test-only routes and OpenAPI.
+
+Mobile pagination sends real query parameters, not an encoded `?` in the path.
+The emulator default is `10.0.2.2`, not a laptop LAN address. The request budget
+is 55 seconds; ambiguous writes are not replayed through another gateway.
+After an interrupted mutation, refresh saved trips before resubmitting.
+HTTP-only local configuration is retained at the user's request.
+
+Render packaging includes the private planner and public API forwarding, with
+shared JWT secret wiring and the same self-service traveller toggle as Compose.
+Its database settings require Npgsql key/value secrets. See
+[Render setup](../deployment/render.md); no cloud deployment is claimed.
+
+
+Final local checks on 2026-10-12: 129 planner, 80 Auth, 21 API, 213 React,
+116 Flutter and 42 validator cases passed; the explicit real PostgreSQL test
+passed. React lint/build, Flutter analysis, catalogs and agent resources passed.
+DHI builds and all six Compose health checks passed, including public gateway
+readiness and the expected missing-peer 503. Render schema validation passed.
+Use `python -B -m unittest discover -s scripts/validation/tests -p 'test_*.py'`
+for validator tests so imports do not write bytecode into `.agents` resources.
+
+
+## React experience redesign — 2026-10-12
+
+`/planner` is an introductory page for both visitors and signed-in accounts,
+including accounts without planner grants. It explains the planner, its three
+steps, practical benefits and optional live inspiration. Live data failures
+leave the introduction and creation actions available.
+
+The shared top desktop/mobile menu opens **The planner** from other React pages
+for all account states. `/planner` is a full-width public introduction without
+the account sidebar or a redundant top self-link. All personal planner routes
+also omit the standalone top planner link. Personal planning pages use
+the shared Profile/Dashboard/Administration
+navigation appears as a left sidebar on desktop and an in-page navigation panel
+at narrow widths. Its **Coastal planner** entry opens `/planner/plan` directly;
+the group exposes **Create a plan**
+(`/planner/plan`) and **Plan history** (`/planner/saved`). Guests who choose
+creation or history sign in first and return to the requested page. Authorized
+users enter directly. The creation form separates destination, local date/time
+and pace, shows all verified suggestions, and saves the user's selected
+experience as a snapshot-linked draft or appends it to an existing draft.
+Confirmation remains an explicit action in plan details.
+
+History uses caller-owned API results. Draft, Confirmed and Past filters and
+name/notes search apply only to the displayed page. Create and history use
+permission-aware route tabs and wide image hero cards matching the supplied
+Coastal Operations references. Both destinations load in one deferred module;
+tab navigation has no intermediate full-page loader. Catalogue and history
+reads use inline status, retaining visible navigation and hero content during
+slow or failed reads. The page content enters with a 320ms directional fade and
+slide, disabled by reduced-motion preferences. Other planner operations retain
+the shared loading screen.
+
+The history panel follows the supplied Coastal Operations structure with status
+filters, search/reset, optional condition-check refinement and 10/20/25/50
+page-size selection. Counts describe the current returned page, not a global
+total. Empty results keep the controls, a text state and one authorized creation
+action; the hero is the only image. Paging uses the raw returned page length so
+local filtering does not hide Next; empty later pages retain Previous.
+The plan detail timeline retains existing edit, reorder, removal, lifecycle and
+condition-review behavior. Initial route-module loading uses the shared loading
+screen. No API/Auth business flow was changed for this redesign. The Flutter
+follow-up is recorded below.
+
+The introduction, benefits, creation guide and history use four dedicated
+planner images, generated for this component rather than reused from other
+site sections. They are illustrative scenes, never destination or offering
+evidence. Asset provenance and usage are recorded in
+`apps/web/src/assets/planner/README.md`.
+
+## Flutter native planner update — 2026-10-12
+
+The Flutter client now follows the same public introduction, protected create
+page, plan history and trip-management workflows. Its native menus provide a
+global route to the public planner and permission-aware routes to creation and
+history. Guests retain the requested creation or history destination through
+sign-in. The public introduction has no redundant self-link or account rail.
+
+Creation and history share native hero cards and route tabs with directional
+transitions; reduced-motion settings suppress the transition. Catalogue and
+history requests stay inline beneath the hero. History exposes caller-owned
+status filters, per-page search, condition review, reset, page sizing and
+pagination. Dedicated planner images are bundled and identified as
+illustrative. The date/time picker keeps destination-local wall-clock fields
+independently of the device zone; an IANA time-zone conversion rejects skipped,
+repeated or malformed times before posting to the public API.
+
+Windows Flutter commands use `scripts/Windows/Invoke-FlutterCached.ps1`, which
+places the Gradle home, pub cache, temporary files and mobile build output in
+`D:\WKS\FlutterBuildCache`. It preserves an existing cache and will not merge
+two conflicting app-build directories. C: had no default Gradle home when
+checked for this update, so there was no C: Gradle cache to remove. Flutter
+analysis reported no issues, all 122 Flutter tests passed, and the Android
+debug APK built successfully. The command, output path, warnings and verification
+limits are recorded in the test matrix.

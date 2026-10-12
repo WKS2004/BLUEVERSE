@@ -153,6 +153,7 @@ class FakeAuthRepository extends AuthRepository {
   Object? loginFailure;
   Object? registrationFailure;
   Object? restoreFailure;
+  Object? refreshFailure;
   Object? profileFailure;
   Object? passwordFailure;
   Object? sessionFailure;
@@ -218,6 +219,18 @@ class FakeAuthRepository extends AuthRepository {
   Future<AuthUser> restore() async {
     record('restore');
     final failure = _take(restoreFailure);
+    if (failure != null) _throw(failure);
+    final result = user;
+    if (result == null) {
+      throw const AuthApiException(401, 'No active account.');
+    }
+    return result;
+  }
+
+  @override
+  Future<AuthUser> refreshSession() async {
+    record('refreshSession');
+    final failure = _take(refreshFailure);
     if (failure != null) _throw(failure);
     final result = user;
     if (result == null) {

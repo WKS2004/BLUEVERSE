@@ -1,11 +1,8 @@
 import { Link, Navigate, Outlet, Route, Routes, useLocation } from 'react-router'
+import { lazy, Suspense, useEffect } from 'react'
 import DashboardPage from '../pages/DashboardPage'
 import HomePage from '../pages/HomePage'
 import LoginPage from '../pages/LoginPage'
-import PlannerPage from '../pages/PlannerPage'
-import PlannerPlanPage from '../pages/PlannerPlanPage'
-import SavedTripsPage from '../pages/SavedTripsPage'
-import ItineraryPage from '../pages/ItineraryPage'
 import ProfilePage from '../pages/ProfilePage'
 import RegistrationPage from '../pages/RegistrationPage'
 import { NotFoundPage, ServerErrorPage } from '../pages/GlobalErrorPage'
@@ -13,6 +10,16 @@ import { AdminAccessDenied, AdminIndexPage, AdminPermissionsPage, AdminRolesPage
 import { useAuthSession } from '../features/auth/authSession'
 import { authEntryHrefFor } from '../features/auth/authNavigation'
 import { hasAnyPermission } from '../features/authorization/permissions'
+import { beginLoadingScreen } from '../features/loading/backendLoading'
+
+const PlannerPage = lazy(() => import('../pages/PlannerPage'))
+const PlannerPersonalPage = lazy(() => import('../pages/PlannerPersonalPage'))
+const ItineraryPage = lazy(() => import('../pages/ItineraryPage'))
+
+function PlannerRouteLoading() {
+  useEffect(() => beginLoadingScreen(), [])
+  return null
+}
 
 function RequireAuth() {
   const { status } = useAuthSession()
@@ -49,7 +56,7 @@ function RequireAnyAdminPermission({ permissions, children }: { permissions: str
 
 export default function AppRoutes() {
   return (
-    <Routes>
+    <Suspense fallback={<PlannerRouteLoading />}><Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/signin" element={<LoginPage />} />
       <Route path="/signup" element={<RegistrationPage />} />
@@ -60,8 +67,8 @@ export default function AppRoutes() {
       <Route element={<RequireAuth />}>
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/planner/plan" element={<PlannerPlanPage />} />
-        <Route path="/planner/saved" element={<SavedTripsPage />} />
+        <Route path="/planner/plan" element={<PlannerPersonalPage />} />
+        <Route path="/planner/saved" element={<PlannerPersonalPage />} />
         <Route path="/planner/itineraries/:itineraryId" element={<ItineraryPage />} />
         <Route path="/admin" element={<RequireAnyAdminPermission permissions={['auth.permission.read', 'auth.role.read', 'auth.user.read']}><AdminIndexPage /></RequireAnyAdminPermission>} />
         <Route path="/admin/permissions" element={<RequireAnyAdminPermission permissions={['auth.permission.read']}><AdminPermissionsPage /></RequireAnyAdminPermission>} />
@@ -69,6 +76,6 @@ export default function AppRoutes() {
         <Route path="/admin/users" element={<RequireAnyAdminPermission permissions={['auth.user.read']}><AdminUsersPage /></RequireAnyAdminPermission>} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+    </Routes></Suspense>
   )
 }

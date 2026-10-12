@@ -13,6 +13,7 @@ import 'ui/feedback/blueverse_loading_screen.dart';
 import 'ui/feedback/loading_screen_controller.dart';
 import 'ui/onboarding_screen.dart';
 import 'ui/planner_screens.dart';
+import 'ui/planner_workflow_screens.dart';
 import 'data/services/planner_api_service.dart';
 
 void main() {
@@ -79,6 +80,17 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  PlannerApiService _plannerApi() => PlannerApiService(
+    onSessionRefreshRequired: _authViewModel.refreshActiveSession,
+    onRequestStarted: () => blueverseLoadingScreenController.begin(
+      message: const LoadingScreenMessage(
+        mode: LoadingScreenMode.coastal,
+        title: 'Preparing your coastal day',
+        detail: 'Checking your trip information.',
+      ),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -107,16 +119,20 @@ class _MyAppState extends State<MyApp> {
         '/signup': (_) => AuthRegistrationScreen(viewModel: _authViewModel),
         '/profile': (_) => AuthProfileScreen(viewModel: _authViewModel),
         '/dashboard': (_) => AuthDashboardScreen(viewModel: _authViewModel),
-        '/planner': (_) => PlannerHomeScreen(api: PlannerApiService()),
+        '/planner': (_) =>
+            PlannerHomeScreen(api: _plannerApi(), user: _authViewModel.user),
         '/planner/plan': (context) => PlannerPlanScreen(
           user: _authViewModel.user,
-          api: PlannerApiService(),
+          api: _plannerApi(),
           routeArguments: ModalRoute.of(context)?.settings.arguments,
         ),
-        '/planner/saved': (_) =>
-            PlannerSavedTripsScreen(api: PlannerApiService()),
+        '/planner/saved': (_) => PlannerSavedTripsScreen(
+          api: _plannerApi(),
+          user: _authViewModel.user,
+        ),
         '/planner/itinerary': (context) => PlannerItineraryScreen(
-          api: PlannerApiService(),
+          api: _plannerApi(),
+          user: _authViewModel.user,
           itineraryId:
               ModalRoute.of(context)?.settings.arguments as String? ?? '',
         ),
@@ -135,6 +151,28 @@ class _MyAppState extends State<MyApp> {
         ),
         '/404': (_) => const BlueverseErrorScreen.notFound(),
         '/500': (_) => const BlueverseErrorScreen.server(),
+      },
+      onGenerateRoute: (settings) {
+        const template = '/planner/recommendations/:recommendationId';
+        final prefix = template.substring(0, template.indexOf(':'));
+        final name = settings.name;
+        if (name != null && name.startsWith(prefix)) {
+          final id = name.substring(prefix.length);
+          if (!RegExp(
+            r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+          ).hasMatch(id)) {
+            return null;
+          }
+          return MaterialPageRoute<void>(
+            settings: settings,
+            builder: (_) => PlannerRecommendationScreen(
+              api: _plannerApi(),
+              user: _authViewModel.user,
+              recommendationId: id,
+            ),
+          );
+        }
+        return null;
       },
       onUnknownRoute: blueverseUnknownRoute,
     );

@@ -1,6 +1,6 @@
 import { PlannerApiError, type RecommendationHighlight } from './plannerApi.ts'
 
-export function plannerError(error: unknown): string {
+export function plannerError(error: unknown, preserveChanges = true): string {
   if (error instanceof PlannerApiError) {
     if (error.status === 401) return 'Your session has ended. Sign in again to continue.'
     if (error.status === 403) return 'Your account doesn’t have access to this action. Ask an administrator for coastal planning access.'
@@ -8,7 +8,9 @@ export function plannerError(error: unknown): string {
     if (error.status === 409) return 'This trip changed in another window. Reload it before saving your changes.'
     if (error.status < 500) return error.message
   }
-  return 'We couldn’t connect just now. Your changes are still here. Please try again.'
+  return preserveChanges
+    ? 'We couldn’t connect just now. Your changes are still here. Please try again.'
+    : 'We couldn’t load this information just now. Please try again.'
 }
 export function dateTime(value: string, zone = Intl.DateTimeFormat().resolvedOptions().timeZone): string {
   return new Intl.DateTimeFormat('en-GB', { timeZone: zone, day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(value))

@@ -8,10 +8,9 @@ The checked-in application provides the **v0 foundation** for the SE3090
 integrated full-stack and Agentic AI project. The submission target is
 **v0 plus v1**. React and Flutter implement the shared Auth registration and session workflows,
 backed by the public API gateway, internal Auth service and PostgreSQL. The
-Coastal Planner private service and React planning workflows are implemented
-on this feature branch. The other three member services, live biodiversity
-provider, Flutter planner screens and executable agents remain integration
-targets. See [planner implementation status](docs/development/coastal-planner.md)
+Coastal Planner private service and React/Flutter planning workflows are
+implemented on this feature branch. The other three member services, live
+biodiversity provider and executable agents remain integration targets. See [planner implementation status](docs/development/coastal-planner.md)
 for the precise scope and remaining dependencies.
 
 ## Project identity
@@ -55,9 +54,9 @@ React and Flutter never call member services or Agentic AI directly. See
 [Agentic AI integration boundary](docs/v1/agentic-ai-integration-boundary.md).
 
 React Web and Flutter Mobile must provide equal business capability at release.
-Auth workflows are present in both clients; planner workflows currently have
-React implementations and reserved Flutter routes. The shared registry marks
-that gap explicitly. Both use the same workflow intent, role → permission
+Auth and planner workflows are present in both clients. Planner includes
+persisted suggestions, full draft editing, lifecycle actions and condition
+review history. Live owner-service compatibility remains an integration gate. Both use the same workflow intent, role → permission
 model, data and public API contract.
 Both clients follow the shared visual system in [`DESIGN.md`](DESIGN.md): React
 maps it to Tailwind styles in `apps/web`, and Flutter maps it to native theme
@@ -139,7 +138,7 @@ apps/mobile/       # Flutter
 ```
 
 `services/api/` and `services/auth/` are the service locations referenced by
-Compose, the Dockerfiles, Render and CI. Both backend projects are checked in;
+Compose, the Dockerfiles, Render and CI. All three backend projects are checked in;
 Auth remains internal and is reachable by clients only through the public API
 gateway. Do not move the Dockerfiles into generated projects; keep them under
 `infrastructure/docker/`.
@@ -373,15 +372,29 @@ delete the local database and start from a clean state.
 For Flutter on an Android emulator, explicitly pass the laptop gateway as
 `http://10.0.2.2:80` with
 `--dart-define=BLUEVERSE_API_BASE_URL=http://10.0.2.2:80`. A physical Android
-device must use the laptop's current Wi-Fi/LAN address with the same
-compile-time setting. The explicit value overrides the checked-in,
-environment-specific Android fallback; do not rely on that fallback for a
-device run. The current mobile resolver accepts local HTTP on port `80` only,
+device uses the laptop's current Wi-Fi/LAN address or a USB reverse tunnel with
+the same compile-time setting. The explicit value overrides automatic
+emulator/USB fallback discovery. The current mobile resolver accepts local HTTP
+on port `80` only,
 so a deployment HTTPS configuration remains future work. The Flutter
 resolver also has a fixed port-80 limit; changing `BLUEVERSE_HTTP_PORT` does
 not update the mobile client's accepted port. Keep the gateway on port 80 for
 Flutter or update the resolver before changing that setting. If managed Wi-Fi
-isolates the phone from the laptop, use `adb reverse tcp:80 tcp:80` over USB.
+isolates the phone from the laptop, use the USB workflow below. Enable USB
+debugging, accept the phone's authorization prompt and put Android platform-tools
+(`adb`) on PATH. Replace the device ID with the one reported by `adb devices`.
+On Windows the wrapper keeps Gradle, pub, temporary and app build caches under
+`D:\WKS\FlutterBuildCache`:
+
+```powershell
+adb devices
+$mobileDevice = 'REPLACE_WITH_DEVICE_ID'
+adb -s $mobileDevice reverse tcp:80 tcp:80
+.\scripts\Windows\Invoke-FlutterCached.ps1 -FlutterArgs @('run','-d',$mobileDevice,'--dart-define=BLUEVERSE_API_BASE_URL=http://127.0.0.1:80')
+```
+
+Keep USB connected for gateway access. Remove the tunnel with
+`adb -s $mobileDevice reverse --remove tcp:80` when it is no longer needed.
 See [Mobile setup](apps/mobile/README.md) for the full device workflow and
 current limitations.
 
@@ -481,3 +494,46 @@ Use `.env.example` for variable names and safe example values only.
 ## Assignment basis
 
 This repository structure follows the SE3090 requirement for an integrated React + Flutter + ASP.NET Core + PostgreSQL + Agentic AI system, Git/GitHub, CI, testing, documentation, ADRs and deployment evidence.
+
+## Planner verification and hosted packaging update — 2026-10-12
+
+The Flutter planner supports saved recommendation URLs, permitted workflow
+progress, paged saved trips, adding suggestions to a draft, native trip/stop
+clock editing, stable-ID reorder/removal, confirmation, and before/after
+condition review history. Its requests use the shared public API, scoped
+credentials, a 55-second budget for the 40-second planner search, and no
+connectivity replay for writes. The app uses the shared loading screen.
+Android emulators use `10.0.2.2`; physical devices still require the explicit
+HTTP `BLUEVERSE_API_BASE_URL` override described above.
+
+All three backend Dockerfiles use `dhi.io/aspnetcore:10-alpine` with exec-form
+startup. The Render Blueprint now includes the private planner and public API
+forwarding. Its Auth and Planner compute plans are billable. Supply each
+backend's `ConnectionStrings__DefaultConnection` as a secret Npgsql key/value
+string using the managed private database values; Render's PostgreSQL URL is
+not directly accepted. Auth owns the shared JWT key referenced by the other
+services. See [Render setup](docs/deployment/render.md) for grants, readiness,
+peer/provider configuration and remaining hosted-client gates. No cloud
+resources have been deployed by this change.
+
+From `apps/mobile`, run `flutter analyze` and `flutter test`. From the root,
+run the planner/API/Auth test projects and contract checks in
+[the planner guide](docs/development/coastal-planner.md). The optional real
+PostgreSQL test creates and drops only its own uniquely named test database;
+use local test credentials. Preserve the application volume when stopping.
+
+
+### React planner experience — 2026-10-12
+
+Open `/planner` for the public introduction, `/planner/plan` to create a plan,
+and `/planner/saved` for personal plan history. Guests who choose creation or
+history sign in first and return to the requested page; authorized users enter
+directly. The shared top menu opens The planner as a full-width public page
+without an account sidebar or redundant self-link. Creation and personal
+history use the shared account sidebar; its Coastal planner entry opens the
+creation page directly. Personal create/history pages use route tabs and wide
+coastal hero cards. History supports Draft, Confirmed and Past views, search and
+condition-check refinement on the displayed page, reset and selectable page size.
+The redesign
+retains existing public API contracts and permission checks. Flutter design
+changes are deferred until requested. See [the web guide](apps/web/README.md).

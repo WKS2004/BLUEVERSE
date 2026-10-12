@@ -36,6 +36,9 @@ function SiteHeader({ active = 'home', compactMobile = false }: SiteHeaderProps)
   const accountLimitReached = accounts.length >= MAX_DEVICE_ACCOUNTS
   const loginHref = authEntryHref('/signin', location)
   const registrationHref = authEntryHref('/signup', location)
+  const plannerLinks = location.pathname === '/planner' || location.pathname.startsWith('/planner/') ? [] : [
+    { label: 'The planner', href: '/planner', current: false },
+  ]
 
   useEffect(() => {
     if (!accountMenuOpen) return
@@ -184,30 +187,32 @@ function SiteHeader({ active = 'home', compactMobile = false }: SiteHeaderProps)
           <span className="text-[15px] font-extrabold tracking-[0.13em] sm:text-[17px] sm:tracking-[0.16em]">BLUEVERSE<span className="text-coast-teal">.</span></span>
         </Link>
 
-        {active === 'home' && (
-          <nav aria-label="Main navigation" className="hidden items-center gap-2 md:flex lg:gap-4">
+        {(active === 'home' || plannerLinks.length > 0) && <nav aria-label="Main navigation" className="hidden items-center gap-1 lg:flex">
+          {active === 'home' && <>
             <Link className={navClass(false)} to="#our-story">Our story</Link>
             <Link className={navClass(false)} to="#what-matters">What matters</Link>
             <Link className={navClass(false)} to="#our-coast">Our coast</Link>
-          </nav>
-        )}
+          </>}
+          {plannerLinks.map(link => <Link key={link.href} to={link.href} aria-current={link.current ? 'page' : undefined} className={`${navClass(link.current)} ${link.current ? 'bg-coast-sage' : ''}`}>{link.label}</Link>)}
+        </nav>}
 
         <div className="hidden shrink-0 items-center gap-2 sm:flex">{authLinks()}</div>
-        <div className="flex shrink-0 items-center gap-2 sm:hidden">
-          {user && status === 'signed-in' && accountMenu(true)}
+        <div className="flex shrink-0 items-center gap-2 lg:hidden">
+          {user && status === 'signed-in' && <div className="sm:hidden">{accountMenu(true)}</div>}
           <button aria-controls="mobile-site-menu" aria-expanded={menuOpen} aria-label={menuOpen ? 'Close menu' : 'Open menu'} className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-coast-line bg-white/70 text-coast-deep transition duration-200 hover:-translate-y-0.5 hover:bg-coast-sage focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coast-blue active:scale-95" onClick={() => { setMenuOpen((open) => !open); setAccountMenuOpen(false) }} type="button">
             <span aria-hidden="true" className="text-2xl leading-none">{menuOpen ? '×' : '≡'}</span>
           </button>
         </div>
       </div>
 
-      <nav aria-label="Mobile navigation" className={`absolute left-0 right-0 top-full border-b border-coast-line bg-coast-paper px-5 pb-5 pt-2 shadow-lg transition duration-200 sm:hidden ${menuOpen ? 'visible translate-y-0 opacity-100' : 'invisible -translate-y-2 opacity-0 pointer-events-none'}`} id="mobile-site-menu">
+      <nav aria-label="Mobile navigation" className={`absolute left-0 right-0 top-full border-b border-coast-line bg-coast-paper px-5 pb-5 pt-2 shadow-lg transition duration-200 lg:hidden ${menuOpen ? 'visible translate-y-0 opacity-100' : 'invisible -translate-y-2 opacity-0 pointer-events-none'}`} id="mobile-site-menu">
         {active === 'home' ? <>
           <Link className="block border-b border-coast-line py-3 text-sm font-semibold text-coast-ink transition-colors hover:text-coast-blue" to="#our-story" onClick={() => setMenuOpen(false)}>Our story</Link>
           <Link className="block border-b border-coast-line py-3 text-sm font-semibold text-coast-ink transition-colors hover:text-coast-blue" to="#what-matters" onClick={() => setMenuOpen(false)}>What matters</Link>
           <Link className="block border-b border-coast-line py-3 text-sm font-semibold text-coast-ink transition-colors hover:text-coast-blue" to="#our-coast" onClick={() => setMenuOpen(false)}>Our coast</Link>
         </> : <Link className="block border-b border-coast-line py-3 text-sm font-semibold text-coast-ink transition-colors hover:text-coast-blue" to="/" onClick={() => setMenuOpen(false)}>Explore BLUEVERSE</Link>}
-        {!user && status !== 'checking' && <div className="mt-4 flex flex-wrap gap-3">{authLinks(true)}</div>}
+        {plannerLinks.map(link => <Link key={link.href} to={link.href} aria-current={link.current ? 'page' : undefined} onClick={() => setMenuOpen(false)} className={`block border-b border-coast-line py-3 text-sm font-semibold ${link.current ? 'text-coast-deep' : 'text-coast-muted'}`}>{link.label}</Link>)}
+        {!user && status !== 'checking' && <div className="mt-4 flex flex-wrap gap-3 sm:hidden">{authLinks(true)}</div>}
       </nav>
     </header>
   )

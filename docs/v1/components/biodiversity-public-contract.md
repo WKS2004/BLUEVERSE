@@ -94,6 +94,6 @@ calibration, geographic coverage, or prediction quality.
 ## Unconfirmed decisions
 
 This client-facing shape is a Member 3 proposal because Member 1 coordination
-and four-owner G00 ratification are pending. Supplier field semantics,
+is pending. Shared G00 acceptance was confirmed by Adithya on 2026-10-12; this does not confirm the supplier-specific contract. Supplier field semantics,
 version policy, retention, and quality/uncertainty language remain open until
 IT3091 owners and the G00 owners approve or correct the proposal.

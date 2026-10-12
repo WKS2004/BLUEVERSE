@@ -39,8 +39,8 @@
       "source": "apps/web/src/app/routes.tsx",
       "workflowId": "planner-plan",
       "status": "implemented",
-      "description": "Dedicated coastal trip planning page: destination, activities, dates, duration, experience level, optional wildlife context, trip title and notes, with draft/confirm semantics and a saved-trips toggle.",
-      "usage": "Authenticated coastal planner workflow for creating and confirming a trip. Anonymous visitors are redirected to sign in when they try to plan a trip; the recommendations page remains publicly visible."
+      "description": "Separate protected plan builder with route tabs, a wide coastal hero, destination/time/pace sections, suggestion selection and draft save/append.",
+      "usage": "Default destination of Coastal planner in the account sidebar. Requires sign-in and recommendation-create permission; itinerary management enables saving. Uses current snapshot references and validated public API helpers. Creation/history tab navigation uses a shared deferred module and directional motion (disabled for reduced motion); read status stays within the page without an intermediate loading screen."
     },
     {
       "id": "web-home",
@@ -269,8 +269,8 @@
       "source": "apps/web/src/app/routes.tsx",
       "workflowId": "planner-recommendations",
       "status": "implemented",
-      "description": "Public coastal recommendations home page: trending/coastal highlights drawn from the catalogue and recent confirmed trips, with recommendation-style highlight cards and a Plan a trip button that sends visitors to sign in when needed.",
-      "usage": "Publicly visible recommendations entry point. Planning actions require sign-in and the planner.recommendations.create permission."
+      "description": "Public coastal planner introduction, three-step planning guide, benefits, optional real highlights and creation CTA.",
+      "usage": "Available from global top desktop/mobile menus to guests, signed-in users and accounts without planner grants. The introduction is a full-width public page without an account sidebar or redundant top self-link. Create actions target /planner/plan; guests authenticate and return there. Personal pages omit the standalone top planner link and retain the account sidebar, whose Coastal planner entry opens /planner/plan directly."
     },
     {
       "id": "flutter-planner-recommendations",
@@ -299,8 +299,8 @@
       "source": "apps/web/src/app/routes.tsx",
       "workflowId": "planner-saved-trips",
       "status": "implemented",
-      "description": "Paginated personal saved trips and recovery states.",
-      "usage": "Paginated personal saved trips and recovery states."
+      "description": "Authenticated personal plan history with draft, confirmed and past views, title/notes search on the current page and pagination.",
+      "usage": "Personal route tabs and a wide hero lead into the history panel. The API scopes plans to the caller; status, search and condition-check filters operate only on the current returned page. Select 10/20/25/50 plans per page using the existing page/pageSize query contract; counts describe the returned page, not a global total. Open a plan to edit its draft or review confirmed details. Creation/history tab navigation uses a shared deferred module and directional motion (disabled for reduced motion); read status stays within the page without an intermediate loading screen."
     },
     {
       "id": "react-planner-trip",
@@ -309,7 +309,7 @@
       "source": "apps/web/src/app/routes.tsx",
       "workflowId": "planner-trip-management",
       "status": "implemented",
-      "description": "Edit, reorder, remove and reschedule stops; delete a trip; review conditions and read its history.",
+      "description": "Plan detail and itinerary timeline, draft lifecycle and condition review history.",
       "usage": "Edit, reorder, remove and reschedule stops; delete a trip; review conditions and read its history."
     },
     {
@@ -318,9 +318,9 @@
       "route": "/planner/recommendations/:recommendationId",
       "source": "apps/mobile/lib/main.dart",
       "workflowId": "planner-recommendation-result",
-      "status": "planned",
-      "description": "Reserved parity route; Flutter screen is not implemented.",
-      "usage": "Implement and verify Flutter parity before component acceptance."
+      "status": "implemented",
+      "description": "Persisted trip ideas, workflow progress, uncertainty and save/append actions.",
+      "usage": "Revisit a caller-owned snapshot with recommendation read permission; management permission enables saving or appending."
     },
     {
       "id": "flutter-planner-saved",
@@ -339,8 +339,8 @@
       "source": "apps/mobile/lib/main.dart",
       "workflowId": "planner-trip-management",
       "status": "implemented",
-      "description": "Flutter trip detail with draft edit/delete/confirm actions and confirmed-trip condition review.",
-      "usage": "Loads caller-owned trip details from the public API and exposes lifecycle actions allowed for the current trip state."
+      "description": "Trip details, full native draft editing, add/remove/reorder, confirmation, condition comparisons and review history.",
+      "usage": "Permission-gated owner trip management through the public API; confirmed trips remain read-only."
     },
     {
       "id": "flutter-planner-plan",
@@ -1017,7 +1017,7 @@
       "status": "implemented",
       "auth": "permission:planner.recommendations.create",
       "description": "Submit coastal preferences and generate candidates from validated catalogue, marine, and operations evidence.",
-      "usage": "Fits verified offering intervals and experience levels; records MATCHES_FOUND, NO_MATCHES or DEPENDENCIES_UNAVAILABLE within a 40-second budget.",
+      "usage": "Fits verified offering intervals and experience levels; records MATCHES_FOUND, NO_MATCHES or DEPENDENCIES_UNAVAILABLE within a 40-second budget. Candidate responses include destination-local display clocks alongside immutable UTC instants and the IANA zone; older snapshots are enriched on read.",
       "source": "services/coastal-planner/Controllers/RecommendationsController.cs",
       "uiWorkflowIds": [
         "planner-plan"
@@ -1033,7 +1033,7 @@
       "status": "implemented",
       "auth": "permission:planner.recommendations.read",
       "description": "Retrieve recommendation candidate details, suitability, and evidence.",
-      "usage": "Retrieves the candidates and peer status notes for a recommendation session.",
+      "usage": "Retrieves the candidates and peer status notes for a recommendation session. Candidate responses include destination-local display clocks alongside immutable UTC instants and the IANA zone; older snapshots are enriched on read.",
       "source": "services/coastal-planner/Controllers/RecommendationsController.cs",
       "uiWorkflowIds": [
         "planner-recommendations",

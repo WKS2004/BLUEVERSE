@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../data/models/auth_models.dart';
 import 'auth_view_model.dart';
+import 'planner_components.dart';
 
 const _coastInk = Color(0xFF18394C);
 const _coastDeep = Color(0xFF205C79);
@@ -269,6 +270,7 @@ class _AuthProfileScreenState extends State<AuthProfileScreen> {
             actions: [
               AuthAccountSwitcher(viewModel: widget.viewModel),
               AuthAdminNavigationMenu(viewModel: widget.viewModel),
+              PlannerNavigationMenu(user: user),
               IconButton(
                 tooltip: 'Open dashboard',
                 onPressed: () => Navigator.pushNamed(context, '/dashboard'),
@@ -758,11 +760,7 @@ class _ProfileDeleteAccountCard extends StatelessWidget {
     if (confirmed != true || !context.mounted) return;
     final deleted = await viewModel.deleteAccount();
     if (deleted && context.mounted && viewModel.user != null) {
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/dashboard',
-        (_) => false,
-      );
+      Navigator.pushNamedAndRemoveUntil(context, '/dashboard', (_) => false);
     }
   }
 
@@ -965,6 +963,7 @@ class _AuthDashboardScreenState extends State<AuthDashboardScreen> {
             actions: [
               AuthAccountSwitcher(viewModel: widget.viewModel),
               AuthAdminNavigationMenu(viewModel: widget.viewModel),
+              PlannerNavigationMenu(user: user),
               if (user != null)
                 IconButton(
                   tooltip: 'Edit your profile',

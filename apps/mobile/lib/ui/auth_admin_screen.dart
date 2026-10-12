@@ -1,3 +1,5 @@
+import 'planner_components.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -162,6 +164,7 @@ class _AuthAdminScreenState extends State<AuthAdminScreen> {
         actions: [
           AuthAccountSwitcher(viewModel: widget.viewModel),
           AuthAdminNavigationMenu(viewModel: widget.viewModel),
+          PlannerNavigationMenu(user: widget.viewModel.user),
         ],
       ),
       body: user == null || !canRead

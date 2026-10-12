@@ -12,7 +12,7 @@ represent a real model result.
 
 The client-facing result is documented in
 [the public biodiversity contract](biodiversity-public-contract.md). IT3091
-details and G00 ratification remain pending. The opt-in .NET contract smoke
+wire/auth/model and retention details remain pending. Shared G00 was confirmed accepted by Adithya on 2026-10-12; no live provider acceptance is inferred. The opt-in .NET contract smoke
 test can target a real service later through `IT3091_TEST_BASE_URL`,
 `IT3091_TEST_API_KEY`, and optionally `IT3091_TEST_MODEL_VERSION`; those values
 must remain in the caller's environment and must not be committed.

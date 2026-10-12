@@ -333,3 +333,16 @@ Per [v1 device-capability contract](../device-capabilities.md):
 - [ ] Sanuda Abeysinghe confirms candidate activity suitability and marine condition evidence contracts.
 - [ ] Wanshaja Sooriyabandara confirms operational restriction handoffs and workflow reference tracking.
 - [ ] Maintainer records team G00 acceptance in readiness and branch tracking documentation once all four owners ratify.
+
+
+## Current G00 acceptance record — 2026-10-12
+
+Adithya Gunawardana (`AdithyaGunawardana`), confirmed as the acting contributor,
+stated in the implementation conversation: “G00 is currently accepted; you can
+work on it.” Shared G00 is therefore recorded as Accepted for proceeding with
+member component work. This records the contributor's confirmation; it does
+not invent individual owner signatures or live service/provider evidence. The
+unchecked owner rows above retain the outstanding individual evidence trail.
+Private IT3091 wire/auth/model/freshness/retention agreement and actual peer
+compatibility remain integration acceptance gates. G07 remains pending and
+executable Agentic AI stays deferred.

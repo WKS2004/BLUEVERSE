@@ -211,3 +211,152 @@ This log records AI-assisted contributions for Adithya Gunawardana (`@AdithyaGun
 - AI output accepted/changed/rejected: Kept all provider wire details and model semantics explicitly unconfirmed. Revised neutral messages to fixed client-owned wording after a Flutter test exposed untrusted provider text. Changed the shared peer handler to preserve the ML service credential instead of forwarding the caller token for this request. No other member's documentation was changed.
 - Verification/evidence: Coastal Planner tests passed (125/125), React planner and biodiversity status tests passed (37/37), Flutter biodiversity status test passed (8/8), endpoint catalog/UI integration validation and `git diff --check` passed. Fake-only evidence and a placeholder for a future real IT3091 call are in `docs/v1/components/it3091-integration-evidence.md`; no real provider call or G00 approval is claimed.
 
+
+## 2026-10-12 — Coastal Planner scope fixes and remaining client workflows
+
+- Date/time or time range: 2026-10-12 08:12 (Asia/Colombo), completion evidence record.
+- GitHub Username: `AdithyaGunawardana`
+- Team Member Name (actual): Adithya Gunawardana
+- Agent Name: Codex
+- Tool/App: Codex desktop, repository shell, local Docker and Flutter/.NET/Node tooling
+- AI Model: GPT-6
+- Summary of the user's request: Fix the known project-scope issues and recommended remaining component work; correct the two approved React fixtures, record usage as Adithya and proceed after the user's G00 acceptance confirmation. Keep necessary local mobile changes on HTTP.
+- Summary of what the AI Agent did: Fixed the React typed biodiversity guard/build and the two approved fixtures; replaced fuzzy endpoint evidence with exact route/method/service/operation checks and regression tests; completed Flutter saved recommendations/workflow progress, snapshot save/append, pagination, full native draft schedule/item editing, stable-ID reorder/removal, lifecycle actions, condition comparisons/history, independent permission gates and shared loading. Corrected emulator address, query encoding, request budget, ambiguous write replay and asynchronous state callbacks. Added backward-compatible server local-clock fields for recommendation display and tests. Restored DHI runtimes, wired the private planner and grants/shared secret references in the Render Blueprint, corrected database configuration documentation, and synchronized README, contracts, G00 provenance and implementation evidence.
+- AI output accepted/changed/rejected: Accepted the scoped implementation and additional requirement-based tests. Changed only the two existing React fixtures explicitly approved by the user; retained their request assertions and invalid-response tests. Retained HTTP per user direction. Revised the new widget harness to scroll lazily built controls and fixed the implementation when it exposed invalid Future-returning state callbacks. Recorded G00 from the user's confirmation without inventing owner signatures. Did not fabricate live peer/provider compatibility, implement other owners' services, execute agents before G07, author individual reflection, or commit/push.
+- Verification/evidence: Planner 129/129, Auth 80/80, API 21/21, React 213/213, Flutter 112/112 and validator 42/42 cases passed. Real PostgreSQL `PLANNER-POSTGRES-001` passed using its isolated disposable database. React lint/build and Flutter analysis passed. DHI API/Auth/Planner/frontend builds and six-container Compose health passed; four public health paths reported healthy, planner migrations applied, missing peers returned a structured 503 and anonymous saved-trip reads were denied. Endpoint/UI catalogs, agent resources, Render's official JSON schema and `git diff --check` passed. Live owner-service/IT3091 evidence, native device checks and G07 remain separate gates. Detailed evidence is in `docs/development/coastal-planner.md` and `docs/testing/test-matrix.md`.
+
+- Final verification extension (2026-10-12 08:21 Asia/Colombo): Added history retry and wildlife UI/contract cases `MOB-PLANNER-018`–`021`. Fixed the remaining Future-returning history callback and enforced matching requested location/activity, finite 0–1 species values, unique/nonempty species fields, exact contract version and matching UTC provenance. Preserved the existing unavailable fallback and all prior mobile tests. The full Flutter suite passed 116/116 with no analyzer issues; test and boundary expectations were derived from the public biodiversity contract. The local smoke stack was stopped after verification, preserving the PostgreSQL volume.
+
+
+## 2026-10-12 — React Coastal Planner experience redesign
+
+- Date/time or time range: 2026-10-12 09:29 (Asia/Colombo), completion record.
+- GitHub Username: `AdithyaGunawardana`
+- Team Member Name (actual): Adithya Gunawardana
+- Agent Name: Codex
+- Tool/App: Codex desktop, repository shell, local Docker, isolated headless Microsoft Edge
+- AI Model: GPT-6
+- Summary of the user's request: Redesign the entire React planner around a public introductory page, a separate authenticated creation page with sign-in return, and per-user plan history in navigation. Finish React first and defer Flutter changes. The user explicitly approved necessary React planner/navigation test updates and verification.
+- Summary of what the AI Agent did: Rebuilt the public introduction with coastal photography, a planning explanation, benefits and creation CTAs; added main desktop/narrow-width planner navigation; reorganized creation into destination/time/pace sections, displayed all suggestions with explicit choice and snapshot-linked draft save/append, preserved preferences on failures, and cleared stale suggestions after preference edits. Rebuilt history with caller-owned rows, Draft/Confirmed/Past filters, per-page search, paging, and recovery. Restyled suggestion and itinerary detail views, removed nested main/incorrect narrow grid wrappers, used centralized validated API helpers, preserved confirmation/condition-review behavior, improved read-error wording, and deferred planner modules behind the shared loading screen. Updated route/UI contracts and documentation and refreshed only the local React frontend.
+- AI output accepted/changed/rejected: Accepted the requested React-first structure and existing coastal design tokens, imagery, public API and role-to-permission model. Changed approved tests only for relevant navigation/history presentation expectations and added requirement-based checks while retaining prior validation, permission, persistence, conflict and failure assertions. Corrected test-harness syntax/async waits and public heading spacing, and corrected the isolated browser fixture to include the existing Auth refresh contract. Did not change Flutter source or tests, Auth/backend behavior, agent guidance, external service implementations, or historical usage records. No commit, push or cloud deployment.
+- Verification/evidence: All 221 React cases passed; `npm run lint` and `npm run build` passed. All 42 contract-validator cases, UI integration validation, endpoint catalog and `git diff --check` passed. DHI frontend build and local frontend refresh succeeded. Isolated Edge checked intro, creation and history at 1440/768/390px with no horizontal overflow, plus suggestions and itinerary details; signed-in screenshots use labelled synthetic public-API data and no real account mutation. A separate guest introduction was visually reviewed against localhost. New coverage includes sign-in/return, direct signed-in navigation, public content across auth states, choosing/saving a non-first suggestion, history filters/search, stale-suggestion clearing, read retry and permission denial. Detailed scope is in `docs/development/coastal-planner.md` and `apps/web/README.md`. Live catalogue/peer availability remains an external data dependency.
+
+## 2026-10-12 — Correct planner navigation placement
+
+- Date/time or time range: 2026-10-12 09:44 (Asia/Colombo), completion record.
+- GitHub Username: `AdithyaGunawardana`
+- Team Member Name (actual): Adithya Gunawardana
+- Agent Name: Codex
+- Tool/App: Codex desktop, repository shell, local Docker, isolated headless Microsoft Edge
+- AI Model: GPT-6
+- Summary of the user's request: Keep The planner in the top menu; move Create a plan and Plan history into the left navigation used by Profile, Dashboard and Administration.
+- Summary of what the AI Agent did: Added the shared account navigation to all React planner pages, removed creation/history links from the top desktop and mobile menus, retained permission-aware signed-in links and guest sign-in entry paths, highlighted the active planner action, and retained the shared narrow-width in-page navigation. Updated workflow registration and documentation, the previously approved navigation test, and the local frontend.
+- AI output accepted/changed/rejected: Accepted the user's corrected navigation intent and reused the existing sidebar. Corrected the earlier interpretation of Nav Bar as the top menu. Existing navigation tests were updated under the user's approval for planner/navigation test corrections and verification; workflow and API assertions were retained. Flutter was unchanged; no commit or push.
+- Verification/evidence: All 221 React tests and 42 validator tests passed. React build/lint, endpoint catalog, UI integration validation and diff whitespace validation passed. DHI frontend rebuild/refresh succeeded. Isolated Edge checks passed at 1440/768/390px with no horizontal overflow; desktop creation screenshot visually reviewed. Signed-in browser previews used labelled synthetic public-API fixtures.
+
+
+## 2026-10-12 — Global planner menu and dedicated section imagery
+
+- Date/time or time range: 2026-10-12 10:02 (Asia/Colombo), completion record.
+- GitHub Username: `AdithyaGunawardana`
+- Team Member Name (actual): Adithya Gunawardana
+- Agent Name: Codex
+- Tool/App: Codex desktop, built-in image generation, repository shell, local Docker, isolated headless Microsoft Edge
+- AI Model: GPT-6; images created with the built-in image generation tool.
+- Summary of the user's request: Show The planner globally in the top menu, keep creation/history as personalized sidebar actions, and add suitable new images instead of reusing existing site assets.
+- Summary of what the AI Agent did: Made the public planner link unconditional in shared desktop/mobile top menus while preserving home navigation and account actions. Generated and selected four new images for discovery, guided experiences, trip preparation and personal plan memories; encoded local WebP assets, added alt text/dimensions/lazy loading where appropriate, and documented illustrative provenance. Added global-menu tests, synchronized workflow/catalog/setup documentation, and refreshed the local frontend.
+- AI output accepted/changed/rejected: Accepted the global public-section interpretation and all four dedicated images. Retained authorization for personal workflows. Generated imagery is illustrative and is not treated as a verified destination, operator, recommendation or user-trip photograph. No existing test expectations were relaxed. Changed the temporary browser capture to wait for the shared loading transition before screenshots. Flutter source/tests, backend flows and historical usage records were unchanged; no commit, push or cloud deployment.
+- Verification/evidence: All 223 React tests, build and lint passed; all 42 validator cases, endpoint catalog and UI integration validation passed. DHI frontend rebuild/refresh succeeded. Isolated Edge checked planner layouts at 1440/768/390px and global home/recovery menus at 1440/1024/768/390px without horizontal overflow, and decoded new introduction images. Signed-in previews used labelled synthetic public-API fixtures. Dedicated image provenance is in `apps/web/src/assets/planner/README.md`.
+
+
+## 2026-10-12 — Public planner and personal navigation distinction
+
+- Date/time or time range: 2026-10-12 10:09 (Asia/Colombo), completion record.
+- GitHub Username: `AdithyaGunawardana`
+- Team Member Name (actual): Adithya Gunawardana
+- Agent Name: Codex
+- Tool/App: Codex desktop, repository shell, local Docker, isolated headless Microsoft Edge
+- AI Model: GPT-6
+- Summary of the user's request: Fix four browser comments: remove the redundant top planner link on its own introduction page, remove account navigation from that public page, make Coastal planner in the sidebar open Create a plan, and ensure the global menu opens a full public planner page.
+- Summary of what the AI Agent did: Gave the public introduction a full-width layout without the account rail, omitted its redundant top self-link while preserving global entry links elsewhere, and changed the personal sidebar Coastal planner destination to /planner/plan. Updated the previously approved layout/navigation tests, added a sidebar destination case, synchronized workflow/catalog/documentation, and refreshed the local frontend.
+- AI output accepted/changed/rejected: Accepted the user's distinction between the global public introduction and personal planning pages. Kept account navigation on protected planning pages, dedicated imagery, permission checks and guest sign-in/return. Corrected earlier navigation expectations under the user's existing planner/navigation test-update authorization without removing workflow assertions. Flutter, backend flows and historical usage records were unchanged. No commit, push or cloud deployment.
+- Verification/evidence: All 224 React tests, build and lint passed; 42 validator cases, endpoint catalog and UI registry passed. DHI frontend rebuild/refresh succeeded. Isolated Edge verified planner layouts at 1440/768/390px and actual global-menu clicks at 1440/1024/768/390px, asserting that the public introduction has neither account sidebar nor redundant top self-link and has no horizontal overflow. The final introduction screenshot was visually reviewed after loading completed. Signed-in API previews were explicitly synthetic.
+
+
+## 2026-10-12 — Personal planner header and empty history corrections
+
+- Date/time or time range: 2026-10-12 10:20 (Asia/Colombo), completion record.
+- GitHub Username: `AdithyaGunawardana`
+- Team Member Name (actual): Adithya Gunawardana
+- Agent Name: Codex
+- Tool/App: Codex desktop, repository shell, local Docker, isolated headless Microsoft Edge
+- AI Model: GPT-6
+- Summary of the user's request: Remove the isolated top planner link from personal creation/history pages, and fix duplicated imagery and creation content on empty history.
+- Summary of what the AI Agent did: Omitted the standalone planner top link across planner routes while keeping global entry links elsewhere and personal sidebar actions. Empty history now has one image, explanation and authorized creation action; header imagery/CTA and filters/search appear with saved plans. Pagination remains available on populated or later empty pages. Updated approved navigation expectations, added an empty-history regression with creation permission denial, synchronized documentation/catalogs, and refreshed the frontend.
+- AI output accepted/changed/rejected: Accepted the user's no-top-menu option for personal planning pages and a single empty-state composition. Preserved the public introduction, sidebar creation default, sign-in return, backend authorization and populated-history behavior. Existing test updates remain within the user's prior planner/navigation test-correction authorization. Flutter/backend flows and historical usage records were unchanged; no commit, push or cloud deployment.
+- Verification/evidence: All 225 React tests, build/lint, 42 validator cases and both endpoint/UI catalogs passed. DHI frontend rebuild/refresh succeeded. Isolated Edge checked personal-page top-link absence and empty-history single image/CTA at 1440/768/390px; the desktop empty-history screenshot was visually reviewed after loading finished. Signed-in browser previews used synthetic public-API fixtures.
+
+## 2026-10-12 — Planner hero, page tabs and history panel
+
+- Date/time or time range: 2026-10-12 10:50 (Asia/Colombo), completion record.
+- GitHub Username: `AdithyaGunawardana`
+- Team Member Name (actual): Adithya Gunawardana
+- Agent Name: Codex
+- Tool/App: Codex desktop, repository shell, local Docker, isolated headless Microsoft Edge
+- AI Model: GPT-6
+- Summary of the user's request: Structure React Create a plan and Plan history like the supplied Coastal Operations references, with page tabs, wide hero sections and the referenced history search/filter/pagination panel.
+- Summary of what the AI Agent did: Added a shared permission-aware page navigation and hero component using the dedicated planner images. Integrated it into creation and history, removed duplicate guide imagery, and rebuilt history as one rounded panel with status filters, search, a real conditions-check refinement, reset, page-size selection and paging. Passed pageSize through the existing public API helper and preserved authorization, creation, itinerary and failure workflows. Updated contracts, endpoint catalog, README and development/test evidence, then refreshed only the local frontend.
+- AI output accepted/changed/rejected: Accepted the supplied visual structure with planner-specific copy and actions. Changed the earlier empty-history layout to retain controls under the latest reference request while keeping one image and one authorized first-plan action. Existing React test corrections used the user's prior explicit approval; retained workflow, permission and transport assertions and added independent page-size/filter cases. Corrected the temporary browser screenshot capture to scroll to the top before capturing a sticky header. Flutter and backend domain behavior were unchanged; no commit, push or cloud deployment.
+- Verification/evidence: All 228 React tests, build and lint passed. All 42 validator cases and both endpoint/UI catalogs passed. DHI frontend build/refresh succeeded. Isolated Edge checked creation, populated/empty history at 1440/768/390px, actual page-tab navigation and global planner entry at 1440/1024/768/390px with no horizontal overflow or unexpected requests. Desktop creation and empty-history screenshots were visually reviewed. Browser data was explicitly synthetic and does not establish live catalogue/peer availability. Cases WEB-PLANNER-UI-035 through 038 and docs/testing/test-matrix.md record the current coverage.
+
+## 2026-10-12 — Remove intermediate planner loader and animate tabs
+
+- Date/time or time range: 2026-10-12 12:37 (Asia/Colombo), completion record.
+- GitHub Username: `AdithyaGunawardana`
+- Team Member Name (actual): Adithya Gunawardana
+- Agent Name: Codex
+- Tool/App: Codex desktop, repository shell, local Docker, isolated headless Microsoft Edge
+- AI Model: GPT-6
+- Summary of the user's request: Remove the loading page between Create a plan and Plan history and animate navigation in both directions.
+- Summary of what the AI Agent did: Grouped both personal page destinations in one deferred React module to avoid suspense during switching. Added explicit inline loading for their catalogue/history reads, retaining visible heroes/navigation and existing read error recovery. Added opposite-direction 320ms fade-and-slide animations to the personal content, disabled for reduced-motion preferences. Updated workflow registration, catalog/documentation and evidence; rebuilt/refreshed the local frontend.
+- AI output accepted/changed/rejected: Accepted the requested exception to shared full-page read loading for these two pages. Retained existing Auth and action loading behavior, permissions, public API transport/validation and stale-response guards. Added a new regression without changing existing tests. Flutter and backend behavior were unchanged; no commit or push.
+- Verification/evidence: All 229 React tests, production build and lint passed. All 42 validator cases, endpoint catalog and UI integration checks passed. WEB-PLANNER-UI-039 covers both directions with delayed requests, no loader activation, active content/tabs, unchanged credentials/timeouts and ignored departed replies. Isolated Edge checks at 1440/768/390px observed both real animation-start events, zero inserted loaders during delayed reads, reduced-motion animation suppression and no overflow/unexpected requests/page errors. API fixtures were synthetic; no real account mutation occurred. DHI frontend refresh succeeded.
+
+## 2026-10-12 — Complete Flutter Coastal Planner and cache setup
+
+- Date/time or time range: 2026-10-12 14:02 (Asia/Colombo), completion record.
+- GitHub Username: `AdithyaGunawardana`
+- Team Member Name (actual): Adithya Gunawardana
+- Agent Name: Codex
+- Tool/App: Codex desktop, PowerShell, Flutter SDK
+- AI Model: GPT-6
+- Summary of the user's request: Finish the React planner work, then fully implement the matching Coastal Planner in Flutter, verify it, and direct Flutter/Gradle build caches to `D:\WKS\FlutterBuildCache`.
+- Summary of what the AI Agent did: Completed native Flutter introduction, authenticated plan creation and plan history routes with permission-aware navigation, dedicated imagery, animated two-way page transitions honoring reduced motion, history search/status/condition filters and paging, and planner API/model workflows. Added destination-local timezone conversion with skipped/repeated-time validation, safer draft selection/save states, and user-facing API failure handling. Added workflow, transition, timezone and history tests; updated the approved history pagination test to scroll before acting while retaining its API assertions. Added a Windows Flutter wrapper that directs Gradle, pub, temporary and app build caches to the requested D: location. Updated planner guidance, client integration records and test evidence.
+- AI output accepted/changed/rejected: Accepted the requested React/Flutter workflow parity and native Flutter presentation. Updated only necessary Flutter tests; existing test changes had prior user approval. Confirmed the standard C: Gradle cache locations were absent, so there was no C: cache to delete. Kept the existing D: cache rather than merging or deleting it. No live-device installation or live API session was performed.
+- Verification/evidence: Flutter analysis reported no issues; all 122 Flutter tests passed; Android debug APK built at `D:\WKS\FlutterBuildCache\projects\blueverse-adi\build\app\outputs\flutter-apk\app-debug.apk`. UI integration and endpoint catalog validators passed, as did all 42 validator tests and `git diff --check`. The Android build reported SDK XML v4 compatibility and obsolete Java 8 source/target warnings but completed successfully. The package uses the emulator gateway `http://10.0.2.2:80`; live network behavior was not exercised.
+
+## 2026-10-12 — Remove Flutter onboarding planner shortcut and verify phone build
+
+- Date/time or time range: 2026-10-12 16:43 (Asia/Colombo), completion record.
+- GitHub Username: `AdithyaGunawardana`
+- Team Member Name (actual): Adithya Gunawardana
+- Agent Name: Codex
+- Tool/App: Codex desktop, PowerShell, Flutter SDK, Docker Compose, ADB and Android phone
+- AI Model: GPT-6
+- Summary of the user's request: Remove the standalone “The Planner” button from the signed-out onboarding/loading experience and ensure the correct Flutter app is launched for device checking.
+- Summary of what the AI Agent did: Confirmed the repository Android application ID is `com.example.mobile`, installed the current debug APK to that package without clearing app data, removed the extra onboarding button, retained planner navigation in sign-in/registration menus, added regression case `MOB-HOME-006`, and synchronized mobile setup/test evidence.
+- AI output accepted/changed/rejected: Accepted the user's correction that the earlier diagnostics package was the wrong app and the UX correction for onboarding. Preserved the public planner route and protected account routes. Existing test-update approval was already given. No credentials were read or recorded, and no planner data was created or modified.
+- Verification/evidence: `flutter analyze --no-pub` reported no issues; all 131 Flutter tests passed; `scripts/validation/validate_ui_integrations.py` passed; all 42 validation tests passed with Python temporary files redirected to the writable verification directory; Docker Compose services were up and the Planner/PostgreSQL services were healthy. The debug APK built and installed successfully. The guest planner action had reached Sign in before the fix, and the installed post-fix onboarding screen was visually confirmed without the shortcut. The app reopened to onboarding after reinstall, so protected create/history screens were not rechecked on-device despite the reported sign-in; no account data was changed.
+
+## 2026-10-12 — Finish signed-in Flutter planner phone check
+
+- Date/time or time range: 2026-10-12 16:45–16:49 (Asia/Colombo).
+- GitHub Username: `AdithyaGunawardana`
+- Team Member Name (actual): Adithya Gunawardana
+- Agent Name: Codex
+- Tool/App: Codex desktop, ADB and Android phone
+- AI Model: GPT-6
+- Summary of the user's request: Continue the final phone check after signing in to the correct rebuilt Flutter app.
+- Summary of what the AI Agent did: Verified the signed-in planner menu, opened Create a plan and Plan history, inspected the empty history state, and retried destination loading once without submitting or changing any plan.
+- AI output accepted/changed/rejected: Accepted the user's sign-in confirmation. No planner data was created, edited or deleted.
+- Verification/evidence: `com.example.mobile` opened on the physical Android device. The planner menu exposed The planner, Create a plan and Plan history. Both protected screens opened and tabs navigated. History displayed 0 of 0 plans. Create a plan displayed the recoverable destination-unavailable state after retry. The onboarding fix remained installed; no standalone Planner shortcut appeared on its welcome screen.

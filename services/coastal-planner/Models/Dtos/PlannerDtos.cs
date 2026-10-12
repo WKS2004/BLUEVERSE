@@ -26,7 +26,9 @@ public record RecommendationCandidateDto(
     BiodiversityContextDto? BiodiversityContext,
     double FitScore,
     List<string> Reasons,
-    string TimeZone = "Asia/Colombo"
+    string TimeZone = "Asia/Colombo",
+    string? ScheduledStartLocal = null,
+    string? ScheduledEndLocal = null
 );
 
 public record SuitabilitySummaryDto(

@@ -118,8 +118,8 @@
     },
     {
       "id": "planner-plan",
-      "status": "in_progress",
-      "description": "Choose a destination, local time window, activities, duration and experience level; review sourced recommendations and save a draft. Web and mobile planning flows are implemented.",
+      "status": "implemented",
+      "description": "Authenticated creation page with permission-aware Create a plan/Plan history tabs, reduced-motion-aware directional transitions without an intermediate loading screen, inline catalogue status and a coastal hero, destination-local date and time validation, optional interests, returned suggestions, explicit choice and snapshot-linked draft save/append. Guests return here after sign-in. React and Flutter use the same public API and permissions with responsive web and native layouts.",
       "web": {
         "route": "/planner/plan",
         "source": "apps/web/src/app/routes.tsx",
@@ -131,6 +131,8 @@
         "status": "implemented"
       },
       "apiRefs": [
+        "auth-me",
+        "auth-refresh",
         "planner-catalogue",
         "planner-recommendations-create",
         "planner-recommendations-get",
@@ -145,11 +147,12 @@
     },
     {
       "id": "planner-recommendations",
-      "status": "in_progress",
-      "description": "Coastal inspiration page with verified availability, marine suitability and operational evidence, plus a route into trip planning. Web and mobile pages are implemented.",
+      "status": "implemented",
+      "description": "Public planner introduction for signed-in and signed-out visitors: what planning offers, how it works, optional live inspiration and CTA to the protected creation page. The public introduction has no account sidebar or redundant self-link. The planner is globally reachable from web navigation and mobile account, sign-in, onboarding and planner menus. Personal planning pages use permission-aware Create a plan and Plan history links. Dedicated illustrative planner images support each section.",
       "web": {
         "route": "/planner",
-        "source": "apps/web/src/app/routes.tsx"
+        "source": "apps/web/src/app/routes.tsx",
+        "status": "implemented"
       },
       "mobile": {
         "route": "/planner",
@@ -157,6 +160,8 @@
         "status": "implemented"
       },
       "apiRefs": [
+        "auth-me",
+        "auth-refresh",
         "planner-recommendations-highlights",
         "planner-recommendations-create",
         "planner-recommendations-get",
@@ -268,8 +273,8 @@
     },
     {
       "id": "planner-recommendation-result",
-      "status": "in_progress",
-      "description": "Revisit a caller-owned search and save or append a suggested experience. React implemented; Flutter parity is pending.",
+      "status": "implemented",
+      "description": "Revisit a caller-owned search, inspect permitted workflow progress and evidence, and save or append a suggestion through the shared public API.",
       "web": {
         "route": "/planner/recommendations/:recommendationId",
         "source": "apps/web/src/app/routes.tsx",
@@ -278,9 +283,11 @@
       "mobile": {
         "route": "/planner/recommendations/:recommendationId",
         "source": "apps/mobile/lib/main.dart",
-        "status": "planned"
+        "status": "implemented"
       },
       "apiRefs": [
+        "auth-me",
+        "auth-refresh",
         "planner-recommendations-get",
         "planner-workflows-get",
         "planner-biodiversity-predictions",
@@ -292,8 +299,8 @@
     },
     {
       "id": "planner-saved-trips",
-      "status": "in_progress",
-      "description": "Personal saved trips with Draft or Confirmed state and trip details. Web and mobile list routes are implemented.",
+      "status": "implemented",
+      "description": "Caller-owned plan history with Create a plan/Plan history tabs, reduced-motion-aware directional transitions without an intermediate loading screen, inline history-read status and a coastal hero, draft/confirmed/past filters, per-page search, reset, condition-check refinement, 10/20/25/50 page-size selection, and paged plan cards. React and Flutter preserve owner scoping and use the shared public API.",
       "web": {
         "route": "/planner/saved",
         "source": "apps/web/src/app/routes.tsx",
@@ -305,13 +312,15 @@
         "status": "implemented"
       },
       "apiRefs": [
+        "auth-me",
+        "auth-refresh",
         "planner-itineraries-list"
       ]
     },
     {
       "id": "planner-trip-management",
-      "status": "in_progress",
-      "description": "Trip detail, draft edit/delete/confirm, confirmed-trip condition review, and read-only confirmed details. Web supports full itinerary editing; mobile supports draft title/notes, lifecycle actions and condition review.",
+      "status": "implemented",
+      "description": "Plan details with a clearer itinerary timeline, draft editing/reorder/remove, confirmation, deletion and condition review/history. Existing shared backend behavior and Flutter workflows are preserved.",
       "web": {
         "route": "/planner/itineraries/:itineraryId",
         "source": "apps/web/src/app/routes.tsx",
@@ -323,6 +332,8 @@
         "status": "implemented"
       },
       "apiRefs": [
+        "auth-me",
+        "auth-refresh",
         "planner-itineraries-get",
         "planner-itineraries-update",
         "planner-itineraries-delete",

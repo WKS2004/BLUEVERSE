@@ -4,9 +4,11 @@
 import assert from 'node:assert/strict'
 import { after, afterEach, test } from 'node:test'
 import { act, cleanup, closeWebTestServer, createElement, fireEvent, jsonResponse, loadWebModule,
-  makeAuthSessionValue, makeAuthUser, renderInApp, resetTestBrowser, screen, waitFor } from '../../testSupport/reactTestHarness.js'
+  makeAuthSessionValue, makeAuthUser, renderInApp, resetTestBrowser, screen, waitFor, within, AuthSessionContext } from '../../testSupport/reactTestHarness.js'
+import { useState } from 'react'
 const [{ default: PlannerPage }, { default: PlannerPlanPage }, { default: SavedTripsPage }, { default: ItineraryPage }, { Routes, Route }] = await Promise.all([
   loadWebModule('/src/pages/PlannerPage.tsx'), loadWebModule('/src/pages/PlannerPlanPage.tsx'), loadWebModule('/src/pages/SavedTripsPage.tsx'), loadWebModule('/src/pages/ItineraryPage.tsx'), import('react-router')])
+const { default: AppRoutes } = await loadWebModule('/src/app/routes.tsx')
 const D = '3fa85f64-5717-4562-b3fc-2c963f66afa6', A = '4fa85f64-5717-4562-b3fc-2c963f66afa7', R = '5fa85f64-5717-4562-b3fc-2c963f66afa8', I = '6fa85f64-5717-4562-b3fc-2c963f66afa9'
 const permissions = ['planner.recommendations.create', 'planner.recommendations.read', 'planner.itineraries.manage', 'planner.workflows.read', 'planner.biodiversity.read']
 const start = new Date(Date.now() + 86400000).toISOString(), end = new Date(Date.parse(start) + 4 * 3600000).toISOString()
@@ -67,8 +69,9 @@ test('WEB-PLANNER-UI-000 recommendation home shows highlights and links to plann
   render('/planner')
   await screen.findByRole('heading', { name: 'Coastal days to inspire you.' })
   assert.ok(screen.getByText('Lagoon morning'))
-  assert.equal(screen.getAllByRole('link', { name: /Plan a trip/ })[0].getAttribute('href'), '/planner/plan')
-  assert.equal(screen.queryByRole('link', { name: 'Saved trips' }), null)
+  assert.equal(screen.getAllByRole('link', { name: 'Create a plan' })[0].getAttribute('href'), '/planner/plan')
+  assert.equal(screen.queryByRole('complementary', { name: 'Account navigation' }), null)
+  assert.equal(screen.queryByRole('link', { name: 'Plan history' }), null)
   assert.equal(screen.queryByLabelText('Destination'), null)
 })
 test('WEB-PLANNER-UI-027 recommendation empty and failed states offer recovery', async () => {
@@ -189,10 +192,89 @@ test('WEB-PLANNER-UI-018 save uses a named trip and the owner recommendation ref
 })
 test('WEB-PLANNER-UI-019 saved trips show empty recovery and owner trip links', async () => {
   install({ 'GET /api/planner/itineraries?page=1&pageSize=20': [] }); render('/planner/saved')
-  await screen.findByRole('heading', { name: 'Your first coastal day awaits.' }); assert.equal(screen.getByRole('link', { name: 'Find a coastal experience' }).getAttribute('href'), '/planner/plan')
+  await screen.findByRole('heading', { name: 'Your first coastal day awaits.' }); assert.equal(screen.getByRole('link', { name: /Create your first plan/ }).getAttribute('href'), '/planner/plan')
   cleanup(); install({ 'GET /api/planner/itineraries?page=1&pageSize=20': [trip, { ...trip, itineraryId: R, title: 'Confirmed coast day', status: 'Confirmed' }] }); render('/planner/saved')
   await screen.findByRole('heading', { name: trip.title }); assert.ok(screen.getAllByRole('link', { name: 'Open this trip' }).some(link => link.getAttribute('href') === `/planner/itineraries/${I}`))
-  assert.ok(screen.getByText('Draft')); assert.ok(screen.getByText('Confirmed')); assert.equal(screen.queryByRole('button', { name: /edit|cancel|remove/i }), null)
+  assert.ok(screen.getAllByText('Draft').some(element => element.tagName !== 'BUTTON')); assert.ok(screen.getAllByText('Confirmed').some(element => element.tagName !== 'BUTTON')); assert.equal(screen.queryByRole('button', { name: /edit|cancel|remove/i }), null)
+})
+
+test('WEB-PLANNER-UI-035 empty history presents one hero image, one creation action and the reference history controls', async () => {
+  install({ 'GET /api/planner/itineraries?page=1&pageSize=20': [] }); render('/planner/saved')
+  await screen.findByRole('heading', { name: 'Your first coastal day awaits.' })
+  const main = within(screen.getByRole('main'))
+  assert.equal(main.getAllByRole('img').length, 1)
+  assert.equal(main.getAllByRole('link', { name: /Create your first plan/ }).length, 1)
+  assert.equal(main.queryByRole('link', { name: /Create a new plan/ }), null)
+  assert.ok(main.getByRole('group', { name: 'Filter plans on this page' }))
+  assert.ok(main.getByRole('searchbox'))
+  const paging = within(main.getByRole('navigation', { name: 'Saved trip pages' }))
+  assert.equal(paging.getByRole('button', { name: 'Previous' }).disabled, true)
+  assert.equal(paging.getByRole('button', { name: 'Next' }).disabled, true)
+  assert.equal(paging.getByLabelText('Plans per page').value, '20')
+  cleanup(); render('/planner/saved', { user: makeAuthUser({ permissions: ['planner.itineraries.manage'] }) })
+  await screen.findByRole('heading', { name: 'Your first coastal day awaits.' })
+  assert.equal(within(screen.getByRole('main')).getAllByRole('img').length, 1)
+  assert.equal(screen.queryByRole('link', { name: /Create your first plan/ }), null)
+})
+
+test('WEB-PLANNER-UI-036 planning page tabs select the current route, change pages and respect grants', async () => {
+  install({ 'GET /api/planner/itineraries?page=1&pageSize=20': [] }); render(); await ready()
+  let tabs = within(screen.getByRole('navigation', { name: 'Planning pages' }))
+  assert.equal(tabs.getByRole('link', { name: 'Create a plan' }).getAttribute('aria-current'), 'page')
+  assert.equal(tabs.getByRole('link', { name: 'Plan history' }).getAttribute('aria-current'), null)
+  assert.ok(screen.getByRole('region', { name: 'Coastal planning introduction' }))
+  fireEvent.click(tabs.getByRole('link', { name: 'Plan history' }))
+  await screen.findByRole('heading', { name: 'Your first coastal day awaits.' })
+  tabs = within(screen.getByRole('navigation', { name: 'Planning pages' }))
+  assert.equal(tabs.getByRole('link', { name: 'Plan history' }).getAttribute('aria-current'), 'page')
+  assert.ok(screen.getByRole('region', { name: 'Plan history introduction' }))
+  fireEvent.click(tabs.getByRole('link', { name: 'Create a plan' })); await ready()
+  cleanup(); render('/planner/saved', { user: makeAuthUser({ permissions: ['planner.itineraries.manage'] }) })
+  await screen.findByRole('heading', { name: 'Your first coastal day awaits.' })
+  assert.equal(within(screen.getByRole('navigation', { name: 'Planning pages' })).queryByRole('link', { name: 'Create a plan' }), null)
+})
+
+test('WEB-PLANNER-UI-037 history page size reaches the public API and paging uses the unfiltered page length', async () => {
+  const full = Array.from({ length: 25 }, (_, index) => {
+    const id = I.slice(0, -2) + String(index + 10)
+    return { ...trip, itineraryId: id, title: `Coastal day ${index + 1}`, items: trip.items.map(item => ({ ...item, itineraryId: id })) }
+  })
+  const calls = install({ 'GET /api/planner/itineraries?page=1&pageSize=20': [trip],
+    'GET /api/planner/itineraries?page=1&pageSize=25': full, 'GET /api/planner/itineraries?page=2&pageSize=25': [] })
+  render('/planner/saved'); await screen.findByRole('heading', { name: trip.title })
+  fireEvent.change(screen.getByLabelText('Plans per page'), { target: { value: '25' } })
+  await screen.findByRole('heading', { name: 'Coastal day 25' })
+  fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'Coastal day 25' } })
+  const paging = () => within(screen.getByRole('navigation', { name: 'Saved trip pages' }))
+  assert.equal(paging().getByRole('button', { name: 'Next' }).disabled, false)
+  fireEvent.click(paging().getByRole('button', { name: 'Next' }))
+  await screen.findByRole('heading', { name: 'You’ve reached the end of your trips.' })
+  assert.equal(screen.getByRole('searchbox').value, '')
+  assert.equal(paging().getByRole('button', { name: 'Previous' }).disabled, false)
+  assert.equal(paging().getByRole('button', { name: 'Next' }).disabled, true)
+  fireEvent.click(paging().getByRole('button', { name: 'Previous' }))
+  await screen.findByRole('heading', { name: 'Coastal day 25' })
+  assert.ok(calls.every(call => call.init.credentials === 'include'))
+  assert.deepEqual(calls.map(call => call.input), ['/api/planner/itineraries?page=1&pageSize=20', '/api/planner/itineraries?page=1&pageSize=25', '/api/planner/itineraries?page=2&pageSize=25', '/api/planner/itineraries?page=1&pageSize=25'])
+})
+
+test('WEB-PLANNER-UI-038 history refinement and reset operate on real condition metadata without extra requests', async () => {
+  const reviewed = { ...trip, itineraryId: R, title: 'A reviewed day', items: trip.items.map(item => ({ ...item, lastSuitabilityStatus: 'SUITABLE', lastAvailabilityStatus: 'AVAILABLE', lastOperationalStatus: 'OPEN' })) }
+  const calls = install({ 'GET /api/planner/itineraries?page=1&pageSize=20': [trip, reviewed] })
+  render('/planner/saved'); await screen.findByRole('heading', { name: reviewed.title })
+  const toggle = screen.getByRole('button', { name: 'Filter options' })
+  assert.equal(toggle.getAttribute('aria-expanded'), 'false'); fireEvent.click(toggle)
+  assert.equal(toggle.getAttribute('aria-expanded'), 'true')
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Only plans needing a conditions check' }))
+  assert.equal(screen.queryByRole('heading', { name: reviewed.title }), null)
+  assert.ok(screen.getByRole('heading', { name: trip.title }))
+  fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'missing' } }); fireEvent.click(screen.getByRole('button', { name: 'Search plans' }))
+  assert.ok(screen.getByRole('heading', { name: 'No plans match on this page.' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Reset plan filters' }))
+  assert.ok(screen.getByRole('heading', { name: reviewed.title }))
+  assert.equal(screen.getByRole('searchbox').value, '')
+  assert.equal(screen.getByRole('checkbox').checked, false)
+  assert.equal(calls.length, 1)
 })
 test('WEB-PLANNER-UI-020 editing preserves identity and sends optimistic version; conflicts keep the draft', async () => {
   const calls = install({ [`PUT /api/planner/itineraries/${I}`]: () => jsonResponse({ detail: 'Conflict' }, 409) })
@@ -267,4 +349,155 @@ test('WEB-PLANNER-UI-025 a trip edit warns before tab closure and cancellation r
   const settled = new window.Event('beforeunload', { cancelable: true })
   window.dispatchEvent(settled)
   assert.equal(settled.defaultPrevented, false)
+})
+
+// React-first redesign approved on 2026-10-12. Keep server ownership,
+// permission, validation, failure and persistence assertions above intact.
+test('WEB-PLANNER-UI-028 introduction is available to guests, restoring accounts and users without planner grants', async () => {
+  for (const auth of [
+    { status: 'signed-out', user: null }, { status: 'checking', user: null },
+    { status: 'unavailable', user: null }, { status: 'signed-in', user: makeAuthUser({ permissions: [] }) },
+  ]) {
+    const calls = install({ 'GET /api/planner/recommendations/highlights': [] })
+    render('/planner', auth)
+    assert.ok(screen.getByRole('heading', { name: /A coastal day, made for you/ }))
+    assert.ok(screen.getByRole('heading', { name: 'Your plan, in three simple steps.' }))
+    assert.ok(screen.getByRole('link', { name: /Let’s plan your trip/ }))
+    await screen.findByRole('heading', { name: 'No current coastal ideas.' })
+    assert.deepEqual(calls.map(c => c.input), ['/api/planner/recommendations/highlights'])
+    assert.equal(screen.queryByLabelText('Destination'), null)
+    assert.equal(document.querySelectorAll('main').length, 1)
+    assert.equal(screen.queryByRole('complementary', { name: 'Account navigation' }), null)
+    assert.equal(screen.queryByRole('link', { name: 'The planner' }), null)
+    cleanup()
+  }
+})
+
+function LoginFlow() {
+  const [user, setUser] = useState(null)
+  return createElement(AuthSessionContext.Provider, { value: makeAuthSessionValue({
+    status: user ? 'signed-in' : 'signed-out', user, acceptAuthenticatedUser: setUser,
+  }) }, createElement(AppRoutes))
+}
+
+test('WEB-PLANNER-UI-029 guest CTA signs in then returns to the actual creation page', async () => {
+  const authenticatedUser = makeAuthUser({ permissions })
+  const calls = install({ 'GET /api/planner/recommendations/highlights': [],
+    'POST /api/auth/login': { token: null, user: authenticatedUser, roles: authenticatedUser.roles, permissions } })
+  renderInApp(createElement(LoginFlow), { path: '/planner' })
+  fireEvent.click(await screen.findByRole('link', { name: /Let’s plan your trip/ }))
+  await screen.findByRole('heading', { name: 'Welcome back.' })
+  assert.equal(screen.getByTestId('router-location').textContent, '/signin?returnTo=%2Fplanner%2Fplan')
+  assert.equal(calls.some(c => c.input === '/api/planner/catalogue'), false)
+  fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'coast@example.test' } })
+  fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'fixture-password' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+  await screen.findByLabelText('Destination')
+  assert.ok(screen.getByRole('heading', { name: 'Create your coastal plan.' }))
+  assert.equal(screen.getByTestId('router-location').textContent, '/planner/plan')
+  const loginCall = calls.find(c => c.input === '/api/auth/login')
+  assert.equal(loginCall.init.credentials, 'include')
+  assert.equal(JSON.parse(loginCall.init.body).useCookies, true)
+  assert.equal(calls.filter(c => c.input === '/api/planner/catalogue').length, 1)
+})
+
+test('WEB-PLANNER-UI-030 public introduction opens creation; personal sidebar opens history and defaults to creation', async () => {
+  const calls = install({ 'GET /api/planner/recommendations/highlights': [], 'GET /api/planner/itineraries?page=1&pageSize=20': [trip] })
+  renderInApp(createElement(AppRoutes), { path: '/planner', auth: makeAuthSessionValue({ status: 'signed-in', user: makeAuthUser({ permissions }) }) })
+  await screen.findByRole('heading', { name: /A coastal day, made for you/ })
+  assert.equal(screen.queryByRole('link', { name: 'The planner' }), null)
+  assert.equal(screen.queryByRole('complementary', { name: 'Account navigation' }), null)
+  const mobileMenu = within(screen.getByRole('navigation', { name: 'Mobile navigation' }))
+  assert.equal(mobileMenu.queryByRole('link', { name: 'Create a plan' }), null)
+  assert.equal(mobileMenu.queryByRole('link', { name: 'Plan history' }), null)
+  const sidebar = () => within(screen.getByRole('complementary', { name: 'Account navigation' }))
+  fireEvent.click(screen.getByRole('link', { name: /Let’s plan your trip/ }))
+  await screen.findByLabelText('Destination')
+  assert.equal(screen.getByTestId('router-location').textContent, '/planner/plan')
+  assert.equal(document.querySelectorAll('main').length, 1)
+  assert.ok(sidebar().getAllByRole('link', { name: 'Coastal planner' }).every(link => link.getAttribute('href') === '/planner/plan'))
+  assert.equal(screen.queryByRole('navigation', { name: 'Main navigation' }), null)
+  assert.equal(screen.queryByRole('link', { name: 'The planner' }), null)
+  assert.ok(sidebar().getAllByRole('link', { name: 'Create a plan' }).every(link => link.getAttribute('aria-current') === 'page'))
+  fireEvent.click(sidebar().getAllByRole('link', { name: 'Plan history' })[0])
+  await screen.findByRole('heading', { name: trip.title })
+  assert.ok(screen.getByRole('heading', { name: 'Your plan history.' }))
+  assert.equal(screen.getByTestId('router-location').textContent, '/planner/saved')
+  assert.equal(document.querySelectorAll('main').length, 1)
+  assert.ok(sidebar().getAllByRole('link', { name: 'Plan history' }).every(link => link.getAttribute('aria-current') === 'page'))
+  assert.equal(calls.some(c => c.input === '/api/auth/login'), false)
+  assert.equal(calls.find(c => c.input.includes('itineraries?page')).init.credentials, 'include')
+})
+
+test('WEB-PLANNER-UI-031 creation shows every returned candidate and saves the chosen suggestion', async () => {
+  const second = { ...candidate, offeringId: R, title: 'Sunset kayaking' }
+  const saved = { ...trip, title: 'My sunset day', items: [{ ...trip.items[0], ...second }] }
+  const calls = install({ 'POST /api/planner/recommendations': { ...recommendations, candidates: [candidate, second] },
+    'POST /api/planner/itineraries': saved, [`GET /api/planner/itineraries/${I}`]: saved })
+  render(); await ready(); fill(); submit()
+  await screen.findByRole('heading', { name: second.title })
+  assert.equal(screen.getAllByRole('radio').length, 2)
+  fireEvent.click(screen.getByRole('radio', { name: `Choose ${second.title}` }))
+  assert.equal(screen.getByRole('radio', { name: `Choose ${second.title}` }).checked, true)
+  fireEvent.click(screen.getByRole('button', { name: /Save a draft plan/ }))
+  assert.equal(screen.getByLabelText('Trip name').value, second.title)
+  fireEvent.change(screen.getByLabelText('Trip name'), { target: { value: saved.title } })
+  fireEvent.click(screen.getByRole('button', { name: 'Save my trip' }))
+  await screen.findByRole('heading', { name: saved.title })
+  const body = JSON.parse(calls.find(c => c.input === '/api/planner/itineraries').init.body)
+  assert.equal(body.title, saved.title)
+  assert.equal(body.recommendationId, R)
+  assert.equal(body.items.length, 1)
+  assert.equal(body.items[0].offeringId, second.offeringId)
+  assert.equal(body.items[0].scheduledStart, second.scheduledStart)
+  assert.equal(body.items[0].orderIndex, 0)
+})
+
+test('WEB-PLANNER-UI-032 history filters distinguish draft, confirmed and past plans and search only the current page', async () => {
+  const past = { ...trip, itineraryId: D, title: 'A day we remember', status: 'Confirmed',
+    startsAt: '2026-09-01T02:00:00Z', endsAt: '2026-09-01T06:00:00Z' }
+  const confirmed = { ...trip, itineraryId: R, title: 'Confirmed coastal day', status: 'Confirmed' }
+  const calls = install({ 'GET /api/planner/itineraries?page=1&pageSize=20': [trip, confirmed, past] })
+  render('/planner/saved'); await screen.findByRole('heading', { name: trip.title })
+  const controls = within(screen.getByRole('group', { name: 'Filter plans on this page' }))
+  fireEvent.click(controls.getByRole('button', { name: 'Drafts' }))
+  assert.equal(controls.getByRole('button', { name: 'Drafts' }).getAttribute('aria-pressed'), 'true')
+  assert.ok(screen.getByRole('heading', { name: trip.title }))
+  assert.equal(screen.queryByRole('heading', { name: confirmed.title }), null)
+  fireEvent.click(controls.getByRole('button', { name: 'Past' }))
+  assert.ok(screen.getByRole('heading', { name: past.title }))
+  assert.equal(screen.queryByRole('heading', { name: trip.title }), null)
+  fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'not a plan name' } })
+  assert.ok(screen.getByRole('heading', { name: 'No plans match on this page.' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Show all plans on this page' }))
+  assert.ok(screen.getByRole('heading', { name: confirmed.title }))
+  assert.equal(screen.getByRole('searchbox').value, '')
+  assert.equal(calls.length, 1)
+})
+
+test('WEB-PLANNER-UI-033 changing preferences clears old suggestions while retaining the edited form', async () => {
+  install({ 'POST /api/planner/recommendations': recommendations })
+  render(); await ready(); fill(); submit(); await screen.findByRole('heading', { name: candidate.title })
+  set('planner-duration', '2')
+  assert.equal(screen.queryByRole('radio'), null)
+  assert.equal(screen.queryByRole('button', { name: /Save a draft plan/ }), null)
+  assert.equal(screen.getByLabelText('Destination').value, D)
+  assert.equal(screen.getByLabelText('Time for an experience').value, '2')
+})
+
+test('WEB-PLANNER-UI-034 history errors allow retry without exposing other account data', async () => {
+  let attempts = 0
+  const calls = install({ 'GET /api/planner/itineraries?page=1&pageSize=20': () => ++attempts === 1
+    ? jsonResponse({ detail: 'database connection detail' }, 503) : jsonResponse([trip]) })
+  render('/planner/saved'); await screen.findByRole('alert')
+  assert.doesNotMatch(document.body.textContent, /database connection detail/)
+  fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+  await screen.findByRole('heading', { name: trip.title })
+  assert.equal(attempts, 2)
+  assert.ok(calls.every(c => c.init.credentials === 'include'))
+  cleanup()
+  const denied = install()
+  render('/planner/saved', { user: makeAuthUser({ permissions: ['planner.recommendations.create'] }) })
+  assert.ok(screen.getByRole('heading', { name: 'Coastal planning access' }))
+  assert.equal(denied.length, 0)
 })

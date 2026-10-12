@@ -2,7 +2,7 @@
 contract_id: v1.component.coastal-planner
 contract_type: business_component
 release: v1
-implementation_status: target_not_implemented
+implementation_status: implemented_integration_pending
 owner_label: member_3
 owner_full_name: "Adithya Gunawardana"
 owner_github_username: "AdithyaGunawardana"
@@ -26,7 +26,7 @@ Feature branch: `features/coastal-planner`; paired Agentic AI branch:
 
 The Member 3 G00 proposals are in [G00 Decisions — Smart Coastal Planner & Itinerary Management](../g00/member-3-coastal-planner.md). They define component IDs and handoffs, candidate routes and permissions, state/error semantics, service identity, health behavior, and AI/ML seams (including IT3091 biodiversity inference).
 
-These decisions are ready for shared review with Member 3 agreement recorded. The G00 shared-contract freeze is marked **Accepted** in the readiness tracker and branch tracker; four-owner ratification is recorded in the G00 review checklist. Proposed business routes, service names and schemas are not implemented until the implementation branch is started.
+Shared G00 is **Accepted** per Adithya Gunawardana / `AdithyaGunawardana` confirmation on 2026-10-12, recorded in the Member 3 checklist and trackers. This branch implements `services/coastal-planner` and both client workflows. Individual owner signatures and live peer/provider compatibility are not inferred; see [implementation evidence](../../development/coastal-planner.md).
 
 ## 1. Purpose and user outcome
 
@@ -362,7 +362,7 @@ required by the repository's individual contribution rules.
 
 ## 12. Decisions and owner gates
 
-The Member 3 G00 proposals are recorded in the [Smart Coastal Planner & Itinerary Management G00 proposal](../g00/member-3-coastal-planner.md). Member 3 agreement is recorded in the G00 shared-contract freeze, and the four-owner ratification is in the G00 review checklist. Component coding may begin after this document is accepted.
+The Member 3 G00 proposals are recorded in the [Smart Coastal Planner & Itinerary Management G00 proposal](../g00/member-3-coastal-planner.md). Current shared acceptance is recorded from Adithya's confirmation in the G00 checklist. The implementation is present on this branch; provider and integration acceptance remain separate.
 
 The following choices are proposed at G00 but require shared ratification or remain owner gates: final preference schema and data-retention boundaries; candidate ranking and tie-breaking; the exact input/evidence that makes a condition required; workflow status vocabulary; synchronous/asynchronous API behavior; itinerary ownership/sharing; item uniqueness, ordering and concurrency; how re-evaluation detects and stores changes; result snapshot/retention policy; how recommendation failures are presented; and the IT3091 private request and response schema, authentication, location precision, supported output fields, freshness/timeout/retry/error mapping, health semantics, cache/retention policy and public Ushan Srinuka (Member 1) consumer API capability. Record the provider contract and privacy/failure decisions in the implementation/API/ADR documentation before the adapter is accepted. No numeric safety policy is delegated to the planner or LLM.
 
@@ -374,4 +374,4 @@ The following choices are proposed at G00 but require shared ratification or rem
 - Device input: [v1 device-capability contract](../device-capabilities.md) defines equivalent date/time selection for planning on React and Flutter.
 - ML integration ownership: [ADR-0019](../../adr/ADR-0019-biodiversity-inference-integration-ownership.md) assigns the BLUEVERSE IT3091 adapter to Adithya Gunawardana (Member 3) and the experience-facing consumer to Ushan Srinuka (Member 1).
 - Related contracts: [shared workflows](../workflows.md), [member Agentic AI integration boundary](../agentic-ai-integration-boundary.md), [permissions and parity](../cross-platform-and-permissions.md), [quality and delivery](../quality-and-delivery.md), [requirements coverage and readiness](../requirements-coverage-and-readiness.md), [Agentic AI architecture](../../agentic-ai/architecture.md), [safety](../../agentic-ai/safety.md), [endpoint catalog](../../api/endpoint-catalog.md), [UI integration](../../contracts/ui-integration.json).
-- G00 decision input: [Member 3 Coastal Planner proposal](../g00/member-3-coastal-planner.md); it is not team acceptance.
+- G00 decision input: [Member 3 Coastal Planner proposal](../g00/member-3-coastal-planner.md); the appended 2026-10-12 record supplies the contributor confirmation of current shared acceptance.

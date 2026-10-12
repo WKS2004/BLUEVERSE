@@ -37,6 +37,7 @@ export type RecommendationResult = {
   candidates: RecommendationCandidate[]
   excludedCandidatesCount: number
   uncertaintyNotes: string[]
+  outcome?: 'MATCHES_FOUND' | 'NO_MATCHES' | 'DEPENDENCIES_UNAVAILABLE'
 }
 
 export type WorkflowStatus = {
@@ -131,8 +132,11 @@ async function parseResponse<T>(response: Response): Promise<T> {
   return payload as T
 }
 
-function request<T>(send: () => Promise<Response>): Promise<T> {
-  return withLoadingScreen(async () => parseResponse<T>(await send()), COASTAL_LOADING_CONTEXT)
+type ReadLoading = 'screen' | 'inline'
+
+function request<T>(send: () => Promise<Response>, loading: ReadLoading = 'screen'): Promise<T> {
+  const read = async () => parseResponse<T>(await send())
+  return loading === 'inline' ? read() : withLoadingScreen(read, COASTAL_LOADING_CONTEXT)
 }
 
 export type DestinationOption = {
@@ -268,6 +272,7 @@ function isRecommendations(value: unknown): boolean {
     typeof value.recommendationId === 'string' &&
     typeof value.workflowId === 'string' &&
     typeof value.status === 'string' &&
+    (value.outcome === undefined || ['MATCHES_FOUND', 'NO_MATCHES', 'DEPENDENCIES_UNAVAILABLE'].includes(String(value.outcome))) &&
     instant(value.generatedAt) &&
     typeof value.excludedCandidatesCount === 'number' &&
     textList(value.uncertaintyNotes) &&
@@ -355,11 +360,12 @@ function normalizePrediction(value: unknown): unknown {
   }
 }
 
-function isPrediction(value: unknown): boolean {
+function isPrediction(value: unknown): value is BiodiversityPrediction {
   return (
     object(value) &&
     value.contractVersion === 1 &&
     typeof value.destinationId === 'string' &&
+    (value.activityId === null || typeof value.activityId === 'string') &&
     ['available', 'not_requested', 'unavailable', 'invalid', 'stale'].includes(String(value.status)) &&
     typeof value.message === 'string' &&
     typeof value.limitations === 'string' &&
@@ -369,6 +375,7 @@ function isPrediction(value: unknown): boolean {
         object(s) &&
         ['speciesId', 'commonName', 'scientificName', 'confidenceLevel'].every(k => typeof s[k] === 'string') &&
         typeof s.habitatSuitability === 'number' &&
+        Number.isFinite(s.habitatSuitability) &&
         s.habitatSuitability >= 0 &&
         s.habitatSuitability <= 1
     ) &&
@@ -454,20 +461,22 @@ function isEvaluation(value: unknown): boolean {
   )
 }
 
+function checked<T>(promise: Promise<unknown>, validator: (value: unknown) => value is T): Promise<T>
+function checked<T>(promise: Promise<T>, validator: (value: unknown) => boolean): Promise<T>
 async function checked<T>(promise: Promise<T>, validator: (value: unknown) => boolean): Promise<T> {
   const value = await promise
   if (!validator(value)) throw new PlannerApiError(502, 'We couldn’t read the trip information. Please try again.')
   return value
 }
 
-export function getPlannerCatalogue(): Promise<PlannerCatalogue> {
+export function getPlannerCatalogue(loading: ReadLoading = 'screen'): Promise<PlannerCatalogue> {
   return checked(
     request<PlannerCatalogue>(() =>
       fetch('/api/planner/catalogue', {
         credentials: 'include',
         headers: { Accept: 'application/json' },
         signal: AbortSignal.timeout(12000),
-      })
+      }), loading
     ),
     v =>
       object(v) &&
@@ -485,14 +494,14 @@ export function getPlannerCatalogue(): Promise<PlannerCatalogue> {
   )
 }
 
-export function listItineraries(page = 1): Promise<Itinerary[]> {
+export function listItineraries(page = 1, pageSize = 20, loading: ReadLoading = 'screen'): Promise<Itinerary[]> {
   return checked(
     request<Itinerary[]>(() =>
-      fetch(`/api/planner/itineraries?page=${page}&pageSize=20`, {
+      fetch(`/api/planner/itineraries?page=${page}&pageSize=${pageSize}`, {
         credentials: 'include',
         headers: { Accept: 'application/json' },
         signal: AbortSignal.timeout(15000),
-      })
+      }), loading
     ),
     v => Array.isArray(v) && v.every(isTrip)
   )
@@ -707,7 +716,9 @@ export function getBiodiversityPredictions(destinationId: string, activityId: st
     ).then(normalizePrediction),
     isPrediction
   )
-}// Interpret a user's wall clock in the destination's IANA time zone, independently
+}
+
+// Interpret a user's wall clock in the destination's IANA time zone, independently
 // of the browser location. Reject nonexistent or ambiguous clocks around DST.
 export function utcTime(value: string, zone: string): string {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) throw new Error('Choose a valid date and time.')

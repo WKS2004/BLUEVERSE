@@ -120,7 +120,8 @@ test('WEB-PLANNER-API-003 workflow status retrieval reads the public workflow ro
 })
 
 test('WEB-PLANNER-API-004 biodiversity predictions request both the destination and the optional activity scope', async () => {
-  const prediction = { destinationId: DESTINATION_ID, activityId: ACTIVITY_ID, status: 'AVAILABLE', predictedSpecies: [], modelMetadata: null, limitations: 'Contextual prediction only.' }
+  // The public v1 contract requires provenance even when no species are predicted.
+  const prediction = { contractVersion: 1, destinationId: DESTINATION_ID, activityId: ACTIVITY_ID, status: 'available', message: 'Wildlife context is available. A prediction does not guarantee a sighting.', uncertaintyText: null, predictedSpecies: [], modelMetadata: { modelVersion: 'fixture-v1', inferenceTimestamp: '2026-10-11T00:00:00Z' }, provenance: { provider: 'test-provider', modelVersion: 'fixture-v1', inferenceTimestamp: '2026-10-11T00:00:00Z' }, limitations: 'Contextual prediction only.' }
   const getRequest = captureFetch(jsonResponse(prediction))
 
   assert.deepEqual(await getBiodiversityPredictions(DESTINATION_ID, ACTIVITY_ID), prediction)
@@ -128,7 +129,7 @@ test('WEB-PLANNER-API-004 biodiversity predictions request both the destination 
 })
 
 test('WEB-PLANNER-API-005 biodiversity predictions omit the activity parameter when no activity scope is requested', async () => {
-  const prediction = { destinationId: DESTINATION_ID, activityId: null, status: 'AVAILABLE', predictedSpecies: [], modelMetadata: null, limitations: 'Contextual prediction only.' }
+  const prediction = { contractVersion: 1, destinationId: DESTINATION_ID, activityId: null, status: 'available', message: 'Wildlife context is available. A prediction does not guarantee a sighting.', uncertaintyText: null, predictedSpecies: [], modelMetadata: { modelVersion: 'fixture-v1', inferenceTimestamp: '2026-10-11T00:00:00Z' }, provenance: { provider: 'test-provider', modelVersion: 'fixture-v1', inferenceTimestamp: '2026-10-11T00:00:00Z' }, limitations: 'Contextual prediction only.' }
   const getRequest = captureFetch(jsonResponse(prediction))
 
   assert.deepEqual(await getBiodiversityPredictions(DESTINATION_ID, null), prediction)

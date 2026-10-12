@@ -195,7 +195,9 @@ public partial class CoastalPlannerService : ICoastalPlannerService
                 BiodiversityContext: bioContext,
                 FitScore: suitability.Status == "SUITABLE" && opStatus.OperationalStatus == "OPEN" ? 0.95 : 0.70,
                 Reasons: reasons,
-                TimeZone: item.TimeZone!));
+                TimeZone: item.TimeZone!,
+                ScheduledStartLocal: FormatLocalTime(start, item.TimeZone!),
+                ScheduledEndLocal: FormatLocalTime(end, item.TimeZone!)));
         }
 
         if (eligibleOfferings.Count > 0 && !opResponded)
@@ -281,6 +283,13 @@ public partial class CoastalPlannerService : ICoastalPlannerService
         var candidates = string.IsNullOrWhiteSpace(session.CandidatesJson)
             ? new List<RecommendationCandidateDto>()
             : JsonSerializer.Deserialize<List<RecommendationCandidateDto>>(session.CandidatesJson) ?? new List<RecommendationCandidateDto>();
+
+        // Older snapshots predate local display clocks. Derive those clocks
+        // from their immutable instants and zone without changing the snapshot.
+        candidates = candidates.Select(candidate => candidate with {
+            ScheduledStartLocal = FormatLocalTime(candidate.ScheduledStart, candidate.TimeZone),
+            ScheduledEndLocal = FormatLocalTime(candidate.ScheduledEnd, candidate.TimeZone)
+        }).ToList();
 
         return new RecommendationResultDto(
             RecommendationId: session.RecommendationId,

@@ -182,6 +182,7 @@ class PlannerItinerary {
 
 class PlannerItineraryItem {
   const PlannerItineraryItem({
+    this.id,
     required this.title,
     required this.destinationId,
     required this.activityId,
@@ -207,8 +208,10 @@ class PlannerItineraryItem {
       availability,
       operations;
   final String? offeringId;
+  final String? id;
   factory PlannerItineraryItem.fromJson(Map<String, dynamic> json) =>
       PlannerItineraryItem(
+        id: json['itemId'] as String?,
         title: json['title'] as String,
         destinationId: json['destinationId'] as String,
         activityId: json['activityId'] as String,
@@ -230,6 +233,7 @@ class PlannerItineraryItem {
 
 class PlannerRecommendationResult {
   const PlannerRecommendationResult({
+    this.outcome,
     required this.recommendationId,
     required this.workflowId,
     required this.status,
@@ -240,6 +244,7 @@ class PlannerRecommendationResult {
   });
 
   final String recommendationId;
+  final String? outcome;
   final String workflowId;
   final String status;
   final String generatedAt;
@@ -249,6 +254,7 @@ class PlannerRecommendationResult {
 
   factory PlannerRecommendationResult.fromJson(Map<String, dynamic> json) {
     return PlannerRecommendationResult(
+      outcome: json['outcome'] as String?,
       recommendationId: json['recommendationId'] as String,
       workflowId: json['workflowId'] as String,
       status: json['status'] as String,
@@ -270,6 +276,8 @@ class PlannerRecommendationResult {
 
 class PlannerCandidate {
   const PlannerCandidate({
+    this.scheduledStartLocal,
+    this.scheduledEndLocal,
     required this.destinationId,
     required this.timeZone,
     required this.activityId,
@@ -292,6 +300,8 @@ class PlannerCandidate {
   final String title;
   final String scheduledStart;
   final String scheduledEnd;
+  final String? scheduledStartLocal;
+  final String? scheduledEndLocal;
   final String availabilityStatus;
   final PlannerSuitabilitySummary suitability;
   final String operationalStatus;
@@ -301,6 +311,8 @@ class PlannerCandidate {
 
   factory PlannerCandidate.fromJson(Map<String, dynamic> json) {
     return PlannerCandidate(
+      scheduledStartLocal: json['scheduledStartLocal'] as String?,
+      scheduledEndLocal: json['scheduledEndLocal'] as String?,
       destinationId: json['destinationId'] as String,
       timeZone: json['timeZone'] as String? ?? 'Asia/Colombo',
       activityId: json['activityId'] as String,
@@ -437,31 +449,71 @@ class PlannerBiodiversityPrediction {
       'available': 'Wildlife context is available. A prediction does not guarantee a sighting.',
       'not_requested': 'Wildlife context was not requested.',
       'unavailable': 'Wildlife predictions are temporarily unavailable. Please try again later.',
-      'invalid': 'Wildlife predictions could not be verified for this location.',
-      'stale': 'The wildlife prediction is out of date. Request a fresh result.',
+      'invalid':
+          'Wildlife predictions could not be verified for this location.',
+      'stale':
+          'The wildlife prediction is out of date. Request a fresh result.',
     };
     final rawStatus = (json['status'] as String? ?? '').toLowerCase();
     final versionValue = json['contractVersion'];
-    final version = versionValue is num ? versionValue.toInt() : -1;
+    final version = versionValue is num && versionValue == 1 ? 1 : -1;
     final rawMetadata = json['modelMetadata'];
     final rawProvenance = json['provenance'];
-    final metadataVersion = rawMetadata is Map ? rawMetadata['modelVersion'] : null;
-    final provenanceVersion = rawProvenance is Map ? rawProvenance['modelVersion'] : null;
-    final metadataTimestamp = rawMetadata is Map ? rawMetadata['inferenceTimestamp'] : null;
-    final provenanceTimestamp = rawProvenance is Map ? rawProvenance['inferenceTimestamp'] : null;
+    final metadataVersion = rawMetadata is Map
+        ? rawMetadata['modelVersion']
+        : null;
+    final provenanceVersion = rawProvenance is Map
+        ? rawProvenance['modelVersion']
+        : null;
+    final metadataTimestamp = rawMetadata is Map
+        ? rawMetadata['inferenceTimestamp']
+        : null;
+    final provenanceTimestamp = rawProvenance is Map
+        ? rawProvenance['inferenceTimestamp']
+        : null;
     final provider = rawProvenance is Map ? rawProvenance['provider'] : null;
-    final availableHasProvenance = metadataVersion is String &&
+    final rawSpecies = json['predictedSpecies'];
+    bool text(Object? value) => value is String && value.trim().isNotEmpty;
+    final speciesValid =
+        rawSpecies is List &&
+        rawSpecies.every(
+          (species) =>
+              species is Map &&
+              text(species['speciesId']) &&
+              text(species['scientificName']) &&
+              text(species['commonName']) &&
+              text(species['confidenceLevel']) &&
+              species['habitatSuitability'] is num &&
+              (species['habitatSuitability'] as num).isFinite &&
+              (species['habitatSuitability'] as num) >= 0 &&
+              (species['habitatSuitability'] as num) <= 1 &&
+              (species['uncertaintyText'] == null ||
+                  species['uncertaintyText'] is String),
+        ) &&
+        rawSpecies
+                .map((species) => (species as Map)['speciesId'])
+                .toSet()
+                .length ==
+            rawSpecies.length;
+    final availableHasProvenance =
+        metadataVersion is String &&
         metadataVersion.isNotEmpty &&
         provenanceVersion == metadataVersion &&
         metadataTimestamp is String &&
-        DateTime.tryParse(metadataTimestamp) != null &&
+        DateTime.tryParse(metadataTimestamp)?.isUtc == true &&
         provenanceTimestamp is String &&
-        DateTime.tryParse(provenanceTimestamp) != null &&
+        DateTime.tryParse(provenanceTimestamp)?.isUtc == true &&
+        DateTime.parse(metadataTimestamp)
+            .isAtSameMomentAs(DateTime.parse(provenanceTimestamp)) &&
         provider is String &&
         provider.isNotEmpty;
-    final knownStatus = messages.containsKey(rawStatus) &&
+    final knownStatus =
+        messages.containsKey(rawStatus) &&
         version == 1 &&
-        (rawStatus != 'available' || availableHasProvenance);
+        (rawStatus != 'available' ||
+            (availableHasProvenance &&
+                speciesValid &&
+                text(json['limitations'])));
     final status = knownStatus ? rawStatus : 'unavailable';
     return PlannerBiodiversityPrediction(
       contractVersion: 1,
@@ -471,21 +523,24 @@ class PlannerBiodiversityPrediction {
       message: status == 'available' && json['message'] is String
           ? json['message'] as String
           : messages[status]!,
-      uncertaintyText: status == 'available' ? json['uncertaintyText'] as String? : null,
-      provenance: !knownStatus || json['provenance'] == null || status != 'available'
+      uncertaintyText: status == 'available'
+          ? json['uncertaintyText'] as String?
+          : null,
+      provenance:
+          !knownStatus || json['provenance'] == null || status != 'available'
           ? null
           : PlannerBiodiversityProvenance.fromJson(
               Map<String, dynamic>.from(json['provenance'] as Map),
             ),
       predictedSpecies: status == 'available'
           ? (json['predictedSpecies'] as List<dynamic>)
-              .whereType<Map>()
-              .map(
-                (item) => PlannerPredictedSpecies.fromJson(
-                  Map<String, dynamic>.from(item),
-                ),
-              )
-              .toList(growable: false)
+                .whereType<Map>()
+                .map(
+                  (item) => PlannerPredictedSpecies.fromJson(
+                    Map<String, dynamic>.from(item),
+                  ),
+                )
+                .toList(growable: false)
           : const [],
       modelMetadata: status != 'available' || json['modelMetadata'] == null
           ? null

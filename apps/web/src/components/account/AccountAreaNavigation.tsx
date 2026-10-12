@@ -6,7 +6,7 @@ import { useAuthSession } from '../../features/auth/authSession'
 type Area = 'profile' | 'dashboard' | 'admin' | 'planner'
 type NavigationGroup = { id: Area; label: string; href: string; children: { label: string; href: string }[] }
 
-function groupsFor(permissions: string[]): NavigationGroup[] {
+function groupsFor(permissions: string[], guest: boolean): NavigationGroup[] {
   const groups: NavigationGroup[] = [
     {
       id: 'profile', label: 'Profile', href: '/profile', children: [
@@ -22,9 +22,9 @@ function groupsFor(permissions: string[]): NavigationGroup[] {
       ],
     },
     {
-      id: 'planner', label: 'Coastal planner', href: '/planner', children: [
-        { label: 'Plan a trip', href: '/planner/plan' },
-        ...(permissions.includes('planner.itineraries.manage') ? [{ label: 'Saved trips', href: '/planner/saved' }] : []),
+      id: 'planner', label: 'Coastal planner', href: '/planner/plan', children: [
+        ...(guest || permissions.includes('planner.recommendations.create') ? [{ label: 'Create a plan', href: '/planner/plan' }] : []),
+        ...(guest || permissions.includes('planner.itineraries.manage') ? [{ label: 'Plan history', href: '/planner/saved' }] : []),
       ],
     },
   ]
@@ -38,9 +38,15 @@ function groupsFor(permissions: string[]): NavigationGroup[] {
 }
 
 function Subnav({ group, desktop = false }: { group: NavigationGroup; desktop?: boolean }) {
+  const location = useLocation()
+  function isCurrent(href: string) {
+    if (href === '/planner/plan') return location.pathname === href || location.pathname.startsWith('/planner/recommendations/')
+    if (href === '/planner/saved') return location.pathname === href || location.pathname.startsWith('/planner/itineraries/')
+    return `${location.pathname}${location.hash}` === href
+  }
   const menuId = `${group.id}-subnav-${desktop ? 'desktop' : 'mobile'}`
   return <ul className={`${desktop ? 'ml-3 mt-2 border-l border-coast-line pl-3' : 'mt-2 flex flex-wrap gap-1.5 border-t border-coast-line pt-2'}`} id={menuId}>
-    {group.children.map((child) => <li key={child.href}><Link className={`inline-flex min-h-9 items-center rounded-full ${desktop ? 'w-full px-3' : 'px-3'} text-xs font-semibold text-coast-muted transition-colors hover:bg-coast-sage hover:text-coast-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coast-blue`} to={child.href}>{child.label}</Link></li>)}
+    {group.children.map((child) => <li key={child.href}><Link aria-current={isCurrent(child.href) ? 'page' : undefined} className={`inline-flex min-h-9 items-center rounded-full ${desktop ? 'w-full px-3' : 'px-3'} text-xs font-semibold ${isCurrent(child.href) ? 'bg-coast-sage text-coast-deep' : 'text-coast-muted'} transition-colors hover:bg-coast-sage hover:text-coast-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coast-blue`} to={child.href}>{child.label}</Link></li>)}
   </ul>
 }
 
@@ -60,7 +66,7 @@ function Disclosure({ group, expanded, onToggle, desktop = false, showChildren =
 
 export default function AccountAreaNavigation({ active }: { active: Area }) {
   const { user } = useAuthSession()
-  const groups = groupsFor(user?.permissions ?? [])
+  const groups = groupsFor(user?.permissions ?? [], !user)
   const [expanded, setExpanded] = useState<Area | null>(active)
 
   function toggle(area: Area) {

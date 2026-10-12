@@ -104,3 +104,13 @@ G00/G07 acceptance or merged deployment.
 See the [v1 component and agent index](../v1/README.md). Business-domain
 schema should be introduced with its owning implementation rather than
 prematurely in the v0 foundation.
+
+
+## Planner provider evidence — 2026-10-12
+
+The opt-in `PLANNER-POSTGRES-001` check passed against the local DHI PostgreSQL
+16 container. It upgraded a legacy itinerary, applied pending migrations,
+preserved ownership/title/version, reordered stable item IDs under the unique
+index, rejected stale writes and invalid constraints, and checked review/item
+cascade deletion. The runner created and dropped only its uniquely named test
+database. No application volume reset or production database access occurred.

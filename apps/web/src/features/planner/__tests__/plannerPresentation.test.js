@@ -1,10 +1,18 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { utcTime, wallTime, validatePlanningWindow } from '../plannerPresentation.ts'
+import { utcTime, wallTime, validatePlanningWindow, plannerError } from '../plannerPresentation.ts'
+import { PlannerApiError } from '../plannerApi.ts'
 
 test('WEB-PLANNER-TIME-001 destination clocks use Colombo time independently of browser location', () => {
   assert.equal(utcTime('2026-10-06T09:30', 'Asia/Colombo'), '2026-10-06T04:00:00.000Z')
   assert.equal(wallTime('2026-10-06T04:00:00.000Z', 'Asia/Colombo'), '2026-10-06T09:30')
+})
+
+test('WEB-PLANNER-COPY-001 read failures do not claim unsaved changes and retain session/permission recovery', () => {
+  assert.doesNotMatch(plannerError(new TypeError('offline'), false), /changes are still here/)
+  assert.match(plannerError(new TypeError('offline')), /changes are still here/)
+  assert.match(plannerError(new PlannerApiError(401, 'session'), false), /Sign in again/)
+  assert.match(plannerError(new PlannerApiError(403, 'grants'), false), /Ask an administrator/)
 })
 test('WEB-PLANNER-TIME-002 skipped and ambiguous daylight saving clocks require a different time', () => {
   assert.throws(() => utcTime('2026-03-08T02:30', 'America/New_York'), /skipped or occurs twice/)

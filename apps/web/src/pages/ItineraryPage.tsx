@@ -185,7 +185,7 @@ function Trip() {
         className="mb-7 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-coast-deep focus-visible:outline-2"
         to="/planner/saved"
       >
-        <span aria-hidden="true">←</span> All saved trips
+        <span aria-hidden="true">←</span> Back to plan history
       </Link>
 
       {error && (
@@ -217,7 +217,7 @@ function Trip() {
         <p aria-live="polite" className="py-16 text-coast-muted">Opening your coastal day…</p>
       ) : !current ? null : (
         <>
-          <div className="mb-9 flex flex-wrap items-end justify-between gap-6">
+          <div className="mb-9 flex flex-wrap items-end justify-between gap-6 rounded-[2rem] border border-coast-line bg-white p-6 sm:p-9">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-coast-teal">Your day, at your pace</p>
               <h1 className="mt-3 max-w-3xl font-display text-4xl tracking-tight sm:text-5xl">
@@ -368,9 +368,9 @@ function Trip() {
                 </div>
               )}
 
-              <ol className="space-y-5" aria-label="Planned experiences">
+              <ol className="space-y-5 border-l border-coast-line pl-5 sm:pl-8" aria-label="Planned experiences">
                 {current.items.map((item, index) => (
-                  <li key={item.itemId} className="rounded-3xl border border-coast-line bg-white p-6 sm:p-8">
+                  <li key={item.itemId} className="relative rounded-3xl border border-coast-line bg-white p-6 before:absolute before:-left-[1.55rem] before:top-8 before:h-3 before:w-3 before:rounded-full before:bg-coast-teal before:ring-4 before:ring-coast-paper sm:p-8 sm:before:-left-[2.3rem]">
                     <div className="flex gap-4">
                       <span
                         aria-hidden="true"

@@ -168,10 +168,10 @@ turn-taking order.
 
 | Component | Assigned owner (full name) | GitHub account | Initial status | Branch | PR, merge and integration evidence |
 |---|---|---|---|---|---|
-| G00 — Shared contract freeze | All four assigned owners | — | Accepted | `dev` | `docs/v1/g00/member-3-coastal-planner.md` ratified by Member 3; Member 4 record added as `docs/v1/g00/member-4-coastal-operations.md`; four-owner acceptance pending final tracker update |
+| G00 — Shared contract freeze | All four assigned owners | — | Accepted | `dev` | Accepted per Adithya Gunawardana / `AdithyaGunawardana` confirmation on 2026-10-12; provenance in `docs/v1/g00/member-3-coastal-planner.md`. Individual owner signatures and live compatibility are not inferred. |
 | Ushan Srinuka (Member 1) — Experience and Biodiversity | Ushan Srinuka | `Ushan-Srinuka` | Planned | `features/experience-biodiversity` | — |
 | Sanuda Abeysinghe (Member 2) — Marine Conditions and Safety | Sanuda Abeysinghe | `sanudaabey` | Planned | `features/marine-safety` | — |
-| Adithya Gunawardana (Member 3) — Planner and Itineraries | Adithya Gunawardana | `AdithyaGunawardana` | Ready | `features/coastal-planner` | `services/coastal-planner` implemented; component code work starts on this branch |
+| Adithya Gunawardana (Member 3) — Planner and Itineraries | Adithya Gunawardana | `AdithyaGunawardana` | Implemented; integration pending | `features/coastal-planner` | Private service, React/Flutter workflows and real PostgreSQL evidence recorded in `docs/development/coastal-planner.md`; live peer/IT3091 and G07 acceptance pending. |
 | Wanshaja Sooriyabandara (Member 4) — Coastal Operations | Wanshaja Sooriyabandara | `WKS2004` | Planned | `features/coastal-operations` | — |
 | G07 — Integrated component acceptance | All four assigned owners | — | Planned | `dev` | — |
 
