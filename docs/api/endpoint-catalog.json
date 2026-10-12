@@ -740,6 +740,16 @@
       "usage": "Keeps Marine Safety private. Protected requests replace client credentials with a request-bound actor context; anonymous health and Swagger requests are forwarded without an actor context. Missing Auth verification or unreachable/timed-out Marine returns structured availability metadata; unrelated routes and received upstream errors are preserved. Ambiguous proxy writes are not retryable and have no Retry-After hint."
     },
     {
+      "id": "agent-marine-conditions-yarp-route",
+      "method": "ANY",
+      "path": "/api/agents/marine-conditions/{**catch-all}",
+      "type": "reverse-proxy",
+      "upstream": "agent-marine-conditions",
+      "source": "services/api/appsettings.json",
+      "description": "API-gateway route that forwards Marine Conditions Intelligence Agent requests to the private agent service.",
+      "usage": "Routes requests to the Marine Conditions Intelligence Agent under /api/agents/marine-conditions without route collision with other agents (/api/agents/coastal-planner, /api/agents/biodiversity, /api/agents/operations)."
+    },
+    {
       "id": "experience-biodiversity-health-yarp-route",
       "method": "ANY",
       "path": "/api/experiences/health",

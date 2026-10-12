@@ -1369,3 +1369,129 @@ Member 2, Marine Conditions & Safety Intelligence, branch `features/marine-safet
   local `maplibre-gl` install (`npm ls maplibre-gl` reports it invalid). GitHub
   run 38234544230 ended on a runner shutdown signal (exit 143) before the suite
   finished, so it did not establish an assertion failure.
+
+## 2026-10-13 — Marine Conditions Intelligence Agent implementation
+
+- Date/time or time range: 2026-10-13 01:25–02:06 (Asia/Colombo)
+- GitHub Username: `sanudaabey`
+- Team Member Name (actual): Sanuda Abeysinghe
+- Agent Name: Antigravity
+- Tool/App: Antigravity IDE
+- AI Model: Gemini 3.8 Flash (High)
+- Summary of the user's request: Fully analyze the Agent Component of marine-conditions
+  assigned for Sanuda, obtain plan approval, implement the agent component on
+  `agentic-ai/marine-conditions`, and update the AI-Usage log as Sanuda.
+- Summary of what the AI Agent did: Analyzed `docs/v1/agents/member-2-marine-conditions-intelligence-agent.md`,
+  `PROJECT_REQUIREMENTS.md` (§15, §20–27, §31, §40), `docs/agentic-ai/` contracts,
+  and the CI workflow `.github/workflows/agentic-ai-tests.yml`. Created a comprehensive
+  implementation plan approved by the user. Implemented the complete Python 3.13
+  agent service under `services/ai/marine-conditions/`: typed data models and schemas
+  (`schemas.py`), allowlisted read tools with coordinate/time bounding and zero vs missing
+  distinction (`tools.py`), agent execution engine with untrusted input sanitization
+  (`agent.py`), deterministic safety validation and prompt injection defense
+  (`safety.py`), audit logging without credentials or hidden reasoning (`audit.py`),
+  and private HTTP service endpoints `GET /health` and `POST /invocations` (`app.py`).
+  Created a 35-test suite across unit, safety, integration, and Section 40 golden-flow
+  evaluations (`services/ai/marine-conditions/tests/`). Updated the agent Dockerfile
+  `infrastructure/docker/agentic-ai/marine-conditions/Dockerfile`, added service wiring to
+  `compose.yaml`, and updated the agent contract implementation status.
+- AI output accepted/changed/rejected: Accepted the modular Python service design,
+  strictly allowlisted read tools, deterministic safety bounds, and pytest suite.
+  Adjusted tool coordinate validation to raise `ToolValidationError` and audited it
+  as `VALIDATION_ERROR`, and updated provider 503 outage assertions to check HTTP status
+  detail. Rejected threshold invention, suitability overrides, operational state changes,
+  and storing hidden model reasoning.
+- Verification/evidence: 35/35 tests pass in `services/ai/marine-conditions/tests`
+  (unit, safety, integration, evaluation) via pytest; `.github/scripts/report_test_metrics.py`
+  reports 35/35 passed (0 failures, 0 errors, 0 skipped); `docker compose config --quiet`
+  passes with code 0; `validate_endpoint_catalog.py` and `validate_ui_integrations.py` pass;
+  `git diff --check` passes with no whitespace or secret issues. No commit or push created.
+
+## 2026-10-13 — Marine Conditions Intelligence Agent recheck and hardening
+
+- Date/time or time range: 2026-10-13 02:18–02:30 (Asia/Colombo)
+- GitHub Username: `sanudaabey`
+- Team Member Name (actual): Sanuda Abeysinghe
+- Agent Name: Antigravity
+- Tool/App: Antigravity IDE
+- AI Model: Gemini 3.8 Flash (High)
+- Summary of the user's request: Recheck the whole agent implementation once again.
+- Summary of what the AI Agent did: Conducted an in-depth source and test recheck across
+  `services/ai/marine-conditions/` and repository contracts. Hardened `app.py` HTTP routing
+  to parse and strip query strings (e.g., `GET /health?probe=ready`), added missing `Tuple`
+  typing imports in `safety.py` and `agent.py`, authored a dedicated unit test suite
+  `tests/unit/test_audit.py` covering tool invocation recording and credential/token redaction
+  (`[REDACTED]`), and added HTTP endpoint test cases in `tests/integration/test_service_endpoints.py`
+  covering query parameters and the `/report` alias. Ran the expanded 40-test suite and verified
+  100% pass rate. Verified repository validation scripts (`validate_ui_integrations.py`,
+  `validate_endpoint_catalog.py`, `git diff --check`, and `report_test_metrics.py`).
+- AI output accepted/changed/rejected: Accepted query string normalization and explicit typing
+  imports; accepted the expanded test suite (35 -> 40 tests). Kept non-authority boundaries,
+  deterministic grounding checks, and fail-safe provider handling unchanged. No tests were weakened
+  or deleted.
+- Verification/evidence: 40/40 tests pass in `services/ai/marine-conditions/tests`;
+  `.github/scripts/report_test_metrics.py` reports total=40, passed=40, failed=0, errors=0,
+  skipped=0, duration=0.93s; `validate_endpoint_catalog.py` OK (134 public endpoints, 54 frontend routes);
+  `validate_ui_integrations.py` OK; `git diff --check` passes cleanly; no secrets or credentials committed;
+  no commit or push created.
+
+## 2026-10-13 — Google AI Studio Gemini integration and agent-specific API endpoints
+
+- Date/time or time range: 2026-10-13 02:45–03:15 (Asia/Colombo)
+- GitHub Username: `sanudaabey`
+- Team Member Name (actual): Sanuda Abeysinghe
+- Agent Name: Antigravity
+- Tool/App: Antigravity IDE
+- AI Model: Gemini 3.8 Flash (High)
+- Summary of the user's request: Make the setup compatible with Google AI Studio Gemini
+  Model APIs and create agent-specific API endpoints across the system to prevent route
+  conflicts when other agent implementations are merged.
+- Summary of what the AI Agent did: Implemented `GeminiClient` in
+  `services/ai/marine-conditions/gemini.py` supporting Google AI Studio's `generateContent`
+  REST API with structured JSON output schema (`response_mime_type: "application/json"`),
+  zero runtime external dependencies (using standard library `urllib`), and automatic
+  fallback to deterministic synthesis upon rate limiting (HTTP 429) or unconfigured keys.
+  Integrated `GeminiClient` into `MarineConditionsIntelligenceAgent` with deterministic
+  safety verification. Configured `GEMINI_API_KEY` and `GEMINI_MODEL` in `compose.yaml`.
+  Expanded agent service routes in `services/ai/marine-conditions/app.py` to support
+  agent-specific namespaced endpoints (`/api/agents/marine-conditions/health`,
+  `/api/agents/marine-conditions/invocations`, `/api/agents/marine-conditions/report`).
+  Added YARP gateway route `agent-marine-conditions` in `services/api/appsettings.json`
+  mapping `/api/agents/marine-conditions/{**catch-all}` to `agent-marine-conditions:8080`.
+  Registered the gateway route in `docs/api/endpoint-catalog.json` and regenerated
+  `docs/api/endpoint-catalog.md`. Authored 5 new unit tests in `test_gemini.py`, 2 Gemini
+  integration/safety tests in `test_agent.py`, 2 namespaced endpoint tests in
+  `test_service_endpoints.py`, and 1 gateway test (`API-PROXY-004`) in `ReverseProxyTests.cs`.
+- AI output accepted/changed/rejected: Accepted the zero-dependency Gemini client and
+  structured schema generation; accepted free-tier HTTP 429 fallback to prevent workflow
+  disruption; accepted the `/api/agents/{agent-name}/...` namespacing pattern to guarantee
+  zero endpoint collisions upon agent merging. No existing tests were weakened or deleted.
+- Verification/evidence: Python test suite 49/49 passed in 1.08s; .NET `Blueverse.Api.Tests`
+  58/58 passed in 5s; `.github/scripts/report_test_metrics.py` reports total=49, passed=49,
+  failed=0, errors=0, duration=0.89s; `validate_endpoint_catalog.py` OK;
+  `validate_ui_integrations.py` OK; `docker compose config --quiet` passed (exit code 0);
+  `git diff --check` passed cleanly; no secrets committed; no commits or pushes created.
+
+## 2026-10-13 — Live Gemini API verification and model compatibility update
+
+- Date/time or time range: 2026-10-13 03:20–03:40 (Asia/Colombo)
+- GitHub Username: `sanudaabey`
+- Team Member Name (actual): Sanuda Abeysinghe
+- Agent Name: Antigravity
+- Tool/App: Antigravity IDE
+- AI Model: Gemini 3.8 Flash (High)
+- Summary of the user's request: Verify if the Marine Conditions Intelligence Agent is
+  working properly after adding the Google AI Studio Gemini API key.
+- Summary of what the AI Agent did: Authored and executed a live diagnostic probe
+  `services/ai/marine-conditions/check_gemini.py` against Google AI Studio. Discovered
+  `gemini-2.5-flash` deprecation (HTTP 404) and updated default model to active `gemini-3.5-flash`
+  in `gemini.py`, `compose.yaml`, and `check_gemini.py`. Added `_UNSET` sentinel to `GeminiClient`
+  to support explicit key unsetting. Successfully verified live API connectivity and end-to-end
+  agent report generation with real Open-Meteo tool data and deterministic safety validation.
+- AI output accepted/changed/rejected: Accepted the model switch to `gemini-3.5-flash` to resolve
+  Google AI Studio API deprecation; rejected committing any plain API keys or secrets (masked in
+  verification logs); updated walkthrough and requested user permission to align unit tests with
+  the new model default.
+- Verification/evidence: Live run `python services/ai/marine-conditions/check_gemini.py` passed
+  completely (direct Gemini generation 200 OK, end-to-end agent execution status COMPLETE with
+  8 factors and standard disclaimer); no secrets committed; no commits or pushes created.
