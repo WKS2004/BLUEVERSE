@@ -17,6 +17,24 @@ responsibility, and cross-member contracts here describe only the
 marine-safety side of each handoff. Decisions follow the eight G00 exit
 criteria.
 
+## Integrated branch contract reconciliation — 2026-10-12
+
+Member 2's component-scoped decision remains accepted as recorded above, while
+shared four-owner G00 and G07 remain pending. The current integrated consumers
+are:
+
+| Consumer | Implemented request through the public API | Actual response / authorization |
+|---|---|---|
+| Member 1 Experience | `GET /api/marine/current?latitude={latitude}&longitude={longitude}`; forwards the caller bearer | Requires `marine.profile.read`; returns raw `windSpeed` in km/h, wave/swell/rain/weather values, source, forecast/retrieval times, freshness and missing fields. It makes no suitability classification. |
+| Member 3 Planner | `POST /api/marine/evaluate` with `{ activityId, latitude, longitude, dateTime }`; forwards the caller bearer | Requires `marine.profile.read`; returns deterministic `SUITABLE`, `CAUTION`, `UNSUITABLE` or `UNKNOWN` with activity ID, requested/forecast/evaluated times, condition source/freshness, missing fields, violations/caution factors, assessment ID and snapshot ID. The response contains no destination ID or `safetyProfileId`. |
+| Member 4 Operations | No request is enabled | Its current target-type/target-ID/period request cannot satisfy the Marine activity/location/time contract, and it does not forward an Auth-issued user bearer. No Marine classification is fabricated. A scoped identity and target-to-activity resolution contract remain open. |
+
+The API gateway validates the user token and applies the existing
+`marine.profile.read` permission before routing to the private Marine service.
+Service health remains independent of optional peers. These route/payload facts
+describe current source compatibility; they do not settle shared data ownership
+or authorize Owner 4's handoff.
+
 ## Latest implementation verification — 2026-10-09
 
 The implementation now consumes Member 1's published activity contract and

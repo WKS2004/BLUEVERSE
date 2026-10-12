@@ -109,25 +109,37 @@ one installation and five active sessions per account across installations.
 
 ## Experience & Biodiversity connection foundation
 
-Experience & Biodiversity connects to the same PostgreSQL database and with
-the same configured login as Auth. Its EF Core context uses PostgreSQL's
-default `public` schema; its migrations are tracked in
-`__EFMigrationsHistory_ExperienceBiodiversity` in that same schema. No second
-database, service-specific login or SQL provisioning file is used. The Member
-1 feature branch includes an initial migration
+Experience & Biodiversity connects to the same PostgreSQL database and
+currently uses the Compose-configured login shared with Auth. Its EF Core
+context uses the service-owned `experience_biodiversity` schema; its migration
+history is isolated in `public.__EFMigrationsHistory_ExperienceBiodiversity`.
+The current integration branch includes an initial migration
 (`20260927113951_InitialExperienceBiodiversitySchema`) for these tables:
 
 | Table | Current purpose |
 |---|---|
 | `destinations` | Coastal destination identity, location, publication status and audit timestamps. |
 | `activities` | Activity taxonomy identity, category, publication status and audit timestamps. |
-| `offerings` | Destination/activity-linked experience details, pricing, capacity and publication status. |
+| `offerings` | Destination/activity-linked experience details, pricing, capacity, publication status and optional planner levels. The `ExperienceLevels` PostgreSQL `text[]` accepts each of `BEGINNER`, `INTERMEDIATE` and `ADVANCED` at most once; null means the owner has not supplied a level. |
 | `schedules` | Offering schedule intervals, time-zone identifiers and active state. |
 | `favourites` | User-scoped saved destination, activity or offering references; user IDs remain opaque Auth UUIDs. |
 
 This branch schema is implementation evidence, not acceptance of the shared
-G00 data-ownership or migration-history contract. The other member domains and
-shared Agentic AI workflow-state schema remain future work.
+G00 data-ownership or migration-history contract. All four member domains now
+have their own EF Core service migrations; shared Agentic AI workflow-state
+tables remain deferred.
+
+Migration `20261012155447_AddOfferingExperienceLevels` adds a nullable
+`ExperienceLevels` array so existing offerings remain valid without guessed
+skill requirements. Migration
+`20261012160632_AddOfferingExperienceLevelConstraint` adds a PostgreSQL check
+constraint that rejects unknown or duplicate level values. The catalogue API
+normalizes accepted input to uppercase, and planner candidate selection omits
+level-specific offerings when no level matches the traveller's declared level.
+Migration `20261012161414_MoveExperienceBiodiversityIntoOwnedSchema` moves the
+five Experience tables from `public` into `experience_biodiversity` without
+dropping or recreating data. The shared database login remains an explicit G00
+decision; this schema move does not establish separate database credentials.
 
 ## Auth session tables
 

@@ -16,13 +16,13 @@ public sealed class PlannerPermissionsSeederTests
         await db.SaveChangesAsync();
         await PlannerPermissionsSeeder.SeedAsync(db);
         await PlannerPermissionsSeeder.SeedAsync(db);
-        Assert.Equal(5, await db.Permissions.CountAsync());
+        Assert.Equal(PlannerPermissionsSeeder.Codes.Length, await db.Permissions.CountAsync());
         var traveller = await db.Roles.SingleAsync(r => r.Name == PlannerPermissionsSeeder.TravellerRole);
         Assert.False(traveller.IsSystemRole);
         var codes = await db.RolePermissions.Where(r => r.RoleId == traveller.Id).Select(r => r.Permission.Code).ToListAsync();
         Assert.Equal(PlannerPermissionsSeeder.Codes.Order(), codes.Order());
         Assert.DoesNotContain(codes, c => c.StartsWith("auth."));
-        Assert.Equal(5, await db.RolePermissions.CountAsync(r => r.RoleId == admin.Id));
+        Assert.Equal(PlannerPermissionsSeeder.Codes.Length, await db.RolePermissions.CountAsync(r => r.RoleId == admin.Id));
         Assert.Empty(await db.Users.ToListAsync());
     }
 }

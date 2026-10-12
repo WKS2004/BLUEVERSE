@@ -18,4 +18,10 @@ public sealed record MarineConditionsContextDto(
     string? AdvisoryMessage,
     bool FallbackUsed,
     DateTimeOffset? EvaluatedAt,
-    string Disclaimer);
+    string Disclaimer,
+    string? Source = null,
+    string? FreshnessStatus = null,
+    IReadOnlyList<string>? MissingFields = null,
+    Guid? SnapshotId = null,
+    DateTimeOffset? ForecastTime = null,
+    DateTimeOffset? RetrievedAt = null);

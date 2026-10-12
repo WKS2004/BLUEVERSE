@@ -26,7 +26,7 @@ internal sealed class TestPeerServicesClient : IPeerServicesClient
         Task.FromResult(CatalogueResult);
 
     public Task<(PeerSuitabilityResponse? Result, bool Responded, string? Note)> GetMarineSuitabilityAsync(
-        Guid destinationId, Guid activityId, DateTime windowStart, DateTime windowEnd, CancellationToken ct = default)
+        Guid destinationId, Guid activityId, double? latitude, double? longitude, DateTime requestedTimeUtc, CancellationToken ct = default)
     {
         MarineCallCount++;
         return Task.FromResult(MarineResultForActivity?.Invoke(activityId) ?? MarineResult);

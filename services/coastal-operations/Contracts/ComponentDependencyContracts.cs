@@ -41,27 +41,3 @@ internal sealed class ExperienceAvailabilityResponse
     public DateTimeOffset EvaluatedAt { get; init; }
     public DateTimeOffset? ValidUntil { get; init; }
 }
-
-internal sealed class MarineSuitabilityResponse
-{
-    public string TargetType { get; init; } = string.Empty;
-    public Guid TargetId { get; init; }
-    public string Classification { get; init; } = string.Empty;
-    public string? ProfileVersion { get; init; }
-    public DateTimeOffset AssessedAt { get; init; }
-    public DateTimeOffset? ValidUntil { get; init; }
-    public IReadOnlyList<string>? ReasonCodes { get; init; }
-}
-
-internal sealed class PlannerWorkflowResponse
-{
-    public Guid WorkflowId { get; init; }
-    public string Status { get; init; } = string.Empty;
-    public DateTimeOffset UpdatedAt { get; init; }
-}
-
-internal sealed record MarineSuitabilityRequest(
-    string TargetType,
-    Guid TargetId,
-    DateTimeOffset PeriodStartsAt,
-    DateTimeOffset PeriodEndsAt);

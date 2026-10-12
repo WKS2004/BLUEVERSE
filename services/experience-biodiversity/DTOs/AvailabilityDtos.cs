@@ -30,7 +30,12 @@ public sealed record OperationalRestrictionContextDto(
     int AttemptsCount = 1,
     long LatencyMs = 0,
     string? RemoteStatus = "RESPONDED",
-    string? Message = null);
+    string? Message = null,
+    string? TargetType = null,
+    Guid? TargetId = null,
+    string? OperationalState = null,
+    int? StateVersion = null,
+    DateTimeOffset? UpdatedAt = null);
 
 public sealed record AvailabilityEvaluationResponse(
     Guid OfferingId,

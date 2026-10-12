@@ -7,6 +7,20 @@ using Microsoft.OpenApi;
 using Blueverse.ExperienceBiodiversity.Data;
 using Blueverse.ExperienceBiodiversity.Services;
 
+if (args.Contains("--healthcheck", StringComparer.Ordinal))
+{
+    var port = Environment.GetEnvironmentVariable("ASPNETCORE_HTTP_PORTS") ?? "8080";
+    using var probe = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
+    try
+    {
+        using var response = await probe.GetAsync($"http://127.0.0.1:{port}/api/experiences/health", HttpCompletionOption.ResponseHeadersRead);
+        Environment.ExitCode = response.IsSuccessStatusCode ? 0 : 1;
+    }
+    catch (HttpRequestException) { Environment.ExitCode = 1; }
+    catch (OperationCanceledException) { Environment.ExitCode = 1; }
+    return;
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 var signingKey = builder.Configuration["JWT_SIGNING_KEY"];

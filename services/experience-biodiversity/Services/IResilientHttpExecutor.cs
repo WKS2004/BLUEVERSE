@@ -20,6 +20,15 @@ public interface IResilientHttpExecutor
         int maxRetries = 2,
         TimeSpan? initialRetryDelay = null,
         CancellationToken cancellationToken = default);
+
+    Task<ResilientExecutionResult> ExecuteGetWithAuthorizationAsync(
+        string? targetUrl,
+        TimeSpan perAttemptTimeout,
+        int maxRetries,
+        TimeSpan? initialRetryDelay,
+        string? bearerToken,
+        CancellationToken cancellationToken = default) =>
+        ExecuteGetAsync(targetUrl, perAttemptTimeout, maxRetries, initialRetryDelay, cancellationToken);
 }
 
 public sealed class ResilientHttpExecutor : IResilientHttpExecutor
@@ -38,7 +47,25 @@ public sealed class ResilientHttpExecutor : IResilientHttpExecutor
         TimeSpan perAttemptTimeout,
         int maxRetries = 2,
         TimeSpan? initialRetryDelay = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        await ExecuteGetCoreAsync(targetUrl, perAttemptTimeout, maxRetries, initialRetryDelay, null, cancellationToken);
+
+    public async Task<ResilientExecutionResult> ExecuteGetWithAuthorizationAsync(
+        string? targetUrl,
+        TimeSpan perAttemptTimeout,
+        int maxRetries,
+        TimeSpan? initialRetryDelay,
+        string? bearerToken,
+        CancellationToken cancellationToken = default) =>
+        await ExecuteGetCoreAsync(targetUrl, perAttemptTimeout, maxRetries, initialRetryDelay, bearerToken, cancellationToken);
+
+    private async Task<ResilientExecutionResult> ExecuteGetCoreAsync(
+        string? targetUrl,
+        TimeSpan perAttemptTimeout,
+        int maxRetries,
+        TimeSpan? initialRetryDelay,
+        string? bearerToken,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(targetUrl))
         {
@@ -81,7 +108,10 @@ public sealed class ResilientHttpExecutor : IResilientHttpExecutor
                 using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 timeoutCts.CancelAfter(perAttemptTimeout);
 
-                var response = await _httpClient.GetAsync(targetUrl, timeoutCts.Token);
+                using var request = new HttpRequestMessage(HttpMethod.Get, targetUrl);
+                if (!string.IsNullOrWhiteSpace(bearerToken))
+                    request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", bearerToken);
+                using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeoutCts.Token);
                 var duration = stopwatch.ElapsedMilliseconds;
 
                 if (response.IsSuccessStatusCode)

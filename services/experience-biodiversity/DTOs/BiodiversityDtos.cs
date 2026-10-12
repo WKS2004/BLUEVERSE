@@ -1,12 +1,15 @@
 namespace Blueverse.ExperienceBiodiversity.DTOs;
 
 public sealed record FocalSpeciesPredictionDto(
+    Guid SpeciesId,
     string SpeciesName,
     string ScientificName,
-    string ConservationStatus,
-    double OccurrenceProbability,
-    string? HabitatSuitability,
-    string? PrimaryThreats);
+    string? ConservationStatus,
+    double? OccurrenceProbability,
+    double? HabitatSuitability,
+    string? PrimaryThreats,
+    string? ConfidenceLevel = null,
+    string? UncertaintyText = null);
 
 public sealed record BiodiversityContextResponseDto(
     Guid DestinationId,

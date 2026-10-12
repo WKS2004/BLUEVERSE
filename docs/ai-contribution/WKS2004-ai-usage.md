@@ -2515,3 +2515,29 @@ push was made.
 - Summary of what the AI Agent did: Confirmed PR #8 and the local merge blocker, fetched the latest maintenance base and merged it into the feature branch. Combined the four components' routes, API gateway registrations, Compose services, workflow checks, shared contracts, lockfiles and documentation. Renumbered colliding Coastal Operations ADRs and, after hosted CI exposed the missing counts and invalid path validation, updated the affected Auth seeding expectations and corrected peer endpoint validation.
 - AI output accepted/changed/rejected: Preserved changes from both branches and their component workflows; combined duplicate integration points into shared registrations. Replaced a machine-specific Flutter gateway address with the emulator-safe default. Updated all affected permission-count assertions to 36 with user approval. Removed URI parsing that incorrectly rejected rooted `/api/...` paths while retaining the public API path checks. No tests were skipped or weakened, and no prior AI usage entry was edited.
 - Verification/evidence: Endpoint catalog and UI integration validators, Docker Compose configuration, JSON parsing and `git diff --check` passed. React lint/build passed and the serial web suite passed 384/384; Flutter analysis passed and the serial mobile suite passed 295/295; API tests passed 57/57; the complete Auth suite passed 85/85; the Coastal Operations suite passed 331 with 6 opt-in PostgreSQL tests skipped. The first hosted run passed 9 of 10 workflows; Backend Microservices Tests exposed three outdated 16-permission expectations and 23 false `MISCONFIGURED` peer outcomes. After fixing these, the hosted run for `37ee55a` passed all 10 PR-triggered workflows, including Backend Microservices Tests, and PR #8 is mergeable. See PR #8 and commits `b1f8c04` and `37ee55a`.
+
+## 2026-10-12 — Reconcile and verify the merged four-component branch
+
+- Date/time or time range: 2026-10-12 22:56 (Asia/Colombo; resumed continuation of the current task)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop, PowerShell, Docker, .NET, npm, Flutter and bundled Python
+- AI Model: GPT-6
+- Summary of the user's request: Review and repair the merged branch, starting with the backend and Docker setup; reconcile all four G00 records with current implementation and verify the whole branch runs.
+- Summary of what the AI Agent did: Reconciled API gateway and peer adapters with implemented component routes and DTOs, added Experience-owned catalogue/availability contracts and Offering experience levels with migrations, adjusted Auth permission seeding, corrected Docker health/dependency wiring and SDK configuration, updated setup/catalog/G00/readiness documentation, and corrected two Coastal Operations test fixtures/assertions after user approval.
+- AI output accepted/changed/rejected: Kept the shared G00 state Pending and G07 unaccepted because owner ratification and full hosted acceptance are not evidenced. Kept Member 4's Marine and Planner dependencies `NOT_CONNECTED` until scoped identity and payload contracts are agreed. Applied the user-approved Planner and Operations test corrections; no tests were skipped or relaxed.
+- Verification/evidence: All six .NET service builds and six DHI service images succeeded; API/Auth/Operations/Planner/Experience/Marine suites passed 57/57, 85/85, 332/332, 130/130, 101/101 and 183/183. All six Operations PostgreSQL provider cases passed against the isolated database. React lint and production build passed and the serial web suite passed; Flutter analysis found no issues and Flutter tests passed 295/295. Endpoint catalog and UI integration validators passed. The isolated seven-service backend Compose stack was healthy; API liveness returned 200, protected component gateway probes returned 401 without a caller session, and all four Experience migrations were present in its owned schema. Vite reported the existing large-chunk warning. No commit or push was made.
+
+## 2026-10-12 — Diagnose Coastal Operations Docker startup failure
+
+- Date/time or time range: 2026-10-12 18:30 UTC
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop, PowerShell and Docker Compose
+- AI Model: GPT-6
+- Summary of the user's request: Investigate why `docker compose up -d` reports Coastal Operations as unhealthy.
+- Summary of what the AI Agent did: Traced the container restart to the local context-signing key being 43-character unpadded Base64URL, while both API and Coastal Operations require standard padded Base64. Normalized the ignored local `.env` value to standard Base64 without changing its decoded 32-byte key, removed the predictable fixed key from `.env.example`, and clarified WSL/Linux and padding instructions in setup documentation.
+- AI output accepted/changed/rejected: Preserved the existing standard-Base64 contract and signing key bytes. Replaced the committed example value with an empty required setting so developers generate a private local key. No service code or tests were changed.
+- Verification/evidence: `docker compose config --quiet` passed; `docker compose up -d` started the stack; all eight health-checked services, including Coastal Operations and the API, reported healthy, and the frontend was running. `http://127.0.0.1/api/health` returned HTTP 200. `git diff --check` passed with only existing line-ending notices; `.env` remains ignored and no secret value was recorded. No commit or push was made.

@@ -5,6 +5,7 @@ FROM dhi.io/dotnet:10-sdk-alpine AS build
 ARG PROJECT_NAME=Blueverse.CoastalPlanner
 WORKDIR /src
 
+COPY global.json ./global.json
 COPY services/coastal-planner/*.csproj ./
 
 RUN --mount=type=cache,id=blueverse-nuget,target=/root/.nuget/packages,sharing=locked \

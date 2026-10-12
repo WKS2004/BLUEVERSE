@@ -124,16 +124,15 @@ public partial class CoastalPlannerService : ICoastalPlannerService
             var end = start.AddHours(request.DurationHours);
             if (end > request.EndsAt || end > availableUntil) continue;
             var (suitability, suitResponded, suitNote) = await _peerClient.GetMarineSuitabilityAsync(
-                item.DestinationId, item.ActivityId, start, end, ct);
+                item.DestinationId, item.ActivityId, item.Latitude, item.Longitude, start, ct);
             AddNote(uncertaintyNotes, suitNote);
 
             if (!suitResponded || suitability is null ||
                 suitability.DestinationId != item.DestinationId || suitability.ActivityId != item.ActivityId ||
                 suitability.Status is not ("SUITABLE" or "CAUTION") ||
-                suitability.SafetyProfileId.GetValueOrDefault() == Guid.Empty ||
                 suitability.ConditionTimestamp == default ||
                 suitability.ConditionTimestamp.Kind != DateTimeKind.Utc ||
-                !suitability.IsFresh || suitability.ConditionTimestamp > end)
+                !suitability.IsFresh)
             {
                 verificationUnavailable |= !suitResponded || suitability?.Status is not ("UNSUITABLE");
                 if (suitResponded && suitability?.Status == "UNSUITABLE")
@@ -607,25 +606,25 @@ public partial class CoastalPlannerService : ICoastalPlannerService
 
         foreach (var item in itinerary.Items)
         {
-            var (suitability, suitResponded, suitNote) = await _peerClient.GetMarineSuitabilityAsync(
-                item.DestinationId, 
-                item.ActivityId, 
-                item.ScheduledStartUtc, 
-                item.ScheduledEndUtc, 
-                ct);
-            AddNote(summaryNotes, suitNote);
-
             var (operations, operationsResponded, catalogue, catalogueResponded) = destinationEvidence[item.DestinationId];
             var catalogueItem = catalogue.FirstOrDefault(candidate => candidate.DestinationId == item.DestinationId &&
                 candidate.ActivityId == item.ActivityId &&
                 (item.OfferingId.HasValue ? candidate.OfferingId == item.OfferingId : candidate.ActivityId == item.ActivityId));
+            var (suitability, suitResponded, suitNote) = await _peerClient.GetMarineSuitabilityAsync(
+                item.DestinationId, 
+                item.ActivityId, 
+                catalogueItem?.Latitude,
+                catalogueItem?.Longitude,
+                item.ScheduledStartUtc,
+                ct);
+            AddNote(summaryNotes, suitNote);
+
             var currentSuit = suitResponded && suitability is not null &&
                 suitability.DestinationId == item.DestinationId && suitability.ActivityId == item.ActivityId &&
                 suitability.Status is ("SUITABLE" or "CAUTION" or "UNSUITABLE" or "UNKNOWN") &&
                 suitability.ConditionTimestamp != default && suitability.ConditionTimestamp.Kind == DateTimeKind.Utc &&
                 suitability.ConditionTimestamp <= item.ScheduledEndUtc &&
-                (suitability.Status is "UNSUITABLE" or "UNKNOWN" || suitability.IsFresh) &&
-                (suitability.Status is "UNSUITABLE" or "UNKNOWN" || suitability.SafetyProfileId.GetValueOrDefault() != Guid.Empty)
+                (suitability.Status is "UNSUITABLE" or "UNKNOWN" || suitability.IsFresh)
                 ? suitability.Status
                 : "UNKNOWN";
             var currentOp = operationsResponded && operations is not null && operations.DestinationId == item.DestinationId &&

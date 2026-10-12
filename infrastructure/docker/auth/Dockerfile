@@ -5,6 +5,7 @@ FROM dhi.io/dotnet:10-sdk-alpine AS build
 ARG PROJECT_NAME=Blueverse.Auth
 WORKDIR /src
 
+COPY global.json ./global.json
 COPY services/auth/*.csproj ./
 
 RUN --mount=type=cache,id=blueverse-nuget,target=/root/.nuget/packages,sharing=locked \

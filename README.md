@@ -62,8 +62,10 @@ React Web / Flutter Mobile
               ▼
      Public ASP.NET Core API
         ├──> Auth service ──────────────────────────────> PostgreSQL
+        ├──> Coastal Operations service (Member 4) ────> PostgreSQL
+        ├──> Coastal Planner service (Member 3) ───────> PostgreSQL
         ├──> Marine-safety service (Member 2) ─────────> PostgreSQL
-        └──> Other private component services (planned) -> PostgreSQL
+        └──> Experience & Biodiversity service (Member 1) -> PostgreSQL
                       └──> Private Agentic AI runtime (after G07)
 ```
 
@@ -185,9 +187,12 @@ backend services. Compose, Dockerfiles and CI include these v1 component
 services; hosted deployment is not yet evidenced. They provide operations
 assessment/alert workflows, planning, marine conditions and safety, catalogue
 management, schedules, publication lifecycle, nearby discovery and map support.
-Coastal Operations makes bounded, read-only requests to provisional Member 1–3
-peer endpoints; missing peers do not gate its startup or readiness. Producer
-contracts and executable Agentic AI remain gated by G00/G07 decisions.
+Coastal Operations currently reads Member 1's canonical availability endpoint.
+Its Marine Safety and Coastal Planner dependencies return `NOT_CONNECTED`
+without sending requests until their route, payload and authorized service
+identity are agreed. Planner, Marine Safety and Experience adapters use their
+implemented public API routes and caller permissions. Live provider behavior,
+shared G00 ratification and executable Agentic AI remain G00/G07 gates.
 Configure Docker-internal peer addresses in `.env`. The edge gateway allows
 6 MiB request bodies on assessment-item routes to carry a 5 MiB PNG with
 multipart framing; the service enforces the per-image limit. Auth and all
@@ -232,8 +237,9 @@ For host-side development, also install:
   The containerized web build already uses the DHI Node 24 image, so a host
   Node installation is not required just to deploy with Compose.
 - **.NET 10 SDK** for running or building the ASP.NET projects directly on the
-  host. The repository selects SDK `10.0.400` in `global.json` and allows the
-  latest feature band. Install the SDK from the [official .NET 10 download
+  host. The repository selects the `10.0.300` SDK feature band in `global.json`
+  and allows forward feature-band roll-forward. This also matches the SDK
+  available in the selected Docker Hardened .NET image. Install the SDK from the [official .NET 10 download
   page](https://dotnet.microsoft.com/en-us/download/dotnet/10.0); on Windows,
   `winget install Microsoft.DotNet.SDK.10` is also available. The Compose build
   uses the DHI .NET 10 SDK image, so a host SDK is not required for the
@@ -333,6 +339,10 @@ PowerShell, generate a value with:
 ```powershell
 [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
 ```
+
+In WSL/Linux, use `openssl rand -base64 32`. Keep any trailing `=` in the
+output; the API and Coastal Operations expect standard padded Base64, not
+Base64URL or an unpadded value.
 
 Store the value only in `.env`; Compose supplies it to the API gateway and
 Coastal Operations so the gateway can sign each authenticated actor/permission

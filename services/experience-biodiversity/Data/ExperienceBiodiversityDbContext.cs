@@ -19,6 +19,7 @@ public sealed class ExperienceBiodiversityDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.HasDefaultSchema("experience_biodiversity");
 
         modelBuilder.Entity<Destination>(entity =>
         {
@@ -49,12 +50,15 @@ public sealed class ExperienceBiodiversityDbContext : DbContext
 
         modelBuilder.Entity<Offering>(entity =>
         {
-            entity.ToTable("offerings");
+            entity.ToTable("offerings", table => table.HasCheckConstraint(
+                "CK_offerings_experience_levels",
+                "\"ExperienceLevels\" IS NULL OR (cardinality(\"ExperienceLevels\") <= 3 AND \"ExperienceLevels\" <@ ARRAY['BEGINNER','INTERMEDIATE','ADVANCED']::text[] AND cardinality(\"ExperienceLevels\") = (CASE WHEN 'BEGINNER' = ANY(\"ExperienceLevels\") THEN 1 ELSE 0 END + CASE WHEN 'INTERMEDIATE' = ANY(\"ExperienceLevels\") THEN 1 ELSE 0 END + CASE WHEN 'ADVANCED' = ANY(\"ExperienceLevels\") THEN 1 ELSE 0 END))"));
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Title).HasMaxLength(200).IsRequired();
             entity.Property(e => e.Description).HasMaxLength(2000);
             entity.Property(e => e.Price).HasPrecision(10, 2);
             entity.Property(e => e.Currency).HasMaxLength(10);
+            entity.Property(e => e.ExperienceLevels).HasColumnType("text[]");
             entity.Property(e => e.Status).HasMaxLength(50).IsRequired();
 
             entity.HasOne(e => e.Destination)

@@ -29,11 +29,14 @@ assessment reads and guarded decision handling; target status/history reads;
 alert draft/lifecycle operations; persistence and migrations; API gateway
 integration; health checks; and a Swagger document available at
 `/api/swagger`. Draft creation stays local and makes no peer or AI calls.
-Submission makes bounded read-only requests to the provisional Member 1–3
-endpoints, records their outcomes, and reports dependency status without
-gating startup or readiness. The implemented routes and schema are evidence
-for branch progress, not a freeze of the shared request/response, identity,
-target-handoff or database-provisioning contracts. Branch-local image
+Submission makes one bounded read-only request to Member 1's implemented
+availability route. Member 2 and Member 3 are recorded as `NOT_CONNECTED`
+without a network request because the current marine target/time payload and
+the planner owner-scoped workflow route have no agreed Operations service
+identity/delegation contract. These peer outcomes do not gate startup or
+readiness. The implemented routes and schema are evidence for branch progress,
+not a freeze of shared identity, target-handoff or database-provisioning
+contracts. Branch-local image
 evidence is implemented against [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md);
 shared G00 acceptance is still required. Production proposal generation
 remains gated by G07.
@@ -47,6 +50,27 @@ terminal alerts are not ordinary CRUD records and cannot be edited or
 physically deleted through these draft operations. These behaviors are
 implemented against Member 4's provisional G00 proposal; they do not imply
 shared G00 acceptance.
+
+## Integrated branch contract reconciliation — 2026-10-12
+
+This source-based update supersedes the provisional peer paths and payloads in
+the proposal below. It does not ratify shared G00; the owner review checklist
+remains open.
+
+| Peer | Current branch behavior | Compatibility boundary |
+|---|---|---|
+| Member 1 Experience | For `DESTINATION`, `ACTIVITY` and `OFFERING`, Coastal Operations calls `GET /api/experiences/{targetType}/{targetId}/availability?periodStartsAt={RFC3339}&periodEndsAt={RFC3339}` on the private Experience service at `experience-biodiversity:8080`. `SESSION` makes no request because it has no canonical Experience record. | The implemented response is `targetType`, `targetId`, `availabilityStatus` (`AVAILABLE`/`UNAVAILABLE`), `targetVersion`, `evaluatedAt`, and optional `validUntil`. This covers publication/schedule availability only; it does not represent Operations status or marine suitability. |
+| Member 2 Marine | No request is sent; outcome is `NOT_CONNECTED` with zero attempts and `INTEGRATION_CONTRACT_PENDING`. | The actual route is `POST /api/marine/evaluate` through the public API, with activity ID, coordinates and time, and requires an Auth-issued `marine.profile.read` grant. Operations currently has a target ID and period, and its API-issued actor envelope is not a Marine JWT. The old target/time payload is invalid. |
+| Member 3 Planner | No request is sent when a `sourceWorkflowId` is present; outcome is `NOT_CONNECTED` with zero attempts and `INTEGRATION_CONTRACT_PENDING`. No source workflow remains `NOT_REQUESTED`. | The actual route is `GET /api/planner/workflows/{workflowId}` and its owner-scoped authorization requires a user's bearer context. Operations cannot safely forge or reuse that context. Agree a scoped service identity/delegation contract before enabling this consumer. |
+| Member 4 status producer | `GET /api/operations/targets/{targetType}/{targetId}/status` requires `operations.target.status.read`. | Response fields are `targetType`, `targetId`, `operationalState`, `stateVersion`, and `updatedAt`; this branch does not expose the older proposed restrictions list or a Member 1/3 private handoff route. |
+
+The Member 1 request has a 2-second per-attempt timeout, bounded retries, and
+a 32 KiB response limit. Only validated availability fields are retained.
+Member 2/3 integration outcomes are explicit and recorded without retries,
+invented payloads or permission bypass. No peer is probed during startup, and
+peer outcomes do not affect liveness or PostgreSQL readiness. Member 1 may
+consume Operations status and alerts through the public API; those consumers
+do not establish an Operations-to-Marine/Planner handoff.
 
 ## Decisions proposed by Member 4
 
@@ -83,50 +107,11 @@ observation/retrieval times, validity boundary when supplied, and explicit
 missing/unknown/stale meaning. Member 4 must preserve `UNSUITABLE` and
 `UNKNOWN`; neither an operational proposal nor a later agent may weaken them.
 
-The proposed Member 4 consumer response is `OperationalStatusResponse` with
-`targetType`, `targetId`, `operationalState`, applicable restrictions,
-`stateVersion`, and effective/update timestamps. It is read-only to Members 1
-and 3. The shared G00 review must align these reference and freshness fields
-with producer-owned schemas and agree the authenticated private handoff for
-service consumers before cross-component integration. The branch's public
-status route currently reads only Member 4's own managed operational state; it
-does not yet consume Member 1's authoritative target or expose the private
-member-to-member handoff.
-
-The branch currently uses these provisional, read-only peer endpoints when an
-assessment draft is explicitly submitted. They are assumptions for independent
-component work, not accepted shared routes; align paths, authentication, DTOs,
-identifiers and freshness rules with each owner before integration:
-
-| Source | Provisional request | Expected bounded JSON fields |
-|---|---|---|
-| Member 1 Experience & Biodiversity | `GET /api/experiences/{targetType}/{targetId}/availability?periodStartsAt={RFC3339}&periodEndsAt={RFC3339}` | `targetType`, `targetId`, `availabilityStatus` (`AVAILABLE`, `UNAVAILABLE`, `UNKNOWN`), optional `targetVersion`, `evaluatedAt`, optional `validUntil` |
-| Member 2 Marine Conditions & Safety | `POST /api/marine-safety/suitability-assessments` with `targetType`, `targetId`, `periodStartsAt`, `periodEndsAt` | `targetType`, `targetId`, `classification` (`SUITABLE`, `CAUTION`, `UNSUITABLE`, `UNKNOWN`), `profileVersion`, `assessedAt`, optional `validUntil`, `reasonCodes` |
-| Member 3 Coastal Planning | `GET /api/coastal-planner/workflows/{workflowId}`, only when the assessment has a `sourceWorkflowId` | `workflowId`, `status`, `updatedAt` |
-
-The default internal base addresses are `experience-biodiversity:8080`,
-`marine-safety:8080` and `coastal-planner:8080`, configurable per peer. Each
-request has a 2-second timeout, two retries (three attempts maximum) for
-timeouts, network failures, HTTP 408/429 and 5xx, short bounded exponential
-backoff, and a 32 KiB response limit. A missing or invalid route/schema,
-rejected request, exhausted retries or unconfigured address is returned as an
-explicit dependency result and recorded with the assessment; responses retain
-only validated contract fields. Results use `RESPONDED`, `STALE`,
-`UNAVAILABLE`, `ENDPOINT_NOT_FOUND`, `REJECTED`, `INVALID_RESPONSE`,
-`MISCONFIGURED` or `NOT_REQUESTED`; health reports `NOT_CHECKED` until a
-source has an outcome.
-The three peer requests run concurrently.
-Member 3 is `NOT_REQUESTED` when no source workflow is supplied. No peer is
-probed during startup, and peer outcomes do not affect liveness or readiness;
-readiness depends only on Coastal Operations' own PostgreSQL connection and
-schema. The latest bounded outcomes are also included in the anonymous health
-response, while assessment-level evidence is returned to authorized callers.
-
-These provisional peer calls currently use the Docker internal network. A
-shared service-to-service authentication contract has not been accepted; the
-peer owners must agree it before integration. Until then, authorization
-rejections remain explicit dependency outcomes and cannot be treated as
-evidence.
+The branch currently exposes Member 4's own managed target status through the
+public API. The only enabled inbound peer read is the private Member 1
+availability route summarized above. Its result is evidence, not a binding
+operational decision. Marine and Planner results remain unconnected until
+owners agree route, payload, resource scope and trusted service identity.
 
 Unavailable, missing, stale or contradictory producer evidence must remain an
 explicit dependency/evidence result and cannot authorize a proposal or

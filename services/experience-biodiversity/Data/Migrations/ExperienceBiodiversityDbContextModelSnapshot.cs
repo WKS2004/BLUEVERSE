@@ -17,6 +17,7 @@ namespace Blueverse.ExperienceBiodiversity.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
+                .HasDefaultSchema("experience_biodiversity")
                 .HasAnnotation("ProductVersion", "10.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
@@ -64,7 +65,7 @@ namespace Blueverse.ExperienceBiodiversity.Data.Migrations
 
                     b.HasIndex("Status");
 
-                    b.ToTable("activities", (string)null);
+                    b.ToTable("activities", "experience_biodiversity");
                 });
 
             modelBuilder.Entity("Blueverse.ExperienceBiodiversity.Models.Destination", b =>
@@ -117,7 +118,7 @@ namespace Blueverse.ExperienceBiodiversity.Data.Migrations
 
                     b.HasIndex("Status", "Region");
 
-                    b.ToTable("destinations", (string)null);
+                    b.ToTable("destinations", "experience_biodiversity");
                 });
 
             modelBuilder.Entity("Blueverse.ExperienceBiodiversity.Models.Favourite", b =>
@@ -145,7 +146,7 @@ namespace Blueverse.ExperienceBiodiversity.Data.Migrations
                     b.HasIndex("UserId", "TargetType", "TargetId")
                         .IsUnique();
 
-                    b.ToTable("favourites", (string)null);
+                    b.ToTable("favourites", "experience_biodiversity");
                 });
 
             modelBuilder.Entity("Blueverse.ExperienceBiodiversity.Models.Offering", b =>
@@ -174,6 +175,9 @@ namespace Blueverse.ExperienceBiodiversity.Data.Migrations
                     b.Property<int?>("DurationMinutes")
                         .HasColumnType("integer");
 
+                    b.PrimitiveCollection<string[]>("ExperienceLevels")
+                        .HasColumnType("text[]");
+
                     b.Property<int?>("MaxCapacity")
                         .HasColumnType("integer");
 
@@ -200,7 +204,10 @@ namespace Blueverse.ExperienceBiodiversity.Data.Migrations
 
                     b.HasIndex("DestinationId", "Status");
 
-                    b.ToTable("offerings", (string)null);
+                    b.ToTable("offerings", "experience_biodiversity", t =>
+                        {
+                            t.HasCheckConstraint("CK_offerings_experience_levels", "\"ExperienceLevels\" IS NULL OR (cardinality(\"ExperienceLevels\") <= 3 AND \"ExperienceLevels\" <@ ARRAY['BEGINNER','INTERMEDIATE','ADVANCED']::text[] AND cardinality(\"ExperienceLevels\") = (CASE WHEN 'BEGINNER' = ANY(\"ExperienceLevels\") THEN 1 ELSE 0 END + CASE WHEN 'INTERMEDIATE' = ANY(\"ExperienceLevels\") THEN 1 ELSE 0 END + CASE WHEN 'ADVANCED' = ANY(\"ExperienceLevels\") THEN 1 ELSE 0 END))");
+                        });
                 });
 
             modelBuilder.Entity("Blueverse.ExperienceBiodiversity.Models.Schedule", b =>
@@ -236,7 +243,7 @@ namespace Blueverse.ExperienceBiodiversity.Data.Migrations
 
                     b.HasIndex("OfferingId", "StartsAt", "EndsAt", "IsActive");
 
-                    b.ToTable("schedules", (string)null);
+                    b.ToTable("schedules", "experience_biodiversity");
                 });
 
             modelBuilder.Entity("Blueverse.ExperienceBiodiversity.Models.Offering", b =>

@@ -20,19 +20,22 @@ public sealed class OperationalStatusConsumerService : IOperationalStatusConsume
 {
     private readonly IResilientHttpExecutor _resilientExecutor;
     private readonly ILogger<OperationalStatusConsumerService> _logger;
-    private readonly string _operationsServiceUrl;
+    private readonly IHttpContextAccessor? _httpContextAccessor;
+    private readonly string _publicApiUrl;
 
     public OperationalStatusConsumerService(
         IResilientHttpExecutor resilientExecutor,
         IConfiguration configuration,
-        ILogger<OperationalStatusConsumerService> logger)
+        ILogger<OperationalStatusConsumerService> logger,
+        IHttpContextAccessor? httpContextAccessor = null)
     {
         _resilientExecutor = resilientExecutor;
         _logger = logger;
-        _operationsServiceUrl = configuration["OperationsServiceUrl"]
-            ?? configuration["OPERATIONS_SERVICE_URL"]
-            ?? configuration["Services:OperationsServiceUrl"]
-            ?? "http://coastal-operations:8080";
+        _httpContextAccessor = httpContextAccessor;
+        _publicApiUrl = configuration["PublicApiUrl"]
+            ?? configuration["PUBLIC_API_URL"]
+            ?? configuration["Services:PublicApiUrl"]
+            ?? "http://api:8080";
     }
 
     public async Task<OperationalRestrictionContextDto> GetOperationalStatusAsync(
@@ -40,62 +43,73 @@ public sealed class OperationalStatusConsumerService : IOperationalStatusConsume
         Guid? offeringId,
         CancellationToken cancellationToken = default)
     {
-        var targetUrl = $"{_operationsServiceUrl.TrimEnd('/')}/api/operations/restrictions/check?destinationId={destinationId}";
-        if (offeringId.HasValue)
-        {
-            targetUrl += $"&offeringId={offeringId.Value}";
-        }
-
-        var execution = await _resilientExecutor.ExecuteGetAsync(
+        var targetType = offeringId.HasValue ? "OFFERING" : "DESTINATION";
+        var targetId = offeringId ?? destinationId;
+        var targetUrl = $"{_publicApiUrl.TrimEnd('/')}/api/operations/targets/{targetType}/{targetId:D}/status";
+        var execution = await _resilientExecutor.ExecuteGetWithAuthorizationAsync(
             targetUrl,
             perAttemptTimeout: TimeSpan.FromSeconds(2),
             maxRetries: 2,
             initialRetryDelay: TimeSpan.FromMilliseconds(100),
+            bearerToken: PeerAuthorization.GetBearerToken(_httpContextAccessor),
             cancellationToken: cancellationToken);
 
         if (execution.Responded && execution.StatusCode == 200 && !string.IsNullOrWhiteSpace(execution.Content))
         {
             try
             {
-                using var doc = JsonDocument.Parse(execution.Content);
-                var root = doc.RootElement;
-
-                var hasRestriction = root.TryGetProperty("hasRestriction", out var hrProp) && hrProp.GetBoolean();
-                string? restrictionType = root.TryGetProperty("restrictionType", out var rtProp) ? rtProp.GetString() : null;
-                string? severity = root.TryGetProperty("severity", out var sProp) ? sProp.GetString() : null;
-                string? reason = root.TryGetProperty("reason", out var rProp) ? rProp.GetString() : null;
-                DateTimeOffset? until = root.TryGetProperty("effectiveUntil", out var uProp) && uProp.TryGetDateTimeOffset(out var dto) ? dto : null;
-
-                return new OperationalRestrictionContextDto(
-                    HasRestriction: hasRestriction,
-                    RestrictionType: restrictionType,
-                    Severity: severity,
-                    Reason: reason,
-                    EffectiveUntil: until,
-                    SourceStatus: "AUTHORITATIVE_REMOTE",
-                    Responded: true,
-                    TargetEndpoint: targetUrl,
-                    AttemptsCount: execution.AttemptsCount,
-                    LatencyMs: execution.DurationMs,
-                    RemoteStatus: "RESPONDED",
-                    Message: execution.Message);
+                using var document = JsonDocument.Parse(execution.Content);
+                var root = document.RootElement;
+                var returnedTargetType = ReadString(root, "targetType");
+                var returnedTargetId = ReadGuid(root, "targetId");
+                var state = ReadString(root, "operationalState");
+                var version = ReadInt32(root, "stateVersion");
+                var updatedAt = ReadTimestamp(root, "updatedAt");
+                if (!string.Equals(returnedTargetType, targetType, StringComparison.Ordinal) || returnedTargetId != targetId ||
+                    state is not ("OPEN" or "CAUTION" or "TEMPORARILY_SUSPENDED" or "CANCELLED" or "COMPLETED") ||
+                    version is null or <= 0 || updatedAt is null)
+                {
+                    _logger.LogWarning("Coastal Operations returned an invalid target-status response for {TargetType} {TargetId}.", targetType, targetId);
+                }
+                else
+                {
+                    var hasRestriction = state != "OPEN";
+                    return new OperationalRestrictionContextDto(
+                        HasRestriction: hasRestriction,
+                        RestrictionType: hasRestriction ? state : null,
+                        Severity: null,
+                        Reason: hasRestriction ? $"Coastal Operations reports {state} for this target." : "Coastal Operations reports OPEN for this target.",
+                        EffectiveUntil: null,
+                        SourceStatus: "AUTHORITATIVE_REMOTE",
+                        Responded: true,
+                        TargetEndpoint: targetUrl,
+                        AttemptsCount: execution.AttemptsCount,
+                        LatencyMs: execution.DurationMs,
+                        RemoteStatus: "RESPONDED",
+                        Message: execution.Message,
+                        TargetType: returnedTargetType,
+                        TargetId: returnedTargetId,
+                        OperationalState: state,
+                        StateVersion: version,
+                        UpdatedAt: updatedAt);
+                }
             }
-            catch (JsonException jEx)
+            catch (JsonException exception)
             {
-                _logger.LogWarning(jEx, "Failed to parse JSON response from Member 4 Operations service at {TargetUrl}", targetUrl);
+                _logger.LogWarning(exception, "Failed to parse Coastal Operations target status from {TargetUrl}", targetUrl);
             }
         }
 
-        // Resilient safe fallback when remote operational service did not respond or failed
-        var statusReason = execution.Responded
-            ? $"Operations service returned non-success code {execution.StatusCode}; operational state cannot be optimistically confirmed."
-            : $"Remote coastal-operations microservice did not respond ({execution.RemoteStatus}) after {execution.AttemptsCount} attempts. Operational review cannot be optimistically confirmed.";
-
+        var reason = execution.StatusCode == 404
+            ? "Coastal Operations has not established authoritative state for this target."
+            : execution.Responded
+                ? $"Coastal Operations returned HTTP {execution.StatusCode}; operational state cannot be confirmed."
+                : $"Coastal Operations could not be reached ({execution.RemoteStatus}); operational state cannot be confirmed.";
         return new OperationalRestrictionContextDto(
             HasRestriction: false,
             RestrictionType: null,
             Severity: null,
-            Reason: statusReason,
+            Reason: reason,
             EffectiveUntil: null,
             SourceStatus: "UNAVAILABLE",
             Responded: execution.Responded,
@@ -103,7 +117,9 @@ public sealed class OperationalStatusConsumerService : IOperationalStatusConsume
             AttemptsCount: execution.AttemptsCount,
             LatencyMs: execution.DurationMs,
             RemoteStatus: execution.RemoteStatus,
-            Message: execution.Message);
+            Message: execution.Message,
+            TargetType: targetType,
+            TargetId: targetId);
     }
 
     public async Task<OperationalAdvisoriesResponseDto> GetOperationalAdvisoriesAsync(
@@ -111,60 +127,67 @@ public sealed class OperationalStatusConsumerService : IOperationalStatusConsume
         string destinationName,
         CancellationToken cancellationToken = default)
     {
-        var targetUrl = $"{_operationsServiceUrl.TrimEnd('/')}/api/operations/advisories/active?destinationId={destinationId}";
-
-        var execution = await _resilientExecutor.ExecuteGetAsync(
+        var targetUrl = $"{_publicApiUrl.TrimEnd('/')}/api/operations/alerts?targetType=DESTINATION&targetId={destinationId:D}&lifecycle=ACTIVE&visibility=PUBLIC&pageSize=100";
+        var execution = await _resilientExecutor.ExecuteGetWithAuthorizationAsync(
             targetUrl,
             perAttemptTimeout: TimeSpan.FromSeconds(2),
             maxRetries: 2,
             initialRetryDelay: TimeSpan.FromMilliseconds(100),
+            bearerToken: PeerAuthorization.GetBearerToken(_httpContextAccessor),
             cancellationToken: cancellationToken);
 
         if (execution.Responded && execution.StatusCode == 200 && !string.IsNullOrWhiteSpace(execution.Content))
         {
             try
             {
-                using var doc = JsonDocument.Parse(execution.Content);
-                var root = doc.RootElement;
-
-                var advisories = new List<ActiveAdvisoryItemDto>();
-                if (root.TryGetProperty("advisories", out var advArray) && advArray.ValueKind == JsonValueKind.Array)
+                using var document = JsonDocument.Parse(execution.Content);
+                var root = document.RootElement;
+                if (root.TryGetProperty("items", out var items) && items.ValueKind == JsonValueKind.Array)
                 {
-                    foreach (var item in advArray.EnumerateArray())
+                    var now = DateTimeOffset.UtcNow;
+                    var advisories = new List<ActiveAdvisoryItemDto>();
+                    foreach (var item in items.EnumerateArray())
                     {
-                        var id = item.TryGetProperty("id", out var idProp) ? idProp.GetString() ?? Guid.NewGuid().ToString() : Guid.NewGuid().ToString();
-                        var title = item.TryGetProperty("title", out var tProp) ? tProp.GetString() ?? "Operational Notice" : "Operational Notice";
-                        var severity = item.TryGetProperty("severity", out var sProp) ? sProp.GetString() ?? "INFO" : "INFO";
-                        var desc = item.TryGetProperty("description", out var dProp) ? dProp.GetString() ?? "" : "";
-                        var issued = item.TryGetProperty("issuedAt", out var iProp) && iProp.TryGetDateTimeOffset(out var iDto) ? iDto : DateTimeOffset.UtcNow;
-                        var expires = item.TryGetProperty("expiresAt", out var eProp) && eProp.TryGetDateTimeOffset(out var eDto) ? eDto : (DateTimeOffset?)null;
+                        var alertId = ReadGuid(item, "alertId");
+                        var title = ReadString(item, "title");
+                        var severity = ReadString(item, "severity");
+                        var description = ReadString(item, "description");
+                        var validFrom = ReadTimestamp(item, "validFrom");
+                        var validUntil = ReadTimestamp(item, "validUntil");
+                        if (alertId is null || alertId.Value == Guid.Empty || string.IsNullOrWhiteSpace(title) ||
+                            string.IsNullOrWhiteSpace(description) || severity is not ("LOW" or "MODERATE" or "HIGH" or "CRITICAL") ||
+                            validFrom is null || validUntil is null || validUntil <= validFrom)
+                        {
+                            _logger.LogWarning("Coastal Operations returned a malformed active alert for destination {DestinationId}; the alert was omitted.", destinationId);
+                            continue;
+                        }
 
-                        advisories.Add(new ActiveAdvisoryItemDto(id, title, severity, desc, issued, expires));
+                        if (validFrom <= now && validUntil > now)
+                            advisories.Add(new ActiveAdvisoryItemDto(alertId.Value.ToString("D"), title, severity, description, validFrom.Value, validUntil.Value));
                     }
-                }
 
-                return new OperationalAdvisoriesResponseDto(
-                    DestinationId: destinationId,
-                    DestinationName: destinationName,
-                    Responded: true,
-                    TargetEndpoint: targetUrl,
-                    AttemptsCount: execution.AttemptsCount,
-                    LatencyMs: execution.DurationMs,
-                    RemoteStatus: "RESPONDED",
-                    Advisories: advisories,
-                    FallbackUsed: false,
-                    Message: execution.Message);
+                    return new OperationalAdvisoriesResponseDto(
+                        DestinationId: destinationId,
+                        DestinationName: destinationName,
+                        Responded: true,
+                        TargetEndpoint: targetUrl,
+                        AttemptsCount: execution.AttemptsCount,
+                        LatencyMs: execution.DurationMs,
+                        RemoteStatus: "RESPONDED",
+                        Advisories: advisories,
+                        FallbackUsed: false,
+                        Message: execution.Message);
+                }
             }
-            catch (JsonException jEx)
+            catch (JsonException exception)
             {
-                _logger.LogWarning(jEx, "Failed to parse advisories JSON from Member 4 service at {TargetUrl}", targetUrl);
+                _logger.LogWarning(exception, "Failed to parse Coastal Operations alerts from {TargetUrl}", targetUrl);
             }
         }
 
         var message = execution.Responded
-            ? $"Remote operations microservice returned status {execution.StatusCode}. No remote advisories loaded."
-            : $"Remote coastal-operations microservice did not respond ({execution.RemoteStatus}) after {execution.AttemptsCount} attempts. Assumed baseline: no active emergency coastal closures.";
-
+            ? $"Coastal Operations returned HTTP {execution.StatusCode}; public advisories are unavailable."
+            : $"Coastal Operations did not respond after {execution.AttemptsCount} attempts ({execution.RemoteStatus}); public advisories are unavailable.";
         return new OperationalAdvisoriesResponseDto(
             DestinationId: destinationId,
             DestinationName: destinationName,
@@ -173,8 +196,20 @@ public sealed class OperationalStatusConsumerService : IOperationalStatusConsume
             AttemptsCount: execution.AttemptsCount,
             LatencyMs: execution.DurationMs,
             RemoteStatus: execution.RemoteStatus,
-            Advisories: Array.Empty<ActiveAdvisoryItemDto>(),
+            Advisories: [],
             FallbackUsed: true,
             Message: message);
     }
+
+    private static string? ReadString(JsonElement root, string name) =>
+        root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+
+    private static Guid? ReadGuid(JsonElement root, string name) =>
+        root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String && value.TryGetGuid(out var id) ? id : null;
+
+    private static int? ReadInt32(JsonElement root, string name) =>
+        root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var number) ? number : null;
+
+    private static DateTimeOffset? ReadTimestamp(JsonElement root, string name) =>
+        root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String && value.TryGetDateTimeOffset(out var timestamp) ? timestamp : null;
 }

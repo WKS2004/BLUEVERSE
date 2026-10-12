@@ -5,6 +5,7 @@ FROM dhi.io/dotnet:10-sdk-alpine AS build
 ARG PROJECT_NAME=Blueverse.MarineSafety
 WORKDIR /src/services/marine-safety
 
+COPY global.json /src/global.json
 COPY services/marine-safety/ ./
 COPY infrastructure/contracts/ /src/infrastructure/contracts/
 

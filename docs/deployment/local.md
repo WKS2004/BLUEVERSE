@@ -41,7 +41,9 @@ cp .env.example .env
 
 Set a unique `JWT_SIGNING_KEY` with at least 32 UTF-8 bytes, local PostgreSQL
 and administrator passwords, and set `COASTAL_OPERATIONS_CONTEXT_KEY` to
-Base64 for 32 random bytes. Share that key only with the API and Coastal
+standard padded Base64 for 32 random bytes. Keep any trailing `=`; do not use
+Base64URL or remove its padding. In WSL/Linux, generate it with
+`openssl rand -base64 32`. Share that key only with the API and Coastal
 Operations containers. Confirm the Docker-internal destinations
 `AUTH_SERVICE_URL=http://auth:8080` and
 `COASTAL_OPERATIONS_SERVICE_URL=http://coastal-operations:8080` in `.env`.

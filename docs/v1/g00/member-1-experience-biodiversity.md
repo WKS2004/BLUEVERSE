@@ -12,6 +12,30 @@ now contains component source, including an EF Core model/migration and public
 gateway routes. That implementation is evidence of branch work only; it does
 not settle or approve shared G00 contracts.
 
+## Integrated branch contract reconciliation — 2026-10-12
+
+This source-based update supersedes earlier example routes and payloads in this
+record for the current integration branch. It does not ratify shared G00;
+owner agreement on persistence ownership and service identity remains pending.
+
+| Producer / consumer | Implemented route and authorization | Current contract and limit |
+|---|---|---|
+| Coastal Planner reads Experience catalogue | `GET /api/experiences/catalogue` through the public API; `experiences.catalogue.read` (or catalogue-manage/system-role permission) | Returns a bounded schedule-level array with destination/activity/offering IDs and names, coordinates, publication and availability status, schedule bounds, time zone, and nullable `experienceLevels`. Each offering may produce one row per schedule. Query filters are optional; over 1,000 offerings or 5,000 rows returns 503. |
+| Coastal Operations reads target availability | Direct private-service `GET /api/experiences/{targetType}/{targetId:guid}/availability?periodStartsAt={RFC3339}&periodEndsAt={RFC3339}` on `experience-biodiversity:8080`; the component handler is currently anonymous inside the private Docker network. | Returns `targetType`, `targetId`, `availabilityStatus` (`AVAILABLE` or `UNAVAILABLE`), a timestamp `targetVersion`, `evaluatedAt`, and optional `validUntil`. This is catalogue publication/schedule availability only; it does not include operational restrictions or marine suitability. The internal service identity/authorization boundary is unresolved and remains an owner G00 decision. The API also exposes a separate permission-protected public gateway route for this handler. |
+| Experience consumes Marine current conditions | `GET /api/marine/current?latitude={latitude}&longitude={longitude}` through the public API; caller must hold `marine.profile.read` | Uses the caller's Auth-issued bearer token. Preserves snapshot/source/freshness/missing fields and converts `windSpeed` km/h to knots. The current-conditions endpoint does not classify safety or water conditions, so both stay `UNKNOWN`. |
+| Experience consumes Planner biodiversity predictions | `GET /api/planner/biodiversity/predictions?destinationId={guid}` through the public API; caller must hold `planner.biodiversity.read` | Maps actual `predictedSpecies`, `habitatSuitability`, confidence/uncertainty and model provenance. Occurrence probability, conservation status and primary threats are absent and remain null; predictions are not observations. |
+| Experience consumes Operations state and alerts | `GET /api/operations/targets/{targetType}/{targetId}/status` with `operations.target.status.read`; `GET /api/operations/alerts?targetType=DESTINATION&targetId={guid}&lifecycle=ACTIVE&visibility=PUBLIC&pageSize=100` with `operations.alert.read` | Both calls go through the public API with the caller bearer. State/version/time and current public alert windows are validated; unavailable or uninitialized state is not interpreted as unrestricted/open. |
+
+The optional `ExperienceLevels` offering field accepts unique uppercase
+`BEGINNER`, `INTERMEDIATE` and `ADVANCED` values; omitted/null preserves legacy
+offerings without an inferred skill requirement. PostgreSQL migrations add the
+nullable array and a check constraint. The React and Flutter routes registered
+for this component are `/experiences`, `/experiences/destinations/:id`,
+`/experiences/offerings/:id`, `/experiences/favourites`, and management at
+`/experiences/manage/:section` (React) and `/experiences/manage` (Flutter).
+These records follow `docs/contracts/ui-integration.json` and the endpoint
+catalog.
+
 ## 1. Ownership and canonical identity
 
 - Ushan's service is authoritative for destinations, activities, offerings,
@@ -46,8 +70,8 @@ restriction references before consumers implement them.
 | Compose service/DNS identity | `experience-biodiversity` |
 | Container port | `8080`, private on the existing internal Docker network |
 | Public API route prefix | `/api/experiences`; YARP forwards this path unchanged to the private `experience-biodiversity` service |
-| PostgreSQL | Existing PostgreSQL 16 instance and the same configured database used by Auth; a branch migration creates five component tables while shared data ownership remains pending |
-| Database identity | Uses the same `POSTGRES_USER` and `POSTGRES_PASSWORD` configuration as Auth; no separate database or service login |
+| PostgreSQL | Existing PostgreSQL 16 instance; the component's five tables now live in `experience_biodiversity`, with a separate named migration-history table. Shared database ownership remains pending |
+| Database identity | Current Compose setup still uses the shared `POSTGRES_USER` and `POSTGRES_PASSWORD`; a least-privilege service login and credential delivery remain G00 decisions |
 | Health | `GET /api/experiences/health` through the API gateway; anonymous service/database readiness with `200` when connected and `503` when unavailable, matching Auth |
 | Swagger/OpenAPI | `/api/experiences/swagger/{documentName}/swagger.json` through the API gateway |
 | Gateway security | API and component service validate Auth-issued JWTs; management routes require catalogue-management permission claims, while published reads and health/OpenAPI routes are anonymous |
@@ -62,9 +86,11 @@ not a local user record.
 The service registers an EF Core context, performs a bounded database
 connection check and applies its migration at startup. Its initial migration
 creates `destinations`, `activities`, `offerings`, `schedules` and
-`favourites` in PostgreSQL's default schema, using the shared database
-credentials and a separate migration-history table. Shared G00 data ownership
-and migration-history decisions remain pending.
+`favourites`, and the additive `MoveExperienceBiodiversityIntoOwnedSchema`
+migration moves them into `experience_biodiversity` while preserving their
+contents. The service still uses the shared database credentials and keeps its
+separate migration-history table in `public`. Shared G00 data ownership,
+credential and migration-history decisions remain pending.
 
 The API gateway and private component service validate Auth-issued JWTs. The
 gateway protects management routes with the existing role-to-permission

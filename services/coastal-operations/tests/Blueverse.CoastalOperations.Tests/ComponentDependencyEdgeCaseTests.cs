@@ -27,9 +27,7 @@ public sealed class ComponentDependencyEdgeCaseTests
             var call = calls.AddOrUpdate(host, 1, static (_, current) => current + 1);
             if (call == 1)
                 return Task.FromResult(new HttpResponseMessage(transientStatus));
-            return Task.FromResult(host == "experience.test"
-                ? Json(HttpStatusCode.OK, Availability("AVAILABLE", DateTimeOffset.UtcNow.AddMinutes(5)))
-                : Json(HttpStatusCode.OK, Suitability()));
+            return Task.FromResult(Json(HttpStatusCode.OK, Availability("AVAILABLE", DateTimeOffset.UtcNow.AddMinutes(5))));
         }, retries: 1);
 
         var result = await collector.CollectAsync("ACTIVITY", TargetId, EvaluatedAt, EvaluatedAt.AddHours(1), null, CancellationToken.None);
@@ -39,7 +37,7 @@ public sealed class ComponentDependencyEdgeCaseTests
         Assert.Equal(2, experience.Attempts);
         Assert.Equal(1, experience.Retries);
         Assert.Equal(2, calls["experience.test"]);
-        Assert.Equal(2, calls["marine.test"]);
+        Assert.DoesNotContain("marine.test", calls.Keys);
     }
 
     [Theory(DisplayName = "COASTAL-DEPENDENCY-011 client authorization and validation errors are not retried")]
@@ -65,7 +63,7 @@ public sealed class ComponentDependencyEdgeCaseTests
         Assert.Equal(1, experience.Attempts);
         Assert.Equal(0, experience.Retries);
         Assert.False(experience.Retryable);
-        Assert.Equal(2, calls); // one response per configured peer
+        Assert.Equal(1, calls); // only the configured Experience endpoint is contacted
     }
 
     [Theory(DisplayName = "COASTAL-DEPENDENCY-012 response media type and JSON syntax are validated")]
@@ -148,7 +146,7 @@ public sealed class ComponentDependencyEdgeCaseTests
         Assert.Equal("UNAVAILABLE", experience.Status);
         Assert.Equal(3, experience.Attempts);
         Assert.Equal(2, experience.Retries);
-        Assert.Equal(6, calls);
+        Assert.Equal(3, calls);
     }
 
     [Fact(DisplayName = "COASTAL-DEPENDENCY-017 configured response limit cannot exceed the 32 KiB contract bound")]
@@ -235,16 +233,6 @@ public sealed class ComponentDependencyEdgeCaseTests
             {
                 BaseAddress = "https://experience.test",
                 AvailabilityPath = "/api/experiences/{targetType}/{targetId}/availability"
-            },
-            Member2MarineSafety = new ComponentEndpointOptions
-            {
-                BaseAddress = "https://marine.test",
-                SuitabilityPath = "/api/marine-safety/suitability-assessments"
-            },
-            Member3CoastalPlanner = new ComponentEndpointOptions
-            {
-                BaseAddress = "https://planner.test",
-                WorkflowPath = "/api/coastal-planner/workflows/{workflowId}"
             }
         };
         return new ComponentDependencyCollector(
@@ -260,13 +248,6 @@ public sealed class ComponentDependencyEdgeCaseTests
         targetVersion = "experience-v1",
         evaluatedAt = DateTimeOffset.UtcNow.AddMinutes(-1),
         validUntil
-    };
-
-    private static object Suitability() => new
-    {
-        targetType = "ACTIVITY", targetId = TargetId, classification = "SUITABLE",
-        profileVersion = "marine-v1", assessedAt = DateTimeOffset.UtcNow.AddMinutes(-1),
-        validUntil = DateTimeOffset.UtcNow.AddHours(1), reasonCodes = new[] { "CHECKED" }
     };
 
     private static HttpResponseMessage Json(HttpStatusCode status, object body) => new(status)

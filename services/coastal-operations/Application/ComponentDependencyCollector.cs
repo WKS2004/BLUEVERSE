@@ -38,9 +38,9 @@ public sealed class ComponentDependencyCollector(
         CancellationToken cancellationToken)
     {
         var member1Task = GetExperienceAvailabilityAsync(targetType, targetId, periodStartsAt, periodEndsAt, cancellationToken);
-        var member2Task = GetMarineSuitabilityAsync(targetType, targetId, periodStartsAt, periodEndsAt, cancellationToken);
+        var member2Task = Task.FromResult(Record(NotConnected("member-2-marine-safety", "marine-suitability")));
         var member3Task = sourceWorkflowId is Guid workflowId
-            ? GetPlannerWorkflowAsync(workflowId, cancellationToken)
+            ? Task.FromResult(Record(NotConnected("member-3-coastal-planner", $"planner-workflow:{workflowId:D}")))
             : Task.FromResult(Record(NotRequested("member-3-coastal-planner", "planner-workflow")));
 
         return await Task.WhenAll(member1Task, member2Task, member3Task);
@@ -53,6 +53,13 @@ public sealed class ComponentDependencyCollector(
         DateTimeOffset endsAt,
         CancellationToken cancellationToken)
     {
+        if (targetType == "SESSION")
+        {
+            return Record(new ComponentDependencyResult(
+                "member-1-experience", "experience-availability", "NOT_REQUESTED", 0, 0, false, null,
+                "SESSION targets have no canonical Experience catalogue record.", DateTimeOffset.UtcNow, null));
+        }
+
         var endpoint = _options.Member1Experience;
         var path = endpoint.AvailabilityPath?
             .Replace("{targetType}", Uri.EscapeDataString(targetType), StringComparison.Ordinal)
@@ -74,7 +81,7 @@ public sealed class ComponentDependencyCollector(
             () => new HttpRequestMessage(HttpMethod.Get, builder.Uri),
             response => response.TargetId == targetId &&
                         string.Equals(response.TargetType, targetType, StringComparison.Ordinal) &&
-                        IsOneOf(response.AvailabilityStatus, "AVAILABLE", "UNAVAILABLE", "UNKNOWN") &&
+                        IsOneOf(response.AvailabilityStatus, "AVAILABLE", "UNAVAILABLE") &&
                         IsOptionalText(response.TargetVersion, 128) &&
                         IsValidEvaluation(response.EvaluatedAt, response.ValidUntil)
                 ? new ComponentDependencyEvidence(
@@ -85,74 +92,6 @@ public sealed class ComponentDependencyCollector(
                     ProfileVersion: null,
                     ObservedAt: response.EvaluatedAt,
                     ValidUntil: response.ValidUntil,
-                    ReasonCodes: [])
-                : null,
-            cancellationToken);
-    }
-
-    private async Task<ComponentDependencyResult> GetMarineSuitabilityAsync(
-        string targetType,
-        Guid targetId,
-        DateTimeOffset startsAt,
-        DateTimeOffset endsAt,
-        CancellationToken cancellationToken)
-    {
-        var endpoint = _options.Member2MarineSafety;
-        if (!TryBuildUri(endpoint.BaseAddress, endpoint.SuitabilityPath, out var uri))
-            return Record(Misconfigured("member-2-marine-safety", "marine-suitability"));
-
-        var body = new MarineSuitabilityRequest(targetType, targetId, startsAt, endsAt);
-        return await SendAsync<MarineSuitabilityResponse>(
-            "member-2-marine-safety",
-            "marine-suitability",
-            uri!,
-            () => new HttpRequestMessage(HttpMethod.Post, uri)
-            {
-                Content = JsonContent.Create(body, options: OperationsValidation.JsonOptions)
-            },
-            response => response.TargetId == targetId &&
-                        string.Equals(response.TargetType, targetType, StringComparison.Ordinal) &&
-                        IsOneOf(response.Classification, "SUITABLE", "CAUTION", "UNSUITABLE", "UNKNOWN") &&
-                        IsRequiredText(response.ProfileVersion, 128) &&
-                        IsValidEvaluation(response.AssessedAt, response.ValidUntil) &&
-                        IsValidReasonCodes(response.ReasonCodes)
-                ? new ComponentDependencyEvidence(
-                    AvailabilityStatus: null,
-                    SuitabilityClassification: response.Classification,
-                    WorkflowStatus: null,
-                    SourceVersion: null,
-                    ProfileVersion: response.ProfileVersion,
-                    ObservedAt: response.AssessedAt,
-                    ValidUntil: response.ValidUntil,
-                    ReasonCodes: response.ReasonCodes!.ToArray())
-                : null,
-            cancellationToken);
-    }
-
-    private async Task<ComponentDependencyResult> GetPlannerWorkflowAsync(Guid workflowId, CancellationToken cancellationToken)
-    {
-        var endpoint = _options.Member3CoastalPlanner;
-        var path = endpoint.WorkflowPath?
-            .Replace("{workflowId}", Uri.EscapeDataString(workflowId.ToString("D")), StringComparison.Ordinal);
-        if (!TryBuildUri(endpoint.BaseAddress, path, out var uri))
-            return Record(Misconfigured("member-3-coastal-planner", "planner-workflow"));
-
-        return await SendAsync<PlannerWorkflowResponse>(
-            "member-3-coastal-planner",
-            "planner-workflow",
-            uri!,
-            () => new HttpRequestMessage(HttpMethod.Get, uri),
-            response => response.WorkflowId == workflowId &&
-                        IsRequiredText(response.Status, 64) &&
-                        response.UpdatedAt != default
-                ? new ComponentDependencyEvidence(
-                    AvailabilityStatus: null,
-                    SuitabilityClassification: null,
-                    WorkflowStatus: response.Status,
-                    SourceVersion: null,
-                    ProfileVersion: null,
-                    ObservedAt: response.UpdatedAt,
-                    ValidUntil: null,
                     ReasonCodes: [])
                 : null,
             cancellationToken);
@@ -331,6 +270,11 @@ public sealed class ComponentDependencyCollector(
         service, endpoint, "NOT_REQUESTED", 0, 0, false, null,
         "No planner workflow was supplied with this assessment.", DateTimeOffset.UtcNow, null);
 
+    private static ComponentDependencyResult NotConnected(string service, string endpoint) => new(
+        service, endpoint, "NOT_CONNECTED", 0, 0, false, "INTEGRATION_CONTRACT_PENDING",
+        "The peer route, payload and authorized service identity are not agreed; no request was sent.",
+        DateTimeOffset.UtcNow, null);
+
     private static ComponentDependencyResult Misconfigured(string service, string endpoint) => new(
         service, endpoint, "MISCONFIGURED", 0, 0, false, "ENDPOINT_CONFIGURATION_INVALID",
         "The optional dependency endpoint is not configured with a valid HTTP or HTTPS address and relative path.",
@@ -412,17 +356,10 @@ public sealed class ComponentDependencyCollector(
     private static bool IsValidEvaluation(DateTimeOffset evaluatedAt, DateTimeOffset? validUntil) =>
         evaluatedAt != default && (validUntil is null || validUntil > evaluatedAt);
 
-    private static bool IsRequiredText(string? value, int maxLength) =>
-        !string.IsNullOrWhiteSpace(value) && value.Length <= maxLength && value.All(character => !char.IsControl(character));
-
     private static bool IsOptionalText(string? value, int maxLength) =>
         value is null || (value.Length <= maxLength && value.All(character => !char.IsControl(character)));
 
     private static bool IsOneOf(string? value, params string[] allowed) =>
         allowed.Contains(value, StringComparer.Ordinal);
 
-    private static bool IsValidReasonCodes(IReadOnlyList<string>? reasonCodes) =>
-        reasonCodes is not null && reasonCodes.Count <= 32 &&
-        reasonCodes.All(code => IsRequiredText(code, 64) && code.All(character =>
-            char.IsAsciiLetterOrDigit(character) || character is '_' or '-' or '.'));
 }

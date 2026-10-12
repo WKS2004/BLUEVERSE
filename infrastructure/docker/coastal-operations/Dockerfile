@@ -5,6 +5,7 @@ FROM dhi.io/dotnet:10-sdk-alpine AS build
 ARG PROJECT_NAME=Blueverse.CoastalOperations
 WORKDIR /src
 
+COPY global.json ./global.json
 COPY services/coastal-operations/ ./
 
 RUN dotnet restore "${PROJECT_NAME}.csproj"

@@ -17,19 +17,22 @@ public sealed class BiodiversityConsumerService : IBiodiversityConsumerService
 {
     private readonly IResilientHttpExecutor _resilientExecutor;
     private readonly ILogger<BiodiversityConsumerService> _logger;
-    private readonly string _plannerServiceUrl;
+    private readonly IHttpContextAccessor? _httpContextAccessor;
+    private readonly string _publicApiUrl;
 
     public BiodiversityConsumerService(
         IResilientHttpExecutor resilientExecutor,
         IConfiguration configuration,
-        ILogger<BiodiversityConsumerService> logger)
+        ILogger<BiodiversityConsumerService> logger,
+        IHttpContextAccessor? httpContextAccessor = null)
     {
         _resilientExecutor = resilientExecutor;
         _logger = logger;
-        _plannerServiceUrl = configuration["PlannerServiceUrl"]
-            ?? configuration["PLANNER_SERVICE_URL"]
-            ?? configuration["Services:PlannerServiceUrl"]
-            ?? "http://coastal-planner:8080";
+        _httpContextAccessor = httpContextAccessor;
+        _publicApiUrl = configuration["PublicApiUrl"]
+            ?? configuration["PUBLIC_API_URL"]
+            ?? configuration["Services:PublicApiUrl"]
+            ?? "http://api:8080";
     }
 
     public async Task<BiodiversityContextResponseDto> GetBiodiversityContextAsync(
@@ -39,42 +42,50 @@ public sealed class BiodiversityConsumerService : IBiodiversityConsumerService
         double longitude,
         CancellationToken cancellationToken = default)
     {
-        var targetUrl = $"{_plannerServiceUrl.TrimEnd('/')}/api/planner/biodiversity?destinationId={destinationId}&latitude={latitude}&longitude={longitude}";
-
-        // Execute resiliently with 2-second timeout and 2 retries (3 attempts total)
-        var execution = await _resilientExecutor.ExecuteGetAsync(
+        var targetUrl = BuildPredictionsUrl(_publicApiUrl, destinationId);
+        var execution = await _resilientExecutor.ExecuteGetWithAuthorizationAsync(
             targetUrl,
             perAttemptTimeout: TimeSpan.FromSeconds(2),
             maxRetries: 2,
             initialRetryDelay: TimeSpan.FromMilliseconds(100),
+            bearerToken: PeerAuthorization.GetBearerToken(_httpContextAccessor),
             cancellationToken: cancellationToken);
 
         if (execution.Responded && execution.StatusCode == 200 && !string.IsNullOrWhiteSpace(execution.Content))
         {
             try
             {
-                using var doc = JsonDocument.Parse(execution.Content);
-                var root = doc.RootElement;
+                using var document = JsonDocument.Parse(execution.Content);
+                var root = document.RootElement;
+                var status = ReadString(root, "status")?.ToLowerInvariant();
+                var responseDestinationId = ReadGuid(root, "destinationId");
+                if (responseDestinationId != destinationId)
+                    return Unavailable(destinationId, destinationName, latitude, longitude, targetUrl, execution,
+                        "The biodiversity service returned a different destination; its predictions were discarded.", "invalid");
 
-                var predictions = new List<FocalSpeciesPredictionDto>();
-                if (root.TryGetProperty("predictions", out var predsArray) && predsArray.ValueKind == JsonValueKind.Array)
+                if (status != "available")
                 {
-                    foreach (var item in predsArray.EnumerateArray())
-                    {
-                        var speciesName = item.TryGetProperty("speciesName", out var sn) ? sn.GetString() ?? "Unknown Species" : "Unknown Species";
-                        var sciName = item.TryGetProperty("scientificName", out var scn) ? scn.GetString() ?? "" : "";
-                        var status = item.TryGetProperty("conservationStatus", out var cs) ? cs.GetString() ?? "Data Deficient" : "Data Deficient";
-                        var prob = item.TryGetProperty("occurrenceProbability", out var op) ? op.GetDouble() : 0.5;
-                        var habitat = item.TryGetProperty("habitatSuitability", out var hProp) ? hProp.GetString() : null;
-                        var threats = item.TryGetProperty("primaryThreats", out var tProp) ? tProp.GetString() : null;
-
-                        predictions.Add(new FocalSpeciesPredictionDto(speciesName, sciName, status, prob, habitat, threats));
-                    }
+                    var message = ReadString(root, "message") ?? ReadString(root, "limitations") ??
+                        "The biodiversity service has no current prediction for this destination.";
+                    return Unavailable(destinationId, destinationName, latitude, longitude, targetUrl, execution, message,
+                        status is "stale" or "invalid" or "not_requested" ? status : "unavailable");
                 }
 
-                var modelVersion = root.TryGetProperty("modelVersion", out var mvProp) ? mvProp.GetString() : "v1.0";
-                var evalAt = root.TryGetProperty("evaluatedAt", out var eaProp) && eaProp.TryGetDateTimeOffset(out var dto) ? dto : DateTimeOffset.UtcNow;
+                var metadata = TryGetObject(root, "modelMetadata");
+                var provenance = TryGetObject(root, "provenance");
+                var modelVersion = ReadString(metadata, "modelVersion") ?? ReadString(provenance, "modelVersion");
+                var modelSource = ReadString(provenance, "provider");
+                var evaluatedAt = ReadTimestamp(metadata, "inferenceTimestamp") ?? ReadTimestamp(provenance, "inferenceTimestamp");
+                if (string.IsNullOrWhiteSpace(modelVersion) || string.IsNullOrWhiteSpace(modelSource) || evaluatedAt is null)
+                    return Unavailable(destinationId, destinationName, latitude, longitude, targetUrl, execution,
+                        "The biodiversity service omitted required model provenance; its predictions were discarded.", "invalid");
 
+                if (!TryReadPredictions(root, out var predictions))
+                    return Unavailable(destinationId, destinationName, latitude, longitude, targetUrl, execution,
+                        "The biodiversity service returned a malformed prediction; its predictions were discarded.", "invalid");
+
+                var limitations = ReadString(root, "limitations");
+                var uncertainty = ReadString(root, "uncertaintyText");
                 return new BiodiversityContextResponseDto(
                     DestinationId: destinationId,
                     DestinationName: destinationName,
@@ -83,45 +94,115 @@ public sealed class BiodiversityConsumerService : IBiodiversityConsumerService
                     Status: "available",
                     Predictions: predictions,
                     ModelVersion: modelVersion,
-                    ModelSource: "IT3091 ML Workstream via Planner Service",
-                    UncertaintyNotes: "Predictions are statistical occurrence probabilities derived from historical coastal observation data.",
-                    EvaluatedAt: evalAt,
-                    Disclaimer: "Biodiversity intelligence provides informative ecological context, not confirmed species presence or deterministic safety authority.",
+                    ModelSource: modelSource,
+                    UncertaintyNotes: JoinContext(limitations, uncertainty),
+                    EvaluatedAt: evaluatedAt,
+                    Disclaimer: "Biodiversity predictions are informative model outputs, not confirmed sightings, conservation assessments, safety decisions or availability evidence.",
                     Responded: true,
                     TargetEndpoint: targetUrl,
                     AttemptsCount: execution.AttemptsCount,
                     LatencyMs: execution.DurationMs,
                     RemoteStatus: "RESPONDED",
-                    Message: execution.Message);
+                    Message: ReadString(root, "message"));
             }
-            catch (JsonException jEx)
+            catch (JsonException exception)
             {
-                _logger.LogWarning(jEx, "Failed to parse JSON response from Member 3 Planner service at {TargetUrl}", targetUrl);
+                _logger.LogWarning(exception, "Failed to parse Coastal Planner biodiversity response from {TargetUrl}", targetUrl);
             }
         }
 
-        // Resilient safe degradation (ADR-0019)
-        var uncertaintyNote = execution.Responded
-            ? $"Remote inference endpoint returned HTTP status {execution.StatusCode}. Explicit unavailable status preserved. Biodiversity predictions are optional context and operational discovery continues normally."
-            : $"The remote biodiversity ML microservice did not respond ({execution.RemoteStatus}). Safe degradation active: zero predictions; biodiversity predictions are optional context and operational discovery continues normally.";
+        var failureMessage = execution.Responded
+            ? $"Coastal Planner returned HTTP {execution.StatusCode}; the optional context is unavailable."
+            : $"The optional context from Coastal Planner did not respond ({execution.RemoteStatus}); biodiversity predictions are unavailable.";
+        return Unavailable(destinationId, destinationName, latitude, longitude, targetUrl, execution, failureMessage);
+    }
 
-        return new BiodiversityContextResponseDto(
-            DestinationId: destinationId,
-            DestinationName: destinationName,
-            Latitude: latitude,
-            Longitude: longitude,
-            Status: "unavailable",
-            Predictions: Array.Empty<FocalSpeciesPredictionDto>(),
-            ModelVersion: null,
-            ModelSource: "IT3091 ML Workstream (Adithya Gunawardana adapter)",
-            UncertaintyNotes: uncertaintyNote,
-            EvaluatedAt: null,
-            Disclaimer: "Biodiversity intelligence provides informative ecological context, not confirmed species presence or deterministic safety authority.",
-            Responded: execution.Responded,
-            TargetEndpoint: targetUrl,
-            AttemptsCount: execution.AttemptsCount,
-            LatencyMs: execution.DurationMs,
-            RemoteStatus: execution.RemoteStatus,
-            Message: execution.Message);
+    private static bool TryReadPredictions(JsonElement root, out IReadOnlyList<FocalSpeciesPredictionDto> predictions)
+    {
+        predictions = [];
+        if (!root.TryGetProperty("predictedSpecies", out var speciesArray) || speciesArray.ValueKind != JsonValueKind.Array || speciesArray.GetArrayLength() > 100)
+            return false;
+
+        var result = new List<FocalSpeciesPredictionDto>(speciesArray.GetArrayLength());
+        foreach (var item in speciesArray.EnumerateArray())
+        {
+            var speciesId = ReadGuid(item, "speciesId");
+            var scientificName = ReadString(item, "scientificName");
+            var commonName = ReadString(item, "commonName");
+            if (speciesId is null || speciesId.Value == Guid.Empty || string.IsNullOrWhiteSpace(scientificName) ||
+                string.IsNullOrWhiteSpace(commonName) ||
+                !item.TryGetProperty("habitatSuitability", out var suitabilityValue) ||
+                suitabilityValue.ValueKind != JsonValueKind.Number || !suitabilityValue.TryGetDouble(out var suitability) ||
+                !double.IsFinite(suitability) || suitability is < 0 or > 1)
+                return false;
+
+            result.Add(new FocalSpeciesPredictionDto(
+                SpeciesId: speciesId.Value,
+                SpeciesName: commonName,
+                ScientificName: scientificName,
+                ConservationStatus: null,
+                OccurrenceProbability: null,
+                HabitatSuitability: suitability,
+                PrimaryThreats: null,
+                ConfidenceLevel: ReadString(item, "confidenceLevel"),
+                UncertaintyText: ReadString(item, "uncertaintyText")));
+        }
+
+        predictions = result;
+        return true;
+    }
+
+    private static BiodiversityContextResponseDto Unavailable(
+        Guid destinationId,
+        string destinationName,
+        double latitude,
+        double longitude,
+        string targetUrl,
+        ResilientExecutionResult execution,
+        string message,
+        string status = "unavailable") => new(
+        DestinationId: destinationId,
+        DestinationName: destinationName,
+        Latitude: latitude,
+        Longitude: longitude,
+        Status: status,
+        Predictions: [],
+        ModelVersion: null,
+        ModelSource: null,
+        UncertaintyNotes: message,
+        EvaluatedAt: null,
+        Disclaimer: "Biodiversity predictions are informative model outputs, not confirmed sightings, conservation assessments, safety decisions or availability evidence.",
+        Responded: execution.Responded,
+        TargetEndpoint: targetUrl,
+        AttemptsCount: execution.AttemptsCount,
+        LatencyMs: execution.DurationMs,
+        RemoteStatus: execution.RemoteStatus,
+        Message: message);
+
+    private static string BuildPredictionsUrl(string baseUrl, Guid destinationId) =>
+        $"{baseUrl.TrimEnd('/')}/api/planner/biodiversity/predictions?destinationId={Uri.EscapeDataString(destinationId.ToString("D"))}";
+
+    private static JsonElement TryGetObject(JsonElement root, string name) =>
+        root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Object ? value : default;
+
+    private static string? ReadString(JsonElement root, string name) =>
+        root.ValueKind == JsonValueKind.Object && root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
+
+    private static Guid? ReadGuid(JsonElement root, string name) =>
+        root.ValueKind == JsonValueKind.Object && root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String && value.TryGetGuid(out var id)
+            ? id
+            : null;
+
+    private static DateTimeOffset? ReadTimestamp(JsonElement root, string name) =>
+        root.ValueKind == JsonValueKind.Object && root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String && value.TryGetDateTimeOffset(out var timestamp)
+            ? timestamp
+            : null;
+
+    private static string JoinContext(string? limitations, string? uncertainty)
+    {
+        var values = new[] { limitations, uncertainty }.Where(value => !string.IsNullOrWhiteSpace(value)).Distinct(StringComparer.Ordinal);
+        return string.Join(" ", values);
     }
 }

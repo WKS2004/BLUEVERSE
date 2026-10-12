@@ -14,6 +14,7 @@ namespace Blueverse.ExperienceBiodiversity.Controllers;
 [Route("api/experiences/offerings")]
 public sealed class OfferingsController : ControllerBase
 {
+    private static readonly HashSet<string> SupportedExperienceLevels = ["BEGINNER", "INTERMEDIATE", "ADVANCED"];
     private readonly ExperienceBiodiversityDbContext _dbContext;
     private readonly IEvaluationService _evaluationService;
     private readonly IUserContext _userContext;
@@ -100,7 +101,8 @@ public sealed class OfferingsController : ControllerBase
                 o.MaxCapacity,
                 o.Status,
                 o.CreatedAt,
-                o.UpdatedAt))
+                o.UpdatedAt,
+                o.ExperienceLevels))
             .ToListAsync(cancellationToken);
 
         return Ok(new
@@ -149,7 +151,8 @@ public sealed class OfferingsController : ControllerBase
             o.MaxCapacity,
             o.Status,
             o.CreatedAt,
-            o.UpdatedAt));
+            o.UpdatedAt,
+            o.ExperienceLevels));
     }
 
     [HasPermission("experiences.catalogue.manage")]
@@ -165,6 +168,10 @@ public sealed class OfferingsController : ControllerBase
         {
             return StatusCode(StatusCodes.Status403Forbidden, new { type = "https://tools.ietf.org/html/rfc7807", title = "Forbidden", status = 403, detail = "You do not have permission to manage offerings." });
         }
+
+        if (!TryNormalizeExperienceLevels(request.ExperienceLevels, out var experienceLevels))
+            return BadRequest(new ProblemDetails { Title = "Invalid experience levels", Status = StatusCodes.Status400BadRequest,
+                Detail = "Experience levels may contain at most one each of BEGINNER, INTERMEDIATE and ADVANCED." });
 
         var dest = await _dbContext.Destinations.FindAsync(new object[] { request.DestinationId }, cancellationToken);
         if (dest == null)
@@ -189,6 +196,7 @@ public sealed class OfferingsController : ControllerBase
             Currency = request.Currency?.Trim().ToUpperInvariant() ?? "USD",
             DurationMinutes = request.DurationMinutes,
             MaxCapacity = request.MaxCapacity,
+            ExperienceLevels = experienceLevels,
             Status = PublicationStatus.Draft,
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow
@@ -212,7 +220,8 @@ public sealed class OfferingsController : ControllerBase
             offering.MaxCapacity,
             offering.Status,
             offering.CreatedAt,
-            offering.UpdatedAt);
+            offering.UpdatedAt,
+            offering.ExperienceLevels);
 
         return CreatedAtAction(nameof(GetById), new { id = offering.Id }, dto);
     }
@@ -231,6 +240,10 @@ public sealed class OfferingsController : ControllerBase
             return StatusCode(StatusCodes.Status403Forbidden, new { type = "https://tools.ietf.org/html/rfc7807", title = "Forbidden", status = 403, detail = "You do not have permission to manage offerings." });
         }
 
+        if (!TryNormalizeExperienceLevels(request.ExperienceLevels, out var experienceLevels))
+            return BadRequest(new ProblemDetails { Title = "Invalid experience levels", Status = StatusCodes.Status400BadRequest,
+                Detail = "Experience levels may contain at most one each of BEGINNER, INTERMEDIATE and ADVANCED." });
+
         var offering = await _dbContext.Offerings
             .Include(o => o.Destination)
             .Include(o => o.Activity)
@@ -247,6 +260,7 @@ public sealed class OfferingsController : ControllerBase
         offering.Currency = request.Currency?.Trim().ToUpperInvariant() ?? offering.Currency;
         offering.DurationMinutes = request.DurationMinutes;
         offering.MaxCapacity = request.MaxCapacity;
+        offering.ExperienceLevels = experienceLevels;
         offering.UpdatedAt = DateTimeOffset.UtcNow;
 
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -266,7 +280,8 @@ public sealed class OfferingsController : ControllerBase
             offering.MaxCapacity,
             offering.Status,
             offering.CreatedAt,
-            offering.UpdatedAt));
+            offering.UpdatedAt,
+            offering.ExperienceLevels));
     }
 
     [HasPermission("experiences.catalogue.manage")]
@@ -343,7 +358,8 @@ public sealed class OfferingsController : ControllerBase
             offering.MaxCapacity,
             offering.Status,
             offering.CreatedAt,
-            offering.UpdatedAt));
+            offering.UpdatedAt,
+            offering.ExperienceLevels));
     }
 
     [HasPermission("experiences.catalogue.manage")]
@@ -532,5 +548,18 @@ public sealed class OfferingsController : ControllerBase
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return NoContent();
+    }
+
+    private static bool TryNormalizeExperienceLevels(string[]? values, out string[]? normalized)
+    {
+        if (values is null)
+        {
+            normalized = null;
+            return true;
+        }
+
+        normalized = values.Select(value => value?.Trim().ToUpperInvariant() ?? string.Empty).ToArray();
+        return normalized.Length <= 3 && normalized.All(SupportedExperienceLevels.Contains) &&
+               normalized.Distinct(StringComparer.Ordinal).Count() == normalized.Length;
     }
 }

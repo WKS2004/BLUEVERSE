@@ -165,7 +165,8 @@ public class RecommendationsController(ICoastalPlannerService plannerService, IP
                 var end = item.AvailableUntil!.Value;
                 if (end <= start) continue;
 
-                var marine = await peerClient.GetMarineSuitabilityAsync(destination.DestinationId, item.ActivityId, start, end, ct);
+                var marine = await peerClient.GetMarineSuitabilityAsync(destination.DestinationId, item.ActivityId,
+                    item.Latitude, item.Longitude, start, ct);
                 if (marine.Result?.Status == "UNSUITABLE") continue;
                 var operations = await peerClient.GetOperationalStatusAsync(destination.DestinationId, ct);
                 if (operations.Result?.OperationalStatus is "TEMPORARILY_SUSPENDED" or "CANCELLED" or "COMPLETED") continue;

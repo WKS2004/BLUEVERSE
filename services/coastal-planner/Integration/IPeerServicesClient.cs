@@ -13,7 +13,12 @@ public record PeerCatalogueItem(
     DateTime? AvailableUntil = null,
     List<string>? ExperienceLevels = null,
     DateTime? CheckedAt = null,
-    string? TimeZone = null
+    string? TimeZone = null,
+    double? Latitude = null,
+    double? Longitude = null,
+    string? ActivityName = null,
+    string? Region = null,
+    string? DestinationName = null
 );
 
 public record PeerSuitabilityResponse(
@@ -23,13 +28,26 @@ public record PeerSuitabilityResponse(
     DateTime ConditionTimestamp,
     Guid? SafetyProfileId,
     string? Advisory,
-    bool IsFresh = false
+    bool IsFresh = false,
+    Guid? AssessmentId = null,
+    Guid? SnapshotId = null,
+    DateTime? EvaluatedAt = null,
+    DateTime? RetrievedAt = null,
+    string? Source = null,
+    string? Freshness = null,
+    string[]? MissingFields = null,
+    string[]? Violations = null,
+    string[]? CautionFactors = null
 );
 
 public record PeerOperationStatusResponse(
     Guid DestinationId,
     string OperationalStatus, // OPEN, CAUTION, TEMPORARILY_SUSPENDED, CANCELLED, COMPLETED
-    List<string>? ActiveAlerts
+    List<string>? ActiveAlerts,
+    string? TargetType = null,
+    Guid? TargetId = null,
+    int? StateVersion = null,
+    DateTime? UpdatedAt = null
 );
 
 public record PeerBiodiversityInferenceResponse(
@@ -71,8 +89,9 @@ public interface IPeerServicesClient
     Task<(PeerSuitabilityResponse? Result, bool Responded, string? Note)> GetMarineSuitabilityAsync(
         Guid destinationId, 
         Guid activityId, 
-        DateTime windowStart, 
-        DateTime windowEnd, 
+        double? latitude,
+        double? longitude,
+        DateTime requestedTimeUtc,
         CancellationToken ct = default);
 
     Task<(PeerOperationStatusResponse? Result, bool Responded, string? Note)> GetOperationalStatusAsync(

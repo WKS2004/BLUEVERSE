@@ -44,9 +44,9 @@ public sealed class DependenciesDiagnosticsService : IDependenciesDiagnosticsSer
     {
         var dependencyChecks = new List<(string Key, string Name, string TargetUrl, string Fallback)>
         {
-            ("marine-safety", "Marine Conditions & Safety Intelligence (Member 2)", $"{_marineSafetyUrl.TrimEnd('/')}/api/marine/conditions", "Safe fallback to UNKNOWN safety level; standard coastal caution advised"),
-            ("coastal-planner", "Smart Coastal Planner & Biodiversity ML (Member 3)", $"{_plannerServiceUrl.TrimEnd('/')}/api/planner/biodiversity", "Safe degradation to empty predictions (ADR-0019); discovery browsing continues normally"),
-            ("coastal-operations", "Coastal Operations, Advisories & Alerts (Member 4)", $"{_operationsServiceUrl.TrimEnd('/')}/api/operations/restrictions/check", "Strict safety fallback to UNKNOWN / UNAVAILABLE; optimistic availability prevented"),
+            ("marine-safety", "Marine Conditions & Safety Intelligence (Member 2)", $"{_marineSafetyUrl.TrimEnd('/')}/api/marine/health", "Marine telemetry remains UNKNOWN when service health or the authorized read is unavailable"),
+            ("coastal-planner", "Smart Coastal Planner & Biodiversity ML (Member 3)", $"{_plannerServiceUrl.TrimEnd('/')}/api/planner/health", "Biodiversity context remains unavailable; experience discovery continues normally"),
+            ("coastal-operations", "Coastal Operations, Advisories & Alerts (Member 4)", $"{_operationsServiceUrl.TrimEnd('/')}/api/operations/health/ready", "Operational state and advisories remain unavailable; optimistic availability is prevented"),
             ("map-provider", "Photon Geocoding Search Engine", $"{_mapProviderUrl}?q=Sri+Lanka&limit=1", "Local destination database substring search fallback")
         };
 
@@ -62,7 +62,7 @@ public sealed class DependenciesDiagnosticsService : IDependenciesDiagnosticsSer
                 initialRetryDelay: TimeSpan.FromMilliseconds(50),
                 cancellationToken: cancellationToken);
 
-            if (!res.Responded)
+            if (!res.Responded || res.StatusCode is < 200 or >= 300)
             {
                 anyFailed = true;
             }

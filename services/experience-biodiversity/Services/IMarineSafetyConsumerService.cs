@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Blueverse.ExperienceBiodiversity.DTOs;
 
@@ -15,21 +16,25 @@ public interface IMarineSafetyConsumerService
 
 public sealed class MarineSafetyConsumerService : IMarineSafetyConsumerService
 {
+    private const double KilometresPerHourPerKnot = 1.852;
     private readonly IResilientHttpExecutor _resilientExecutor;
     private readonly ILogger<MarineSafetyConsumerService> _logger;
-    private readonly string _marineSafetyUrl;
+    private readonly IHttpContextAccessor? _httpContextAccessor;
+    private readonly string _publicApiUrl;
 
     public MarineSafetyConsumerService(
         IResilientHttpExecutor resilientExecutor,
         IConfiguration configuration,
-        ILogger<MarineSafetyConsumerService> logger)
+        ILogger<MarineSafetyConsumerService> logger,
+        IHttpContextAccessor? httpContextAccessor = null)
     {
         _resilientExecutor = resilientExecutor;
         _logger = logger;
-        _marineSafetyUrl = configuration["MarineSafetyUrl"]
-            ?? configuration["MARINE_SAFETY_URL"]
-            ?? configuration["Services:MarineSafetyUrl"]
-            ?? "http://marine-safety:8080";
+        _httpContextAccessor = httpContextAccessor;
+        _publicApiUrl = configuration["PublicApiUrl"]
+            ?? configuration["PUBLIC_API_URL"]
+            ?? configuration["Services:PublicApiUrl"]
+            ?? "http://api:8080";
     }
 
     public async Task<MarineConditionsContextDto> GetMarineConditionsAsync(
@@ -39,30 +44,28 @@ public sealed class MarineSafetyConsumerService : IMarineSafetyConsumerService
         double longitude,
         CancellationToken cancellationToken = default)
     {
-        var targetUrl = $"{_marineSafetyUrl.TrimEnd('/')}/api/marine/conditions?destinationId={destinationId}&latitude={latitude}&longitude={longitude}";
-
-        // Resilient query with 2-second timeout and 2 retries
-        var execution = await _resilientExecutor.ExecuteGetAsync(
+        var targetUrl = BuildCurrentConditionsUrl(_publicApiUrl, latitude, longitude);
+        var execution = await _resilientExecutor.ExecuteGetWithAuthorizationAsync(
             targetUrl,
             perAttemptTimeout: TimeSpan.FromSeconds(2),
             maxRetries: 2,
             initialRetryDelay: TimeSpan.FromMilliseconds(100),
+            bearerToken: PeerAuthorization.GetBearerToken(_httpContextAccessor),
             cancellationToken: cancellationToken);
 
         if (execution.Responded && execution.StatusCode == 200 && !string.IsNullOrWhiteSpace(execution.Content))
         {
             try
             {
-                using var doc = JsonDocument.Parse(execution.Content);
-                var root = doc.RootElement;
-
-                var safetyLevel = root.TryGetProperty("safetyLevel", out var slProp) ? slProp.GetString() ?? "SAFE" : "SAFE";
-                var waterCond = root.TryGetProperty("waterCondition", out var wcProp) ? wcProp.GetString() ?? "CALM" : "CALM";
-                double? waveHeight = root.TryGetProperty("waveHeightMeters", out var whProp) && whProp.TryGetDouble(out var wh) ? wh : null;
-                double? windSpeed = root.TryGetProperty("windSpeedKnots", out var wsProp) && wsProp.TryGetDouble(out var ws) ? ws : null;
-                var tideStatus = root.TryGetProperty("tideStatus", out var tsProp) ? tsProp.GetString() : null;
-                var advisory = root.TryGetProperty("advisory", out var advProp) ? advProp.GetString() : null;
-                var evalAt = root.TryGetProperty("updatedAt", out var upProp) && upProp.TryGetDateTimeOffset(out var upDto) ? upDto : DateTimeOffset.UtcNow;
+                using var document = JsonDocument.Parse(execution.Content);
+                var root = document.RootElement;
+                var windSpeedKmh = ReadNullableDouble(root, "windSpeed");
+                var waveHeight = ReadNullableDouble(root, "waveHeight");
+                var swellHeight = ReadNullableDouble(root, "swellHeight");
+                var forecastTime = ReadTimestamp(root, "forecastTime");
+                var retrievedAt = ReadTimestamp(root, "retrievedAt");
+                var freshness = ReadString(root, "freshnessStatus");
+                var missingFields = ReadStringArray(root, "missingFields");
 
                 return new MarineConditionsContextDto(
                     DestinationId: destinationId,
@@ -74,26 +77,31 @@ public sealed class MarineSafetyConsumerService : IMarineSafetyConsumerService
                     AttemptsCount: execution.AttemptsCount,
                     LatencyMs: execution.DurationMs,
                     RemoteStatus: "RESPONDED",
-                    SafetyLevel: safetyLevel,
-                    WaterCondition: waterCond,
+                    SafetyLevel: "UNKNOWN",
+                    WaterCondition: "UNKNOWN",
                     WaveHeightMeters: waveHeight,
-                    WindSpeedKnots: windSpeed,
-                    TideStatus: tideStatus,
-                    AdvisoryMessage: advisory ?? "Current marine conditions reported by Marine Safety Intelligence service.",
+                    WindSpeedKnots: windSpeedKmh is { } kmh ? kmh / KilometresPerHourPerKnot : null,
+                    TideStatus: null,
+                    AdvisoryMessage: "Marine telemetry is available. This endpoint does not classify safety or water conditions; follow local beach flags and lifeguard directives.",
                     FallbackUsed: false,
-                    EvaluatedAt: evalAt,
-                    Disclaimer: "Marine safety conditions are dynamic oceanographic telemetry; always obey local beach flags and lifeguard directives.");
+                    EvaluatedAt: retrievedAt,
+                    Disclaimer: "Marine telemetry is dynamic environmental evidence, not a safety classification. Always obey local beach flags and lifeguard directives.",
+                    Source: ReadString(root, "source"),
+                    FreshnessStatus: freshness,
+                    MissingFields: missingFields,
+                    SnapshotId: ReadGuid(root, "id"),
+                    ForecastTime: forecastTime,
+                    RetrievedAt: retrievedAt);
             }
-            catch (JsonException jEx)
+            catch (JsonException exception)
             {
-                _logger.LogWarning(jEx, "Failed to parse JSON response from Member 2 Marine Safety service at {TargetUrl}", targetUrl);
+                _logger.LogWarning(exception, "Failed to parse Marine Safety current-conditions response from {TargetUrl}", targetUrl);
             }
         }
 
-        // Resilient safe fallback when remote Marine Safety service did not respond or failed
-        var fallbackAdvisory = execution.Responded
-            ? $"Remote marine-safety microservice returned status {execution.StatusCode}. Standard coastal caution advised."
-            : $"Remote marine-safety microservice did not respond ({execution.RemoteStatus}) after {execution.AttemptsCount} attempts ({execution.Message}). Safe fallback: exercise standard coastal caution.";
+        var message = execution.Responded
+            ? $"Marine Safety returned HTTP {execution.StatusCode}; safety classification and telemetry are unavailable."
+            : $"Marine Safety did not respond after {execution.AttemptsCount} attempts ({execution.RemoteStatus}); safety classification and telemetry are unavailable.";
 
         return new MarineConditionsContextDto(
             DestinationId: destinationId,
@@ -110,9 +118,44 @@ public sealed class MarineSafetyConsumerService : IMarineSafetyConsumerService
             WaveHeightMeters: null,
             WindSpeedKnots: null,
             TideStatus: null,
-            AdvisoryMessage: fallbackAdvisory,
+            AdvisoryMessage: message,
             FallbackUsed: true,
-            EvaluatedAt: DateTimeOffset.UtcNow,
-            Disclaimer: "Marine safety conditions are dynamic oceanographic telemetry; always obey local beach flags and lifeguard directives.");
+            EvaluatedAt: null,
+            Disclaimer: "Marine telemetry is dynamic environmental evidence, not a safety classification. Always obey local beach flags and lifeguard directives.",
+            Source: null,
+            FreshnessStatus: null,
+            MissingFields: [],
+            SnapshotId: null,
+            ForecastTime: null,
+            RetrievedAt: null);
     }
+
+    private static string BuildCurrentConditionsUrl(string baseUrl, double latitude, double longitude) =>
+        $"{baseUrl.TrimEnd('/')}/api/marine/current?latitude={latitude.ToString("R", CultureInfo.InvariantCulture)}&longitude={longitude.ToString("R", CultureInfo.InvariantCulture)}";
+
+    private static string? ReadString(JsonElement root, string name) =>
+        root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
+
+    private static double? ReadNullableDouble(JsonElement root, string name) =>
+        root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out var number)
+            ? number
+            : null;
+
+    private static DateTimeOffset? ReadTimestamp(JsonElement root, string name) =>
+        root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String && value.TryGetDateTimeOffset(out var timestamp)
+            ? timestamp
+            : null;
+
+    private static Guid? ReadGuid(JsonElement root, string name) =>
+        root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String && value.TryGetGuid(out var id)
+            ? id
+            : null;
+
+    private static IReadOnlyList<string> ReadStringArray(JsonElement root, string name) =>
+        root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Array
+            ? value.EnumerateArray().Where(item => item.ValueKind == JsonValueKind.String)
+                .Select(item => item.GetString()).Where(item => !string.IsNullOrWhiteSpace(item)).Cast<string>().ToArray()
+            : [];
 }

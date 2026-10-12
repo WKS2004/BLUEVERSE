@@ -186,6 +186,7 @@ public sealed class PostgresWorkflowIntegrationTests
                 ByteLength = 3, ContentSha256 = new string('a', 64), UploadedAt = DateTimeOffset.UtcNow, ExpiresAt = DateTimeOffset.UtcNow.AddDays(1) });
             db.OperationalAlerts.Add(new OperationalAlert { Id = alertId, TargetType = "ACTIVITY", TargetId = Guid.NewGuid(), Title = title,
                 Description = "Archived notice", Severity = "LOW", Visibility = "OPERATIONS", Lifecycle = "WITHDRAWN", CreatedBy = owner, UpdatedBy = owner,
+                WithdrawnBy = owner, WithdrawnAt = DateTimeOffset.UtcNow,
                 ValidFrom = PeriodStart, ValidUntil = PeriodStart.AddHours(1), CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow });
             await db.SaveChangesAsync();
             var result = await new AssessmentEvidenceApplicationService(db, new(), storage, Microsoft.Extensions.Logging.Abstractions.NullLogger<AssessmentEvidenceApplicationService>.Instance)

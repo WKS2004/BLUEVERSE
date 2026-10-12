@@ -8,6 +8,20 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 
+if (args.Contains("--healthcheck", StringComparer.Ordinal))
+{
+    var port = Environment.GetEnvironmentVariable("ASPNETCORE_HTTP_PORTS") ?? "8080";
+    using var probe = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
+    try
+    {
+        using var response = await probe.GetAsync($"http://127.0.0.1:{port}/api/operations/health/ready", HttpCompletionOption.ResponseHeadersRead);
+        Environment.ExitCode = response.IsSuccessStatusCode ? 0 : 1;
+    }
+    catch (HttpRequestException) { Environment.ExitCode = 1; }
+    catch (OperationCanceledException) { Environment.ExitCode = 1; }
+    return;
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 // The Windows EventLog provider can throw when the application source has not

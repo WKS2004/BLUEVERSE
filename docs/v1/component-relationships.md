@@ -41,6 +41,7 @@ flowchart LR
     M1 -->|experience and availability evidence| M4
     M4 -->|managed operational status and restrictions| M1
     M4 -->|managed operational status and restrictions| M3
+    M2 -->|raw current conditions, source and freshness| M1
     M2 -->|time-aware conditions and deterministic suitability| M3
     M2 -->|condition and suitability evidence| M4
     M3 -->|business workflow ID, objective, status and result references| M4
@@ -62,6 +63,30 @@ adapter. Auth, PostgreSQL and any later Agentic AI service remain behind
 their approved backend boundaries. Map-provider output supports
 discovery/display only and never becomes the authority for Ushan Srinuka's
 canonical destination records.
+
+## Integrated branch contract status — 2026-10-12
+
+The graph above describes ownership relationships. The current branch has the
+following source-backed API compatibility; this is not shared G00 ratification.
+
+| Producer → consumer | Current route and permission path | Integration state |
+|---|---|---|
+| Member 1 → Member 2 | Marine's private service client reads `GET /api/experiences/activities` from the private Experience service on the Docker network; it uses canonical activity IDs. The public client route remains through API. | Implemented for Marine activity association; the internal read remains separate from public-client authorization. |
+| Member 2 → Member 1 | Experience calls `GET /api/marine/current?latitude={latitude}&longitude={longitude}` through the public API with the caller bearer and `marine.profile.read`. | Implemented as raw sourced telemetry; Experience keeps safety and water classifications `UNKNOWN`. |
+| Member 1 → Member 3 | `GET /api/experiences/catalogue` through the public API; Planner forwards the user bearer and requires `experiences.catalogue.read`. Schedule rows carry canonical IDs, coordinates, publication/availability, times, time zone and nullable experience levels. | Implemented; Planner validates rather than inventing missing catalogue facts. |
+| Member 2 → Member 3 | `POST /api/marine/evaluate` through the public API with `{ activityId, latitude, longitude, dateTime }`; caller grant `marine.profile.read`. | Implemented against the actual suitability result, including source, freshness, missing fields and assessment/snapshot IDs. |
+| Member 4 → Member 1 | For canonical `DESTINATION`, `ACTIVITY` and `OFFERING` targets, Coastal Operations calls the internal Experience availability route with target ID and period. `SESSION` is not an Experience target and makes no request. The current handler is anonymous on the private Docker network. | Implemented for catalogue publication/schedule status only; not Marine or Operations authority. The internal service identity and authorization boundary remain a G00 decision. |
+| Member 4 → Member 2 | The actual Marine evaluation needs activity ID, coordinates and a Marine permission context; Operations currently has target ID/time and receives a signed actor context rather than a user JWT. | `NOT_CONNECTED`; no incompatible request is sent pending owner-approved scoped identity and target-resolution contract. |
+| Member 4 → Member 3 | Planner workflow reads are owner-scoped and require the caller bearer. Operations cannot reuse its API-issued actor envelope as a Planner JWT. | `NOT_CONNECTED` when a workflow ID is present; no source workflow is `NOT_REQUESTED`. |
+| Member 3 → Member 4 | Planner returns a caller-owned business `workflowId` and status; Operations accepts a source workflow reference on its assessment draft. | Reference is accepted as business context; cross-service workflow status read remains unavailable to Operations. |
+| Member 3 → Member 1 | `GET /api/planner/biodiversity/predictions?destinationId={guid}` through the public API; caller grant `planner.biodiversity.read`. | Implemented with predicted-species/habitat-suitability/provenance fields. Occurrence probability, conservation status and threats remain absent when the model does not provide them. |
+
+Planner and Experience integration requests pass caller authorization through
+the API gateway. The Marine gateway validates the caller and issues the
+request-bound actor context used by Marine; Operations routes use their signed
+actor context. M4's disabled Member 2/3 calls are a compatibility limit, not a
+positive safety or workflow result. Shared schema/credential, owner
+ratification, client parity and G07 gates remain separate.
 
 ## Producer, consumer and authority map
 

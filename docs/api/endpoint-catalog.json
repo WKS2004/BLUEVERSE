@@ -840,6 +840,26 @@
       "usage": "Requires an Auth-issued JWT; the private service derives the favourite owner only from the validated token subject."
     },
     {
+      "id": "experience-biodiversity-catalogue-for-planner-yarp-route",
+      "method": "GET",
+      "path": "/api/experiences/catalogue",
+      "type": "reverse-proxy",
+      "upstream": "experience-biodiversity",
+      "source": "services/api/appsettings.json",
+      "description": "Named-permission gateway route for the bounded canonical catalogue schedule feed.",
+      "usage": "Requires experiences.catalogue.read. Returns published destinations, activities, offerings, schedules, coordinates, time zones and optional experience levels to the planner through the public API."
+    },
+    {
+      "id": "experience-biodiversity-target-availability-yarp-route",
+      "method": "GET",
+      "path": "/api/experiences/{targetType}/{targetId:guid}/availability",
+      "type": "reverse-proxy",
+      "upstream": "experience-biodiversity",
+      "source": "services/api/appsettings.json",
+      "description": "Named-permission gateway route for canonical experience target availability.",
+      "usage": "Requires experiences.catalogue.read. Evaluates a destination, activity or offering for the supplied UTC-offset period and returns current availability metadata."
+    },
+    {
       "id": "coastal-assessment-edge",
       "method": "ANY",
       "path": "/api/operations/assessments/",
@@ -1860,6 +1880,32 @@
       "description": "Returns the Experience & Biodiversity Swashbuckle document through the API gateway.",
       "usage": "Supports the unified Swagger UI and service contract inspection without exposing the private service host or requiring a JWT.",
       "source": "services/experience-biodiversity/Program.cs"
+    },
+    {
+      "id": "experience-biodiversity-planner-catalogue",
+      "method": "GET",
+      "path": "/api/experiences/catalogue",
+      "ownerService": "experience-biodiversity",
+      "publicBoundary": "api",
+      "operationId": "GetCatalogue",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Returns a bounded schedule-level feed of published destinations, activities and offerings, including canonical IDs, coordinates, time zone, current schedule interval and optional experience levels.",
+      "usage": "Coastal Planner filters this feed by destination/activity and validates each schedule against marine and operations evidence. An unfiltered result is bounded; oversized results return 503 and must be narrowed. The route remains behind the public API and the caller's Auth-issued permission.",
+      "source": "services/experience-biodiversity/Controllers/ExperienceCatalogueController.cs"
+    },
+    {
+      "id": "experience-biodiversity-target-availability",
+      "method": "GET",
+      "path": "/api/experiences/{targetType}/{targetId:guid}/availability",
+      "ownerService": "experience-biodiversity",
+      "publicBoundary": "api",
+      "operationId": "GetTargetAvailability",
+      "status": "implemented",
+      "auth": "anonymous",
+      "description": "Evaluates whether a canonical destination, activity or offering has published schedule coverage for a supplied period.",
+      "usage": "The service handler is anonymous behind the protected public gateway route, which requires experiences.catalogue.read. Returns AVAILABLE or UNAVAILABLE plus the target version, evaluation timestamp and optional schedule validity. Requires a nonempty target ID and explicit UTC-offset start and end with end after start.",
+      "source": "services/experience-biodiversity/Controllers/ExperienceCatalogueController.cs"
     },
     {
       "id": "marine-safety-profile-review",

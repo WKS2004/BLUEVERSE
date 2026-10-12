@@ -62,7 +62,7 @@ public sealed class PeerServicesClientExtendedTests
         var client = new PeerServicesClient(http, config, NullLogger<PeerServicesClient>.Instance);
 
         var (result, responded, note) = await client.GetMarineSuitabilityAsync(
-            Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow, DateTime.UtcNow.AddHours(2));
+            Guid.NewGuid(), Guid.NewGuid(), 5.94, 80.45, DateTime.UtcNow);
 
         Assert.False(responded);
         Assert.Null(result);
@@ -76,17 +76,26 @@ public sealed class PeerServicesClientExtendedTests
         var destinationId = Guid.NewGuid();
         var requestedActivityId = Guid.NewGuid();
         var differentActivityId = Guid.NewGuid();
+        var requestedAt = DateTime.UtcNow;
 
         var handler = new RecordingHandler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = JsonContent.Create(new PeerSuitabilityResponse(
-                destinationId, differentActivityId, "SUITABLE", DateTime.UtcNow, Guid.NewGuid(), null))
+            Content = JsonContent.Create(new
+            {
+                status = "SUITABLE", activityId = differentActivityId, activityName = "Snorkelling",
+                location = new { latitude = 5.94m, longitude = 80.45m },
+                requestedTime = requestedAt, forecastTime = requestedAt, evaluatedAt = requestedAt,
+                conditions = new { windSpeed = 10m, waveHeight = 0.8m, swellHeight = 0.7m },
+                source = "Open-Meteo", retrievedAt = requestedAt, freshness = "FRESH",
+                missingFields = Array.Empty<string>(), violations = Array.Empty<string>(), cautionFactors = Array.Empty<string>(),
+                assessmentId = Guid.NewGuid(), snapshotId = Guid.NewGuid()
+            })
         }));
         using var http = new HttpClient(handler);
         var client = CreateClient(http);
 
         var (result, responded, note) = await client.GetMarineSuitabilityAsync(
-            destinationId, requestedActivityId, DateTime.UtcNow, DateTime.UtcNow.AddHours(2));
+            destinationId, requestedActivityId, 5.94, 80.45, requestedAt);
 
         Assert.False(responded);
         Assert.Null(result);
@@ -95,21 +104,30 @@ public sealed class PeerServicesClientExtendedTests
 
     [Fact]
     [Trait("TestId", "PLANNER-PEER-MAR-003")]
-    public async Task Marine_accepts_unsuitable_and_unknown_status_without_safety_profile()
+    public async Task Marine_accepts_unsuitable_status_without_a_safety_profile_id()
     {
         var destinationId = Guid.NewGuid();
         var activityId = Guid.NewGuid();
+        var requestedAt = DateTime.UtcNow;
 
         var handler = new RecordingHandler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = JsonContent.Create(new PeerSuitabilityResponse(
-                destinationId, activityId, "UNSUITABLE", DateTime.UtcNow, null, "Dangerous conditions"))
+            Content = JsonContent.Create(new
+            {
+                status = "UNSUITABLE", activityId, activityName = "Snorkelling",
+                location = new { latitude = 5.94m, longitude = 80.45m },
+                requestedTime = requestedAt, forecastTime = requestedAt, evaluatedAt = requestedAt,
+                conditions = new { windSpeed = 35m, waveHeight = 2m, swellHeight = 1.8m },
+                source = "Open-Meteo", retrievedAt = requestedAt, freshness = "FRESH",
+                missingFields = Array.Empty<string>(), violations = new[] { "waveHeight exceeds profile" }, cautionFactors = Array.Empty<string>(),
+                assessmentId = Guid.NewGuid(), snapshotId = Guid.NewGuid()
+            })
         }));
         using var http = new HttpClient(handler);
         var client = CreateClient(http);
 
         var (result, responded, note) = await client.GetMarineSuitabilityAsync(
-            destinationId, activityId, DateTime.UtcNow, DateTime.UtcNow.AddHours(2));
+            destinationId, activityId, 5.94, 80.45, requestedAt);
 
         Assert.True(responded);
         Assert.NotNull(result);
@@ -120,27 +138,37 @@ public sealed class PeerServicesClientExtendedTests
 
     [Fact]
     [Trait("TestId", "PLANNER-PEER-MAR-004")]
-    public async Task Marine_accepts_caution_status_with_valid_safety_profile()
+    public async Task Marine_accepts_caution_status_without_inventing_a_safety_profile_id()
     {
         var destinationId = Guid.NewGuid();
         var activityId = Guid.NewGuid();
-        var safetyProfileId = Guid.NewGuid();
+        var requestedAt = DateTime.UtcNow;
 
         var handler = new RecordingHandler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = JsonContent.Create(new PeerSuitabilityResponse(
-                destinationId, activityId, "CAUTION", DateTime.UtcNow, safetyProfileId, "Mild swell"))
+            Content = JsonContent.Create(new
+            {
+                status = "CAUTION", activityId, activityName = "Snorkelling",
+                location = new { latitude = 5.94m, longitude = 80.45m },
+                requestedTime = requestedAt, forecastTime = requestedAt, evaluatedAt = requestedAt,
+                conditions = new { windSpeed = 20m, waveHeight = 1.2m, swellHeight = 0.9m },
+                source = "Open-Meteo", retrievedAt = requestedAt, freshness = "FRESH",
+                missingFields = Array.Empty<string>(), violations = Array.Empty<string>(), cautionFactors = new[] { "waveHeight" },
+                assessmentId = Guid.NewGuid(), snapshotId = Guid.NewGuid()
+            })
         }));
         using var http = new HttpClient(handler);
         var client = CreateClient(http);
 
         var (result, responded, note) = await client.GetMarineSuitabilityAsync(
-            destinationId, activityId, DateTime.UtcNow, DateTime.UtcNow.AddHours(2));
+            destinationId, activityId, 5.94, 80.45, requestedAt);
 
         Assert.True(responded);
         Assert.NotNull(result);
         Assert.Equal("CAUTION", result.Status);
-        Assert.Equal(safetyProfileId, result.SafetyProfileId);
+        Assert.Null(result.SafetyProfileId);
+        Assert.NotNull(result.AssessmentId);
+        Assert.NotNull(result.SnapshotId);
     }
 
     [Fact]
@@ -164,10 +192,14 @@ public sealed class PeerServicesClientExtendedTests
     {
         var destinationId = Guid.NewGuid();
 
-        // Mismatched destination
+        // Mismatched canonical target
         var handler = new RecordingHandler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = JsonContent.Create(new PeerOperationStatusResponse(Guid.NewGuid(), "OPEN", []))
+            Content = JsonContent.Create(new
+            {
+                targetType = "DESTINATION", targetId = Guid.NewGuid(), operationalState = "OPEN",
+                stateVersion = 1, updatedAt = DateTime.UtcNow
+            })
         }));
         using var http1 = new HttpClient(handler);
         var client1 = CreateClient(http1);
@@ -179,7 +211,11 @@ public sealed class PeerServicesClientExtendedTests
         // Unrecognized status
         var handler2 = new RecordingHandler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = JsonContent.Create(new PeerOperationStatusResponse(destinationId, "UNKNOWN_STATUS", []))
+            Content = JsonContent.Create(new
+            {
+                targetType = "DESTINATION", targetId = destinationId, operationalState = "UNKNOWN_STATUS",
+                stateVersion = 1, updatedAt = DateTime.UtcNow
+            })
         }));
         using var http2 = new HttpClient(handler2);
         var client2 = CreateClient(http2);
@@ -198,7 +234,11 @@ public sealed class PeerServicesClientExtendedTests
         {
             var handler = new RecordingHandler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = JsonContent.Create(new PeerOperationStatusResponse(destinationId, status, ["Advisory text"]))
+                Content = JsonContent.Create(new
+                {
+                    targetType = "DESTINATION", targetId = destinationId, operationalState = status,
+                    stateVersion = 2, updatedAt = DateTime.UtcNow
+                })
             }));
             using var http = new HttpClient(handler);
             var client = CreateClient(http);
@@ -208,6 +248,9 @@ public sealed class PeerServicesClientExtendedTests
             Assert.True(responded);
             Assert.NotNull(result);
             Assert.Equal(status, result.OperationalStatus);
+            Assert.Equal("DESTINATION", result.TargetType);
+            Assert.Equal(destinationId, result.TargetId);
+            Assert.Equal(2, result.StateVersion);
             Assert.Null(note);
         }
     }
@@ -323,9 +366,9 @@ public sealed class PeerServicesClientExtendedTests
     private static IConfiguration CreateConfiguration(
         int timeoutSeconds = 3,
         int retryCount = 1,
-        string? catalogueUrl = "http://experience-catalogue:8080",
-        string? marineUrl = "http://marine-conditions:8080",
-        string? operationsUrl = "http://coastal-operations:8080",
+        string? catalogueUrl = "http://api:8080",
+        string? marineUrl = "http://api:8080",
+        string? operationsUrl = "http://api:8080",
         string? bioUrl = "http://it3091-biodiversity:5000") =>
         new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>

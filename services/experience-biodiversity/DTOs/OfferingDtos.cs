@@ -17,7 +17,8 @@ public sealed record OfferingDto(
     int? MaxCapacity,
     string Status,
     DateTimeOffset CreatedAt,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    IReadOnlyList<string>? ExperienceLevels = null);
 
 public sealed record CreateOfferingRequest(
     [Required] Guid DestinationId,
@@ -27,7 +28,8 @@ public sealed record CreateOfferingRequest(
     [Range(0, 1000000)] decimal? Price,
     [StringLength(10)] string? Currency,
     [Range(1, 1440)] int? DurationMinutes,
-    [Range(1, 1000)] int? MaxCapacity);
+    [Range(1, 1000)] int? MaxCapacity,
+    [MaxLength(3)] string[]? ExperienceLevels = null);
 
 public sealed record UpdateOfferingRequest(
     [Required, StringLength(200, MinimumLength = 2)] string Title,
@@ -35,4 +37,5 @@ public sealed record UpdateOfferingRequest(
     [Range(0, 1000000)] decimal? Price,
     [StringLength(10)] string? Currency,
     [Range(1, 1440)] int? DurationMinutes,
-    [Range(1, 1000)] int? MaxCapacity);
+    [Range(1, 1000)] int? MaxCapacity,
+    [MaxLength(3)] string[]? ExperienceLevels = null);

@@ -8,7 +8,8 @@ public static class PlannerPermissionsSeeder
 {
     public const string TravellerRole = "Coastal traveller";
     public static readonly string[] Codes = ["planner.recommendations.create", "planner.recommendations.read",
-        "planner.workflows.read", "planner.itineraries.manage", "planner.biodiversity.read"];
+        "planner.workflows.read", "planner.itineraries.manage", "planner.biodiversity.read",
+        "experiences.catalogue.read", "marine.profile.read", "operations.target.status.read", "operations.alert.read"];
 
     public static async Task SeedAsync(AuthDbContext db, CancellationToken ct = default)
     {
@@ -21,7 +22,11 @@ public static class PlannerPermissionsSeeder
                     "planner.recommendations.read" => "Read own coastal trip suggestions",
                     "planner.workflows.read" => "Read own trip search progress",
                     "planner.itineraries.manage" => "Save, edit and review own coastal trips",
-                    _ => "Read sourced biodiversity context" }, CreatedAt = DateTime.UtcNow };
+                    "planner.biodiversity.read" => "Read sourced biodiversity context",
+                    "experiences.catalogue.read" => "Read published experiences when planning coastal trips",
+                    "marine.profile.read" => "Read marine suitability when planning coastal trips",
+                    "operations.target.status.read" => "Read target status when planning coastal trips",
+                    _ => "Read public coastal operations alerts when planning trips" }, CreatedAt = DateTime.UtcNow };
             db.Permissions.Add(permission);
             permissions.Add(permission);
         }

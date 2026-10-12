@@ -60,9 +60,15 @@ public sealed class PeerServicesClient : IPeerServicesClient
             var matchingItems = data
                 .Where(item => item is not null && item.DestinationId == destinationId &&
                     item.ActivityId != Guid.Empty && item.OfferingId is { } offeringId && offeringId != Guid.Empty &&
-                    !string.IsNullOrWhiteSpace(item.Title) && item.Title.Length <= 150 &&
-                    item.AvailabilityStatus is ("AVAILABLE" or "UNAVAILABLE" or "UNKNOWN") &&
-                    item.PublicationState is ("DRAFT" or "PUBLISHED" or "ARCHIVED"))
+                    !string.IsNullOrWhiteSpace(item.Title) && item.Title.Length <= 200 &&
+                    !string.IsNullOrWhiteSpace(item.ActivityName) && item.ActivityName.Length <= 100 &&
+                    item.AvailabilityStatus is ("AVAILABLE" or "UNAVAILABLE") &&
+                    item.PublicationState == "PUBLISHED" &&
+                    item.Latitude is { } latitude && double.IsFinite(latitude) && latitude is >= -90 and <= 90 &&
+                    item.Longitude is { } longitude && double.IsFinite(longitude) && longitude is >= -180 and <= 180 &&
+                    (item.ExperienceLevels is null || (item.ExperienceLevels.Count <= 3 &&
+                        item.ExperienceLevels.All(level => level is "BEGINNER" or "INTERMEDIATE" or "ADVANCED") &&
+                        item.ExperienceLevels.Distinct(StringComparer.Ordinal).Count() == item.ExperienceLevels.Count)))
                 .ToList();
 
             if (matchingItems.Count != data.Count)
@@ -83,65 +89,95 @@ public sealed class PeerServicesClient : IPeerServicesClient
     public async Task<(PeerSuitabilityResponse? Result, bool Responded, string? Note)> GetMarineSuitabilityAsync(
         Guid destinationId,
         Guid activityId,
-        DateTime windowStart,
-        DateTime windowEnd,
+        double? latitude,
+        double? longitude,
+        DateTime requestedTimeUtc,
         CancellationToken ct = default)
     {
-        var query = $"destinationId={Uri.EscapeDataString(destinationId.ToString())}" +
-                    $"&activityId={Uri.EscapeDataString(activityId.ToString())}" +
-                    $"&start={Uri.EscapeDataString(windowStart.ToUniversalTime().ToString("O"))}" +
-                    $"&end={Uri.EscapeDataString(windowEnd.ToUniversalTime().ToString("O"))}";
-        var url = BuildEndpoint(_config["PeerServices:MarineConditionsUrl"], "api/marine/suitability", query);
+        var url = BuildEndpoint(_config["PeerServices:MarineConditionsUrl"], "api/marine/evaluate", string.Empty);
         if (url is null)
         {
             return (null, false, UnavailableNote("Marine Conditions", "endpoint URL is not configured"));
         }
+        if (destinationId == Guid.Empty || activityId == Guid.Empty || latitude is null || longitude is null ||
+            !double.IsFinite(latitude.Value) || latitude is < -90 or > 90 ||
+            !double.IsFinite(longitude.Value) || longitude is < -180 or > 180 || requestedTimeUtc == default)
+        {
+            return (null, false, "Marine suitability could not be checked because the catalogue location or requested time is invalid.");
+        }
 
-        var (data, responded, note) = await ExecuteWithRetryAsync<PeerSuitabilityResponse>(
-            url, "Marine Conditions", ct);
-        if (!responded || data is null)
+        var requestedTime = requestedTimeUtc.ToUniversalTime();
+        var requestContent = new MarineEvaluationRequest(activityId, (decimal)latitude.Value, (decimal)longitude.Value, requestedTime);
+        var (wire, responded, note) = await ExecuteWithRetryAsync<MarineEvaluationResponse>(
+            url, "Marine Conditions", ct, () => new HttpRequestMessage(HttpMethod.Post, url)
+            {
+                Content = JsonContent.Create(requestContent)
+            });
+
+        if (!responded || wire is null)
         {
             _logger.LogWarning("Marine Conditions endpoint is unavailable: {Reason}", note);
             return (null, false, note);
         }
 
-        if (data.DestinationId != destinationId || data.ActivityId != activityId ||
-            data.ConditionTimestamp == default || data.ConditionTimestamp.Kind != DateTimeKind.Utc ||
-            data.Status is not ("SUITABLE" or "CAUTION" or "UNSUITABLE" or "UNKNOWN") ||
-            ((data.Status is "SUITABLE" or "CAUTION") && data.SafetyProfileId.GetValueOrDefault() == Guid.Empty))
+        if (wire.ActivityId != activityId || wire.RequestedTime == default || wire.RequestedTime.Kind != DateTimeKind.Utc ||
+            wire.RequestedTime != requestedTime || wire.ForecastTime == default || wire.ForecastTime.Kind != DateTimeKind.Utc ||
+            wire.Status is not ("SUITABLE" or "CAUTION" or "UNSUITABLE" or "UNKNOWN") ||
+            wire.Freshness is not ("FRESH" or "STALE" or "UNAVAILABLE") ||
+            wire.AssessmentId == Guid.Empty || wire.SnapshotId == Guid.Empty ||
+            wire.EvaluatedAt == default || wire.EvaluatedAt.Kind != DateTimeKind.Utc)
         {
             return (null, false, "Marine Conditions returned an invalid suitability response; the candidate was omitted.");
         }
 
-        return (data, true, null);
+        var advisory = string.Join("; ", (wire.Violations ?? []).Concat(wire.CautionFactors ?? []));
+        return (new PeerSuitabilityResponse(
+            DestinationId: destinationId,
+            ActivityId: wire.ActivityId,
+            Status: wire.Status,
+            ConditionTimestamp: wire.ForecastTime,
+            SafetyProfileId: null,
+            Advisory: string.IsNullOrWhiteSpace(advisory) ? null : advisory,
+            IsFresh: wire.Freshness == "FRESH",
+            AssessmentId: wire.AssessmentId,
+            SnapshotId: wire.SnapshotId,
+            EvaluatedAt: wire.EvaluatedAt,
+            RetrievedAt: wire.RetrievedAt,
+            Source: wire.Source,
+            Freshness: wire.Freshness,
+            MissingFields: wire.MissingFields,
+            Violations: wire.Violations,
+            CautionFactors: wire.CautionFactors), true, null);
     }
 
     public async Task<(PeerOperationStatusResponse? Result, bool Responded, string? Note)> GetOperationalStatusAsync(
         Guid destinationId,
         CancellationToken ct = default)
     {
-        var query = $"destinationId={Uri.EscapeDataString(destinationId.ToString())}";
-        var url = BuildEndpoint(_config["PeerServices:CoastalOperationsUrl"], "api/operations/status", query);
+        var url = BuildEndpoint(_config["PeerServices:CoastalOperationsUrl"],
+            $"api/operations/targets/DESTINATION/{destinationId:D}/status", string.Empty);
         if (url is null)
         {
             return (null, false, UnavailableNote("Coastal Operations", "endpoint URL is not configured"));
         }
 
-        var (data, responded, note) = await ExecuteWithRetryAsync<PeerOperationStatusResponse>(
+        var (wire, responded, note) = await ExecuteWithRetryAsync<OperationsTargetStatusResponse>(
             url, "Coastal Operations", ct);
-        if (!responded || data is null)
+        if (!responded || wire is null)
         {
             _logger.LogWarning("Coastal Operations endpoint is unavailable: {Reason}", note);
             return (null, false, note);
         }
 
-        if (data.DestinationId != destinationId ||
-            data.OperationalStatus is not ("OPEN" or "CAUTION" or "TEMPORARILY_SUSPENDED" or "CANCELLED" or "COMPLETED"))
+        if (wire.TargetId != destinationId || wire.TargetType != "DESTINATION" ||
+            wire.OperationalState is not ("OPEN" or "CAUTION" or "TEMPORARILY_SUSPENDED" or "CANCELLED" or "COMPLETED") ||
+            wire.StateVersion <= 0 || wire.UpdatedAt == default || wire.UpdatedAt.Kind != DateTimeKind.Utc)
         {
             return (null, false, "Coastal Operations returned an invalid status response; the candidate was omitted.");
         }
 
-        return (data, true, null);
+        return (new PeerOperationStatusResponse(destinationId, wire.OperationalState, null,
+            wire.TargetType, wire.TargetId, wire.StateVersion, wire.UpdatedAt), true, null);
     }
 
     public async Task<(PeerBiodiversityInferenceResponse? Result, bool Responded, string? Note)> GetBiodiversityInferenceAsync(
@@ -337,7 +373,8 @@ public sealed class PeerServicesClient : IPeerServicesClient
     private async Task<(T? Data, bool Responded, string? Note)> ExecuteWithRetryAsync<T>(
         string url,
         string dependencyName,
-        CancellationToken ct) where T : class
+        CancellationToken ct,
+        Func<HttpRequestMessage>? createRequest = null) where T : class
     {
         string? lastFailure = null;
         var maxAttempts = _retryCount + 1;
@@ -350,7 +387,8 @@ public sealed class PeerServicesClient : IPeerServicesClient
             {
                 using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 timeout.CancelAfter(_timeout);
-                using var response = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
+                using var request = createRequest?.Invoke() ?? new HttpRequestMessage(HttpMethod.Get, url);
+                using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -421,9 +459,35 @@ public sealed class PeerServicesClient : IPeerServicesClient
             return null;
         }
 
-        return $"{baseUrl.TrimEnd('/')}/{path.TrimStart('/')}?{query}";
+        var endpoint = $"{baseUrl.TrimEnd('/')}/{path.TrimStart('/')}";
+        return string.IsNullOrEmpty(query) ? endpoint : $"{endpoint}?{query}";
     }
 
     private string UnavailableNote(string dependencyName, string reason) =>
         $"{dependencyName} endpoint has not responded ({reason}); {_retryCount} retries were configured ({_retryCount + 1} attempts maximum, {_timeout.TotalSeconds:0.#}-second timeout per attempt). Data requiring this dependency is unavailable.";
+
+    private sealed record MarineEvaluationRequest(Guid ActivityId, decimal Latitude, decimal Longitude, DateTime DateTime);
+
+    private sealed record MarineEvaluationResponse(
+        string Status,
+        Guid ActivityId,
+        DateTime RequestedTime,
+        DateTime ForecastTime,
+        DateTime EvaluatedAt,
+        object? Conditions,
+        string? Source,
+        DateTime? RetrievedAt,
+        string? Freshness,
+        string[]? MissingFields,
+        string[]? Violations,
+        string[]? CautionFactors,
+        Guid AssessmentId,
+        Guid SnapshotId);
+
+    private sealed record OperationsTargetStatusResponse(
+        string TargetType,
+        Guid TargetId,
+        string OperationalState,
+        int StateVersion,
+        DateTime UpdatedAt);
 }

@@ -95,7 +95,7 @@ python -m unittest discover -s scripts/validation/tests -p "test_*.py"
 The repository uses:
 
 ```text
-.NET SDK 10.0.400
+.NET SDK 10.0.300 (latestFeature roll-forward)
 ```
 
 as defined by `global.json`.
@@ -235,11 +235,16 @@ registrations receive the non-system Coastal traveller role when
 `AUTH_SELF_SERVICE_PLANNER_ACCESS=true` (Compose default). Set it to false
 to require administrator assignment. Existing accounts need explicit role
 assignment and a refreshed session to receive new permission claims.
-The private catalogue/marine/operations/ML URL variables are in `.env.example`;
-the Compose stack includes Experience & Biodiversity and Marine Safety peers,
-while Operations and ML provider compatibility remain separate integration
-gates. See
-[planner operations and pending contracts](coastal-planner.md).
+The public API, Auth and all four component services start in Compose. Planner
+uses the catalogue, marine-evaluation and Operations routes implemented on
+this branch. Experience consumes current marine evidence, Planner biodiversity
+predictions and Operations status/alerts through the public API. Coastal
+Operations reads Experience availability; its Marine Safety and Planner
+dependency checks remain safely `NOT_CONNECTED` until G00 records their
+route, payload and authorized service identity. IT3091 provider connectivity
+and shared G00 ratification remain open. See
+[planner operations and pending contracts](coastal-planner.md) and the
+[integrated G00 contracts](../v1/README.md).
 
 Marine Safety uses the shorter public route `/api/marine/health` rather than a
 folder-name-derived path.

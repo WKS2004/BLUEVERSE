@@ -206,6 +206,69 @@ public sealed class OfferingsApiTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
+    [Trait("CaseId", "EXP-API-OFF-017")]
+    public async Task Offering_ExperienceLevels_AreNormalized_Persisted_AndReturned()
+    {
+        using var client = _factory.CreateAdminClient();
+        var (destinationId, activityId) = await CreateDestinationAndActivityAsync(client);
+
+        var createRequest = new CreateOfferingRequest(destinationId, activityId, "Levelled lesson", "Suitable for all levels", 40m, "USD", 90, 8,
+            ["advanced", "BEGINNER"]);
+        using var createResponse = await client.PostAsJsonAsync("/api/experiences/offerings", createRequest);
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+        var created = await createResponse.Content.ReadFromJsonAsync<OfferingDto>();
+        Assert.NotNull(created);
+        Assert.Equal(["ADVANCED", "BEGINNER"], created.ExperienceLevels);
+
+        var updateRequest = new UpdateOfferingRequest("Updated lesson", "For intermediate swimmers", 45m, "USD", 90, 8,
+            ["intermediate"]);
+        using var updateResponse = await client.PutAsJsonAsync($"/api/experiences/offerings/{created.Id}", updateRequest);
+        Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+        var updated = await updateResponse.Content.ReadFromJsonAsync<OfferingDto>();
+        Assert.NotNull(updated);
+        Assert.Equal(["INTERMEDIATE"], updated.ExperienceLevels);
+
+        using var getResponse = await client.GetAsync($"/api/experiences/offerings/{created.Id}");
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+        var persisted = await getResponse.Content.ReadFromJsonAsync<OfferingDto>();
+        Assert.NotNull(persisted);
+        Assert.Equal(["INTERMEDIATE"], persisted.ExperienceLevels);
+    }
+
+    [Fact]
+    [Trait("CaseId", "EXP-API-OFF-018")]
+    public async Task Offering_ExperienceLevels_Rejects_Unknown_And_Duplicate_Values()
+    {
+        using var client = _factory.CreateAdminClient();
+        var (destinationId, activityId) = await CreateDestinationAndActivityAsync(client);
+
+        foreach (var levels in new[] { new[] { "EXPERT" }, new[] { "BEGINNER", "beginner" } })
+        {
+            var request = new CreateOfferingRequest(destinationId, activityId, "Invalid level offering", null, 40m, "USD", 90, 8, levels);
+            using var response = await client.PostAsJsonAsync("/api/experiences/offerings", request);
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            Assert.Equal("Invalid experience levels", document.RootElement.GetProperty("title").GetString());
+        }
+    }
+
+    private static async Task<(Guid DestinationId, Guid ActivityId)> CreateDestinationAndActivityAsync(HttpClient client)
+    {
+        using var destinationResponse = await client.PostAsJsonAsync("/api/experiences/destinations",
+            new CreateDestinationRequest("Levels Bay", $"levels-{Guid.NewGuid():N}"[..18], "Experience level test", "Southern", 6.0, 80.0));
+        Assert.Equal(HttpStatusCode.Created, destinationResponse.StatusCode);
+        var destination = await destinationResponse.Content.ReadFromJsonAsync<DestinationDto>();
+        Assert.NotNull(destination);
+
+        using var activityResponse = await client.PostAsJsonAsync("/api/experiences/activities",
+            new CreateActivityRequest($"LVL_{Guid.NewGuid():N}"[..15], "Level lesson", "Experience level test", "WaterSports"));
+        Assert.Equal(HttpStatusCode.Created, activityResponse.StatusCode);
+        var activity = await activityResponse.Content.ReadFromJsonAsync<ActivityDto>();
+        Assert.NotNull(activity);
+        return (destination.Id, activity.Id);
+    }
+
+    [Fact]
     [Trait("CaseId", "EXP-API-OFF-008")]
     public async Task AddSchedule_InvalidInterval_Returns_BadRequest()
     {

@@ -16,23 +16,29 @@ public sealed class PlannerAdapterCompletionTests
     public async Task Named_catalogue_returns_canonical_choices_sorted_and_checks_the_source_path()
     {
         var destination = Guid.NewGuid();
+        var activity = Guid.NewGuid();
+        var offering = Guid.NewGuid();
+        var now = DateTime.UtcNow;
         var handler = new Handler((request, _) =>
         {
-            Assert.Equal("/api/experiences/destinations", request.RequestUri!.AbsolutePath);
+            Assert.Equal("/api/experiences/catalogue", request.RequestUri!.AbsolutePath);
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new[] {
-                new PlannerDestinationOption(destination, "Mirissa", "Southern coast", "Asia/Colombo", [new(Guid.NewGuid(), "Snorkelling")]) }) });
+                new PeerCatalogueItem(destination, activity, offering, "Reef snorkelling", "AVAILABLE", "PUBLISHED",
+                    now.AddHours(1), now.AddHours(3), ["BEGINNER", "INTERMEDIATE"], now,
+                    "Asia/Colombo", 5.94, 80.45, "Snorkelling", "Southern Province", "Mirissa") }) });
         });
         var result = await new PlannerCatalogueClient(new HttpClient(handler), Config("PeerServices:ExperienceCatalogueUrl", "http://catalogue.test")).GetDestinationsAsync(default);
         Assert.Equal("AVAILABLE", result.Status);
         Assert.Equal(destination, Assert.Single(result.Destinations).DestinationId);
         Assert.Equal("Snorkelling", result.Destinations[0].Activities[0].Name);
+        Assert.Equal(5.94, result.Destinations[0].Latitude);
         Assert.Null(result.Message);
     }
 
     [Theory]
     [InlineData("malformed")]
     [InlineData("zone")]
-    [InlineData("duplicates")]
+    [InlineData("coordinates")]
     [InlineData("refused")]
     [Trait("TestId", "PLANNER-CATALOGUE-002")]
     public async Task Malformed_or_missing_catalogue_is_explicitly_unavailable_without_substitute_data(string condition)
@@ -41,13 +47,34 @@ public sealed class PlannerAdapterCompletionTests
         var handler = new Handler((_, _) => Task.FromResult(condition switch {
             "malformed" => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("not json") },
             "refused" => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable),
-            "zone" => new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new[] { destination with { TimeZone = "invalid-zone" } }) },
-            _ => new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new[] { destination, destination }) } }));
+            "zone" => new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new[] { Item() with { TimeZone = "invalid-zone" } }) },
+            _ => new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new[] { Item() with { Latitude = 95 } }) } }));
         var result = await new PlannerCatalogueClient(new HttpClient(handler), Config("PeerServices:ExperienceCatalogueUrl", "http://catalogue.test")).GetDestinationsAsync(default);
         Assert.Equal("UNAVAILABLE", result.Status);
         Assert.Empty(result.Destinations);
         Assert.DoesNotContain("catalogue.test", result.Message);
         Assert.Contains("saved trips", result.Message);
+
+        PeerCatalogueItem Item() => new(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "Offering", "AVAILABLE", "PUBLISHED",
+            DateTime.UtcNow.AddHours(1), DateTime.UtcNow.AddHours(2), ["INTERMEDIATE"], DateTime.UtcNow,
+            "Asia/Colombo", 5.94, 80.45, "Snorkelling", "Southern", "Mirissa");
+    }
+
+    [Fact]
+    [Trait("TestId", "PLANNER-CATALOGUE-003")]
+    public async Task Schedule_rows_are_grouped_into_one_destination_and_unique_activity_choices()
+    {
+        var destinationId = Guid.NewGuid();
+        var activityId = Guid.NewGuid();
+        var now = DateTime.UtcNow;
+        var first = new PeerCatalogueItem(destinationId, activityId, Guid.NewGuid(), "Morning", "AVAILABLE", "PUBLISHED",
+            now.AddHours(1), now.AddHours(2), ["BEGINNER"], now, "Asia/Colombo", 5.94, 80.45, "Snorkelling", "Southern", "Mirissa");
+        var second = first with { OfferingId = Guid.NewGuid(), Title = "Afternoon", AvailableFrom = now.AddHours(3), AvailableUntil = now.AddHours(4) };
+        var handler = new Handler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new[] { first, second }) }));
+        var result = await new PlannerCatalogueClient(new HttpClient(handler), Config("PeerServices:ExperienceCatalogueUrl", "http://catalogue.test")).GetDestinationsAsync(default);
+        var destination = Assert.Single(result.Destinations);
+        Assert.Equal(destinationId, destination.DestinationId);
+        Assert.Equal(activityId, Assert.Single(destination.Activities).ActivityId);
     }
 
     [Fact]

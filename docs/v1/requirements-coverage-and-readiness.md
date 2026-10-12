@@ -32,14 +32,33 @@ gate for executable Agentic AI is unchanged.
 
 ## Current integration branch evidence — 2026-10-12
 
-Members 1–3 now have service and React/Flutter workflow implementations on this
-integration branch. Member 3 also has a passing real PostgreSQL persistence
-check and restored DHI packaging. Adithya's G00 input is recorded, but the
-Member 3 record remains a proposal until all four owners ratify the shared
-freeze. Remaining peer/provider compatibility, Member 4 client parity and full
-workflow acceptance, hosted transport and G07 evidence remain release gates.
-Dated branch snapshots below
-describe evidence at their recorded dates and do not override this update.
+All four member services and both client workflows are present on this
+integration branch. The six API/Auth/component services and their test
+projects build in Release. Backend suites pass: API 57, Auth 85, Operations
+332, Planner 130, Experience 101 and Marine 183 tests. The six Coastal
+Operations PostgreSQL provider cases also pass against an isolated database;
+they are environment-gated in the regular suite. React lint, production build
+and serial test run pass; Flutter analysis reports no issues and its test run
+passes 295 cases.
+
+All six backend DHI images built, and the changed API and Experience images
+were rebuilt after the last gateway/service edits. An isolated Compose run
+brought PostgreSQL, Auth, all four component services and the API to healthy
+status. The Experience-owned schema contains its Offering experience-level
+column and all four migrations. From the internal validation network,
+`/api/health` returned 200 and the protected Experience, Marine, Planner and
+Operations gateway routes returned 401 without a caller session. The endpoint
+catalog and UI integration validators pass. The selected DHI edge-Nginx image
+accepts the repository configuration with `nginx -t`; this runtime stack did
+not include the edge proxy or frontend containers.
+
+These checks establish local builds and bounded runtime wiring, not live
+third-party provider compatibility or every authenticated peer flow. Member
+4's Marine and Planner handoffs remain `NOT_CONNECTED` until their identity,
+payload and resource-scope contracts are accepted. Shared G00 remains Pending
+until all four owners ratify the reconciled contracts; G07 and hosted transport
+evidence remain open. Dated branch snapshots below describe evidence at their
+recorded dates and do not override this update.
 
 ## Member 2 implementation snapshot — 2026-10-06 (historical)
 
@@ -97,7 +116,7 @@ recorded in the current integration-branch update above.
 |---|---|---|
 | v0 foundation and shared contracts | Ready as the starting baseline | Existing API/Auth, React/Flutter, Docker/Compose, role-to-permission model, endpoint catalog, UI registry and agent resources are present. Static catalog, UI-integration and agent-resource validators passed on this audit. This does not assert that application builds, tests or live infrastructure were rerun. |
 | v1 requirements and member plans | Ready as implementation specifications | Four complete member contracts, four paired-agent contracts, work-area plans, relationship map, workflow, device, integration, quality and branch guides link the scope. These are target contracts, not implementation evidence. |
-| Four member services and workflows | Members 1–3 implementation sources are present; Member 4 remains planned | Experience & Biodiversity, Marine Safety and Coastal Planner have private services, persistence, public API integration and React/Flutter workflows in this integration branch. G00 owner agreement, live provider/consumer compatibility and complete cross-client acceptance remain open; implementation presence is not acceptance. |
+| Four member services and workflows | All four implementation sources are present; integrated acceptance pending | Each member has a private service, persistence, public API integration and React/Flutter workflow sources in this integration branch. API/Auth/component Release builds and all six backend DHI images succeed; isolated Compose health checks pass. G00 owner agreement, live provider behavior, complete peer/client compatibility and `dev` acceptance remain open; implementation presence is not acceptance. |
 | G00 shared contract freeze | Pending all-four-owner ratification | Adithya's Member 3 input is recorded; the Member 3 record remains a proposal. The Member 1 proposal and Member 2 scope record also exist, and the Member 4 record says it still requires ratification. Confirm the shared decisions with all four owners and record evidence before marking G00 accepted in the [branch tracker](member-branch-workflow.md#component-branch-status). |
 | External integrations and device behavior | Interfaces can be planned at G00; live decisions are owner gates | Agree cross-member data contracts and adapter boundaries before parallel work. Select and verify the map provider, Open-Meteo data policy, IT3091 wire/auth contract and Wanshaja Sooriyabandara (Member 4) image storage policy before accepting each live integration. |
 | Executable Agentic AI | Correctly deferred; prohibited before G07 | Member branches prepare only their business workflow and typed, bounded, unavailable-aware AI integration seams. Start executable agents, tools, orchestration, model calls and AI-owned state on `agentic-ai/**` only after all four components pass G07. |

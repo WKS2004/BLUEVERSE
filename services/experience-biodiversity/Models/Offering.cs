@@ -11,6 +11,7 @@ public sealed class Offering
     public string? Currency { get; set; }
     public int? DurationMinutes { get; set; }
     public int? MaxCapacity { get; set; }
+    public string[]? ExperienceLevels { get; set; }
     public string Status { get; set; } = PublicationStatus.Draft;
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;

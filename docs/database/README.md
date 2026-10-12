@@ -15,8 +15,8 @@ migration to the existing local Compose PostgreSQL database, and
 local schema upgrade and connection only; it does not establish production
 role provisioning, concurrency behavior or cross-component acceptance. Marine
 Safety owns its domain model and migrations under
-`services/marine-safety`; Experience & Biodiversity owns its model and initial
-migration for five component tables under `services/experience-biodiversity`.
+`services/marine-safety`; Experience & Biodiversity owns its model and
+migrations for five component tables under `services/experience-biodiversity`.
 Coastal Planner owns its model and migrations under `services/coastal-planner`.
 Each service applies only its own migrations. Shared G00 data-ownership
 agreement and integrated component acceptance remain pending.
@@ -62,13 +62,21 @@ The internal `experience-biodiversity` service connects directly to the same
 PostgreSQL database as Auth through EF Core and Npgsql. Both services use the
 configured `POSTGRES_DB`, `POSTGRES_USER` and `POSTGRES_PASSWORD` values;
 Compose supplies `Host=postgres` for the internal database network. No second
-database, PostgreSQL role or schema-provisioning SQL file is used. The
+database or PostgreSQL role is configured for this component yet. The schema is
+created and migrated by EF Core rather than a separate provisioning SQL file.
+The
 [`ExperienceBiodiversityDbContext`](../../services/experience-biodiversity/Data/ExperienceBiodiversityDbContext.cs)
-uses PostgreSQL's default `public` schema, as Auth does. Its migration history
-uses the separate `__EFMigrationsHistory_ExperienceBiodiversity` table in that
-same schema, so the two EF contexts track their migrations independently. The
+uses the service-owned `experience_biodiversity` schema. Its migration history
+uses the separate `public.__EFMigrationsHistory_ExperienceBiodiversity` table,
+so the Auth and Experience contexts track their migrations independently. The
 initial migration creates `destinations`, `activities`, `offerings`,
-`schedules` and `favourites`; it is applied by the component service at startup.
+`schedules` and `favourites`; `20261012155447_AddOfferingExperienceLevels`
+adds nullable planner level metadata to existing offerings, and
+`20261012160632_AddOfferingExperienceLevelConstraint` constrains the stored
+array to unique values from `BEGINNER`, `INTERMEDIATE` and `ADVANCED`. Migration
+`20261012161414_MoveExperienceBiodiversityIntoOwnedSchema` moves the existing
+five component tables from `public`, preserving their data, indexes and foreign
+keys. These migrations are applied by the component service at startup.
 These tables are branch implementation evidence and do not imply that the
 shared G00 database/schema ownership decision has been accepted.
 When running the service directly on the host, set

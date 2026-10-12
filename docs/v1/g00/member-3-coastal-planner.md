@@ -18,10 +18,33 @@ non-executing private AI availability seam. The exact source payload additions
 and routes are documented in [the planner guide](../../development/coastal-planner.md)
 and the endpoint catalogue. They require owner confirmation; this note does
 not change the pending team acceptance status or authorize post-G07 execution.
-React planner screens are implemented; Flutter routes remain planned in the
-shared UI registry.
+The current shared UI registry contains React and Flutter planner routes; the
+2026-10-05 statement that Flutter routes were still planned is superseded.
 
 ---
+
+## Integrated branch contract reconciliation — 2026-10-12
+
+The following source contracts supersede earlier peer route/payload examples for
+this integration branch. The implementation can be exercised with a valid
+caller bearer and the required grants, but this update is not team G00
+ratification. `docs/v1/requirements-coverage-and-readiness.md` remains Pending
+until all four owners confirm the shared contracts.
+
+| Peer | Planner's implemented request | Current compatibility contract |
+|---|---|---|
+| Member 1 Experience | `GET /api/experiences/catalogue` through `http://api:8080`; forwards the caller bearer | Requires `experiences.catalogue.read`. Response is a schedule-level array with canonical IDs, coordinates, publication/availability status, schedule bounds, time zone and nullable experience levels. Planner validates fields and only considers published, available schedules that fit the request. |
+| Member 2 Marine | `POST /api/marine/evaluate` through the public API; JSON `{ activityId, latitude, longitude, dateTime }`; forwards the caller bearer | Requires `marine.profile.read`. Response is the actual `SuitabilityResultDto` (`status`, `activityId`, requested/forecast/evaluated times, source/freshness, missing fields, violations, caution factors, assessment/snapshot IDs). There is no `safetyProfileId` or destination ID in this response. Unavailable, malformed, mismatched or stale evidence is not promoted to a suitable result. |
+| Member 4 Operations | `GET /api/operations/targets/DESTINATION/{destinationId}/status` through the public API; forwards the caller bearer | Requires `operations.target.status.read`. Response uses `targetType`, `targetId`, `operationalState`, `stateVersion`, and `updatedAt`. Current active alerts are read through the public alert endpoint with `operations.alert.read`; no synthetic restriction list is returned by target status. |
+| Member 1 consumes Planner biodiversity | `GET /api/planner/biodiversity/predictions?destinationId={guid}` through the public API | Requires `planner.biodiversity.read`. The current response contains predicted species with habitat suitability and model provenance. Occurrence probability and conservation status are not supplied and must remain absent/null. |
+| Member 4 consumes Planner workflow status | No outbound request is enabled by Coastal Operations | The current workflow route is owner-authorized and depends on the user's bearer/permission context. Operations' API-issued actor envelope cannot be reused as a Planner JWT. A service identity and scoped actor/permission handoff must be agreed before this optional dependency is enabled. |
+
+Planner catalogue items now include nullable `experienceLevels`, added to the
+Experience Offering request/response and PostgreSQL schema. Existing null
+levels remain unclassified; the planner does not invent a level. Planner and
+Experience adapters are separate from the pre-G07 Agentic AI seam. React and
+Flutter planner routes are registered in the current UI integration registry;
+route registration does not substitute for runtime and parity verification.
 
 ## 1. Scope and G00 objectives
 
@@ -335,14 +358,12 @@ Per [v1 device-capability contract](../device-capabilities.md):
 - [ ] Maintainer records team G00 acceptance in readiness and branch tracking documentation once all four owners ratify.
 
 
-## Current G00 acceptance record — 2026-10-12
+## G00 decision status — 2026-10-12
 
-Adithya Gunawardana (`AdithyaGunawardana`), confirmed as the acting contributor,
-stated in the implementation conversation: “G00 is currently accepted; you can
-work on it.” Shared G00 is therefore recorded as Accepted for proceeding with
-member component work. This records the contributor's confirmation; it does
-not invent individual owner signatures or live service/provider evidence. The
-unchecked owner rows above retain the outstanding individual evidence trail.
-Private IT3091 wire/auth/model/freshness/retention agreement and actual peer
-compatibility remain integration acceptance gates. G07 remains pending and
-executable Agentic AI stays deferred.
+Shared G00 remains **Pending**. The earlier appended sentence that treated a
+Member 3 implementation instruction as shared G00 acceptance was not evidence
+of four-owner ratification and is superseded by this status. The member review
+checklist above remains the ratification record. Private IT3091 wire/auth/model/
+freshness/retention agreement, Member 4 identity delegation, Flutter planner
+parity and full peer tests remain open. G07 remains pending and executable
+Agentic AI stays deferred.
