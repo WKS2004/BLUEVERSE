@@ -283,7 +283,7 @@ jobs:
 
           swagger_paths=(/api/swagger /api/swagger/v1.json /api/auth/swagger/v1/swagger.json)
           if [[ -f services/experience-biodiversity/Program.cs ]]; then
-            swagger_paths+=(/api/experiences/openapi/v1.json)
+            swagger_paths+=(/api/experiences/swagger/v1/swagger.json)
           fi
           if [[ -f services/marine-safety/Program.cs ]]; then
             swagger_paths+=(/api/marine/swagger/v1/swagger.json)

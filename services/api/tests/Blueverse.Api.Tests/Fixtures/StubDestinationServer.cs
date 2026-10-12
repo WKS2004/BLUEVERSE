@@ -45,7 +45,8 @@ public sealed class StubDestinationServer : IAsyncDisposable
                 path = context.Request.Path.Value,
                 query = context.Request.QueryString.Value,
                 body,
-                correlationId = context.Request.Headers["X-Correlation-ID"].ToString()
+                correlationId = context.Request.Headers["X-Correlation-ID"].ToString(),
+                authorizationHeaderForwarded = context.Request.Headers.ContainsKey("Authorization")
             }, context.RequestAborted);
         });
 

@@ -86,6 +86,7 @@ export default function SiteFooter({ compact = false, hideForShortScreens = fals
               <li><Link className="transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-coast-glass" to={`${homePrefix}#our-story`}>Our story</Link></li>
               <li><Link className="transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-coast-glass" to={`${homePrefix}#what-matters`}>What matters</Link></li>
               <li><Link className="transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-coast-glass" to={`${homePrefix}#our-coast`}>Our coast</Link></li>
+              <li><Link className="transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-coast-glass" to="/experiences">Coastal experiences</Link></li>
             </ul>
           </nav>
 
@@ -104,6 +105,7 @@ export default function SiteFooter({ compact = false, hideForShortScreens = fals
               {user ? <>
                 <li><Link className="transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-coast-glass" to="/profile">Profile</Link></li>
                 <li><Link className="transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-coast-glass" to="/dashboard">Dashboard</Link></li>
+                <li><Link className="transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-coast-glass" to="/experiences/favourites">Saved experiences</Link></li>
               </> : <>
                 <li><Link className="transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-coast-glass" to={loginHref}>Sign in</Link></li>
                 <li><Link className="transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-coast-glass" to={registrationHref}>Create account</Link></li>

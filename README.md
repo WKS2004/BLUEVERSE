@@ -104,11 +104,13 @@ BLUEVERSE/
 │       ├── edge-nginx/
 │       ├── frontend/
 │       ├── auth/
-│       └── marine-safety/
+│       ├── marine-safety/
+│       └── experience-biodiversity/
 ├── services/                # ASP.NET Core services
 │   ├── api/                  # checked-in public API foundation
 │   ├── auth/                 # internal Auth service
-│   └── marine-safety/        # internal marine conditions & safety service (v1)
+│   ├── marine-safety/        # internal marine conditions & safety service (v1)
+│   └── experience-biodiversity/ # internal Experience & Biodiversity service
 ├── AGENTS.md
 ├── compose.yaml
 ├── global.json
@@ -150,20 +152,25 @@ apps/web/          # React
 apps/mobile/       # Flutter
 ```
 
-`services/api/`, `services/auth/` and `services/marine-safety/` contain the
-checked-in backend projects. Compose, Dockerfiles and CI include the marine
-service; hosted deployment is not yet evidenced. Auth and marine-safety remain
+`services/api/`, `services/auth/`, `services/marine-safety/` and
+`services/experience-biodiversity/` contain the checked-in backend projects.
+Compose, Dockerfiles and CI include both v1 component services; hosted deployment
+is not yet evidenced. Experience & Biodiversity provides destinations,
+activities, offerings, schedules, publication lifecycle, nearby discovery and
+pre-G07 Agentic AI dispatch seams. Auth and both component services remain
 internal and are reachable by clients only through the public API gateway.
-Do not move the Dockerfiles into generated projects; keep them under
-`infrastructure/docker/`.
+Keep all Dockerfiles under `infrastructure/docker/`.
 
 ## Local setup and deployment
 
 The supported local deployment runs the checked-in React client, public API,
-internal Auth and marine-safety services, and PostgreSQL with Docker Compose. Run Compose commands
-from the repository root (the directory containing `compose.yaml`). The public
-entry point is `edge-nginx`; clients use the gateway's `/api/...` routes and do
-not connect directly to internal services.
+internal Auth, marine-safety and Experience & Biodiversity services, and
+PostgreSQL with Docker Compose. The component services provide marine conditions
+and safety, catalogue discovery and management, map vector tiles, and nearby
+geocoding through the public API gateway. Run Compose commands from the repository
+root (the directory containing `compose.yaml`). The public entry point is
+`edge-nginx`; clients use the gateway's `/api/...` routes and do not connect
+directly to internal services.
 
 See [Local Deployment](docs/deployment/local.md) for deployment topology and
 additional platform notes.
@@ -248,12 +255,23 @@ On macOS, Linux or WSL2, use:
 cp .env.example .env
 ```
 
-Edit `.env` and replace the example `JWT_SIGNING_KEY`, independent `MARINE_ACTOR_SIGNING_KEY`, database password and
-administrator password with unique local values. The JWT signing key must be
-at least 32 UTF-8 bytes. Use a password manager or secure random generator;
-never commit `.env`. Keep `AUTH_SERVICE_URL=http://auth:8080` because it is the
-Docker-internal API-to-Auth address. `ADMIN_EMAIL` and `ADMIN_PASSWORD` are
-used for the local administrator account.
+Edit `.env` and replace the example `JWT_SIGNING_KEY`, independent
+`MARINE_ACTOR_SIGNING_KEY`, PostgreSQL password and administrator password with
+unique local values. The JWT signing key must be
+at least 32 UTF-8 bytes. Use a password manager or secure random generator.
+The API gateway, Auth service and Experience & Biodiversity service use this
+same key so both public and private service boundaries can validate Auth-issued
+tokens.
+The API and Marine Safety also share `MARINE_ACTOR_SIGNING_KEY` for signed
+request-bound actor context; Marine Safety does not read Auth tables or accept
+client JWTs directly.
+Auth and Experience & Biodiversity use the same `POSTGRES_DB`, `POSTGRES_USER`
+and `POSTGRES_PASSWORD` settings for the single PostgreSQL database. Never
+commit `.env`. Keep
+`AUTH_SERVICE_URL=http://auth:8080` and
+`EXPERIENCE_BIODIVERSITY_SERVICE_URL=http://experience-biodiversity:8080` as
+the Docker-internal API-to-service addresses. `ADMIN_EMAIL` and
+`ADMIN_PASSWORD` are used for the local administrator account.
 
 The gateway is published on host port `80` by default. On the development
 branch, PostgreSQL is published as `5432:5432`, which binds the host port on
@@ -283,11 +301,10 @@ The API and Marine Safety require the same independent
 context after the API verifies the caller through Auth `/api/auth/me`.
 Marine Safety does not access Auth tables or accept client JWTs directly.
 
-Activity CRUD belongs to Member 1's `experience-biodiversity` service. Set
-`EXPERIENCE_CATALOGUE_URL` to its private base URL; the default is
-`http://experience-biodiversity:8080`. This branch does not contain that service
-or add a Compose startup dependency on it. Deploy Member 1 on the same private
-network when integrating its branch. When activity data is unavailable,
+Activity CRUD belongs to the `experience-biodiversity` service. The API uses
+`EXPERIENCE_CATALOGUE_URL` for its private base URL; the default is
+`http://experience-biodiversity:8080`. Compose starts both component services
+on the shared private network. When activity data is unavailable,
 activity lists, new profile drafts/edits/reviews and evaluations return a
 structured 503 with `availability`, `dependency`, `code`, `reason`,
 `missingFields`, `retryable` and null `data`. Marine starts and checks its own
@@ -362,20 +379,26 @@ The first build pulls the DHI base images and may take several minutes. To
 build and run in the foreground while watching logs, use
 `docker compose up --build`. Auth waits for PostgreSQL to become healthy,
 applies its migrations and seeds the configured administrator account.
-Marine-safety also waits for PostgreSQL and applies its own migration.
+Marine-safety and Experience & Biodiversity use the same database settings and
+apply their own EF Core migrations at startup. No second database or PostgreSQL
+initialization script is required for new or existing volumes; see the
+[database setup guide](docs/database/README.md) for migration configuration.
 
 ### Verify the local deployment
 
 Open the web app at `http://localhost` (or the port configured by
 `BLUEVERSE_HTTP_PORT`). The unified Swagger UI is at
-`http://localhost/api/swagger`. Check the frontend, public API, Auth and
-marine-safety health routes; each should return HTTP 200:
+`http://localhost/api/swagger` and includes the Marine Safety and Experience &
+Biodiversity documents at `/api/marine/swagger/v1/swagger.json` and
+`/api/experiences/swagger/v1/swagger.json`. Check the frontend, public API,
+Auth and both component health routes; each should return HTTP 200:
 
 ```powershell
 curl.exe -f http://localhost/health
 curl.exe -f http://localhost/api/health
 curl.exe -f http://localhost/api/auth/health
 curl.exe -f http://localhost/api/marine/health
+curl.exe -f http://localhost/api/experiences/health
 ```
 
 The marine-safety document is also listed directly in the unified Swagger UI
@@ -401,12 +424,14 @@ curl --fail --silent --show-error http://localhost/health
 curl --fail --silent --show-error http://localhost/api/health
 curl --fail --silent --show-error http://localhost/api/auth/health
 curl --fail --silent --show-error http://localhost/api/marine/health
+curl --fail --silent --show-error http://localhost/api/experiences/health
 ```
 
-In `docker compose ps`, PostgreSQL should report `healthy`
-and the frontend, API, Auth, marine-safety and gateway containers should be running. The
-development Compose stack exposes PostgreSQL on host port `5432` across all
-interfaces; Auth and marine-safety connect over the Docker network. When promoting the Compose
+In `docker compose ps`, PostgreSQL should report `healthy` and the frontend,
+API, Auth, Marine Safety, Experience & Biodiversity and gateway containers
+should be running. The development Compose stack exposes PostgreSQL on host
+port `5432` across all interfaces; backend services connect over the Docker
+network. When promoting the Compose
 configuration from `dev` to `main`, change the host mapping to
 `127.0.0.1:5432:5432` so host access is loopback-only. Production databases
 remain privately managed and are not configured through this local binding.
@@ -414,7 +439,7 @@ remain privately managed and are not configured through this local binding.
 If a service does not start or a health URL fails, inspect its recent logs:
 
 ```text
-docker compose logs --tail=100 edge-nginx frontend api auth marine-safety postgres
+docker compose logs --tail=100 edge-nginx frontend api auth marine-safety experience-biodiversity postgres
 ```
 
 Common first-run causes are Docker Desktop not running, missing DHI registry
@@ -439,14 +464,36 @@ For Flutter on an Android emulator, explicitly pass the laptop gateway as
 device must use the laptop's current Wi-Fi/LAN address with the same
 compile-time setting. Without an explicit value, Android tries the standard
 emulator host `10.0.2.2:80`, then the USB reverse tunnel at `127.0.0.1:80`.
-The current mobile resolver accepts local HTTP on port `80` only,
+An explicit value overrides it for physical-device runs. The current mobile
+resolver accepts local HTTP on port `80` only,
 so a deployment HTTPS configuration remains future work. The Flutter
 resolver also has a fixed port-80 limit; changing `BLUEVERSE_HTTP_PORT` does
 not update the mobile client's accepted port. Keep the gateway on port 80 for
 Flutter or update the resolver before changing that setting. If managed Wi-Fi
 isolates the phone from the laptop, use `adb reverse tcp:80 tcp:80` over USB.
 See [Mobile setup](apps/mobile/README.md) for the full device workflow and
-current limitations.
+current limitations. Kotlin incremental compilation is disabled in the mobile
+Gradle configuration to avoid cache errors across Windows drive roots; keep
+space available for Gradle, Pub and temporary compiler output.
+
+For Windows builds using a relocated Flutter cache, initialize each PowerShell
+terminal from the repository root before running Flutter:
+
+```powershell
+. .\scripts\Windows\powershell\initialize-flutter-cache.ps1 -CacheRoot D:\WKS\FlutterBuildCache
+Set-Location apps\mobile
+flutter pub get
+```
+
+This reuses the existing D: Gradle and Pub caches and redirects temporary
+compiler files to D: for that terminal. Already-open processes may not inherit
+saved user environment settings. See [Android build caches](apps/mobile/README.md#android-build-caches)
+for verification commands and the USB-device launch command.
+
+On Android, select **Precise** when using the coastal map location control for
+the most accurate device fix. Existing installs can enable **Use precise
+location** in the app's Location permission settings. See the
+[mobile permission guide](apps/mobile/README.md#android-location-permission).
 
 Before a Flutter Android run, check `flutter doctor -v` and ensure the Gradle
 cache drive and workspace drive have free space for engine extraction and APK

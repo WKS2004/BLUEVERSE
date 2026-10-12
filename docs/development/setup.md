@@ -17,8 +17,10 @@ Never commit `.env`.
 For local Compose, `.env` also defines the internal API-to-Auth destination.
 Keep it as `http://auth:8080`; clients must continue using the public gateway
 at `/api/...`. Replace the example database/admin passwords before using the
-stack, even for local shared environments, and replace the example JWT signing
-key with a unique random value of at least 32 UTF-8 bytes.
+stack, even for local shared environments. Auth and Experience & Biodiversity
+use the same `POSTGRES_DB`, `POSTGRES_USER` and `POSTGRES_PASSWORD` values and
+connect to one database. Replace the example JWT signing key with a unique
+random value of at least 32 UTF-8 bytes.
 
 The configured `ADMIN_EMAIL` and `ADMIN_PASSWORD` seed one administrator
 account after Auth applies its EF Core migrations. Normal registration never

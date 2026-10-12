@@ -14,6 +14,11 @@ parameterized and read-only. The marine test host uses deterministic
 identity/permission doubles, so PostgreSQL-backed verification of those
 queries remains open.
 
+Experience & Biodiversity remains an internal service. Its API-gateway routes
+use the default authenticated policy for component paths, with only process
+liveness and the Swashbuckle document explicitly anonymous. The component does
+not receive a second JWT signing secret or validate tokens independently.
+
 - TLS terminates at the appropriate deployed edge/platform boundary.
 - JWT authentication protects secured API endpoints and rejects algorithms
   other than HS256. Access JWTs are short-lived (15 minutes); refresh tokens

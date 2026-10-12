@@ -1,10 +1,11 @@
 # Local Deployment
 
-The local Compose topology is defined. The public API, internal Auth and
-marine-safety sources are checked in at `services/api`, `services/auth` and
-`services/marine-safety`. Compose routes marine operations through the public
-API to the private service, which shares PostgreSQL and calls Open-Meteo
-server-side.
+The local Compose topology runs the public API, internal Auth, Marine Safety
+and Experience & Biodiversity services with PostgreSQL. Marine Safety provides
+marine conditions and safety workflows and calls Open-Meteo server-side.
+Experience & Biodiversity provides catalogue management, nearby discovery,
+map vector tile support and pre-G07 Agentic AI dispatch seams. Clients reach
+both private services through the public API.
 
 ## Prerequisites
 
@@ -20,8 +21,12 @@ server-side.
 cp .env.example .env
 ```
 
-Set independent `JWT_SIGNING_KEY` and `MARINE_ACTOR_SIGNING_KEY` values with at least 32 UTF-8 bytes each, local PostgreSQL
-and administrator passwords, and confirm `AUTH_SERVICE_URL=http://auth:8080`
+Set independent `JWT_SIGNING_KEY` and `MARINE_ACTOR_SIGNING_KEY` values with
+at least 32 UTF-8 bytes each, local PostgreSQL and administrator passwords.
+Auth and Experience & Biodiversity use the same `POSTGRES_DB`,
+`POSTGRES_USER` and `POSTGRES_PASSWORD` values to connect to the single
+database configured for the stack. Confirm `AUTH_SERVICE_URL=http://auth:8080`
+and `EXPERIENCE_BIODIVERSITY_SERVICE_URL=http://experience-biodiversity:8080`
 in `.env`.
 
 On the development branch, PostgreSQL is available to host tools such as
@@ -33,7 +38,11 @@ loopback-only access. Both mappings use host port `5432`; if another local
 PostgreSQL process already owns that port, stop or reconfigure that process
 so the development Compose mapping can keep the required host port. Auth
 applies its EF Core migrations and conditionally seeds the configured
-administrator account at startup.
+administrator account at startup. Marine Safety and Experience & Biodiversity
+use the same database server with service-owned EF Core migration histories;
+each applies its migrations at startup. No per-service database creation or
+SQL initialization step is required, including when reusing an existing
+PostgreSQL volume.
 
 ## Build
 
@@ -76,6 +85,7 @@ http://localhost/health
 http://localhost/api/health
 http://localhost/api/auth/health
 http://localhost/api/marine/health
+http://localhost/api/experiences/health
 ```
 
 Other ASP.NET services are checked through the API gateway at:
@@ -92,6 +102,11 @@ Swagger UI:
 ```text
 http://localhost/api/swagger
 ```
+
+The Marine Safety and Experience & Biodiversity OpenAPI documents are available
+through the same gateway at `/api/marine/swagger/v1/swagger.json` and
+`/api/experiences/swagger/v1/swagger.json`; both appear in the unified Swagger
+UI.
 
 The local gateway uses host port `80`. The CI health workflow overrides the
 Compose host mapping to `http://127.0.0.1:8080` on the runner. For Android,

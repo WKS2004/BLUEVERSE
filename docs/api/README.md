@@ -146,6 +146,16 @@ Auth health route through the public API boundary:
 GET /api/auth/health
 ```
 
+Experience & Biodiversity reports its service and database status through:
+
+```text
+GET /api/experiences/health
+```
+
+It returns `200` with `status: healthy` and `database: connected`, or `503`
+with `status: unhealthy` and `database: unavailable`. The health endpoint is
+anonymous, matching Auth's health-check access.
+
 ## Error and validation contract
 
 Auth validation and expected business failures return structured RFC 7807
@@ -203,11 +213,14 @@ GET /api/swagger
 GET /api/swagger/v1/swagger.json
 ```
 
-The Swagger UI is configured in the API service and lists the public API, Auth
-and marine-safety OpenAPI documents in one interface. The Auth document is
-available through the API boundary at `/api/auth/swagger/v1/swagger.json`; the
-marine-safety document is available under `/api/marine/swagger`; both service
-containers remain internal-only.
+The Swagger UI is configured in the API service and lists the public API, Auth,
+Marine Safety and Experience & Biodiversity OpenAPI documents in one interface.
+The Auth document is available at `/api/auth/swagger/v1/swagger.json`, the
+Marine Safety document at `/api/marine/swagger/v1/swagger.json`, and the
+Experience & Biodiversity document at
+`/api/experiences/swagger/v1/swagger.json`. Both component services remain
+internal-only; their OpenAPI documents are exposed through the public API
+boundary.
 
 Use the `Authorize` button in the unified UI to enter a native-client JWT as
 `Bearer {token}`. Browser clients use the protected access-token cookie. The

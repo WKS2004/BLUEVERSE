@@ -22,6 +22,10 @@ public static class PermissionCodes
     public const string MarineProfileRead = "marine.profile.read";
     public const string MarineProfileManage = "marine.profile.manage";
 
+    // Experience & Biodiversity catalogue permissions
+    public const string ExperienceRead = "experiences.catalogue.read";
+    public const string ExperienceManage = "experiences.catalogue.manage";
+
     public static IReadOnlyList<string> LegacyGrantAliases(string permissionCode) => permissionCode switch
     {
         UserCreate or UserUpdate or UserDelete => [UserManage],

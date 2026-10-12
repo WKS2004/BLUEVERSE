@@ -40,7 +40,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-blueverse}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 12
@@ -67,10 +67,13 @@ services:
       MARINE_ACTOR_SIGNING_KEY: ${MARINE_ACTOR_SIGNING_KEY:?Set MARINE_ACTOR_SIGNING_KEY in .env}
       ReverseProxy__Clusters__auth__Destinations__auth__Address: ${AUTH_SERVICE_URL:-http://auth:8080}
       ReverseProxy__Clusters__marine-safety__Destinations__marine-safety__Address: ${MARINE_SAFETY_SERVICE_URL:-http://marine-safety:8080}
+      ReverseProxy__Clusters__experience-biodiversity__Destinations__experience-biodiversity__Address: ${EXPERIENCE_BIODIVERSITY_SERVICE_URL:-http://experience-biodiversity:8080}
     depends_on:
       auth:
         condition: service_started
       marine-safety:
+        condition: service_started
+      experience-biodiversity:
         condition: service_started
     networks:
       - blueverse_internal
@@ -121,6 +124,31 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:?Set ADMIN_EMAIL in .env}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-blueverse};Username=${POSTGRES_USER:-blueverse};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - blueverse_internal
+      - blueverse_database
+
+  experience-biodiversity:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/experience-biodiversity/Dockerfile
+      args:
+        PROJECT_NAME: Blueverse.ExperienceBiodiversity
+    container_name: blueverse-experience-biodiversity
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_HTTP_PORTS: 8080
+      JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY in .env}
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-blueverse};Username=${POSTGRES_USER:-blueverse};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      Services__MarineSafetyUrl: ${MARINE_SAFETY_SERVICE_URL:-http://marine-safety:8080}
+      Services__PlannerServiceUrl: ${PLANNER_SERVICE_URL:-http://coastal-planner:8080}
+      Services__OperationsServiceUrl: ${OPERATIONS_SERVICE_URL:-http://coastal-operations:8080}
     depends_on:
       postgres:
         condition: service_healthy

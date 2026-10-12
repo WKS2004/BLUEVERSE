@@ -1,9 +1,10 @@
 # Schema Design Status
 
-The broader business schema is still being delivered component by component.
-The Auth foundation defines the identity schema, and the marine-safety service
-owns its implemented PostgreSQL/EF Core domain schema. Both have checked-in
-migrations.
+The complete four-component v1 business schema is still being delivered. The
+Auth foundation defines the identity schema, and Marine Safety and Experience
+& Biodiversity own their implemented PostgreSQL/EF Core domain schemas. Each
+has checked-in migrations; shared G00 data-ownership and integrated component
+acceptance remain pending.
 
 The Auth schema contains users, roles, permissions, device installations,
 active sessions, session lifecycle logs, rotating refresh-token records and the
@@ -13,6 +14,28 @@ state, absolute expiration, foreign-key cascade behavior, token-version
 revocation state, system-role protection and `CreatedAt`/`UpdatedAt` fields
 where applicable. Auth enforces a maximum of five active account sessions for
 one installation and five active sessions per account across installations.
+
+## Experience & Biodiversity connection foundation
+
+Experience & Biodiversity connects to the same PostgreSQL database and with
+the same configured login as Auth. Its EF Core context uses PostgreSQL's
+default `public` schema; its migrations are tracked in
+`__EFMigrationsHistory_ExperienceBiodiversity` in that same schema. No second
+database, service-specific login or SQL provisioning file is used. The Member
+1 feature branch includes an initial migration
+(`20260927113951_InitialExperienceBiodiversitySchema`) for these tables:
+
+| Table | Current purpose |
+|---|---|
+| `destinations` | Coastal destination identity, location, publication status and audit timestamps. |
+| `activities` | Activity taxonomy identity, category, publication status and audit timestamps. |
+| `offerings` | Destination/activity-linked experience details, pricing, capacity and publication status. |
+| `schedules` | Offering schedule intervals, time-zone identifiers and active state. |
+| `favourites` | User-scoped saved destination, activity or offering references; user IDs remain opaque Auth UUIDs. |
+
+This branch schema is implementation evidence, not acceptance of the shared
+G00 data-ownership or migration-history contract. The other member domains and
+shared Agentic AI workflow-state schema remain future work.
 
 ## Auth session tables
 

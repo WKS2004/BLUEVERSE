@@ -43,11 +43,14 @@ remaining identities and cross-component transport/data choices are still
 part of team G00. See [ADR-0020](../adr/ADR-0020-member-component-service-boundaries.md)
 and the [member service boundaries](service-boundaries.md).
 
-The selected map API is an outbound dependency of Ushan Srinuka's private service,
-not of `services/api`, a host route or a client network target. Its provider
-and egress policy are not configured in the current stack; see
-[ADR-0017](../adr/ADR-0017-map-provider-integration-boundary.md). React and
-Flutter must not call the map provider directly.
+Map configuration and place-search requests use the public API and Ushan
+Srinuka's private service. The existing map configuration response includes a
+public, tokenless OpenFreeMap style URL; the MapLibre renderer fetches the
+resulting vector map tiles from that configured host to draw the map. Those
+tile requests contain no user or device coordinates. Clients must not construct
+provider URLs, send location or credentials to the tile provider, or call
+provider search/geocoding endpoints directly. See
+[ADR-0017](../adr/ADR-0017-map-provider-integration-boundary.md).
 
 Open-Meteo Weather and Marine APIs are outbound dependencies of the private
 `marine-safety` service. The API and clients do not call those providers; the

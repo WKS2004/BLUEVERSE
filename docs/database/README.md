@@ -2,8 +2,11 @@
 
 PostgreSQL infrastructure is present in Compose. The Auth EF Core model,
 migrations and application persistence code are checked in under
-`services/auth`. Marine safety also owns its domain model and migrations under
-`services/marine-safety`; each service applies only its own migrations.
+`services/auth`. Marine Safety owns its domain model and migrations under
+`services/marine-safety`; Experience & Biodiversity owns its model and initial
+migration for five component tables under `services/experience-biodiversity`.
+Each service applies only its own migrations. Shared G00 data-ownership
+agreement and integrated component acceptance remain pending.
 
 PostgreSQL is the authoritative relational database.
 The [v0 persistence component](../v0/components/postgresql-ef-core.md)
@@ -35,6 +38,38 @@ Database: blueverse
 Username: blueverse
 Password: the POSTGRES_PASSWORD value from .env
 ```
+
+## Experience & Biodiversity connection
+
+The internal `experience-biodiversity` service connects directly to the same
+PostgreSQL database as Auth through EF Core and Npgsql. Both services use the
+configured `POSTGRES_DB`, `POSTGRES_USER` and `POSTGRES_PASSWORD` values;
+Compose supplies `Host=postgres` for the internal database network. No second
+database, PostgreSQL role or schema-provisioning SQL file is used. The
+[`ExperienceBiodiversityDbContext`](../../services/experience-biodiversity/Data/ExperienceBiodiversityDbContext.cs)
+uses PostgreSQL's default `public` schema, as Auth does. Its migration history
+uses the separate `__EFMigrationsHistory_ExperienceBiodiversity` table in that
+same schema, so the two EF contexts track their migrations independently. The
+initial migration creates `destinations`, `activities`, `offerings`,
+`schedules` and `favourites`; it is applied by the component service at startup.
+These tables are branch implementation evidence and do not imply that the
+shared G00 database/schema ownership decision has been accepted.
+When running the service directly on the host, set
+`ConnectionStrings__DefaultConnection` to the same connection values but use
+`Host=127.0.0.1` instead of the Compose-only `Host=postgres`. Supply the
+password through the local environment or approved secret store; do not put a
+real connection string in `appsettings.json` or source control. The service
+fails startup when this setting is missing.
+
+The design-time factory reads
+`EXPERIENCE_BIODIVERSITY_MIGRATION_CONNECTION` for EF migration commands. Set
+it to a real connection string before applying migrations; its default value
+uses a placeholder password and is safe only for generating migration files.
+
+At startup the service performs a bounded connection check and applies its
+EF Core migrations, following the Auth service pattern. Process liveness
+remains independent from database availability. No manual database
+provisioning step is required for either new or existing PostgreSQL volumes.
 
 ## Agent fast path
 

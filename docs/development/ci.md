@@ -129,7 +129,9 @@ failure; an entirely empty foundation suite is reported as zero tests until
 that implementation exists.
 
 `.github/scripts/report_test_metrics.py` parses JUnit, TRX and Flutter machine
-results. Flutter output is normalized across the nested current protocol, the
+results. JUnit parsing removes terminal color escapes and XML-illegal control
+characters from reporter output while preserving test outcomes. Flutter output
+is normalized across the nested current protocol, the
 legacy top-level `test`/`testID` protocol and line-delimited JSON lines that
 contain arrays of events. Empty or missing error fields are safe and do not
 crash the final failure report. Use `--require-results` when a real test suite
@@ -149,7 +151,7 @@ Docker checks remain separate from source/test checks:
 |---|---|---|
 | `docker-web-build.yml` | Supported work branches; web/Docker/Compose paths | Synchronizes the React lockfile and builds the web image. |
 | `docker-backend-build.yml` | Supported work branches; service/Docker/Compose paths | Builds the public API first, then each discovered ASP.NET backend service. |
-| `docker-stack-health.yml` | Successful Docker build workflows for a PR targeting `main` only | Checks the Compose network, public health endpoints, Swagger UI and configured OpenAPI routes. |
+| `docker-stack-health.yml` | Successful Docker build workflows for a PR targeting `main` only | Checks the Compose network, public health endpoints, Swagger UI and configured API/Auth/Marine Safety/Experience OpenAPI routes. |
 
 The web and backend image workflows start only when their relevant application,
 service, Docker infrastructure, lockfile, Compose, global SDK or workflow
@@ -179,11 +181,12 @@ checks `/health`, `/api/health`, the Swagger UI and the API/Auth OpenAPI paths,
 then probes each discovered service using
 its public health route. The `experience-biodiversity` folder maps to
 `/api/experiences/health` and `marine-safety` maps to `/api/marine/health`.
-Experiences and Marine OpenAPI documents are required when their service
-`Program.cs` exists. Absent member services are excluded from document checks;
-implemented services still must pass, including Marine on its standalone branch.
-The workflow creates masked ephemeral signing keys before Compose validation,
-prints Compose diagnostics on failure and always tears the stack down.
+Experience & Biodiversity and Marine Safety OpenAPI documents are required
+when their service `Program.cs` exists. Absent member services are excluded
+from document checks; implemented services still must pass. The workflow
+creates masked ephemeral signing keys, supplies the shared PostgreSQL
+credentials to Auth and both services, prints Compose diagnostics on failure
+and always tears the stack down.
 
 ## GitHub configuration synchronization
 

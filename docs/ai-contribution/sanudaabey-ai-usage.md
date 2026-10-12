@@ -1238,3 +1238,39 @@ Member 2, Marine Conditions & Safety Intelligence, branch `features/marine-safet
 - Verification/evidence: `git diff --check` passed and the workflow diff was
   reviewed. No tests were run. The workflow file is
   `.github/workflows/agentic-ai-tests.yml`.
+
+## 2026-10-12 — Resolve Marine Safety and Experience merge conflicts
+
+- Date/time or time range: 2026-10-12 14:12 (Asia/Colombo; completion)
+- GitHub Username: `sanudaabey`
+- Team Member Name (actual): Sanuda Abeysinghe
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-6
+- Summary of the user's request: Resolve PR #6 merge conflicts while preserving
+  Marine Safety and Experience & Biodiversity workflows, keep CI behavior
+  working, record this contribution as Sanuda, and commit and push the fix.
+- Summary of what the AI Agent did: Confirmed the PR and fetched base branch,
+  merged the latest integration branch into `features/marine-safety`, and
+  resolved application, API/Auth, Compose, workflow, catalog and documentation
+  conflicts while retaining both component implementations. Corrected the
+  Experience OpenAPI health workflow URL and regenerated the API catalog.
+  Updated Auth seeder test permission totals from 14 to 16 after the user's
+  explicit approval. Prepared the merge commit and PR branch update.
+- AI output accepted/changed/rejected: Accepted and retained both branches'
+  component routes, policies, services, screens, assets, and API catalog
+  entries. Combined the two new Auth permission grants with the existing Marine
+  grants and changed only their shared seeder test totals. Corrected the
+  workflow's Experience OpenAPI path to the route configured by its service.
+  No component workflow or existing test behavior was removed.
+- Verification/evidence: Endpoint catalog validation passes with 90 public
+  endpoints and 38 frontend routes; UI integration validation passes; Python
+  repository validation tests pass 35/35; `docker compose --env-file
+  .env.example config --quiet` passes. API, Auth, Marine Safety and Experience
+  & Biodiversity test projects build successfully. Web lint and the focused
+  Experience and Marine API contract tests pass (5/5 and 24/24). The full Web
+  run passed 225/231 before local MapLibre package resolution and Node memory
+  limits stopped six tests. API and Auth test hosts did not connect within 90
+  seconds; Flutter analysis could not open the read-only SDK lockfile. These
+  test-host, dependency and SDK limitations are recorded; no full CI pass is
+  claimed. PR: https://github.com/WKS2004/BLUEVERSE/pull/6.

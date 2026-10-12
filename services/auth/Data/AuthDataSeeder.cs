@@ -62,7 +62,10 @@ public static class AuthDataSeeder
             // component service; Admin receives them so role administration
             // can delegate profile management without new Auth releases.
             [PermissionCodes.MarineProfileRead] = (Guid.Parse("11111111-1111-1111-1111-111111111113"), "Read marine safety profiles"),
-            [PermissionCodes.MarineProfileManage] = (Guid.Parse("11111111-1111-1111-1111-111111111114"), "Manage marine safety profiles")
+            [PermissionCodes.MarineProfileManage] = (Guid.Parse("11111111-1111-1111-1111-111111111114"), "Manage marine safety profiles"),
+
+            [PermissionCodes.ExperienceRead] = (Guid.Parse("11111111-1111-1111-1111-111111111113"), "View coastal experiences catalogue"),
+            [PermissionCodes.ExperienceManage] = (Guid.Parse("11111111-1111-1111-1111-111111111114"), "Manage coastal destinations, activities, offerings and schedules")
         };
 
         var permissions = await db.Permissions
