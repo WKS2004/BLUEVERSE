@@ -172,11 +172,11 @@ turn-taking order.
 
 | Component | Assigned owner (full name) | GitHub account | Current status | Branch | PR, merge and integration evidence |
 |---|---|---|---|---|---|
-| G00 — Shared contract freeze | All four assigned owners | — | Pending | `dev` | — |
-| Ushan Srinuka (Member 1) — Experience and Biodiversity | Ushan Srinuka | `Ushan-Srinuka` | Planned | `features/experience-biodiversity` | — |
-| Sanuda Abeysinghe (Member 2) — Marine Conditions and Safety | Sanuda Abeysinghe | `sanudaabey` | Planned | `features/marine-safety` | — |
-| Adithya Gunawardana (Member 3) — Planner and Itineraries | Adithya Gunawardana | `AdithyaGunawardana` | Planned | `features/coastal-planner` | — |
-| Wanshaja Sooriyabandara (Member 4) — Coastal Operations | Wanshaja Sooriyabandara | `WKS2004` | In progress — partial backend | `features/coastal-operations` | Branch builds and catalog validation pass; bounded peer calls and image evidence are implemented; G00 remains Pending; producer handoff, live PostgreSQL workflow acceptance, client parity and post-G07 proposal generation remain open |
+| G00 — Shared contract freeze | All four assigned owners | — | In progress; full-owner ratification and verified exit evidence pending | `dev` | Member 1 proposal, Member 2 scope record, Member 3 proposal and Member 4 record exist. Adithya's input is recorded, but the Member 3 proposal states it is not team-accepted until all four owners agree. |
+| Ushan Srinuka (Member 1) — Experience and Biodiversity | Ushan Srinuka | `Ushan-Srinuka` | Service and React/Flutter implementation present; acceptance pending | `features/experience-biodiversity` | Private service, EF Core migration, catalogue/schedule routes, discovery/favourites and both client workflows are present in this integration branch. G00 ratification, provider/cross-client evidence and `dev` acceptance remain open; the agent route is static `not_connected`. |
+| Sanuda Abeysinghe (Member 2) — Marine Conditions and Safety | Sanuda Abeysinghe | `sanudaabey` | Backend and React/Flutter Marine workflows implemented; integration pending | `features/marine-safety` | Service owns reviewed safety profiles, deterministic conditions/evaluation and immutable history; it reads Member 1's published catalogue. Latest recorded feature evidence and remaining PostgreSQL/provider/G07 gates are summarized in the [test matrix](../testing/test-matrix.md). |
+| Adithya Gunawardana (Member 3) — Planner and Itineraries | Adithya Gunawardana | `AdithyaGunawardana` | Implemented; integration pending | `features/coastal-planner` | Private service, React/Flutter workflows and real PostgreSQL evidence are recorded in `docs/development/coastal-planner.md`; live peer/IT3091 compatibility and G07 acceptance remain pending. |
+| Wanshaja Sooriyabandara (Member 4) — Coastal Operations | Wanshaja Sooriyabandara | `WKS2004` | In progress — partial backend | `features/coastal-operations` | Bounded peer calls, PostgreSQL persistence and image evidence are present in this integration branch; G00 remains pending, with producer handoff, full workflow acceptance, client parity and post-G07 proposal generation still open. |
 | G07 — Integrated component acceptance | All four assigned owners | — | Planned | `dev` | — |
 
 This process deliberately distinguishes relationship dependencies from work
@@ -185,11 +185,13 @@ it does not make the member work serial.
 
 ## Agentic AI work after G07
 
-The member feature branches implement public workflow routes/status,
-authorization, business request persistence, typed private adapters and
-bounded not-connected/unavailable behavior. They do not implement executable
-agents. Preserve `GET /api/health` as API liveness and keep database readiness
-separate from AI dependency availability. See the
+Member feature branches implement business workflows and the public
+authentication/authorization integration recorded in their accepted G00
+scope. A pre-G07 Agentic AI seam is implemented only where that scope includes
+it; Member 2's accepted decision defers its AI workflow contract and typed
+private adapter. No feature branch implements executable agents. Preserve
+`GET /api/health` as API liveness and keep database readiness separate from AI
+dependency availability. See the
 [Agentic AI integration boundary](agentic-ai-integration-boundary.md).
 
 Only after all four component PRs are merged, compatibility is resolved and

@@ -34,6 +34,10 @@ dependencies:
   http_parser: ^4.1.2
   flutter_secure_storage: ^9.2.4
   image_picker: ^1.2.3
+  # 14.0.2 stays compatible with flutter_secure_storage_windows 3.x (win32 5.x).
+  geolocator: 14.0.2
+  maplibre_gl: ^0.27.1
+  timezone: ^0.10.1
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -63,6 +67,9 @@ flutter:
 
   assets:
     - assets/coastal/onboarding/
+    - assets/coastal/planner/
+    - assets/coastal/marine/
+    - assets/coastal/experiences/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

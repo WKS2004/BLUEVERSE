@@ -5,10 +5,13 @@ FROM dhi.io/dotnet:10-sdk-alpine AS build
 ARG PROJECT_NAME=Blueverse.Auth
 WORKDIR /src
 
-COPY services/auth/ ./
+COPY services/auth/*.csproj ./
 
-RUN dotnet restore "${PROJECT_NAME}.csproj"
-RUN dotnet publish "${PROJECT_NAME}.csproj" \
+RUN --mount=type=cache,id=blueverse-nuget,target=/root/.nuget/packages,sharing=locked \
+    dotnet restore "${PROJECT_NAME}.csproj"
+COPY services/auth/ ./
+RUN --mount=type=cache,id=blueverse-nuget,target=/root/.nuget/packages,sharing=locked \
+    dotnet publish "${PROJECT_NAME}.csproj" \
     --configuration Release \
     --output /app/publish \
     --no-restore \

@@ -73,7 +73,7 @@ mutation events. Exclude credentials/raw photos/storage URLs/hidden reasoning.
 
 ## Typed delivery seam
 
-[ADR-0022](../adr/ADR-0022-coastal-assessment-publication-dispatch.md) defines
+[ADR-0025](../adr/ADR-0025-coastal-assessment-publication-dispatch.md) defines
 one immutable service-owned envelope per published assessment. Payload (maximum 128 KiB of UTF-8 JSON):
 dispatch/workflow/assessment IDs, published version, canonical target, UTC
 period, title, objective, selected time zone, optional planner workflow, actor/correlation, validated peer

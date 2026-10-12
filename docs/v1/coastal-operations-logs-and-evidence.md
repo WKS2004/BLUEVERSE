@@ -68,7 +68,7 @@ Delete private bytes after the database commit. Persist content-deletion time;
 a bounded retention-worker pass retries pending removed content after storage
 failure. Never delete bytes before committing the authorized state transition.
 Use an additive EF migration for removal/deletion timestamps and REMOVED state.
-See [ADR-0023](../adr/ADR-0023-coastal-draft-evidence-removal.md).
+See [ADR-0026](../adr/ADR-0026-coastal-draft-evidence-removal.md).
 
 Both clients offer a clear removal confirmation and refresh the current draft
 version, evidence and audit after success. Disable actions while busy, remove

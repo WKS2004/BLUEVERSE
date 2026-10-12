@@ -24,7 +24,13 @@ ADRs capture significant architectural decisions and their rationale.
 18. `ADR-0018-assessment-evidence-storage-boundary.md`
 19. `ADR-0019-biodiversity-inference-integration-ownership.md`
 20. `ADR-0020-member-component-service-boundaries.md`
-21. `ADR-0021-coastal-operations-actor-context.md`
+21. `ADR-0021-marine-catalogue-and-gateway-actor-context.md`
+22. `ADR-0022-member-service-data-availability-and-fault-isolation.md`
+23. `ADR-0023-planner-access-and-review-history.md`
+24. `ADR-0024-coastal-operations-actor-context.md`
+25. `ADR-0025-coastal-assessment-publication-dispatch.md`
+26. `ADR-0026-coastal-draft-evidence-removal.md`
+27. `ADR-0027-coastal-detailed-audit-snapshots.md`
 
 Some decisions remain **Proposed / Pending implementation choice** because the foundation does not invent decisions that have not yet been made.
 
@@ -51,14 +57,24 @@ member component. The existing API is integration-only for these services,
 Auth behavior is preserved, and the exact internal contracts are agreed at
 G00.
 
-ADR-0021 records the Member 4 branch's signed API actor-context choice for
+ADR-0021 records Member 2's read-only canonical activity handoff and the signed
+actor/operation context issued by the public API after existing Auth checks.
+
+[ADR-0022](ADR-0022-member-service-data-availability-and-fault-isolation.md)
+records operation-level dependency availability and independent member-service
+readiness, implemented for Marine Safety on this branch.
+
+ADR-0023 records Coastal Planner's permission-aware access, catalogue reads,
+durable itinerary reviews and schedule/time-zone behavior.
+
+ADR-0024 records the Member 4 branch's signed API actor-context choice for
 Coastal Operations. The envelope and its scale-out behavior remain provisional
 until shared G00 acceptance.
 
-[ADR-0022](ADR-0022-coastal-assessment-publication-dispatch.md) records durable
+[ADR-0025](ADR-0025-coastal-assessment-publication-dispatch.md) records durable
 assessment publication delivery, distinct alert publication, scoped activity
 and separate client pages. It preserves the disconnected pre-G07 port.
 
-- [ADR-0023: Coastal draft evidence removal](ADR-0023-coastal-draft-evidence-removal.md) — retained audit metadata, draft-only mutation and durable content cleanup.
+- [ADR-0026: Coastal draft evidence removal](ADR-0026-coastal-draft-evidence-removal.md) — retained audit metadata, draft-only mutation and durable content cleanup.
 
-- [ADR-0024: Coastal detailed activity snapshots](ADR-0024-coastal-detailed-audit-snapshots.md) — atomic field history and verified signed display identity.
+- [ADR-0027: Coastal detailed activity snapshots](ADR-0027-coastal-detailed-audit-snapshots.md) — atomic field history and verified signed display identity.

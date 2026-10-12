@@ -65,7 +65,7 @@ provider-independent test doubles are not provider acceptance evidence.
 
 ## Implementation and verification — 2026-10-02
 
-Implemented in the private service and both clients. [ADR-0024](../adr/ADR-0024-coastal-detailed-audit-snapshots.md)
+Implemented in the private service and both clients. [ADR-0027](../adr/ADR-0027-coastal-detailed-audit-snapshots.md)
 records the identity/audit decision. Migration `20261002081218_CoastalDetailedAudit`
 uses safe empty-array defaults for old rows; model drift check and generated
 idempotent SQL inspection pass. Rebuild/restart API and Coastal Operations

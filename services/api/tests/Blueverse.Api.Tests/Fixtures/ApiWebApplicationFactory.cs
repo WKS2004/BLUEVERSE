@@ -23,7 +23,8 @@ public sealed class ApiWebApplicationFactory : WebApplicationFactory<Program>
             // Public API tests use a synthetic key for the private actor
             // context transform. Never read production secrets into tests.
             ["COASTAL_OPERATIONS_CONTEXT_KEY"] = Convert.ToBase64String(
-                Enumerable.Range(0, 32).Select(value => (byte)value).ToArray())
+                Enumerable.Range(0, 32).Select(value => (byte)value).ToArray()),
+            ["MARINE_ACTOR_SIGNING_KEY"] = "api-test-only-actor-key-with-at-least-32-bytes"
         };
 
         if (configurationOverrides is not null)

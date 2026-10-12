@@ -2490,3 +2490,28 @@ push was made.
   `D:\WKS\FlutterBuildCache\temp`; screenshots are in the task visualization
   directory. See `docs/v1/coastal-operations-mobile-reimplementation.md` and
   the root/mobile READMEs. No commit or push was made.
+## 2026-10-12 — Resolve PR #7 component merge conflicts
+
+- Date/time or time range: 2026-10-12 18:10 (Asia/Colombo; PR conflict-resolution session)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, Git, PowerShell, bundled Python and Dart SDK
+- AI Model: GPT-6
+- Summary of the user's request: Resolve PR #7 merge conflicts while preserving the experience-biodiversity, marine-safety and coastal-planner components and their workflows; update the AI usage log under the confirmed team identity; commit and push the resolution.
+- Summary of what the AI Agent did: Fetched the current PR source and target refs, confirmed the merge blocker, and combined the component routes, mobile route handling, API configuration, Compose services, endpoint/UI contracts and shared documentation. Preserved the Marine admin shell while restoring planner navigation across the shared account/site contexts. Renumbered the planner ADR to avoid the Marine ADR collision and regenerated the endpoint Markdown with the repository validator. After hosted CI exposed a parallel Coastal Planner fixture environment race, scoped the fixture's existing test-only connection and JWT values to the backend test step.
+- AI output accepted/changed/rejected: Kept the behavior and files from both component branches, made the smallest manual conflict edits needed for shared integration, and fixed the duplicated Flutter route handler and shared header conditions. Kept every test assertion unchanged; added only stable test-only environment values to the backend test runner. No existing AI usage entry or individual reflection was changed.
+- Verification/evidence: Web lint and production build passed; the complete web CI suite passed (338/338); endpoint-catalog and UI-integration validators passed; Docker Compose configuration and the Marine workflow wiring suite passed (6/6); API, coastal-planner, experience-biodiversity and marine-safety .NET builds passed. After the first hosted backend run exposed nine Coastal Planner fixture startup failures from cleared test configuration, the scoped test-only environment fix was rerun successfully: Backend Microservices Tests passed 545/545. All 10 GitHub Actions workflows for the follow-up commit passed, and PR #7 is mergeable. Local API tests could not start VSTest testhost before timeout; Flutter analysis stalled locally, while direct Dart formatting parsed the two merged Dart files without writing them; hosted Flutter CI and tests passed. The merge and CI follow-up commits are `905eece` and `ad0e5d3`.
+
+## 2026-10-12 — Resolve PR #8 component merge conflicts
+
+- Date/time or time range: 2026-10-12 19:33 (Asia/Colombo; active PR conflict-resolution session)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop, Git, PowerShell, bundled Python and Dart SDK, npm, GitHub connector
+- AI Model: GPT-6
+- Summary of the user's request: Resolve PR #8 conflicts while preserving experience-biodiversity, marine-safety, coastal-planner and coastal-operations behavior and workflows; update AI usage as Wanshaja, then commit and push the fix.
+- Summary of what the AI Agent did: Confirmed PR #8 and the local merge blocker, fetched the latest maintenance base and merged it into the feature branch. Combined the four components' routes, API gateway registrations, Compose services, workflow checks, shared contracts, lockfiles and documentation. Renumbered colliding Coastal Operations ADRs, and updated the Auth seeder test to expect and assert all 36 registered permissions after the user's approval.
+- AI output accepted/changed/rejected: Preserved changes from both branches and their component workflows; combined duplicate integration points into shared registrations. Replaced a machine-specific Flutter gateway address with the emulator-safe default. Updated the existing permission-count assertion to 36 with user approval. No tests were skipped or weakened, and no prior AI usage entry was edited.
+- Verification/evidence: Endpoint catalog and UI integration validators, Docker Compose configuration, JSON parsing and `git diff --check` passed. React lint/build passed and the serial web suite passed 384/384; Flutter analysis passed and the serial mobile suite passed 295/295; API tests passed 57/57; Auth seeder tests passed 2/2. Hosted GitHub Actions status is to be checked after the PR branch update. See PR #8 and this merge-resolution change.

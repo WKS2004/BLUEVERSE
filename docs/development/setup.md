@@ -17,8 +17,10 @@ Never commit `.env`.
 For local Compose, `.env` also defines the internal API-to-Auth destination.
 Keep it as `http://auth:8080`; clients must continue using the public gateway
 at `/api/...`. Replace the example database/admin passwords before using the
-stack, even for local shared environments, and replace the example JWT signing
-key with a unique random value of at least 32 UTF-8 bytes.
+stack, even for local shared environments. Auth and Experience & Biodiversity
+use the same `POSTGRES_DB`, `POSTGRES_USER` and `POSTGRES_PASSWORD` values and
+connect to one database. Replace the example JWT signing key with a unique
+random value of at least 32 UTF-8 bytes.
 
 The configured `ADMIN_EMAIL` and `ADMIN_PASSWORD` seed one administrator
 account after Auth applies its EF Core migrations. Normal registration never
@@ -34,12 +36,17 @@ apps/mobile
 ```
 
 Both clients provide the shared home, `/signin`, `/signup`, `/profile`,
-`/dashboard` and permission-aware `/admin` workflows. The Auth experience uses
+`/dashboard` and permission-aware `/admin` workflows. React Web and Flutter
+both provide Member 2's marine conditions, history and safety-profile screens
+through the public API and shared permission model. Local Flutter runtime
+verification remains open in this environment.
+The Auth experience uses
 the public gateway for registration, sign-in, refresh, profile and session
 management, account deletion, and user/role/permission administration. Browser
 state uses protected cookies and mobile state uses platform secure storage.
-The ASP.NET projects are available under `services/api` and `services/auth`;
-do not add business rules to the clients that contradict the API contract. For
+The ASP.NET projects are available under `services/api`, `services/auth` and
+`services/marine-safety`; marine API requests go through the public API
+gateway. Do not add business rules to the clients that contradict the API contract. For
 every UI change, also update and validate the shared [UI integration
 contract](ui-integration.md) so React and Flutter use the same workflow ID and
 public `/api/...` endpoint references.
@@ -93,12 +100,13 @@ The repository uses:
 
 as defined by `global.json`.
 
-Restore the repository-pinned EF Core tool before creating or inspecting Auth
-migrations:
+Restore the repository-pinned EF Core tool before creating or inspecting
+service migrations:
 
 ```bash
 dotnet tool restore
 dotnet tool run dotnet-ef migrations list --project services/auth/Blueverse.Auth.csproj
+dotnet tool run dotnet-ef migrations list --project services/marine-safety/Blueverse.MarineSafety.csproj
 ```
 
 ## Docker
@@ -189,14 +197,19 @@ After execution completes, restore the restricted policy:
 Set-ExecutionPolicy Restricted
 ```
 
-With the checked-in API and Auth projects running in the stack, verify:
+With the checked-in API, Auth and component projects running in the stack,
+verify:
 
 ```text
 GET http://localhost/health
 GET http://localhost/api/health
 GET http://localhost/api/auth/health
+GET http://localhost/api/marine/health
+GET http://localhost/api/experiences/health
+GET http://localhost/api/planner/health
 GET http://localhost/api/swagger/v1.json
 GET http://localhost/api/auth/swagger/v1/swagger.json
+GET http://localhost/api/planner/swagger/v1/swagger.json
 ```
 
 Open the unified Swagger UI at:
@@ -207,8 +220,26 @@ http://localhost/api/swagger
 
 There is no public `/auth/...` or `/health` backend route. Auth requests must use `/api/auth/...` and are forwarded by the API service.
 
-Additional ASP.NET services follow the public gateway convention:
+The Marine Safety and Experience & Biodiversity OpenAPI documents are listed in
+the unified Swagger UI and exposed under `/api/marine/swagger` and
+`/api/experiences/swagger`. Other ASP.NET services follow the public gateway
+health convention:
 
 ```text
-GET http://localhost/api/<service-name>/health
+GET http://localhost/api/<service-route>/health
 ```
+
+Planner setup now includes an exec-form .NET readiness probe and its own
+migrations; the API waits for planner database readiness. New local
+registrations receive the non-system Coastal traveller role when
+`AUTH_SELF_SERVICE_PLANNER_ACCESS=true` (Compose default). Set it to false
+to require administrator assignment. Existing accounts need explicit role
+assignment and a refreshed session to receive new permission claims.
+The private catalogue/marine/operations/ML URL variables are in `.env.example`;
+the Compose stack includes Experience & Biodiversity and Marine Safety peers,
+while Operations and ML provider compatibility remain separate integration
+gates. See
+[planner operations and pending contracts](coastal-planner.md).
+
+Marine Safety uses the shorter public route `/api/marine/health` rather than a
+folder-name-derived path.

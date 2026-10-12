@@ -88,7 +88,7 @@ Implemented source on `features/coastal-operations` currently provides:
   generator, tool, orchestration or Agentic execution state is present.
 - API gateway signing of actor ID, `operations.*` permissions and correlation
   ID. Coastal Operations verifies the signed private context and does not
-  receive the client's JWT/cookies. See [ADR-0021](../../adr/ADR-0021-coastal-operations-actor-context.md).
+  receive the client's JWT/cookies. See [ADR-0024](../../adr/ADR-0024-coastal-operations-actor-context.md).
 
 The implemented public routes are indexed in the
 [endpoint catalog](../../api/endpoint-catalog.md). React and Flutter provide
@@ -407,7 +407,7 @@ routes to Wanshaja Sooriyabandara's private service. A submitted
 assessment version's authored fields and evidence are immutable. Only an
 owned DRAFT permits image uploads/removals; corrections after publication
 require a new draft. Removal retains audit metadata and retries private-byte
-cleanup under [ADR-0023](../../adr/ADR-0023-coastal-draft-evidence-removal.md). This branch implements a strict PNG
+cleanup under [ADR-0026](../../adr/ADR-0026-coastal-draft-evidence-removal.md). This branch implements a strict PNG
 allowlist, five-file/5 MiB limits, private Compose-volume storage, server-side
 sanitization and 365-day retention. The branch-local decisions are recorded in
 [ADR-0018](../../adr/ADR-0018-assessment-evidence-storage-boundary.md); ratify

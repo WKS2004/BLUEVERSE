@@ -6,7 +6,7 @@ headers; the service validates the snapshot before creating claims. Display
 roles do not replace permission checks. Legacy absent identity stays unavailable.
 Only allowlisted field values are audited; no credentials, provider payloads,
 image bytes or hidden reasoning. Query view restoration rechecks grants and
-draft state and cannot mutate automatically. See [ADR-0024](../adr/ADR-0024-coastal-detailed-audit-snapshots.md).
+draft state and cannot mutate automatically. See [ADR-0027](../adr/ADR-0027-coastal-detailed-audit-snapshots.md).
 
 Coastal Operations grants and resource scope are specified in
 [the publication contract](../v1/coastal-operations-publication-and-ui.md).
@@ -34,6 +34,9 @@ implemented or has not yet been verified in the current repository.
 ## API
 
 - [x] JWT authentication with required 32-byte minimum signing key
+- [x] Experience & Biodiversity component routes require an Auth-issued JWT at
+  the API gateway; health and Swagger document routes are explicit anonymous
+  exceptions
 - [x] permission-based authorization with system-role escalation protection
 - [x] persisted device sessions with five-account-per-device and five-session-per-account limits, scoped logout and logout-all-devices support
 - [x] active sessions separated from ended-session lifecycle logs; archived rows cannot authenticate

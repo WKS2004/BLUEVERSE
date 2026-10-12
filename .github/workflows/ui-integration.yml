@@ -7,6 +7,7 @@ on:
       - "apps/web/**"
       - "apps/mobile/**"
       - "services/**"
+      - "infrastructure/contracts/**"
       - "docs/contracts/**"
       - "docs/api/**"
       - "docs/architecture/**"
@@ -23,6 +24,7 @@ on:
       - "apps/web/**"
       - "apps/mobile/**"
       - "services/**"
+      - "infrastructure/contracts/**"
       - "docs/contracts/**"
       - "docs/api/**"
       - "docs/architecture/**"
@@ -73,7 +75,7 @@ jobs:
 
           if [[ "$target" == "main" || "$target" == "dev" || ("$EVENT_NAME" == "push" && "$BEFORE_SHA" =~ ^0+$) ]]; then
             affected=true
-          elif [[ "$affected" != true ]] && git diff --name-only "$diff_range" | grep -Eq '^(apps/web/|apps/mobile/|services/|docs/contracts/|docs/api/|docs/architecture/|docs/development/ui-integration\.md$|scripts/validation/|\.agents/scripts/validate_endpoint_catalog\.py$|infrastructure/docker/|compose\.yaml$|\.github/workflows/|\.github/scripts/)'; then
+          elif [[ "$affected" != true ]] && git diff --name-only "$diff_range" | grep -Eq '^(apps/web/|apps/mobile/|services/|infrastructure/contracts/|docs/contracts/|docs/api/|docs/architecture/|docs/development/ui-integration\.md$|scripts/validation/|\.agents/scripts/validate_endpoint_catalog\.py$|infrastructure/docker/|compose\.yaml$|\.github/workflows/|\.github/scripts/)'; then
             affected=true
           fi
 

@@ -14,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../../infrastructure/contracts/MarineActorContext.cs" Link="Contracts/MarineActorContext.cs" />
     <Compile Remove="tests/**" />
     <EmbeddedResource Remove="tests/**" />
     <Content Remove="tests/**" />

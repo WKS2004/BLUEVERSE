@@ -20,17 +20,20 @@ services:
         value: Production
       - key: ReverseProxy__Clusters__auth__Destinations__auth__Address
         value: http://blueverse-auth:10000
+      - key: ReverseProxy__Clusters__coastal-planner__Destinations__coastal-planner__Address
+        value: http://blueverse-coastal-planner:10000
       - key: ConnectionStrings__DefaultConnection
-        fromDatabase:
-          name: blueverse-postgres
-          property: connectionString
-      - key: JWT_SIGNING_KEY
         sync: false
+      - key: JWT_SIGNING_KEY
+        fromService:
+          name: blueverse-auth
+          type: pserv
+          envVarKey: JWT_SIGNING_KEY
 
   - type: pserv
     name: blueverse-auth
     runtime: docker
-    plan: free
+    plan: 0.5c-512mb
     dockerfilePath: ./infrastructure/docker/auth/Dockerfile
     dockerContext: .
     healthCheckPath: /api/auth/health
@@ -40,9 +43,7 @@ services:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
       - key: ConnectionStrings__DefaultConnection
-        fromDatabase:
-          name: blueverse-postgres
-          property: connectionString
+        sync: false
       - key: JWT_SIGNING_KEY
         sync: false
       - key: Jwt__AccessTokenMinutes
@@ -51,10 +52,34 @@ services:
         value: "1"
       - key: AuthSession__RememberMeLifetimeDays
         value: "30"
+      - key: AuthSession__SelfServicePlannerAccess
+        value: "true"
       - key: ADMIN_EMAIL
         sync: false
       - key: ADMIN_PASSWORD
         sync: false
+
+  - type: pserv
+    name: blueverse-coastal-planner
+    runtime: docker
+    plan: 0.5c-512mb
+    dockerfilePath: ./infrastructure/docker/coastal-planner/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/planner/health
+    envVars:
+      - key: ASPNETCORE_HTTP_PORTS
+        value: "10000"
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ConnectionStrings__DefaultConnection
+        sync: false
+      - key: JWT_SIGNING_KEY
+        fromService:
+          name: blueverse-auth
+          type: pserv
+          envVarKey: JWT_SIGNING_KEY
+      - key: PeerServices__BiodiversityEnabled
+        value: "false"
 
 databases:
   - name: blueverse-postgres

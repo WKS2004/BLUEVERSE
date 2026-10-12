@@ -166,5 +166,72 @@ void main() {
         ]);
       },
     );
+
+    testWidgets(
+      'MOB-VM-007 concurrent planner token refreshes share the active session',
+      (tester) async {
+        final user = mobileTestUser();
+        final repository = FakeAuthRepository(user: user);
+        addTearDown(repository.close);
+        final viewModel = AuthViewModel(repository: repository)..user = user;
+        addTearDown(viewModel.dispose);
+
+        final first = viewModel.refreshActiveSession(user.id);
+        final second = viewModel.refreshActiveSession(user.id);
+        await Future.wait([first, second]);
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(repository.calls['refreshSession'], hasLength(1));
+        expect(viewModel.user?.id, user.id);
+        expect(viewModel.isLoading, isFalse);
+        expect(viewModel.errorMessage, isNull);
+      },
+    );
+
+    testWidgets(
+      'MOB-VM-008 session refresh rejects a changed account without calling Auth',
+      (tester) async {
+        final user = mobileTestUser(id: 'user-current');
+        final repository = FakeAuthRepository(user: user);
+        addTearDown(repository.close);
+        final viewModel = AuthViewModel(repository: repository)..user = user;
+        addTearDown(viewModel.dispose);
+
+        await expectLater(
+          viewModel.refreshActiveSession('user-other'),
+          throwsA(isA<AuthApiException>()),
+        );
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(repository.calls['refreshSession'], isNull);
+        expect(viewModel.user?.id, user.id);
+        expect(viewModel.isLoading, isFalse);
+      },
+    );
+
+    testWidgets(
+      'MOB-VM-009 failed session refresh preserves the active account for recovery',
+      (tester) async {
+        final user = mobileTestUser();
+        final repository = FakeAuthRepository(user: user)
+          ..refreshFailure = const AuthApiException(
+            503,
+            'The session service is unavailable.',
+          );
+        addTearDown(repository.close);
+        final viewModel = AuthViewModel(repository: repository)..user = user;
+        addTearDown(viewModel.dispose);
+
+        await expectLater(
+          viewModel.refreshActiveSession(user.id),
+          throwsA(isA<AuthApiException>()),
+        );
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(viewModel.user?.id, user.id);
+        expect(viewModel.errorMessage, 'The session service is unavailable.');
+        expect(viewModel.isLoading, isFalse);
+      },
+    );
   });
 }

@@ -3,11 +3,13 @@ import { Link, useLocation } from 'react-router'
 import { hasAnyPermission } from '../../features/authorization/permissions'
 import { useAuthSession } from '../../features/auth/authSession'
 import { hasCoastalOperationsAccess, coastalNavigationLinks } from '../../features/coastalOperations/permissions'
+import { marineWorkflowLabels } from '../../features/marine/marineWorkflowLabels'
 
-type Area = 'profile' | 'dashboard' | 'admin' | 'operations'
+type Area = 'profile' | 'dashboard' | 'marine' | 'admin' | 'experiences' | 'planner' | 'operations'
+type ExperienceManagementTab = 'destinations' | 'activities' | 'offerings'
 type NavigationGroup = { id: Area; label: string; href: string; children: { label: string; href: string }[] }
 
-function groupsFor(permissions: string[]): NavigationGroup[] {
+function groupsFor(permissions: string[], guest: boolean): NavigationGroup[] {
   const groups: NavigationGroup[] = [
     {
       id: 'profile', label: 'Profile', href: '/profile', children: [
@@ -22,45 +24,104 @@ function groupsFor(permissions: string[]): NavigationGroup[] {
         { label: 'Coastal focus', href: '/dashboard#coastal-focus' },
       ],
     },
+    {
+      id: 'planner', label: 'Coastal planner', href: '/planner/plan', children: [
+        ...(guest || permissions.includes('planner.recommendations.create') ? [{ label: 'Create a plan', href: '/planner/plan' }] : []),
+        ...(guest || permissions.includes('planner.itineraries.manage') ? [{ label: 'Plan history', href: '/planner/saved' }] : []),
+      ],
+    },
   ]
   if (hasCoastalOperationsAccess({ permissions })) {
     groups.push({
       id: 'operations', label: 'Coastal Operations', href: coastalNavigationLinks({ permissions })[0]?.href ?? '/operations/assessments', children: coastalNavigationLinks({ permissions }),
     })
   }
-  const links = [
+  if (hasAnyPermission({ permissions }, ['marine.profile.read'])) {
+    groups.push({
+      id: 'marine', label: 'Marine & safety', href: '/marine/conditions', children: [
+        { label: marineWorkflowLabels.conditions, href: '/marine/conditions' },
+        { label: marineWorkflowLabels.history, href: '/marine/history' },
+        { label: marineWorkflowLabels.profiles, href: '/marine/safety-profiles' },
+      ],
+    })
+  }
+  const adminLinks = [
     ...(hasAnyPermission({ permissions }, ['auth.permission.read']) ? [{ label: 'Permissions', href: '/admin/permissions' }] : []),
     ...(hasAnyPermission({ permissions }, ['auth.role.read']) ? [{ label: 'Roles', href: '/admin/roles' }] : []),
     ...(hasAnyPermission({ permissions }, ['auth.user.read']) ? [{ label: 'User accounts', href: '/admin/users' }] : []),
   ]
-  if (links.length) groups.push({ id: 'admin', label: 'Administration', href: '/admin', children: links })
+  if (adminLinks.length) groups.push({ id: 'admin', label: 'Administration', href: '/admin', children: adminLinks })
+
+  const canManageCatalogue = hasAnyPermission({ permissions }, ['experiences.catalogue.read', 'experiences.catalogue.manage', 'auth.role.system.manage'])
+  if (canManageCatalogue) {
+    groups.push({
+      id: 'experiences',
+      label: 'Experiences & Biodiversity',
+      href: '/experiences/manage/destinations',
+      children: [
+        { label: 'Destinations', href: '/experiences/manage/destinations' },
+        { label: 'Activities', href: '/experiences/manage/activities' },
+        { label: 'Offerings & Schedules', href: '/experiences/manage/offerings' },
+      ],
+    })
+  }
+
   return groups
 }
 
-function Subnav({ group, desktop = false }: { group: NavigationGroup; desktop?: boolean }) {
+function Subnav({ group, desktop = false, onExperienceTabSelect }: { group: NavigationGroup; desktop?: boolean; onExperienceTabSelect?: (tab: ExperienceManagementTab) => void }) {
   const menuId = `${group.id}-subnav-${desktop ? 'desktop' : 'mobile'}`
+  const location = useLocation()
+  function isCurrent(href: string) {
+    if (href === '/planner/plan') return location.pathname === href || location.pathname.startsWith('/planner/recommendations/')
+    if (href === '/planner/saved') return location.pathname === href || location.pathname.startsWith('/planner/itineraries/')
+    return `${location.pathname}${location.hash}` === href
+  }
   return <ul className={`${desktop ? 'ml-3 mt-2 border-l border-coast-line pl-3' : 'mt-2 flex flex-wrap gap-1.5 border-t border-coast-line pt-2'}`} id={menuId}>
-    {group.children.map((child) => <li key={child.href}><Link className={`inline-flex min-h-9 items-center rounded-full ${desktop ? 'w-full px-3' : 'px-3'} text-xs font-semibold text-coast-muted transition-colors hover:bg-coast-sage hover:text-coast-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coast-blue`} to={child.href}>{child.label}</Link></li>)}
+    {group.children.map((child) => {
+      const tabSegment = child.href.split('/').at(-1)
+      const tab = group.id === 'experiences' && (tabSegment === 'destinations' || tabSegment === 'activities' || tabSegment === 'offerings')
+        ? tabSegment
+        : null
+      const current = isCurrent(child.href)
+      return (
+        <li key={child.href}>
+          <Link
+            aria-current={current ? 'page' : undefined}
+            className={`inline-flex min-h-9 items-center rounded-full ${desktop ? 'w-full px-3' : 'px-3'} text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coast-blue ${current ? 'bg-coast-sage text-coast-deep' : 'text-coast-muted hover:bg-coast-sage hover:text-coast-deep'}`}
+            onClick={(event) => {
+              if (!tab || !onExperienceTabSelect) return
+              if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+              event.preventDefault()
+              onExperienceTabSelect(tab)
+            }}
+            to={child.href}
+          >
+            {child.label}
+          </Link>
+        </li>
+      )
+    })}
   </ul>
 }
 
-function Disclosure({ group, expanded, onToggle, desktop = false, showChildren = true }: { group: NavigationGroup; expanded: boolean; onToggle: () => void; desktop?: boolean; showChildren?: boolean }) {
+function Disclosure({ group, expanded, onToggle, desktop = false, showChildren = true, onExperienceTabSelect }: { group: NavigationGroup; expanded: boolean; onToggle: () => void; desktop?: boolean; showChildren?: boolean; onExperienceTabSelect?: (tab: ExperienceManagementTab) => void }) {
   const location = useLocation()
   const menuId = `${group.id}-subnav-${desktop ? 'desktop' : 'mobile'}`
   return <>
     <div className={`flex min-w-0 items-center ${desktop ? 'rounded-2xl' : 'shrink-0 rounded-full'} ${expanded ? 'bg-coast-sage/80' : ''}`}>
-      <Link aria-current={location.pathname === group.href ? 'page' : undefined} className={`flex min-h-10 min-w-0 items-center ${desktop ? 'flex-1 rounded-l-2xl px-4 text-sm' : 'rounded-l-full px-4 text-sm'} font-bold text-coast-deep transition-colors hover:bg-coast-sage focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coast-blue`} to={group.href}>{group.label}</Link>
+      <Link aria-current={location.pathname === group.href || (group.id === 'experiences' && location.pathname.startsWith('/experiences/manage/')) ? 'page' : undefined} className={`flex min-h-10 min-w-0 items-center ${desktop ? 'flex-1 rounded-l-2xl px-4 text-sm' : 'rounded-l-full px-4 text-sm'} font-bold text-coast-deep transition-colors hover:bg-coast-sage focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coast-blue`} to={group.href}>{group.label}</Link>
       <button aria-controls={menuId} aria-expanded={expanded} aria-label={`${expanded ? 'Collapse' : 'Expand'} ${group.label} options`} className={`inline-flex h-10 w-10 shrink-0 items-center justify-center ${desktop ? 'rounded-r-2xl' : 'rounded-r-full'} text-coast-muted transition-colors hover:bg-coast-sage hover:text-coast-blue focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coast-blue`} onClick={onToggle} type="button">
         <svg aria-hidden="true" className={`h-4 w-4 transition-transform duration-200 motion-reduce:transition-none ${expanded ? 'rotate-180' : ''}`} viewBox="0 0 16 16" fill="none"><path d="m3.5 6 4.5 4 4.5-4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
       </button>
     </div>
-    {expanded && showChildren && <Subnav group={group} desktop={desktop} />}
+    {expanded && showChildren && <Subnav group={group} desktop={desktop} onExperienceTabSelect={onExperienceTabSelect} />}
   </>
 }
 
-export default function AccountAreaNavigation({ active, className = '' }: { active: Area; className?: string }) {
+export default function AccountAreaNavigation({ active, className = '', onExperienceTabSelect }: { active: Area; className?: string; onExperienceTabSelect?: (tab: ExperienceManagementTab) => void }) {
   const { user } = useAuthSession()
-  const groups = groupsFor(user?.permissions ?? [])
+  const groups = groupsFor(user?.permissions ?? [], !user)
   const [expanded, setExpanded] = useState<Area | null>(active)
 
   function toggle(area: Area) {
@@ -68,18 +129,18 @@ export default function AccountAreaNavigation({ active, className = '' }: { acti
   }
 
   return <aside aria-label="Account navigation" className={`lg:sticky lg:top-[76px] lg:z-10 lg:h-[calc(100dvh-76px)] lg:max-h-[calc(100dvh-76px)] lg:w-full lg:self-start lg:overflow-y-auto lg:border-r lg:border-coast-line lg:bg-coast-paper/95 lg:px-4 lg:pb-6 lg:pt-6 ${className}`}>
-    <nav aria-label="Profile, dashboard and administration">
+    <nav aria-label="Profile, dashboard, coastal planner, marine safety, operations and administration">
       <div className="rounded-3xl border border-coast-line bg-white/80 p-2 shadow-sm lg:hidden">
         <div className="flex min-w-0 gap-1 overflow-x-auto">
           {groups.map((group) => <div className="shrink-0" key={group.id}><Disclosure group={group} expanded={expanded === group.id} onToggle={() => toggle(group.id)} showChildren={false} /></div>)}
         </div>
-        {expanded && groups.some((group) => group.id === expanded) && <div className="px-2 pb-1"><Subnav group={groups.find((group) => group.id === expanded)!} /></div>}
+        {expanded && groups.some((group) => group.id === expanded) && <div className="px-2 pb-1"><Subnav group={groups.find((group) => group.id === expanded)!} onExperienceTabSelect={onExperienceTabSelect} /></div>}
       </div>
 
       <div className="hidden rounded-3xl border border-coast-line bg-white/80 p-3 shadow-sm lg:block">
         <p className="px-4 pb-2 pt-2 text-[10px] font-extrabold tracking-[0.16em] text-coast-muted">YOUR SPACE</p>
         <div className="grid gap-1">
-          {groups.map((group) => <Disclosure desktop group={group} expanded={expanded === group.id} key={group.id} onToggle={() => toggle(group.id)} />)}
+          {groups.map((group) => <Disclosure desktop group={group} expanded={expanded === group.id} key={group.id} onToggle={() => toggle(group.id)} onExperienceTabSelect={onExperienceTabSelect} />)}
         </div>
       </div>
     </nav>

@@ -5,6 +5,7 @@ on:
     branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
     paths:
       - "services/**"
+      - "infrastructure/contracts/**"
       - "global.json"
       - "docs/api/**"
       - "docs/architecture/**"
@@ -16,6 +17,7 @@ on:
     branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
     paths:
       - "services/**"
+      - "infrastructure/contracts/**"
       - "global.json"
       - "docs/api/**"
       - "docs/architecture/**"
@@ -63,7 +65,7 @@ jobs:
 
           if [[ "$target" == "main" || "$target" == "dev" || ("$EVENT_NAME" == "push" && "$BEFORE_SHA" =~ ^0+$) ]]; then
             affected=true
-          elif [[ "$affected" != true ]] && git diff --name-only "$diff_range" | grep -Eq '^(services/|global\.json$|docs/api/|docs/architecture/|\.github/(scripts/|workflows/(backend-tests|backend-ci|ui-integration)\.yml$))'; then
+          elif [[ "$affected" != true ]] && git diff --name-only "$diff_range" | grep -Eq '^(services/|infrastructure/contracts/|global\.json$|docs/api/|docs/architecture/|\.github/(scripts/|workflows/(backend-tests|backend-ci|ui-integration)\.yml$))'; then
             affected=true
           fi
 
@@ -88,6 +90,9 @@ jobs:
         id: tests
         if: steps.scope.outputs.affected == 'true'
         shell: bash
+        env:
+          ConnectionStrings__DefaultConnection: "Host=localhost;Database=planner-tests;Username=planner;Password=test-only"
+          JWT_SIGNING_KEY: "planner-integration-test-signing-key-32-bytes"
         run: |
           set +e
           mkdir -p test-results/backend

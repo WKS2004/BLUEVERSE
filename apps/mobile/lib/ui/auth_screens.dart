@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../data/models/auth_models.dart';
 import 'account_screens.dart';
 import 'auth_view_model.dart';
+import 'planner_components.dart';
+import 'planner_navigation.dart';
 
 class AuthLoginScreen extends StatefulWidget {
   const AuthLoginScreen({required this.viewModel, super.key});
@@ -39,6 +41,7 @@ class _AuthLoginScreenState extends State<AuthLoginScreen> {
           appBar: AppBar(
             title: Text(showLoginForm ? 'Sign in' : 'Your accounts'),
             actions: [
+              PlannerNavigationMenu(user: user),
               if (user != null)
                 AuthAccountSwitcher(viewModel: widget.viewModel),
             ],
@@ -176,7 +179,15 @@ class _AuthLoginScreenState extends State<AuthLoginScreen> {
     );
     if (!mounted || widget.viewModel.errorMessage != null) return;
     if (!alreadySignedIn && widget.viewModel.user != null) {
-      Navigator.pushNamedAndRemoveUntil(context, '/dashboard', (_) => false);
+      final destination = plannerLoginReturn(
+        ModalRoute.of(context)?.settings.arguments,
+      );
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        destination.$1,
+        (_) => false,
+        arguments: destination.$2,
+      );
       return;
     }
     setState(() => _addingAccount = false);

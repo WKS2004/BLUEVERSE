@@ -7,17 +7,26 @@ Custom Dockerfiles remain here so application codebases can stay close to their 
 - `api/` — ASP.NET Core public API
 - `auth/` — ASP.NET Core Auth service
 - `coastal-operations/` — ASP.NET Core Coastal Operations service
+- `experience-biodiversity/` — ASP.NET Core private service host, health and OpenAPI bootstrap
 - `frontend/` — React build + static Nginx runtime
 - `edge-nginx/` — local reverse proxy configuration
 
 PostgreSQL is consumed directly from its selected DHI image in `compose.yaml`; a custom PostgreSQL Dockerfile is intentionally not created.
+Auth and Experience & Biodiversity use the same configured PostgreSQL
+database, login and password. Both use EF Core for their own migration flows;
+no service SQL initialization file or second database is required.
 
 The selected DHI images require authentication to `dhi.io`. Local developers
 should run `docker login dhi.io` with a Docker PAT or organization access token.
 CI uses the `DHI_USERNAME` and `DHI_TOKEN` GitHub Secrets documented in
 `docs/development/ci.md`.
 
-Auth is an internal backend service. It is not attached to the edge network and must be reached through the API's `/api/auth/...` reverse-proxy route.
+Auth and Experience & Biodiversity are internal backend services. Neither is
+attached to the edge network; the API reaches Auth through `/api/auth/...` and
+Experience & Biodiversity through `/api/experiences/...`. The component
+service also joins the private database network and uses the same database
+connection configuration as Auth; it currently has no business tables or
+workflows.
 
 Coastal Operations is also private, has no host-published port, and is reachable
 through the API's `/api/operations/...` reverse-proxy route. The shared Swagger
@@ -53,8 +62,9 @@ preserves API status codes and structured error bodies.
 
 ## Important
 
-The React/mobile application directories and all three ASP.NET applications
-are checked in. Their Docker build contexts are:
+The React/mobile application directories and ASP.NET service hosts are checked
+in. The checked-in API/Auth applications and four component services have these
+Docker build contexts:
 
 ```text
 apps/web
@@ -62,6 +72,7 @@ apps/mobile
 services/api
 services/auth
 services/coastal-operations
+services/experience-biodiversity
 ```
 
 The Docker web and backend build workflows use branch and path filters on

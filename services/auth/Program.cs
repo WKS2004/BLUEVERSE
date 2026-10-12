@@ -199,6 +199,7 @@ using (var scope = app.Services.CreateScope())
         await AuthDataSeeder.SeedCoastalOperationsPermissionsAsync(db, initializationTimeout.Token);
         var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasherService>();
         await AuthDataSeeder.SeedAdminAsync(db, builder.Configuration, passwordHasher, logger, initializationTimeout.Token);
+        await PlannerPermissionsSeeder.SeedAsync(db, initializationTimeout.Token);
     }
     catch (OperationCanceledException) when (initializationTimeout.IsCancellationRequested)
     {
