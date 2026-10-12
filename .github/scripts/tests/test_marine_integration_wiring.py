@@ -51,7 +51,7 @@ class MarineIntegrationWiringTests(unittest.TestCase):
         bash = "C:/Program Files/Git/bin/bash.exe" if Path("C:/Program Files/Git/bin/bash.exe").is_file() else shutil.which("bash")
         for members, expected in (((), ["/api/swagger", "/api/swagger/v1.json", "/api/auth/swagger/v1/swagger.json"]),
                 (("marine-safety",), ["/api/swagger", "/api/swagger/v1.json", "/api/auth/swagger/v1/swagger.json", "/api/marine/swagger/v1/swagger.json"]),
-                (("experience-biodiversity", "marine-safety"), ["/api/swagger", "/api/swagger/v1.json", "/api/auth/swagger/v1/swagger.json", "/api/experiences/openapi/v1.json", "/api/marine/swagger/v1/swagger.json"])):
+                (("experience-biodiversity", "marine-safety"), ["/api/swagger", "/api/swagger/v1.json", "/api/auth/swagger/v1/swagger.json", "/api/experiences/swagger/v1/swagger.json", "/api/marine/swagger/v1/swagger.json"])):
             with self.subTest(member_sources_present=members):
                 with tempfile.TemporaryDirectory() as temporary:
                     root = Path(temporary)

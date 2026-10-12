@@ -1274,3 +1274,28 @@ Member 2, Marine Conditions & Safety Intelligence, branch `features/marine-safet
   seconds; Flutter analysis could not open the read-only SDK lockfile. These
   test-host, dependency and SDK limitations are recorded; no full CI pass is
   claimed. PR: https://github.com/WKS2004/BLUEVERSE/pull/6.
+
+## 2026-10-12 — Align CI route assertion with Experience service
+
+- Date/time or time range: 2026-10-12 14:17 (Asia/Colombo; follow-up)
+- GitHub Username: `sanudaabey`
+- Team Member Name (actual): Sanuda Abeysinghe
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-6
+- Summary of the user's request: After the merge-resolution push, repair the
+  Repository Checks failure while preserving the Experience and Marine routes.
+- Summary of what the AI Agent did: Inspected the failed GitHub Actions job and
+  confirmed `services/experience-biodiversity/Program.cs` configures
+  `/api/experiences/swagger/v1/swagger.json`. With the user's approval, updated
+  the existing CI helper's expected route from `/api/experiences/openapi/v1.json`
+  to the configured Swagger route.
+- AI output accepted/changed/rejected: Kept the assertion that checks the
+  implemented route; changed only its stale expected path. No assertion was
+  removed or relaxed.
+- Verification/evidence: GitHub Repository Checks run 115 reported only this
+  stale route expectation as its failure. The focused local helper test could
+  not run its Bash-backed cases because the installed Git Bash process failed
+  to start in this environment (exit code 3221225794); the updated expectation
+  will be checked by the follow-up GitHub Actions run. PR:
+  https://github.com/WKS2004/BLUEVERSE/pull/6.
