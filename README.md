@@ -466,6 +466,22 @@ assessment titles and IANA time-zone/location choices while retaining existing
 UTC instants; the planner migration supplies `Asia/Colombo` to existing
 itineraries without changing their IDs or schedules.
 
+Four optional, runtime-only Agentic AI image shells use the DHI Python 3.13
+Alpine image. They contain no agent implementation and are excluded from the
+normal stack. Build them without starting them with:
+
+```bash
+docker compose --profile agentic-ai build \
+  agent-experience-biodiversity \
+  agent-marine-conditions \
+  agent-planning-coordination \
+  agent-safety-operations
+```
+
+They have no host-published ports and join only the internal Docker network;
+actual workloads and health behavior remain gated on G07 and their assigned
+`agentic-ai/**` branches.
+
 The API signs the authenticated actor and `operations.*` permission claims with
 `COASTAL_OPERATIONS_CONTEXT_KEY`; bearer tokens and cookies are removed before
 the private-service request is sent.
@@ -658,7 +674,8 @@ The web and backend build workflows run on supported branch families when their 
 
 The Docker backend workflow builds `services/api` first and then discovers and
 builds the other ASP.NET service directories, including Auth and all four
-component services. The stack-health workflow maps each service folder to its
+component services, followed by the four runtime-only Agentic AI image shells.
+The stack-health workflow maps each service folder to its
 public health route (including the `/api/operations/health` route), supplies
 masked ephemeral signing keys for the isolated CI stack, prints diagnostics
 on failure and tears down the stack. A hosted run is still required for

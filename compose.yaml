@@ -264,6 +264,42 @@ services:
       - blueverse_internal
       - blueverse_database
 
+  agent-experience-biodiversity:
+    profiles: ["agentic-ai"]
+    build:
+      context: .
+      dockerfile: infrastructure/docker/agentic-ai/experience-biodiversity/Dockerfile
+    image: blueverse/agent-experience-biodiversity:local
+    networks:
+      - blueverse_internal
+
+  agent-marine-conditions:
+    profiles: ["agentic-ai"]
+    build:
+      context: .
+      dockerfile: infrastructure/docker/agentic-ai/marine-conditions/Dockerfile
+    image: blueverse/agent-marine-conditions:local
+    networks:
+      - blueverse_internal
+
+  agent-planning-coordination:
+    profiles: ["agentic-ai"]
+    build:
+      context: .
+      dockerfile: infrastructure/docker/agentic-ai/planning-coordination/Dockerfile
+    image: blueverse/agent-planning-coordination:local
+    networks:
+      - blueverse_internal
+
+  agent-safety-operations:
+    profiles: ["agentic-ai"]
+    build:
+      context: .
+      dockerfile: infrastructure/docker/agentic-ai/safety-operations/Dockerfile
+    image: blueverse/agent-safety-operations:local
+    networks:
+      - blueverse_internal
+
   it3091-fake:
     profiles: ["dev"]
     build:
