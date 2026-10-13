@@ -290,5 +290,5 @@ These routes exist in test fixtures and are not production endpoints.
 | Method | Path | Use |
 |---|---|---|
 | `GET` | `/health/live` | Docker liveness probe. Does not indicate model, specialist, Planner database, or dispatch readiness. |
-| `GET` | `/internal/agentic/health` | Planner-to-agent availability check. Does not guarantee a later dispatch succeeds. |
-| `POST` | `/internal/agentic/planning-coordination/dispatch` | Called by Coastal Planner after deterministic recommendation generation. Model plans are allowlist-validated; specialist outputs are identity/schema checked; failures remain explicit and cannot alter deterministic eligibility or safety outcomes. |
+| `GET` | `/internal/agentic/agents/planning-coordination/health` | Planner-to-agent availability check. Does not guarantee a later dispatch succeeds. |
+| `POST` | `/internal/agentic/agents/planning-coordination/dispatch` | Called by Coastal Planner after deterministic recommendation generation. Model plans are allowlist-validated; specialist outputs are identity/schema checked; failures remain explicit and cannot alter deterministic eligibility or safety outcomes. |

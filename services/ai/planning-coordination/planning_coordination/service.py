@@ -8,13 +8,13 @@ import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
-from .clients import HttpSpecialistClient, OpenAICompatibleModelClient, PlannerExecutionStore
+from .clients import HttpSpecialistClient, PlannerExecutionStore, create_model_client
 from .contracts import ContractError, DispatchRequest
 from .coordinator import PlanningCoordinator
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(message)s")
 SERVICE_KEY = os.getenv("AGENTIC_SERVICE_KEY", "")
-model = OpenAICompatibleModelClient()
+model = create_model_client()
 coordinator = PlanningCoordinator(model, HttpSpecialistClient(), PlannerExecutionStore())
 
 
@@ -38,7 +38,7 @@ class Handler(BaseHTTPRequestHandler):
         self._route("POST")
 
     def _route(self, method: str) -> None:
-        for name in ("live", "internal_health", "dispatch"):
+        for name in ("live", "planning_coordination_health", "dispatch"):
             handler = getattr(self, name)
             metadata = getattr(handler, "endpoint_metadata", None)
             if metadata and metadata[0] == method and metadata[1] == self.path:
@@ -50,15 +50,15 @@ class Handler(BaseHTTPRequestHandler):
     def live(self) -> None:
         self._send(200, {"status": "HEALTHY"})
 
-    @endpoint("GET", "/internal/agentic/health")
-    def internal_health(self) -> None:
+    @endpoint("GET", "/internal/agentic/agents/planning-coordination/health")
+    def planning_coordination_health(self) -> None:
         if not self._authorized():
             return
         enabled = os.getenv("AGENTIC_ENABLED", "false").lower() == "true"
         ready = enabled and model.configured and bool(os.getenv("PLANNER_SERVICE_URL")) and bool(SERVICE_KEY)
         self._send(200, {"status": "AVAILABLE" if ready else "NOT_CONNECTED"})
 
-    @endpoint("POST", "/internal/agentic/planning-coordination/dispatch")
+    @endpoint("POST", "/internal/agentic/agents/planning-coordination/dispatch")
     def dispatch(self) -> None:
         if not self._authorized():
             return

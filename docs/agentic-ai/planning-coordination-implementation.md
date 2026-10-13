@@ -12,8 +12,12 @@ recommendation context to the private Planning & Coordination service when
 change candidate eligibility, availability, marine suitability, safety,
 operations status, user authorization or itinerary state.
 
-The AI service has private liveness, readiness and dispatch routes. It has no
-public port. Coastal Planner persists checkpoints in
+The AI service has private liveness, Planning Coordination readiness and
+dispatch routes under agent-specific namespaces. It has no public port. Each
+specialist adapter targets a distinct `/internal/agentic/agents/{agent-id}/dispatch`
+route, so future agent services can use separate route namespaces. Experience,
+Marine and Safety endpoints remain target paths; those services are not yet
+implemented. Coastal Planner persists checkpoints in
 `coastal_planner.agent_execution_states` through
 `PUT /internal/agentic/executions/{workflowId}`. That route requires
 `X-Blueverse-Service-Key`, an existing Planner workflow and a versioned state
@@ -39,12 +43,25 @@ bounded request timeout applies at each model and specialist adapter. A
 failure never fabricates a report. No hidden reasoning, credentials or
 unnecessary user data are stored.
 
-## Provisional integration assumptions
+## Gemini integration and provider configuration
 
-- Model adapter speaks OpenAI-compatible chat completions and JSON mode. It
-  runs only when base URL, model name and API key are supplied at runtime.
-- Only an institution-provided or no-cost model may be configured after data
-  handling review. No provider or model is approved by this implementation.
+- Gemini is the default provider and uses Google's Interactions REST API with
+  `x-goog-api-key`, schema-constrained JSON output, `store:false`, an 8-second
+  timeout and deterministic plan validation. The API key stays in an
+  environment variable and never enters a URL or log.
+- Configure `AGENTIC_MODEL_NAME` and `AGENTIC_MODEL_API_KEY`. The Gemini API
+  base defaults to Google AI Studio's `v1beta` endpoint and may be overridden
+  by `AGENTIC_GEMINI_API_BASE_URL` for compatible test servers.
+- `AGENTIC_MODEL_PROVIDER=openai-compatible` retains the earlier adapter;
+  configure `AGENTIC_MODEL_BASE_URL`, model and key for that option.
+- Provider selection is Adithya Gunawardana's requested implementation
+  preference, not shared AI-00/provider approval or a data-processing review.
+  Free-tier access, eligible models and quotas vary by Google project and
+  change over time; users must check their AI Studio project limits.
+- Google's billing documentation says free-tier inputs and outputs may be used
+  to improve Google products. Keep the feature disabled until project data
+  handling is reviewed; do not send personal or sensitive data through a
+  free-tier key.
 - Specialist role URLs and report names follow current v1 agent contracts.
   Those agent services and exact report schemas are not yet implemented.
 - Reports require matching workflow, step and agent identities, expected

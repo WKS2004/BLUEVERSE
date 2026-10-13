@@ -307,8 +307,8 @@ Use standard RFC 7807 `ProblemDetails`:
 ### 6.2 Pre-G07 Agentic AI seam
 
 - **Access Seam:** `services/coastal-planner/` exposes private internal endpoints on `service-net` for the future planning agent:
-  - `GET /internal/agentic/health`: Bounded probe (max 2 seconds timeout) returning current dependency state.
-  - `POST /internal/agentic/planning-coordination/dispatch`: Server-to-server dispatch endpoint (max 15 seconds timeout, 0 auto-retries).
+  - `GET /internal/agentic/agents/planning-coordination/health`: Bounded probe (max 2 seconds timeout) returning current dependency state.
+  - `POST /internal/agentic/agents/planning-coordination/dispatch`: Server-to-server dispatch endpoint (max 15 seconds timeout, 0 auto-retries).
 - **Dependency Statuses (`aiDependencyStatus`):**
   - `NOT_CONNECTED`: No AI container/runtime configured. Default baseline for pre-G07 feature work.
   - `UNAVAILABLE`: Configured runtime unreachable or timeout exceeded.

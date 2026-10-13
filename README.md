@@ -483,12 +483,18 @@ docker compose --profile agentic-ai build \
 ```
 
 They have no host-published ports and join only the internal Docker network.
-Set `AGENTIC_SERVICE_KEY`, `AGENTIC_MODEL_BASE_URL`, `AGENTIC_MODEL_NAME`, and
-`AGENTIC_MODEL_API_KEY` in local `.env` to configure the planning service.
-Choose only an institution-provided or no-cost model after data-handling
-review. Set `AGENTIC_AI_ENABLED=true` to let Coastal Planner dispatch. Missing
-model or specialist services produce unavailable/blocked states and never
-alter deterministic eligibility or safety outcomes.
+Set `AGENTIC_SERVICE_KEY`, `AGENTIC_MODEL_NAME`, and
+`AGENTIC_MODEL_API_KEY` in local `.env` to configure Gemini. The service uses
+Google AI Studio's Gemini Interactions API by default. Set
+`AGENTIC_MODEL_PROVIDER=openai-compatible` plus `AGENTIC_MODEL_BASE_URL` only
+when using an OpenAI-compatible provider. Gemini free-tier access and quotas
+vary by model, project and current Google limits; check Google AI Studio before
+use. Gemini free-tier inputs and outputs may be used to improve Google
+products, per Google's billing terms; do not send personal or sensitive data
+through a free-tier key. Keep the feature disabled until the project's data
+handling is approved. Set `AGENTIC_AI_ENABLED=true` to let Coastal Planner
+dispatch. Missing model or specialist services produce unavailable/blocked
+states and never alter deterministic eligibility or safety outcomes.
 
 The API signs the authenticated actor and `operations.*` permission claims with
 `COASTAL_OPERATIONS_CONTEXT_KEY`; bearer tokens and cookies are removed before

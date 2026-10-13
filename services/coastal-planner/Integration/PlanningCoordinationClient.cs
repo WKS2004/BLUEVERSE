@@ -26,7 +26,7 @@ public sealed class PlanningCoordinationClient(HttpClient http, IConfiguration c
         timeout.CancelAfter(TimeSpan.FromSeconds(2));
         try
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get, root.AbsoluteUri.TrimEnd('/') + "/internal/agentic/health");
+            using var request = new HttpRequestMessage(HttpMethod.Get, root.AbsoluteUri.TrimEnd('/') + "/internal/agentic/agents/planning-coordination/health");
             var key = config["AgenticAi:ServiceKey"];
             if (!string.IsNullOrWhiteSpace(key)) request.Headers.TryAddWithoutValidation("X-Blueverse-Service-Key", key);
             using var response = await http.SendAsync(request, timeout.Token);
@@ -69,7 +69,7 @@ public sealed class PlanningCoordinationClient(HttpClient http, IConfiguration c
             preferredActivityIds = request.PreferredActivityIds,
             constraints = new { }
         };
-        using var message = new HttpRequestMessage(HttpMethod.Post, endpoint + "/internal/agentic/planning-coordination/dispatch")
+        using var message = new HttpRequestMessage(HttpMethod.Post, endpoint + "/internal/agentic/agents/planning-coordination/dispatch")
         {
             Content = JsonContent.Create(body)
         };

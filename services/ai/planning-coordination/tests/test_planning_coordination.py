@@ -10,9 +10,10 @@ from http.server import ThreadingHTTPServer
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import sys
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from planning_coordination.clients import DependencyUnavailable
+from planning_coordination.clients import DependencyUnavailable, GeminiModelClient, HttpSpecialistClient, create_model_client
 from planning_coordination.contracts import ContractError, DispatchRequest, ValidatedPlan
 from planning_coordination.coordinator import PlanningCoordinator
 from planning_coordination import service
@@ -92,7 +93,7 @@ class MemoryStore:
         self.states[workflow_id] = state.copy()
 
 
-class ContractTests(unittest.TestCase):
+class RequestContractTests(unittest.TestCase):
     def test_request_requires_minimal_valid_location_and_time(self) -> None:
         parsed = DispatchRequest.parse(request_payload())
         self.assertEqual(DESTINATION_ID, parsed.destination_id)
@@ -100,6 +101,98 @@ class ContractTests(unittest.TestCase):
         payload["destinationId"] = ""
         with self.assertRaises(ContractError):
             DispatchRequest.parse(payload)
+
+
+class GeminiModelClientTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.client = GeminiModelClient(
+            "https://generativelanguage.googleapis.com/v1beta", "gemini-test-model", "test-key"
+        )
+
+    @staticmethod
+    def response(payload: dict[str, object]):
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def read(self, _limit: int) -> bytes:
+                return json.dumps(payload).encode()
+
+        return FakeResponse()
+
+    def test_interactions_request_uses_google_auth_and_strict_plan_validation(self) -> None:
+        """AI-02-GEMINI-01: send schema-bound, non-stored requests over Gemini Interactions."""
+        expected = valid_plan()
+        payload = {
+            "status": "completed",
+            "steps": [{"type": "model_output", "content": [{"type": "text", "text": json.dumps(expected)}]}],
+        }
+        with patch("planning_coordination.clients.urllib.request.urlopen", return_value=self.response(payload)) as call:
+            plan = self.client.create_plan(DispatchRequest.parse(request_payload()))
+        self.assertEqual(expected, plan)
+        outgoing = call.call_args.args[0]
+        self.assertEqual(
+            "https://generativelanguage.googleapis.com/v1beta/interactions",
+            outgoing.full_url,
+        )
+        self.assertEqual("test-key", outgoing.get_header("X-goog-api-key"))
+        body = json.loads(outgoing.data)
+        self.assertEqual("gemini-test-model", body["model"])
+        self.assertFalse(body["store"])
+        self.assertEqual("application/json", body["response_format"]["mime_type"])
+        self.assertEqual(["schemaVersion", "objectiveSummary", "steps"], body["response_format"]["schema"]["required"])
+
+    def test_malformed_gemini_output_fails_closed(self) -> None:
+        """AI-02-GEMINI-02: reject malformed model output before orchestration."""
+        payload = {
+            "status": "completed",
+            "steps": [{"type": "model_output", "content": [{"type": "text", "text": "not json"}]}],
+        }
+        with patch("planning_coordination.clients.urllib.request.urlopen", return_value=self.response(payload)):
+            with self.assertRaises(ContractError):
+                self.client.create_plan(DispatchRequest.parse(request_payload()))
+
+    def test_incomplete_interaction_fails_closed(self) -> None:
+        """AI-02-GEMINI-03: reject incomplete provider responses."""
+        payload = {"status": "incomplete", "steps": []}
+        with patch("planning_coordination.clients.urllib.request.urlopen", return_value=self.response(payload)):
+            with self.assertRaises(ContractError):
+                self.client.create_plan(DispatchRequest.parse(request_payload()))
+
+    def test_provider_factory_defaults_to_gemini_and_rejects_unknown_provider(self) -> None:
+        """AI-02-GEMINI-04: default to requested provider and fail closed on unknown providers."""
+        with patch.dict(os.environ, {"AGENTIC_MODEL_PROVIDER": "gemini"}):
+            self.assertIsInstance(create_model_client(), GeminiModelClient)
+        with patch.dict(os.environ, {"AGENTIC_MODEL_PROVIDER": "unknown"}):
+            self.assertFalse(create_model_client().configured)
+
+
+class ContractTests(unittest.TestCase):
+    def test_each_specialist_uses_its_own_agent_route_namespace(self) -> None:
+        """AI-02-ROUTE-01: give each specialist dispatch path a stable unique namespace."""
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def read(self, _limit: int) -> bytes:
+                return b"{}"
+
+        client = HttpSpecialistClient(
+            service_key="test-key",
+            endpoints={agent: "http://specialist" for agent in HttpSpecialistClient.ENDPOINT_PATHS},
+        )
+        for agent_id, path in HttpSpecialistClient.ENDPOINT_PATHS.items():
+            with self.subTest(agent_id=agent_id), patch(
+                "planning_coordination.clients.urllib.request.urlopen", return_value=FakeResponse()
+            ) as call:
+                client.dispatch(agent_id, {})
+                self.assertEqual(f"http://specialist{path}", call.call_args.args[0].full_url)
 
     def test_rejects_timezone_less_or_reversed_time(self) -> None:
         payload = request_payload()
@@ -197,17 +290,23 @@ class HttpServiceTests(unittest.TestCase):
 
     def test_private_health_requires_service_key(self) -> None:
         with self.assertRaises(urllib.error.HTTPError) as error:
-            urllib.request.urlopen(self.root + "/internal/agentic/health", timeout=2)
+            urllib.request.urlopen(self.root + "/internal/agentic/agents/planning-coordination/health", timeout=2)
         self.assertEqual(401, error.exception.code)
-        request = urllib.request.Request(self.root + "/internal/agentic/health",
+        request = urllib.request.Request(self.root + "/internal/agentic/agents/planning-coordination/health",
                                         headers={"X-Blueverse-Service-Key": "test-only-service-key"})
         with urllib.request.urlopen(request, timeout=2) as response:
             self.assertEqual(200, response.status)
             self.assertEqual("NOT_CONNECTED", json.loads(response.read())["status"])
 
+    def test_generic_agent_health_route_is_not_registered(self) -> None:
+        """AI-02-ROUTE-02: prevent future agent services from sharing a generic health path."""
+        with self.assertRaises(urllib.error.HTTPError) as error:
+            urllib.request.urlopen(self.root + "/internal/agentic/health", timeout=2)
+        self.assertEqual(404, error.exception.code)
+
     def test_invalid_dispatch_body_is_rejected_before_orchestration(self) -> None:
         request = urllib.request.Request(
-            self.root + "/internal/agentic/planning-coordination/dispatch",
+            self.root + "/internal/agentic/agents/planning-coordination/dispatch",
             data=b"not-json",
             headers={"Content-Type": "application/json", "X-Blueverse-Service-Key": "test-only-service-key"},
             method="POST",

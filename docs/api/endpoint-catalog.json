@@ -2894,7 +2894,7 @@
       {
         "id": "planning-coordination-readiness",
         "method": "GET",
-        "path": "/internal/agentic/health",
+        "path": "/internal/agentic/agents/planning-coordination/health",
         "ownerService": "planning-coordination",
         "auth": "service-key",
         "publicBoundary": "internal-service",
@@ -2906,7 +2906,7 @@
       {
         "id": "planning-coordination-dispatch",
         "method": "POST",
-        "path": "/internal/agentic/planning-coordination/dispatch",
+        "path": "/internal/agentic/agents/planning-coordination/dispatch",
         "ownerService": "planning-coordination",
         "auth": "service-key",
         "publicBoundary": "internal-service",
@@ -2916,7 +2916,7 @@
         "source": "services/ai/planning-coordination/planning_coordination/service.py"
       }
     ],
-    "notes": "Executable Planning & Coordination service now implements private dispatch and health routes. Clients must use the public API. Model/provider and specialist contracts remain unapproved and require explicit environment configuration; absent dependencies produce unavailable outcomes."
+    "notes": "Executable Planning & Coordination service implements agent-scoped private health and dispatch routes under /internal/agentic/agents/planning-coordination. Clients must use the public API. Gemini is the default configured provider; AI-00 approval remains open. Other agent service endpoints are unique targets but their services remain unimplemented."
   },
   "forbiddenPatterns": [
     "/api/v1",

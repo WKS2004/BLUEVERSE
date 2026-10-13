@@ -97,11 +97,15 @@ docker compose --profile agentic-ai build \
 
 Planning Coordination runs a private HTTP service; the other role images
 remain shells. The profile is optional and keeps all AI services on the
-internal network. Set `AGENTIC_SERVICE_KEY` and an approved no-cost or
-institution-provided model configuration in local `.env`; then set
-`AGENTIC_AI_ENABLED=true` to enable Planner dispatch. Without specialist
-services, execution returns unavailable/blocked status. The AI service is
-disabled by default and has no database credentials.
+internal network. Gemini is the default provider. Set `AGENTIC_SERVICE_KEY`,
+`AGENTIC_MODEL_NAME`, and `AGENTIC_MODEL_API_KEY` in local `.env`; then set
+`AGENTIC_AI_ENABLED=true` to enable Planner dispatch. Gemini quotas depend on
+model and Google AI Studio project tier. Google's billing terms state that
+free-tier inputs and outputs may be used to improve Google products. Do not
+send personal or sensitive data with a free-tier key; keep dispatch disabled
+until data handling is approved. Without specialist services, execution
+returns unavailable/blocked status. The AI service is disabled by default and
+has no database credentials.
 
 ## Start
 

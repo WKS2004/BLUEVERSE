@@ -90,13 +90,20 @@ timestamps. Do not persist hidden reasoning, credentials or unnecessary
 sensitive data. Exact schemas and transport boundaries belong in the
 accepted ADRs and data/service contracts.
 
-The provider-neutral adapter uses an OpenAI-compatible chat-completions
-protocol only when explicitly configured. It is disabled without runtime
-configuration. Provider approval, model choice, data-processing review,
-specialist report schemas and shared runtime decisions remain open in
+The current provider adapter uses Google's native Gemini Interactions API
+by default, with an optional OpenAI-compatible adapter. Runtime
+configuration remains required, and dispatch stays disabled by default.
+Gemini is Adithya Gunawardana's selected implementation preference; shared
+AI-00 provider approval, model choice, data-processing review, specialist
+report schemas and runtime decisions remain open in
 [ADR-0007](../adr/ADR-0007-agentic-ai-framework.md) and
 [ADR-0008](../adr/ADR-0008-agent-workflow-state.md). This adapter is a
-provisional integration seam, not an accepted framework decision. The
+provisional integration seam, not an accepted framework decision. Agent API
+routes use `/internal/agentic/agents/{agent-id}/{operation}` namespaces. The
+Planning Coordination dispatch route retains its established
+`/internal/agentic/agents/planning-coordination/{health,dispatch}` routes;
+specialist routes remain unimplemented targets until their owners deliver
+those services. The
 eventual orchestration framework remains undecided in
 [ADR-0007](../adr/ADR-0007-agentic-ai-framework.md). Whether the agents run
 in one private process or several does not change the public API, tool,
