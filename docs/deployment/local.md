@@ -22,8 +22,9 @@ Planner, Marine Safety, Experience & Biodiversity, the public API and Auth.
 Coastal Planner provides trip planning and review workflows; Marine Safety
 provides conditions and safety workflows and calls Open-Meteo server-side.
 Experience & Biodiversity provides catalogue management, nearby discovery, map
-vector tile support and pre-G07 Agentic AI dispatch seams. Clients reach each
-private service through the public API.
+vector tile support and the private Member 1 Agentic AI dispatch seam. Clients reach each
+private service through the public API. The opt-in Member 1 agent image is
+described below; it remains private and is reached through the owning service.
 
 ## Prerequisites
 

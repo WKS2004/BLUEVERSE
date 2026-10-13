@@ -208,7 +208,8 @@ The current checkout contains the React and Flutter shared Auth workflow,
 ASP.NET service. React also implements marine-safety workflows; Flutter marine
 screens remain unimplemented. See the [v0 foundation guide](../v0/README.md)
 and the [marine component contract](../v1/components/member-2-marine-conditions-safety-intelligence.md)
-for implementation boundaries. Executable Agentic AI services are not present. Ignored `bin/` and
+for implementation boundaries. The Member 1 Experience & Biodiversity agent
+is present; the other roles remain unimplemented. Ignored `bin/` and
 `obj/` output is not implementation evidence. The
 [foundation gap analysis](../project/foundation-gap-analysis.md) records
 current evidence and next implementation gates.

@@ -173,11 +173,11 @@ turn-taking order.
 | Component | Assigned owner (full name) | GitHub account | Current status | Branch | PR, merge and integration evidence |
 |---|---|---|---|---|---|
 | G00 — Shared contract freeze | All four assigned owners | — | In progress; full-owner ratification and verified exit evidence pending | `dev` | Member 1 proposal, Member 2 scope record, Member 3 proposal and Member 4 record exist. Adithya's input is recorded, but the Member 3 proposal states it is not team-accepted until all four owners agree. |
-| Ushan Srinuka (Member 1) — Experience and Biodiversity | Ushan Srinuka | `Ushan-Srinuka` | Service and paired client sources present; local verification passes; integration acceptance pending | `features/experience-biodiversity` | Service owns its EF Core migrations and `experience_biodiversity` schema. Its catalogue, Marine, Planner and Operations adapters match current route/DTO contracts; the public-API calls forward caller authorization. Experience tests pass 101/101, and the isolated migration, owned-schema and health checks pass. Live external-provider compatibility, owner G00 ratification and `dev` acceptance remain open. The Agentic AI route is unavailable. |
-| Sanuda Abeysinghe (Member 2) — Marine Conditions and Safety | Sanuda Abeysinghe | `sanudaabey` | Backend and paired client sources present; local verification passes; integration acceptance pending | `features/marine-safety` | Service owns reviewed safety profiles, deterministic conditions/evaluation and immutable history; it reads Member 1's published activity catalogue over the private network. Marine tests pass 183/183 and the service is healthy in isolated Compose. Planner consumes the actual suitability DTO. Live provider compatibility, owner G00 ratification and `dev` acceptance remain open. |
-| Adithya Gunawardana (Member 3) — Planner and Itineraries | Adithya Gunawardana | `AdithyaGunawardana` | Backend and paired client sources present; local verification passes; integration acceptance pending | `features/coastal-planner` | Private service, React/Flutter workflows and PostgreSQL evidence are recorded in `docs/development/coastal-planner.md`. Its Experience, Marine and Operations adapters use current route/payload contracts and caller bearer. Planner tests pass 130/130; IT3091 connectivity, owner G00 ratification and G07 remain pending. |
-| Wanshaja Sooriyabandara (Member 4) — Coastal Operations | Wanshaja Sooriyabandara | `WKS2004` | Service and paired client sources present; local verification passes; peer integration intentionally partial | `features/coastal-operations` | Service owns PostgreSQL persistence, image evidence and signed actor context. Experience availability is the only enabled component dependency; Marine and Planner return `NOT_CONNECTED` without sending incompatible or unauthorized requests. Operations tests pass 332/332, and all six PostgreSQL provider cases pass against the isolated database. Owner G00 ratification and G07 remain open. |
-| G07 — Integrated component acceptance | All four assigned owners | — | Planned | `dev` | — |
+| Ushan Srinuka (Member 1) — Experience and Biodiversity | Ushan Srinuka | `Ushan-Srinuka` | Component accepted per team-owner report; Agentic AI specialist implementation in progress | `features/experience-biodiversity` | Service owns its EF Core migrations and `experience_biodiversity` schema. Its catalogue, Marine, Planner and Operations adapters match current route/DTO contracts; the public-API calls forward caller authorization. Experience tests pass 101/101, and the isolated migration, owned-schema and health checks pass. Live external-provider compatibility and shared G00 evidence remain open. The Member 1 Agentic AI role is implemented on `agentic-ai/experience-biodiversity`; see its contract and current tests. |
+| Sanuda Abeysinghe (Member 2) — Marine Conditions and Safety | Sanuda Abeysinghe | `sanudaabey` | Component acceptance per team-owner G07 report; local verification evidence recorded | `features/marine-safety` | Service owns reviewed safety profiles, deterministic conditions/evaluation and immutable history; it reads Member 1's published activity catalogue over the private network. Marine tests pass 183/183 and the service is healthy in isolated Compose. Planner consumes the actual suitability DTO. Live provider compatibility and shared G00 ratification remain open. |
+| Adithya Gunawardana (Member 3) — Planner and Itineraries | Adithya Gunawardana | `AdithyaGunawardana` | Component acceptance per team-owner G07 report; local verification evidence recorded | `features/coastal-planner` | Private service, React/Flutter workflows and PostgreSQL evidence are recorded in `docs/development/coastal-planner.md`. Its Experience, Marine and Operations adapters use current route/payload contracts and caller bearer. Planner tests pass 130/130; IT3091 connectivity and shared G00 evidence remain open. |
+| Wanshaja Sooriyabandara (Member 4) — Coastal Operations | Wanshaja Sooriyabandara | `WKS2004` | Component acceptance per team-owner G07 report; peer integration intentionally partial in the current source | `features/coastal-operations` | Service owns PostgreSQL persistence, image evidence and signed actor context. Experience availability is the only enabled component dependency; Marine and Planner return `NOT_CONNECTED` without sending incompatible or unauthorized requests. Operations tests pass 332/332, and all six PostgreSQL provider cases pass against the isolated database. Shared G00 ratification remains unrecorded. |
+| G07 — Integrated component acceptance | All four assigned owners | — | Accepted per team-owner report (2026-10-13) | `dev` | The owner reports that the backend components were finalized at a team meeting and the team accepted starting Agentic AI implementation. Meeting minutes/PR links are not recorded in this workspace. |
 
 This process deliberately distinguishes relationship dependencies from work
 scheduling: the graph identifies the producer contracts each consumer needs;
@@ -189,20 +189,21 @@ Member feature branches implement business workflows and the public
 authentication/authorization integration recorded in their accepted G00
 scope. A pre-G07 Agentic AI seam is implemented only where that scope includes
 it; Member 2's accepted decision defers its AI workflow contract and typed
-private adapter. No feature branch implements executable agents. Preserve
+private adapter. The Member 1 specialist implementation is on its assigned
+`agentic-ai/experience-biodiversity` branch. Preserve
 `GET /api/health` as API liveness and keep database readiness separate from AI
 dependency availability. See the
 [Agentic AI integration boundary](agentic-ai-integration-boundary.md).
 
-Only after all four component PRs are merged, compatibility is resolved and
-G07 passes may members begin the actual Agentic AI components. Keep that code
-on branches under `agentic-ai/**`, separate from `features/**`. A suggested
-post-G07 work sequence is:
+The team owner reports that all four components passed G07 and accepted the
+start of Agentic AI implementation on 2026-10-13. Keep agent code on branches
+under `agentic-ai/**`, separate from `features/**`. The remaining work sequence
+is:
 
 | Work | Assigned owner and account | Branch | Relationship/dependency |
 |---|---|---|---|
 | AI-00 — Runtime, shared schemas, persistence/safety decisions and evaluation gates | All four owners | `agentic-ai/runtime-foundation` | Starts after G07 and accepted runtime/tool/state contracts. |
-| AI-01a — Ushan Srinuka (Member 1) Experience & Biodiversity Agent | Ushan Srinuka (`@Ushan-Srinuka`) | `agentic-ai/experience-biodiversity` | Starts after AI-00 and Ushan's component is accepted. |
+| AI-01a — Ushan Srinuka (Member 1) Experience & Biodiversity Agent | Ushan Srinuka (`@Ushan-Srinuka`) | `agentic-ai/experience-biodiversity` | In progress under team-owner reported G07 acceptance; implements a stateless private specialist while general orchestration/shared state decisions remain open. |
 | AI-01b — Sanuda Abeysinghe (Member 2) Marine Conditions Agent | Sanuda Abeysinghe (`@sanudaabey`) | `agentic-ai/marine-conditions` | Starts after AI-00 and Sanuda's component is accepted; may run with AI-01a. |
 | AI-02 — Adithya Gunawardana (Member 3) Planning & Coordination Agent | Adithya Gunawardana (`@AdithyaGunawardana`) | `agentic-ai/planning-coordination` | Consumes the validated Ushan and Sanuda agent reports. |
 | AI-03 — Wanshaja Sooriyabandara (Member 4) Safety & Operations Agent | Wanshaja Sooriyabandara (`@WKS2004`) | `agentic-ai/safety-operations` | Consumes planner/evidence output and submits a proposal through Wanshaja's component; it cannot approve or execute. |

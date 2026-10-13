@@ -1,7 +1,9 @@
 # Agentic AI architecture — v1 target
 
-**Implementation status:** the repository has no executable Agentic AI
-service, agent or tool. This is the v1 target contract derived from
+**Implementation status:** the Member 1 Experience & Biodiversity specialist
+runtime and its read-only tools are implemented under
+`services/agents/experience-biodiversity`. The remaining three roles and the
+end-to-end orchestration workflow are not implemented. This is the v1 target contract derived from
 [PROJECT_REQUIREMENTS.md](../../PROJECT_REQUIREMENTS.md). The
 [v1 index](../v1/README.md) links separate contracts for each member's agent.
 Before selecting a runtime, model/provider or retrieval design, use the
@@ -10,22 +12,15 @@ human-and-agent handoff; it distinguishes binding safety/workflow requirements
 from decisions still open in ADRs.
 
 **Implementation boundary:** use the [v1 component relationship map](../v1/component-relationships.md)
-to understand dependencies, and the [member branch and integration workflow](../v1/member-branch-workflow.md)
-for the G07 gate and post-gate AI sequence.
-The four member features first implement their complete business behavior and
-the public API/private backend integration seam for their paired future AI
-role, including not-connected/unavailable status and a bounded server-side
-dependency check. The canonical [member integration boundary](../v1/agentic-ai-integration-boundary.md)
-defines that preparation. No executable agent, prompt/model call, tool
-execution, orchestration or agent-owned execution state is built until all
-four feature PRs are merged, compatibility is accepted on `dev`, and the team
-passes G07. Test-only proposal fixtures may exercise Wanshaja Sooriyabandara's
-boundary; they are not a production AI substitute. After G07, implement the
-actual runtime and agents through the assigned `agentic-ai/**` branches: build
-the Ushan Srinuka (Member 1) and Sanuda Abeysinghe (Member 2) specialist agents
-in parallel, integrate them through Adithya Gunawardana's (Member 3) planner,
-then add Wanshaja Sooriyabandara's (Member 4) read-only proposal agent and the
-complete evaluations. The exact accounts and branch names are in the
+and [member branch workflow](../v1/member-branch-workflow.md) for ownership
+and integration evidence. The team owner reported G07 acceptance on
+2026-10-13; the repository tracker records that report. The Member 1 runtime
+is a stateless private Python HTTP service that reads through the accepted
+member-service contracts. It does not own durable workflow state or provide
+cross-agent orchestration. The broad runtime/framework and shared state choices
+remain open in ADR-0007/0008. The other specialist agents, planner
+orchestration, safety proposal workflow and golden evaluations remain to be
+implemented on their assigned `agentic-ai/**` branches. See the
 [canonical owner map](../project/ai-team-members.md).
 
 ## Four distinct responsibilities
@@ -46,20 +41,20 @@ Renaming or cloning one prompt is insufficient.
 React and Flutter call only the public ASP.NET Core API. The API applies the
 existing authentication/permission boundary and routes the public operation
 to its owning private member service. That service validates domain input,
-owns business workflow persistence and, after G07, dispatches the private
-Agentic AI runtime. The planner delegates to the marine and experience agents;
+owns business workflow persistence and dispatches its private Agentic AI
+integration. The planner delegates to the marine and experience agents;
 the safety agent consumes their structured results for operational
 assessment. The owning member service performs deterministic validation. A
 high-impact proposal pauses for authorized human approval; the Wanshaja Sooriyabandara (Member 4)
 service revalidates and executes an eligible approved action and records its
 business/audit history.
 
-Before G07, each member service implements its business workflow and typed
-private adapter/availability behavior. No agent implementation is needed for
-the member branches to report `not connected` or `unavailable`. The owning
-member service checks its configured private AI dependency and exposes only
-the accepted coarse workflow/readiness state through the public contract;
-the private probe remains server-to-server. Keep this distinct from
+Member services implement their business workflows and typed private
+adapters/availability behavior. The current Member 1 role is stateless and
+does not persist agent-owned execution state. The owning member service checks
+its configured private AI dependency and exposes only the accepted coarse
+workflow/readiness state through the public contract; the private probe
+remains server-to-server. Keep this distinct from
 `GET /api/health` liveness and database readiness. A healthy probe does not
 guarantee a later dispatch will succeed; dispatches need bounded timeouts and
 safe persisted outcomes.
