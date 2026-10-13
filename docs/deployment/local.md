@@ -84,20 +84,31 @@ bash scripts/Unix/bash/sync-web-lockfile.sh
 docker compose --profile dev build
 ```
 
-The four future Agentic AI image shells are excluded from the local runtime
-stack. To build the DHI Python images without starting them:
+The Agentic AI profile is excluded from the normal local runtime stack. It
+contains four DHI Python images and the Gemini egress proxy. The Safety
+Operations image includes its proposal package, but its default command only
+prints the Python version and exits. Build the profile without starting it:
 
 ```bash
 docker compose --profile agentic-ai build \
   agent-experience-biodiversity \
   agent-marine-conditions \
   agent-planning-coordination \
-  agent-safety-operations
+  agent-safety-operations \
+  gemini-egress-proxy
 ```
 
-They contain no executable agent code and only print the Python version when
-started. Keep the profile out of `up` until G07 is accepted and the assigned
-agent branches provide their workloads and readiness behavior.
+The Safety Operations adapter uses the fixed internal URL
+`http://gemini-egress-proxy:3128`. Compose supplies the Gemini API key and model
+settings only to the agent container. The proxy is reachable only from the
+agent's dedicated internal network, has no published host port, and allows
+CONNECT only to `generativelanguage.googleapis.com:443`. It does not receive
+the API key or decrypt/log the TLS stream. The agent itself has no direct
+outbound network, and its transport rejects `NO_PROXY` or alternate-proxy
+bypasses. Keep `GEMINI_DATA_HANDLING_APPROVED=false` until the provider
+data-handling review is complete. This networking path does not trigger a model
+request, expose an agent endpoint, or activate Coastal Operations dispatch;
+workflow execution remains gated on G07.
 
 ## Start
 

@@ -466,21 +466,32 @@ assessment titles and IANA time-zone/location choices while retaining existing
 UTC instants; the planner migration supplies `Asia/Colombo` to existing
 itineraries without changing their IDs or schedules.
 
-Four optional, runtime-only Agentic AI image shells use the DHI Python 3.13
-Alpine image. They contain no agent implementation and are excluded from the
-normal stack. Build them without starting them with:
+Four optional Agentic AI images and one Gemini egress proxy use the DHI Python
+3.13 Alpine image. The Safety Operations image includes its Python proposal
+package; its default command still prints the Python version and exits. These
+images are excluded from the normal stack. Build them without starting them
+with:
 
 ```bash
 docker compose --profile agentic-ai build \
   agent-experience-biodiversity \
   agent-marine-conditions \
   agent-planning-coordination \
-  agent-safety-operations
+  agent-safety-operations \
+  gemini-egress-proxy
 ```
 
-They have no host-published ports and join only the internal Docker network;
-actual workloads and health behavior remain gated on G07 and their assigned
-`agentic-ai/**` branches.
+The Safety Operations container and Gemini proxy have no host-published ports.
+The agent stays on internal Docker networks. The proxy alone also joins a
+dedicated outbound bridge and permits CONNECT only to
+`generativelanguage.googleapis.com:443`; TLS remains end-to-end with Google,
+and the API key is provided only to the agent. Compose passes `GEMINI_API_KEY`,
+`GEMINI_MODEL`, `GEMINI_DATA_HANDLING_APPROVED` and
+`GEMINI_MAX_OUTPUT_TOKENS` from `.env` to that container. Keep the approval
+value `false` until the provider data-handling review is complete. This network
+path does not start model requests or activate the disconnected Coastal
+Operations workflow; actual agent dispatch remains gated on G07 and the
+assigned `agentic-ai/**` implementation.
 
 The API signs the authenticated actor and `operations.*` permission claims with
 `COASTAL_OPERATIONS_CONTEXT_KEY`; bearer tokens and cookies are removed before

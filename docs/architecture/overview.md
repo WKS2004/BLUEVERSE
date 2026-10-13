@@ -134,6 +134,16 @@ is owned by Adithya Gunawardana's service. Exact private tool transport is a G00
 AI design decision. See the [Agentic AI architecture](../agentic-ai/architecture.md)
 and [ADR-0020](../adr/ADR-0020-member-component-service-boundaries.md).
 
+The optional local Safety Operations Gemini transport keeps the agent on
+internal Docker networks. Only its dedicated egress proxy joins a regular
+outbound bridge, and the proxy permits TLS CONNECT to
+`generativelanguage.googleapis.com:443` after rejecting private or reserved DNS
+addresses. TLS remains end-to-end between the agent and Google; the API key is
+passed only to the agent. The proxy has no host-published port and is not
+reachable by other Compose services. This network path does not enable the
+disconnected pre-G07 workflow or add a direct agent route. See
+[ADR-0028](../adr/ADR-0028-gemini-egress-boundary.md).
+
 ## Cross-client UI integration
 
 React and Flutter do not connect to one another. A shared workflow ID in

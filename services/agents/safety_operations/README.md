@@ -33,6 +33,17 @@ is not silently substituted.
 The adapter uses the pinned `v1/interactions` endpoint, rejects HTTP redirects,
 and sends the `x-goog-api-key` header only to that endpoint with `store: false`.
 It exposes no tools to Gemini.
+
+In the optional Docker profile, the agent's transport is pinned to
+`http://gemini-egress-proxy:3128`; it rejects alternate proxy configuration and
+does not honor `NO_PROXY` for this call. The proxy accepts only CONNECT to
+`generativelanguage.googleapis.com:443`, filters DNS results to public IPs,
+and relays the TLS tunnel without decrypting or logging model data. Only the
+Safety Operations agent and proxy share the dedicated internal Docker network;
+only the proxy joins the outbound bridge, and neither publishes a host port.
+The API key is provided to the agent container and is not passed to the proxy.
+The profile does not start provider requests automatically or connect the
+pre-G07 Coastal Operations dispatch port.
 Google's Free Tier does not carry the Paid Tier's data-use guarantee, so a
 privacy/data-handling review is required before provider calls with BLUEVERSE
 assessment data. The adapter refuses to initialize unless
@@ -60,9 +71,15 @@ records:
 ```text
 GEMINI_API_KEY=<Google AI Studio key>
 GEMINI_MODEL=<explicit model identifier>
-GEMINI_DATA_HANDLING_APPROVED=true
+GEMINI_DATA_HANDLING_APPROVED=false
 GEMINI_MAX_OUTPUT_TOKENS=2048
+GEMINI_EGRESS_PROXY_URL=http://gemini-egress-proxy:3128
 ```
+
+Keep `GEMINI_DATA_HANDLING_APPROVED=false` until the provider data-handling
+review is complete. Only then may it be set to `true` for an approved runtime.
+Compose pins `GEMINI_EGRESS_PROXY_URL` internally; it is not a host proxy or a
+user-configurable egress route.
 
 Run the dependency-free tests from the repository root with:
 

@@ -297,8 +297,50 @@ services:
       context: .
       dockerfile: infrastructure/docker/agentic-ai/safety-operations/Dockerfile
     image: blueverse/agent-safety-operations:local
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-}
+      GEMINI_DATA_HANDLING_APPROVED: ${GEMINI_DATA_HANDLING_APPROVED:-false}
+      GEMINI_MAX_OUTPUT_TOKENS: ${GEMINI_MAX_OUTPUT_TOKENS:-2048}
+      GEMINI_EGRESS_PROXY_URL: http://gemini-egress-proxy:3128
+    depends_on:
+      gemini-egress-proxy:
+        condition: service_healthy
     networks:
       - blueverse_internal
+      - blueverse_gemini_internal
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+
+  gemini-egress-proxy:
+    profiles: ["agentic-ai"]
+    build:
+      context: .
+      dockerfile: infrastructure/docker/agentic-ai/gemini-egress-proxy/Dockerfile
+    image: blueverse/gemini-egress-proxy:local
+    container_name: blueverse-gemini-egress-proxy
+    expose:
+      - "3128"
+    read_only: true
+    user: "65532:65532"
+    cap_drop: ["ALL"]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 128m
+    cpus: 0.5
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import socket; s=socket.create_connection(('127.0.0.1',3128),timeout=1); s.close()"]
+      interval: 10s
+      timeout: 2s
+      retries: 3
+      start_period: 2s
+    networks:
+      - blueverse_gemini_internal
+      - blueverse_agent_egress
 
   it3091-fake:
     profiles: ["dev"]
@@ -323,6 +365,11 @@ networks:
     internal: true
   blueverse_database:
     name: blueverse_database
+  blueverse_gemini_internal:
+    name: blueverse_gemini_internal
+    internal: true
+  blueverse_agent_egress:
+    name: blueverse_agent_egress
 
 volumes:
   blueverse_postgres_data:

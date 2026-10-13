@@ -1,13 +1,17 @@
 # Agentic AI architecture — v1 target
 
-**Implementation status:** the repository has no executable Agentic AI
-service, agent or tool. This is the v1 target contract derived from
+**Implementation status:** a proposal-only Safety Operations package,
+Gemini adapter and private egress proxy are checked in. The integrated
+Agentic AI runtime, orchestrator, tools, workflow dispatch and durable
+agent-owned state are not implemented; G07 acceptance remains a separate
+gate. This is the v1 target contract derived from
 [PROJECT_REQUIREMENTS.md](../../PROJECT_REQUIREMENTS.md). The
 [v1 index](../v1/README.md) links separate contracts for each member's agent.
-Before selecting a runtime, model/provider or retrieval design, use the
-[implementation blueprint](implementation-blueprint.md) as the shared
-human-and-agent handoff; it distinguishes binding safety/workflow requirements
-from decisions still open in ADRs.
+Google AI Studio Gemini is selected for the existing Safety Operations
+adapter; the shared runtime/framework and provider choices for other agent
+roles remain open. Use the [implementation blueprint](implementation-blueprint.md)
+as the shared human-and-agent handoff; it distinguishes binding
+safety/workflow requirements from decisions still open in ADRs.
 
 **Implementation boundary:** use the [v1 component relationship map](../v1/component-relationships.md)
 to understand dependencies, and the [member branch and integration workflow](../v1/member-branch-workflow.md)
@@ -53,6 +57,18 @@ assessment. The owning member service performs deterministic validation. A
 high-impact proposal pauses for authorized human approval; the Wanshaja Sooriyabandara (Member 4)
 service revalidates and executes an eligible approved action and records its
 business/audit history.
+
+For Safety & Operations, the user's assessment submission is the workflow
+entry point. The clients call only the authenticated public assessment-submit
+operation; they do not call an agent endpoint, choose an agent, or send model
+requests. Coastal Operations persists the submitted assessment and its
+dispatch envelope, then its server-side delivery worker hands that envelope
+to the private Agentic AI workflow after the post-G07 integration is enabled.
+There is no public route for directly starting or invoking the Safety &
+Operations Agent. Assessment status may report workflow availability and
+outcome, but it does not expose a direct agent operation. Until G07 is
+accepted, the dispatch port remains disconnected and the queued envelope must
+not be reported as an agent run or proposal.
 
 Before G07, each member service implements its business workflow and typed
 private adapter/availability behavior. No agent implementation is needed for

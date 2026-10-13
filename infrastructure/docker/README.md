@@ -57,24 +57,31 @@ ASP.NET Core 10 runtime, and PostgreSQL 16. The ASP.NET Dockerfiles use
 multi-stage builds and exec-form runtime entry points; their health probes call
 the service's built-in `--healthcheck` mode.
 
-The four future Agentic AI images use `dhi.io/python:3.13-alpine` and are
-available under the opt-in `agentic-ai` Compose profile. They are runtime-only
-image shells: no agent source, dependencies, listener, health endpoint, model
-configuration or tool implementation is included. Their default command only
-prints the Python version and exits. Build them with:
+The four Agentic AI images and the Gemini egress proxy use
+`dhi.io/python:3.13-alpine` under the opt-in `agentic-ai` Compose profile. The
+Safety Operations image copies its dependency-free Python proposal package;
+its default command still only prints the Python version and exits. The other
+three agent images remain runtime-only shells. The egress proxy is a separate
+bounded standard-library service; it accepts CONNECT only to
+`generativelanguage.googleapis.com:443` and never receives the API key. Build
+the profile images with:
 
 ```sh
 docker compose --profile agentic-ai build \
   agent-experience-biodiversity \
   agent-marine-conditions \
   agent-planning-coordination \
-  agent-safety-operations
+  agent-safety-operations \
+  gemini-egress-proxy
 ```
 
-All four services join only the internal Docker network and publish no host
-ports. Keep them out of runtime deployments until G07 is accepted and their
-assigned `agentic-ai/**` branches add the executable workloads and reviewed
-health/readiness behavior.
+The Safety Operations container joins the private service network and a
+dedicated internal Gemini network. The proxy alone also joins a separate
+outbound bridge; neither container publishes a host port. The agent transport
+cannot bypass the proxy through `NO_PROXY` or use an alternate proxy address.
+This egress plumbing does not enable the disconnected pre-G07 proposal
+workflow. Keep runtime dispatch gated until G07 is accepted and its
+`agentic-ai/**` implementation adds the reviewed workflow behavior.
 
 Every ASP.NET backend service should keep its Dockerfile in a matching directory under `infrastructure/docker/<service-name>/Dockerfile`. The Docker backend workflow discovers first-level ASP.NET services under `services`, builds the public `api` service first, and then builds the remaining services one by one.
 

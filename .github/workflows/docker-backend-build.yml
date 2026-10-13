@@ -251,18 +251,22 @@ jobs:
             exit 1
           fi
 
-      - name: Build Agentic AI runtime image shells
+      - name: Build Agentic AI runtime shells and Gemini egress proxy
         if: steps.scope.outputs.build == 'true'
         shell: bash
         run: |
           set -Eeuo pipefail
 
-          agents=(experience-biodiversity marine-conditions planning-coordination safety-operations)
+          agents=(experience-biodiversity marine-conditions planning-coordination safety-operations gemini-egress-proxy)
           errors=()
 
           for agent in "${agents[@]}"; do
             dockerfile="infrastructure/docker/agentic-ai/$agent/Dockerfile"
-            image="blueverse/agent-$agent:ci"
+            if [[ "$agent" == "gemini-egress-proxy" ]]; then
+              image="blueverse/gemini-egress-proxy:ci"
+            else
+              image="blueverse/agent-$agent:ci"
+            fi
 
             if [[ ! -f "$dockerfile" ]]; then
               echo "::error::Agentic AI Dockerfile not found: $dockerfile"

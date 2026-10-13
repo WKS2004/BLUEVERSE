@@ -10,7 +10,8 @@ import re
 import socket
 from typing import Any, Mapping, Protocol
 from urllib.error import HTTPError, URLError
-from urllib.request import HTTPRedirectHandler, Request, build_opener
+from urllib.parse import urlsplit
+from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
 
 from .agent import ModelCall, ModelUnavailable
 from .contracts import (
@@ -23,6 +24,8 @@ from .contracts import (
 
 
 INTERACTIONS_URL = "https://generativelanguage.googleapis.com/v1/interactions"
+GEMINI_API_HOST = "generativelanguage.googleapis.com"
+GEMINI_EGRESS_PROXY_URL = "http://gemini-egress-proxy:3128"
 MAX_PROVIDER_RESPONSE_BYTES = 64 * 1024
 MODEL_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 RETRYABLE_HTTP_STATUSES = frozenset({408, 425, 429})
@@ -45,6 +48,7 @@ class GeminiConfig:
     api_key: str = field(repr=False)
     model: str
     max_output_tokens: int = 2048
+    egress_proxy_url: str = GEMINI_EGRESS_PROXY_URL
 
     @classmethod
     def from_environment(cls, environment: Mapping[str, str] | None = None) -> GeminiConfig:
@@ -52,6 +56,7 @@ class GeminiConfig:
         api_key = values.get("GEMINI_API_KEY", "").strip()
         model = values.get("GEMINI_MODEL", "").strip()
         approval = values.get("GEMINI_DATA_HANDLING_APPROVED", "").strip().casefold()
+        egress_proxy_url = values.get("GEMINI_EGRESS_PROXY_URL", GEMINI_EGRESS_PROXY_URL).strip()
 
         if not api_key:
             raise GeminiConfigurationError("GEMINI_API_KEY is required")
@@ -61,6 +66,8 @@ class GeminiConfig:
             raise GeminiConfigurationError(
                 "Gemini request data handling must be reviewed before enabling provider calls"
             )
+        if egress_proxy_url != GEMINI_EGRESS_PROXY_URL:
+            raise GeminiConfigurationError("Gemini requests must use the internal allowlisted egress proxy")
 
         token_limit_raw = values.get("GEMINI_MAX_OUTPUT_TOKENS", "2048").strip()
         try:
@@ -70,7 +77,12 @@ class GeminiConfig:
         if not 128 <= max_output_tokens <= 8192:
             raise GeminiConfigurationError("GEMINI_MAX_OUTPUT_TOKENS must be between 128 and 8192")
 
-        return cls(api_key=api_key, model=model, max_output_tokens=max_output_tokens)
+        return cls(
+            api_key=api_key,
+            model=model,
+            max_output_tokens=max_output_tokens,
+            egress_proxy_url=egress_proxy_url,
+        )
 
 
 class HttpTransport(Protocol):
@@ -85,12 +97,66 @@ class _RejectRedirectHandler(HTTPRedirectHandler):
         return None
 
 
+class _RequiredGeminiProxyHandler(ProxyHandler):
+    """Force the pinned Gemini origin through the one internal proxy, ignoring NO_PROXY."""
+
+    def __init__(self, proxy_url: str) -> None:
+        if proxy_url != GEMINI_EGRESS_PROXY_URL:
+            raise GeminiConfigurationError("Gemini requests must use the internal allowlisted egress proxy")
+        super().__init__({"https": proxy_url})
+
+    def proxy_open(self, req, proxy, proxy_type):
+        if (
+            proxy_type != "https"
+            or req.type != "https"
+            or (req.host or "").casefold() != GEMINI_API_HOST
+        ):
+            raise URLError("Gemini transport only permits the pinned HTTPS provider origin")
+
+        proxy_parts = urlsplit(proxy)
+        if (
+            proxy_parts.scheme != "http"
+            or proxy_parts.hostname != "gemini-egress-proxy"
+            or proxy_parts.port != 3128
+            or proxy_parts.username is not None
+            or proxy_parts.password is not None
+            or proxy_parts.path
+            or proxy_parts.query
+            or proxy_parts.fragment
+        ):
+            raise URLError("Gemini transport proxy configuration is invalid")
+
+        # Do not call ProxyHandler.proxy_open: its environment-sensitive
+        # proxy_bypass() can silently route around the approved proxy.
+        req.set_proxy("gemini-egress-proxy:3128", "http")
+        return None
+
+
 class UrllibTransport:
-    """Small standard-library transport; it does not log request or response data."""
+    """Bounded standard-library HTTPS transport that cannot fall back to direct egress."""
+
+    def __init__(self, proxy_url: str = GEMINI_EGRESS_PROXY_URL) -> None:
+        if proxy_url != GEMINI_EGRESS_PROXY_URL:
+            raise GeminiConfigurationError("Gemini requests must use the internal allowlisted egress proxy")
+        self._proxy_url = proxy_url
 
     def post(self, url: str, headers: Mapping[str, str], body: bytes, timeout: float) -> tuple[int, bytes]:
+        parts = urlsplit(url)
+        if (
+            url != INTERACTIONS_URL
+            or parts.scheme != "https"
+            or parts.hostname != GEMINI_API_HOST
+            or parts.port not in (None, 443)
+            or parts.path != "/v1/interactions"
+            or parts.query
+            or parts.fragment
+            or parts.username is not None
+            or parts.password is not None
+        ):
+            raise URLError("Gemini transport only permits the pinned HTTPS provider origin")
+
         request = Request(url, data=body, headers=dict(headers), method="POST")
-        opener = build_opener(_RejectRedirectHandler())
+        opener = build_opener(_RequiredGeminiProxyHandler(self._proxy_url), _RejectRedirectHandler())
         try:
             with opener.open(request, timeout=timeout) as response:
                 return response.status, response.read(MAX_PROVIDER_RESPONSE_BYTES + 1)
@@ -110,7 +176,7 @@ class GeminiModelPort:
 
     def __init__(self, config: GeminiConfig, transport: HttpTransport | None = None) -> None:
         self._config = config
-        self._transport = transport or UrllibTransport()
+        self._transport = transport or UrllibTransport(config.egress_proxy_url)
 
     def generate(self, request: ModelCall) -> Mapping[str, Any]:
         if request.allowed_tools:
