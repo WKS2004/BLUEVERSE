@@ -1,10 +1,17 @@
 # Agentic AI architecture — v1 target
 
-**Implementation status:** a proposal-only Safety Operations package,
-Gemini adapter and private egress proxy are checked in. The integrated
-Agentic AI runtime, orchestrator, tools, workflow dispatch and durable
-agent-owned state are not implemented; G07 acceptance remains a separate
-gate. This is the v1 target contract derived from
+**Implementation status (2026-10-13):** private runtimes are present for
+Experience & Biodiversity, Marine Conditions, and Planning & Coordination.
+Planning & Coordination has a private dispatch API, validated plan
+orchestration, specialist adapters and Planner-owned execution-state
+persistence. The Experience & Biodiversity and Marine Conditions specialists
+also have private implementations. This branch adds the Safety Operations
+proposal package, Gemini adapter and private egress proxy; its image remains a
+runtime shell and Safety Operations dispatch is not implemented. End-to-end
+four-agent integration remains incomplete. The v1 tracker records G07 as
+owner-reported accepted, while live provider and peer integration remains
+pending. This is partial implementation, not v1 readiness. This target
+contract is derived from
 [PROJECT_REQUIREMENTS.md](../../PROJECT_REQUIREMENTS.md). The
 [v1 index](../v1/README.md) links separate contracts for each member's agent.
 Google AI Studio Gemini is selected for the existing Safety Operations
@@ -14,22 +21,17 @@ as the shared human-and-agent handoff; it distinguishes binding
 safety/workflow requirements from decisions still open in ADRs.
 
 **Implementation boundary:** use the [v1 component relationship map](../v1/component-relationships.md)
-to understand dependencies, and the [member branch and integration workflow](../v1/member-branch-workflow.md)
-for the G07 gate and post-gate AI sequence.
-The four member features first implement their complete business behavior and
-the public API/private backend integration seam for their paired future AI
-role, including not-connected/unavailable status and a bounded server-side
-dependency check. The canonical [member integration boundary](../v1/agentic-ai-integration-boundary.md)
-defines that preparation. No executable agent, prompt/model call, tool
-execution, orchestration or agent-owned execution state is built until all
-four feature PRs are merged, compatibility is accepted on `dev`, and the team
-passes G07. Test-only proposal fixtures may exercise Wanshaja Sooriyabandara's
-boundary; they are not a production AI substitute. After G07, implement the
-actual runtime and agents through the assigned `agentic-ai/**` branches: build
-the Ushan Srinuka (Member 1) and Sanuda Abeysinghe (Member 2) specialist agents
-in parallel, integrate them through Adithya Gunawardana's (Member 3) planner,
-then add Wanshaja Sooriyabandara's (Member 4) read-only proposal agent and the
-complete evaluations. The exact accounts and branch names are in the
+and [member branch workflow](../v1/member-branch-workflow.md) for ownership
+and integration evidence. The team owner reported G07 acceptance on
+2026-10-13; the repository tracker records that report. The Member 1 runtime
+is a stateless private Python HTTP service that reads through the accepted
+member-service contracts. It does not own durable workflow state or provide
+cross-agent orchestration. The broad runtime/framework and shared state choices
+remain open in ADR-0007/0008. The other specialist agents, planner
+orchestration and integrations have implementation code in this baseline.
+The Safety Operations agent workflow, end-to-end four-agent integration and
+golden evaluations remain to be implemented on their assigned
+`agentic-ai/**` branches. See the
 [canonical owner map](../project/ai-team-members.md).
 
 ## Four distinct responsibilities
@@ -50,8 +52,8 @@ Renaming or cloning one prompt is insufficient.
 React and Flutter call only the public ASP.NET Core API. The API applies the
 existing authentication/permission boundary and routes the public operation
 to its owning private member service. That service validates domain input,
-owns business workflow persistence and, after G07, dispatches the private
-Agentic AI runtime. The planner delegates to the marine and experience agents;
+owns business workflow persistence and dispatches its private Agentic AI
+integration. The planner delegates to the marine and experience agents;
 the safety agent consumes their structured results for operational
 assessment. The owning member service performs deterministic validation. A
 high-impact proposal pauses for authorized human approval; the Wanshaja Sooriyabandara (Member 4)
@@ -66,16 +68,13 @@ dispatch envelope, then its server-side delivery worker hands that envelope
 to the private Agentic AI workflow after the post-G07 integration is enabled.
 There is no public route for directly starting or invoking the Safety &
 Operations Agent. Assessment status may report workflow availability and
-outcome, but it does not expose a direct agent operation. Until G07 is
-accepted, the dispatch port remains disconnected and the queued envelope must
-not be reported as an agent run or proposal.
-
-Before G07, each member service implements its business workflow and typed
-private adapter/availability behavior. No agent implementation is needed for
-the member branches to report `not connected` or `unavailable`. The owning
-member service checks its configured private AI dependency and exposes only
-the accepted coarse workflow/readiness state through the public contract;
-the private probe remains server-to-server. Keep this distinct from
+outcome, but it does not expose a direct agent operation. The dispatch port
+remains disconnected; a queued envelope must not be reported as an agent run
+or proposal until the private Safety Operations integration is implemented
+and enabled. The Member 1 role is a stateless private specialist and does not
+persist agent-owned execution state. Member services expose only the accepted
+coarse workflow/readiness state through the public contract; private probes
+remain server-to-server. Keep this distinct from
 `GET /api/health` liveness and database readiness. A healthy probe does not
 guarantee a later dispatch will succeed; dispatches need bounded timeouts and
 safe persisted outcomes.
@@ -102,7 +101,21 @@ timestamps. Do not persist hidden reasoning, credentials or unnecessary
 sensitive data. Exact schemas and transport boundaries belong in the
 accepted ADRs and data/service contracts.
 
-The eventual orchestration framework remains undecided in
+The current provider adapter uses Google's native Gemini Interactions API
+by default, with an optional OpenAI-compatible adapter. Runtime
+configuration remains required, and dispatch stays disabled by default.
+Gemini is Adithya Gunawardana's selected implementation preference; shared
+AI-00 provider approval, model choice, data-processing review, specialist
+report schemas and runtime decisions remain open in
+[ADR-0007](../adr/ADR-0007-agentic-ai-framework.md) and
+[ADR-0008](../adr/ADR-0008-agent-workflow-state.md). This adapter is a
+provisional integration seam, not an accepted framework decision. Agent API
+routes use `/internal/agentic/agents/{agent-id}/{operation}` namespaces. The
+Planning Coordination dispatch route retains its established
+`/internal/agentic/agents/planning-coordination/{health,dispatch}` routes;
+specialist routes remain unimplemented targets until their owners deliver
+those services. The
+eventual orchestration framework remains undecided in
 [ADR-0007](../adr/ADR-0007-agentic-ai-framework.md). Whether the agents run
 in one private process or several does not change the public API, tool,
 validation or approval boundaries.

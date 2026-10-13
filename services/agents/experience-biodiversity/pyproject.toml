@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "blueverse-experience-agent"
+version = "1.0.0"
+description = "BLUEVERSE Coastal Experience & Biodiversity Agent (Member 1 - Ushan Srinuka)"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0.0",
+    "pytest-cov>=5.0.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]

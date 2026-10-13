@@ -11,13 +11,16 @@ contracts.
 
 ## Status and governing boundary
 
-The current repository has no executable Agentic AI service, agent, tool or
-AI endpoint in the endpoint catalog. This document describes required future
-integration behavior; it does not claim that the integration or health check
-already exists. The repository requirements and implemented sources remain
-authoritative. Any exact public route, internal service URL, DTO, status code,
-availability enum and retry policy must be finalized in the owning contract
-at G00 and implemented in source before it is described as live.
+Private runtimes are present for Experience & Biodiversity, Marine Conditions,
+and Planning & Coordination. The Planner dispatch and checkpoint path is
+partial; the full four-agent workflow, Safety Operations role, AI-00 decisions
+and live compatibility evidence remain outstanding. G00 and G07 acceptance
+are recorded from Adithya Gunawardana's 2026-10-13 team-meeting report; meeting
+minutes and signatures are not in the repository. The repository requirements
+and implemented sources remain authoritative. Any exact public route, internal
+service URL, DTO, status code, availability enum and retry policy must be
+finalized in the owning contract and implemented before it is described as
+live.
 
 The v1 work has two separate deliveries:
 
@@ -74,8 +77,9 @@ G00 scope; the current Member 2 G00 decision defers that seam. Connect the
 service through `services/api` using only
 necessary public route/forwarding and identity integration; preserve existing
 API and Auth flows. The later
-`agentic-ai/**` implementation owns the actual runtime, agent execution and
-agent-side contracts. Shared transport schemas, correlation fields, workflow
+`agentic-ai/**` implementations own agent execution and agent-side contracts;
+Member 1's stateless role is already present on its assigned branch.
+Shared transport schemas, correlation fields, workflow
 identifiers and status meanings must be agreed at G00 so independently
 developed branches converge on the same contract. The detailed service and
 client shared-file boundary is in the [member branch workflow](member-branch-workflow.md#shared-foundation-and-file-ownership).

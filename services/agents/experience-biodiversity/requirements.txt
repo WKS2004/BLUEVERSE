@@ -1,0 +1,5 @@
+# Coastal Experience & Biodiversity Agent test dependencies.
+# Runtime package uses only the Python 3.12/3.13 standard library so it runs inside
+# the minimal dhi.io/python:3.13-alpine container image without pip or shell access.
+pytest>=8.0.0
+pytest-cov>=5.0.0

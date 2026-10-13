@@ -2,7 +2,7 @@
 contract_id: v1.agent.marine-conditions
 contract_type: agent_role
 release: v1
-implementation_status: target_not_implemented
+implementation_status: implemented_on_agentic_ai_branch
 owner_label: member_2
 owner_full_name: "Sanuda Abeysinghe"
 owner_github_username: "sanudaabey"
@@ -14,9 +14,11 @@ business_component: "../components/member-2-marine-conditions-safety-intelligenc
 
 # Sanuda Abeysinghe (Member 2) — Marine Conditions Intelligence Agent
 
-**Target status:** the repository does not contain an executable v1 agent,
-runtime or allowlisted provider tools. This file defines its target role and
-hand-off; it does not claim that provider integration or AI inference exists.
+**Implementation status (2026-10-13):** The Marine Conditions Intelligence Agent
+service, allowlisted read tools, deterministic safety/prompt injection controls,
+HTTP service endpoints (`GET /health`, `POST /invocations`), and comprehensive
+test suites (unit, safety, integration, golden assessment evaluations: 35/35 passing)
+are implemented on `agentic-ai/marine-conditions` under `services/ai/marine-conditions/`.
 
 **Assigned owner:** Sanuda Abeysinghe (`@sanudaabey`), requirement trace label
 Member 2. Component branch: `features/marine-safety`; actual agent branch,

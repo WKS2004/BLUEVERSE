@@ -18,8 +18,14 @@ Safety owns its domain model and migrations under
 `services/marine-safety`; Experience & Biodiversity owns its model and
 migrations for five component tables under `services/experience-biodiversity`.
 Coastal Planner owns its model and migrations under `services/coastal-planner`.
-Each service applies only its own migrations. Shared G00 data-ownership
-agreement and integrated component acceptance remain pending.
+Its `agent_execution_states` table stores minimized AI plan and progress data,
+keyed to an existing Planner workflow and persisted only through Planner's
+private service-key endpoint. The Agentic AI runtime has no database
+credentials.
+Each service applies only its own migrations. G00 acceptance was recorded
+from Adithya Gunawardana's team meeting report, and G07 acceptance from his
+explicit instruction. These records do not establish new live database or
+provider evidence.
 
 PostgreSQL is the authoritative relational database.
 The [v0 persistence component](../v0/components/postgresql-ef-core.md)

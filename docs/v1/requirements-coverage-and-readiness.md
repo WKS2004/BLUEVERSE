@@ -1,5 +1,20 @@
 # v1 requirements coverage and development readiness
 
+**Shared G00 update — 2026-10-13:** Adithya Gunawardana reports that the team
+agreed in a meeting to finalize the current four component contracts and move
+to Agentic AI deployment. Shared G00 is recorded as accepted on that report;
+meeting minutes and individual signatures were not supplied in this repository.
+G07 acceptance was recorded separately on Adithya Gunawardana's explicit
+instruction on 2026-10-13. The earlier integration evidence snapshot remains
+unchanged; acceptance does not resolve AI-00 decisions or assert new runtime
+evidence.
+
+**G07 acceptance update — 2026-10-13:** Adithya Gunawardana explicitly
+accepted G07 and directed Agentic AI implementation to begin. This records
+that acceptance. The latest execution evidence remains the 2026-10-12
+integration snapshot below; no new Docker or live-provider evidence was
+collected in this session.
+
 **Member 3 branch update, 2026-10-05:** Coastal Planner and its React workflows
 now have the implementation and verification described in
 [the planner guide](../development/coastal-planner.md). Other owner services,
@@ -13,7 +28,8 @@ adds 500 ms search, pinned tabs, shared cards and record-specific pagination
 across all collections, refresh-safe forms and full details/actions from Logs.
 New audit snapshots show verified person/roles and original field changes.
 Legacy gaps remain explicit. Approved regression coverage is recorded in that
-contract; shared G00/G07 and live producer/agent acceptance remain pending.
+contract; G00/G07 acceptance is recorded, while live producer/agent acceptance
+remains pending.
 
 This is the handoff checklist for the four member components and their four
 distinct Agentic AI roles. It preserves the 25 September 2026 baseline audit
@@ -116,10 +132,10 @@ recorded in the current integration-branch update above.
 |---|---|---|
 | v0 foundation and shared contracts | Ready as the starting baseline | Existing API/Auth, React/Flutter, Docker/Compose, role-to-permission model, endpoint catalog, UI registry and agent resources are present. Static catalog, UI-integration and agent-resource validators passed on this audit. This does not assert that application builds, tests or live infrastructure were rerun. |
 | v1 requirements and member plans | Ready as implementation specifications | Four complete member contracts, four paired-agent contracts, work-area plans, relationship map, workflow, device, integration, quality and branch guides link the scope. These are target contracts, not implementation evidence. |
-| Four member services and workflows | All four implementation sources are present; integrated acceptance pending | Each member has a private service, persistence, public API integration and React/Flutter workflow sources in this integration branch. API/Auth/component Release builds and all six backend DHI images succeed; isolated Compose health checks pass. G00 owner agreement, live provider behavior, complete peer/client compatibility and `dev` acceptance remain open; implementation presence is not acceptance. |
+| Four member services and workflows | Team-owner reports backend acceptance at meeting on 2026-10-13; live integration evidence remains open | Each member has a private service, persistence, public API integration and React/Flutter workflow sources in this integration branch. The team owner reports that the components were finalized and accepted; meeting notes/PR references are not recorded in this workspace. Live provider behavior and complete peer/client compatibility remain separate evidence gaps. |
 | G00 shared contract freeze | Pending all-four-owner ratification | Adithya's Member 3 input is recorded; the Member 3 record remains a proposal. The Member 1 proposal and Member 2 scope record also exist, and the Member 4 record says it still requires ratification. Confirm the shared decisions with all four owners and record evidence before marking G00 accepted in the [branch tracker](member-branch-workflow.md#component-branch-status). |
 | External integrations and device behavior | Interfaces can be planned at G00; live decisions are owner gates | Agree cross-member data contracts and adapter boundaries before parallel work. Select and verify the map provider, Open-Meteo data policy, IT3091 wire/auth contract and Wanshaja Sooriyabandara (Member 4) image storage policy before accepting each live integration. |
-| Executable Agentic AI | Correctly deferred; prohibited before G07 | Member branches prepare only their business workflow and typed, bounded, unavailable-aware AI integration seams. Start executable agents, tools, orchestration, model calls and AI-owned state on `agentic-ai/**` only after all four components pass G07. |
+| Executable Agentic AI | Member 1 specialist in progress; full workflow remains unimplemented | The private Member 1 agent and read-only tools are implemented on `agentic-ai/experience-biodiversity`; G07 acceptance was reported by the team owner on 2026-10-13. The runtime is stateless and does not establish shared orchestration, durable AI-owned state, other agent roles or golden-flow evidence. |
 | Full assessment and release | Not ready | The backend test workflow's path filters do not satisfy the guideline's every-push/every-pull-request-to-`main` requirement. The former Flutter widget-test reference to removed `MyHomePage` is corrected as `MOB-LAUNCH-001`; a green CI run is still needed because local Flutter analysis/tests were blocked by sandbox write access to the SDK lockfile. Duplicate Auth test IDs, hosted mobile HTTPS configuration and release evidence also remain open; see [foundation gaps](../project/foundation-gap-analysis.md). |
 
 ### G00 exit criteria

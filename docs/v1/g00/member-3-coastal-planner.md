@@ -4,6 +4,13 @@
 captures the Smart Coastal Planner & Itinerary Management inputs for the G00
 Shared Contract Freeze. It is not team-accepted until all four owners agree.
 
+**Shared G00 ratification update — 2026-10-13:** Adithya Gunawardana reports
+that the team agreed in a meeting to finalize the current four component
+contracts and move to Agentic AI deployment. This records shared G00
+ratification as reported by Adithya; meeting minutes and individual signatures
+were not supplied here. This supersedes earlier pending-G00 statements. G07
+and live provider validation remain separate gates.
+
 - **Component:** Smart Coastal Planner & Itinerary Management (Member 3)
 - **Assigned owner:** Adithya Gunawardana (`@AdithyaGunawardana`)
 - **Feature branch:** `features/coastal-planner`
@@ -300,8 +307,8 @@ Use standard RFC 7807 `ProblemDetails`:
 ### 6.2 Pre-G07 Agentic AI seam
 
 - **Access Seam:** `services/coastal-planner/` exposes private internal endpoints on `service-net` for the future planning agent:
-  - `GET /internal/agentic/health`: Bounded probe (max 2 seconds timeout) returning current dependency state.
-  - `POST /internal/agentic/planning-coordination/dispatch`: Server-to-server dispatch endpoint (max 15 seconds timeout, 0 auto-retries).
+  - `GET /internal/agentic/agents/planning-coordination/health`: Bounded probe (max 2 seconds timeout) returning current dependency state.
+  - `POST /internal/agentic/agents/planning-coordination/dispatch`: Server-to-server dispatch endpoint (max 15 seconds timeout, 0 auto-retries).
 - **Dependency Statuses (`aiDependencyStatus`):**
   - `NOT_CONNECTED`: No AI container/runtime configured. Default baseline for pre-G07 feature work.
   - `UNAVAILABLE`: Configured runtime unreachable or timeout exceeded.

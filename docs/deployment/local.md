@@ -22,8 +22,9 @@ Planner, Marine Safety, Experience & Biodiversity, the public API and Auth.
 Coastal Planner provides trip planning and review workflows; Marine Safety
 provides conditions and safety workflows and calls Open-Meteo server-side.
 Experience & Biodiversity provides catalogue management, nearby discovery, map
-vector tile support and pre-G07 Agentic AI dispatch seams. Clients reach each
-private service through the public API.
+vector tile support and the private Member 1 Agentic AI dispatch seam. Clients reach each
+private service through the public API. The opt-in Member 1 agent image is
+described below; it remains private and is reached through the owning service.
 
 ## Prerequisites
 
@@ -84,10 +85,12 @@ bash scripts/Unix/bash/sync-web-lockfile.sh
 docker compose --profile dev build
 ```
 
-The Agentic AI profile is excluded from the normal local runtime stack. It
-contains four DHI Python images and the Gemini egress proxy. The Safety
-Operations image includes its proposal package, but its default command only
-prints the Python version and exits. Build the profile without starting it:
+The optional Agentic AI role images and Gemini egress proxy are excluded from
+the normal local runtime stack. Private runtimes are present for Experience &
+Biodiversity, Marine Conditions, and Planning & Coordination. Safety
+Operations includes its proposal package, but its default command only prints
+the Python version and exits. Build the DHI Python images without starting
+them:
 
 ```bash
 docker compose --profile agentic-ai build \
@@ -108,7 +111,17 @@ outbound network, and its transport rejects `NO_PROXY` or alternate-proxy
 bypasses. Keep `GEMINI_DATA_HANDLING_APPROVED=false` until the provider
 data-handling review is complete. This networking path does not trigger a model
 request, expose an agent endpoint, or activate Coastal Operations dispatch;
-workflow execution remains gated on G07.
+Safety Operations dispatch remains unimplemented.
+
+Experience & Biodiversity, Marine Conditions, and Planning & Coordination
+have private runtimes; Safety Operations remains a proposal package in a
+runtime shell. The optional profile keeps them on the internal network with no
+host-published ports. Planner dispatch is disabled by default. Set
+`AGENTIC_SERVICE_KEY`, `AGENTIC_MODEL_NAME`, and `AGENTIC_MODEL_API_KEY` in
+local `.env` to configure Planner dispatch. Gemini is the configured default;
+do not send personal or sensitive data through a free-tier key. The runtimes
+have no database credentials, and unavailable models or specialist services
+produce unavailable/blocked outcomes.
 
 ## Start
 

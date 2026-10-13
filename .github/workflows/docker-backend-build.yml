@@ -251,7 +251,7 @@ jobs:
             exit 1
           fi
 
-      - name: Build Agentic AI runtime shells and Gemini egress proxy
+      - name: Build Agentic AI runtime images and Gemini egress proxy
         if: steps.scope.outputs.build == 'true'
         shell: bash
         run: |
@@ -274,7 +274,7 @@ jobs:
               continue
             fi
 
-            echo "Building Agentic AI image shell '$agent' as $image using $dockerfile"
+            echo "Building Agentic AI image '$agent' as $image using $dockerfile"
             if ! docker build --file "$dockerfile" --tag "$image" .; then
               errors+=("$agent: Docker build failed using $dockerfile")
             fi
@@ -284,6 +284,6 @@ jobs:
             echo "::group::Agentic AI image build errors"
             printf '%s\n' "${errors[@]}"
             echo "::endgroup::"
-            echo "::error::Agentic AI runtime image shell builds completed with ${#errors[@]} error(s)."
+            echo "::error::Agentic AI image builds completed with ${#errors[@]} error(s)."
             exit 1
           fi

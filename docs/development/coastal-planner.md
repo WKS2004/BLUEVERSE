@@ -94,12 +94,16 @@ the owner services still needs their implementations and contract agreement.
 
 ## Agentic AI and client readiness
 
-The typed private planning coordination seam checks bounded availability when
-configured through `AgenticAi__BaseUrl`. Before accepted G07 it performs no
-dispatch, model call, tools or agent execution. Business workflow completion
-is separate from `aiDependencyStatus` and `aiExecutionStatus`; the latter
-remains `NOT_STARTED`. The future health path is a proposed private contract,
-not an implemented AI endpoint.
+Coastal Planner can dispatch the optional private Planning & Coordination
+service when `AgenticAi__Enabled=true`, its private URL is configured and the
+service-key/model settings are present. It sends minimal workflow, destination
+and time references after deterministic recommendation generation. AI output
+never changes recommendation eligibility, safety or business state. Execution
+checkpoints are persisted through Planner in `agent_execution_states` and
+exposed in the existing owner-authorized workflow status response. The agent
+service is disabled by default; exact specialist report schemas and provider
+approval remain open. See the
+[Planning & Coordination implementation note](../agentic-ai/planning-coordination-implementation.md).
 
 Flutter provides planner home, planning, saved recommendation, paged saved
 trips and itinerary details through the same public contract. Full draft

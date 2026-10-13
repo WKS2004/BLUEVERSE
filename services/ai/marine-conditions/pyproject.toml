@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "blueverse-agent-marine-conditions"
+version = "1.0.0"
+description = "BLUEVERSE v1 Marine Conditions Intelligence Agent (Member 2 - Sanuda Abeysinghe)"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+    { name = "Sanuda Abeysinghe", email = "sanudaabey@users.noreply.github.com" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=5.0.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

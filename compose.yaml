@@ -217,6 +217,9 @@ services:
       PeerServices__BiodiversityApiKey: ${BIODIVERSITY_ML_API_KEY:-}
       PeerServices__BiodiversityEnabled: ${BIODIVERSITY_ML_ENABLED:-true}
       PeerServices__BiodiversityExpectedModelVersion: ${BIODIVERSITY_ML_MODEL_VERSION:-fake-v1}
+      AgenticAi__Enabled: ${AGENTIC_AI_ENABLED:-false}
+      AgenticAi__BaseUrl: ${AGENTIC_AI_URL:-http://agent-planning-coordination:8080}
+      AgenticAi__ServiceKey: ${AGENTIC_SERVICE_KEY:-}
       JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY in .env}
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-blueverse};Username=${POSTGRES_USER:-blueverse};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     healthcheck:
@@ -279,6 +282,14 @@ services:
       context: .
       dockerfile: infrastructure/docker/agentic-ai/marine-conditions/Dockerfile
     image: blueverse/agent-marine-conditions:local
+    expose:
+      - "8080"
+    environment:
+      PORT: 8080
+      OPEN_METEO_WEATHER_URL: ${OPEN_METEO_WEATHER_URL:-https://api.open-meteo.com/v1/forecast}
+      OPEN_METEO_MARINE_URL: ${OPEN_METEO_MARINE_URL:-https://marine-api.open-meteo.com/v1/marine}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash}
     networks:
       - blueverse_internal
 
@@ -288,6 +299,28 @@ services:
       context: .
       dockerfile: infrastructure/docker/agentic-ai/planning-coordination/Dockerfile
     image: blueverse/agent-planning-coordination:local
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      PORT: 8080
+      AGENTIC_ENABLED: ${AGENTIC_AI_ENABLED:-false}
+      AGENTIC_SERVICE_KEY: ${AGENTIC_SERVICE_KEY:-}
+      PLANNER_SERVICE_URL: http://coastal-planner:8080
+      AGENTIC_MODEL_PROVIDER: ${AGENTIC_MODEL_PROVIDER:-gemini}
+      AGENTIC_GEMINI_API_BASE_URL: ${AGENTIC_GEMINI_API_BASE_URL:-https://generativelanguage.googleapis.com/v1beta}
+      AGENTIC_MODEL_BASE_URL: ${AGENTIC_MODEL_BASE_URL:-}
+      AGENTIC_MODEL_NAME: ${AGENTIC_MODEL_NAME:-}
+      AGENTIC_MODEL_API_KEY: ${AGENTIC_MODEL_API_KEY:-}
+      EXPERIENCE_AGENT_URL: ${EXPERIENCE_AGENT_URL:-http://agent-experience-biodiversity:8080}
+      MARINE_AGENT_URL: ${MARINE_AGENT_URL:-http://agent-marine-conditions:8080}
+      SAFETY_OPERATIONS_AGENT_URL: ${SAFETY_OPERATIONS_AGENT_URL:-http://agent-safety-operations:8080}
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health/live', timeout=2).read()"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     networks:
       - blueverse_internal
 
@@ -363,13 +396,13 @@ networks:
   blueverse_internal:
     name: blueverse_internal
     internal: true
+  blueverse_agent_egress:
+    name: blueverse_agent_egress
   blueverse_database:
     name: blueverse_database
   blueverse_gemini_internal:
     name: blueverse_gemini_internal
     internal: true
-  blueverse_agent_egress:
-    name: blueverse_agent_egress
 
 volumes:
   blueverse_postgres_data:

@@ -2,7 +2,7 @@
   "schema": 1,
   "status": "active",
   "auditedAt": "2026-10-12",
-  "purpose": "Fast, repository-local inventory of implemented frontend routes, gateway routes, public API endpoints, test-only routes, and Agentic AI endpoint status.",
+  "purpose": "Fast, repository-local inventory of implemented frontend routes, gateway routes, public API, private service, test-only, and Agentic AI endpoints.",
   "authority": {
     "uiWorkflowRegistry": "docs/contracts/ui-integration.json",
     "backendSources": [
@@ -738,6 +738,16 @@
       "source": "services/api/appsettings.json",
       "description": "API-gateway route that verifies current Auth sessions and permissions before forwarding protected Marine operations with a signed actor context.",
       "usage": "Keeps Marine Safety private. Protected requests replace client credentials with a request-bound actor context; anonymous health and Swagger requests are forwarded without an actor context. Missing Auth verification or unreachable/timed-out Marine returns structured availability metadata; unrelated routes and received upstream errors are preserved. Ambiguous proxy writes are not retryable and have no Retry-After hint."
+    },
+    {
+      "id": "agent-marine-conditions-yarp-route",
+      "method": "ANY",
+      "path": "/api/agents/marine-conditions/{**catch-all}",
+      "type": "reverse-proxy",
+      "upstream": "agent-marine-conditions",
+      "source": "services/api/appsettings.json",
+      "description": "API-gateway route that forwards Marine Conditions Intelligence Agent requests to the private agent service.",
+      "usage": "Routes requests to the Marine Conditions Intelligence Agent under /api/agents/marine-conditions without route collision with other agents (/api/agents/coastal-planner, /api/agents/biodiversity, /api/agents/operations)."
     },
     {
       "id": "experience-biodiversity-health-yarp-route",
@@ -2028,6 +2038,32 @@
       "source": "services/experience-biodiversity/Controllers/AgentSeamController.cs"
     },
     {
+      "id": "experience-agent-info",
+      "method": "GET",
+      "path": "/api/experiences/agent/info",
+      "ownerService": "experience-biodiversity",
+      "publicBoundary": "api",
+      "operationId": "GetExperienceAgentInfo",
+      "status": "implemented",
+      "auth": "permission:experiences.catalogue.read",
+      "description": "Inspects the Coastal Experience & Biodiversity Agent runtime status, Google AI Studio Gemini model configuration, and allowlisted read-only tools.",
+      "usage": "Namespaced under /api/experiences/agent/info so Member 1–4 agents have zero route collisions; returns live agent metadata when connected or safe not_connected fallback when offline.",
+      "source": "services/experience-biodiversity/Controllers/AgentSeamController.cs"
+    },
+    {
+      "id": "experience-agent-context-reports",
+      "method": "POST",
+      "path": "/api/experiences/agent/context-reports",
+      "ownerService": "experience-biodiversity",
+      "publicBoundary": "api",
+      "operationId": "GenerateExperienceAgentContextReport",
+      "status": "implemented",
+      "auth": "permission:experiences.catalogue.read",
+      "description": "Generates a validated, read-only Coastal Experience & Biodiversity Agent context report with optional Google AI Studio Gemini synthesis.",
+      "usage": "Validates workflowId, stepId, objective, and selectors, then invokes /api/experiences/agent/context-reports on the private agent runtime with safe not_connected/unavailable fallback.",
+      "source": "services/experience-biodiversity/Controllers/AgentSeamController.cs"
+    },
+    {
       "id": "experience-availability-evaluate",
       "method": "POST",
       "path": "/api/experiences/availability/evaluations",
@@ -2807,6 +2843,20 @@
       ]
     }
   ],
+  "internalServiceEndpoints": [
+    {
+      "id": "planner-agent-execution-state-write",
+      "method": "PUT",
+      "path": "/internal/agentic/executions/{workflowId:guid}",
+      "ownerService": "coastal-planner",
+      "auth": "service-key",
+      "publicBoundary": "internal-service",
+      "status": "implemented",
+      "description": "Stores minimized Agentic AI execution checkpoints in Planner-owned PostgreSQL state.",
+      "usage": "Called only by the private planning-coordination service. Requires the shared service key and an existing Planner workflow; clients and the public gateway must not call this route.",
+      "source": "services/coastal-planner/Controllers/AgentExecutionStateController.cs"
+    }
+  ],
   "testOnlyEndpoints": [
     {
       "id": "api-test-errors",
@@ -2854,7 +2904,7 @@
     }
   ],
   "aiEndpoints": {
-    "status": "none-implemented",
+    "status": "implemented",
     "clientAccess": "forbidden",
     "sourceDirectories": [
       "services/ai",
@@ -2864,8 +2914,45 @@
     "documentationSources": [
       "docs/agentic-ai"
     ],
-    "entries": [],
-    "notes": "The repository contains Agentic AI architecture and workflow documentation plus runtime-only DHI Python image shells under the opt-in Compose profile; it has no executable AI service, agent or AI API endpoint. Do not invent or expose target routes. When an AI service is implemented, add each endpoint here and keep clients behind the public API boundary."
+    "entries": [
+      {
+        "id": "planning-coordination-live",
+        "method": "GET",
+        "path": "/health/live",
+        "ownerService": "planning-coordination",
+        "auth": "anonymous",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Process liveness only.",
+        "usage": "Docker liveness probe. Does not indicate model, specialist, Planner database, or dispatch readiness.",
+        "source": "services/ai/planning-coordination/planning_coordination/service.py"
+      },
+      {
+        "id": "planning-coordination-readiness",
+        "method": "GET",
+        "path": "/internal/agentic/agents/planning-coordination/health",
+        "ownerService": "planning-coordination",
+        "auth": "service-key",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Reports coarse private model/runtime configuration readiness.",
+        "usage": "Planner-to-agent availability check. Does not guarantee a later dispatch succeeds.",
+        "source": "services/ai/planning-coordination/planning_coordination/service.py"
+      },
+      {
+        "id": "planning-coordination-dispatch",
+        "method": "POST",
+        "path": "/internal/agentic/agents/planning-coordination/dispatch",
+        "ownerService": "planning-coordination",
+        "auth": "service-key",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Validates and coordinates one bounded planner execution using configured specialist roles.",
+        "usage": "Called by Coastal Planner after deterministic recommendation generation. Model plans are allowlist-validated; specialist outputs are identity/schema checked; failures remain explicit and cannot alter deterministic eligibility or safety outcomes.",
+        "source": "services/ai/planning-coordination/planning_coordination/service.py"
+      }
+    ],
+    "notes": "Planning & Coordination implements agent-scoped private health and dispatch routes under /internal/agentic/agents/planning-coordination. Experience & Biodiversity and Marine Conditions have separate private specialist runtimes. Safety Operations has a proposal package and Gemini egress proxy, but its image remains a runtime shell and no Safety Operations dispatch endpoint is implemented. Clients must use the public API. Provider and data-handling decisions remain subject to their recorded review."
   },
   "forbiddenPatterns": [
     "/api/v1",

@@ -23,6 +23,38 @@ namespace Blueverse.CoastalPlanner.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Blueverse.CoastalPlanner.Data.Entities.AgentExecutionState", b =>
+                {
+                    b.Property<Guid>("WorkflowId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("StateJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("WorkflowId");
+
+                    b.HasIndex("UpdatedAtUtc");
+
+                    b.ToTable("agent_execution_states", "coastal_planner", t =>
+                        {
+                            t.HasCheckConstraint("CK_agent_execution_states_status", "\"Status\" IN ('PLANNING', 'DELEGATING', 'BLOCKED', 'COMPLETED', 'UNAVAILABLE', 'SAFE_FAILURE')");
+                        });
+                });
+
             modelBuilder.Entity("Blueverse.CoastalPlanner.Data.Entities.BiodiversityPredictionCache", b =>
                 {
                     b.Property<Guid>("PredictionId")
@@ -348,6 +380,15 @@ namespace Blueverse.CoastalPlanner.Data.Migrations
 
                             t.HasCheckConstraint("CK_recommendations_duration_positive", "\"DurationHours\" > 0");
                         });
+                });
+
+            modelBuilder.Entity("Blueverse.CoastalPlanner.Data.Entities.AgentExecutionState", b =>
+                {
+                    b.HasOne("Blueverse.CoastalPlanner.Data.Entities.PlanningWorkflow", null)
+                        .WithOne()
+                        .HasForeignKey("Blueverse.CoastalPlanner.Data.Entities.AgentExecutionState", "WorkflowId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Blueverse.CoastalPlanner.Data.Entities.ItineraryEvaluation", b =>

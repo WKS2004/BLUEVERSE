@@ -1,7 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# Staged proposal package. Integrated dispatch remains gated on G07 and the
-# assigned workflow implementation belongs on agentic-ai/safety-operations.
+# Proposal package only. Safety Operations dispatch remains unimplemented.
 FROM dhi.io/python:3.13-alpine
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -15,5 +14,4 @@ COPY services/agents/safety_operations /app/services/agents/safety_operations
 ENV PYTHONPATH=/app
 
 USER 65532:65532
-
 CMD ["python3", "--version"]
