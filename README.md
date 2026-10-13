@@ -468,18 +468,9 @@ assessment titles and IANA time-zone/location choices while retaining existing
 UTC instants; the planner migration supplies `Asia/Colombo` to existing
 itineraries without changing their IDs or schedules.
 
-The Member 1 agent is opt-in under the `agentic-ai` profile. Set `GEMINI_API_KEY`
-in the ignored local `.env` to enable optional Google AI Studio section
-selection. It defaults to `gemini-3.6-flash` with an eight-second bounded model
-request; override `GEMINI_MODEL` when needed. Without a key, deterministic
-context reporting remains available.
-The agent reaches experience/planner services on the internal network and uses
-a dedicated outbound bridge to reach Google AI Studio; it has no
-host-published port. The model receives normalized statuses and fixed section
-names only, and cannot author report text or invoke tools.
-
-The Member 1 agent image and three future role shells use the DHI Python 3.13
-Alpine image. Build the four images with:
+Four optional, runtime-only Agentic AI image shells use the DHI Python 3.13
+Alpine image. They contain no agent implementation and are excluded from the
+normal stack. Build them without starting them with:
 
 ```bash
 docker compose --profile agentic-ai build \
@@ -489,10 +480,9 @@ docker compose --profile agentic-ai build \
   agent-safety-operations
 ```
 
-The three remaining images are packaging shells. Start the implemented Member 1
-agent with `docker compose --profile agentic-ai up -d
-agent-experience-biodiversity`. It joins the private service network and the
-dedicated provider egress network; no host port is published.
+They have no host-published ports and join only the internal Docker network;
+actual workloads and health behavior remain gated on G07 and their assigned
+`agentic-ai/**` branches.
 
 The API signs the authenticated actor and `operations.*` permission claims with
 `COASTAL_OPERATIONS_CONTEXT_KEY`; bearer tokens and cookies are removed before
@@ -686,8 +676,7 @@ The web and backend build workflows run on supported branch families when their 
 
 The Docker backend workflow builds `services/api` first and then discovers and
 builds the other ASP.NET service directories, including Auth and all four
-component services, followed by the Member 1 agent image and three future
-Agentic AI image shells.
+component services, followed by the four runtime-only Agentic AI image shells.
 The stack-health workflow maps each service folder to its
 public health route (including the `/api/operations/health` route), supplies
 masked ephemeral signing keys for the isolated CI stack, prints diagnostics

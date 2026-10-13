@@ -85,9 +85,8 @@ bash scripts/Unix/bash/sync-web-lockfile.sh
 docker compose --profile dev build
 ```
 
-Member 1's stateless Experience & Biodiversity specialist is implemented as an
-opt-in private Python service. The other three Agentic AI images remain role
-shells. Build the four DHI Python images with:
+The four future Agentic AI image shells are excluded from the local runtime
+stack. To build the DHI Python images without starting them:
 
 ```bash
 docker compose --profile agentic-ai build \
@@ -97,20 +96,9 @@ docker compose --profile agentic-ai build \
   agent-safety-operations
 ```
 
-With the ordinary `dev` stack running, start the Member 1 agent with:
-
-```bash
-docker compose --profile agentic-ai up -d agent-experience-biodiversity
-```
-
-Set `GEMINI_API_KEY` in the ignored `.env` to enable optional Google AI Studio
-section selection; an empty key keeps deterministic reports available. The
-agent has no published host port. Its health endpoint is private, its POST
-route requires the caller's Bearer token, and its container joins the internal
-service network plus a dedicated outbound bridge for Gemini. It defaults to
-`gemini-3.6-flash` with an eight-second provider timeout. Configure the model
-and provider timeout with `GEMINI_MODEL` and `GEMINI_TIMEOUT_SECONDS` (clamped
-to eight seconds).
+They contain no executable agent code and only print the Python version when
+started. Keep the profile out of `up` until G07 is accepted and the assigned
+agent branches provide their workloads and readiness behavior.
 
 ## Start
 

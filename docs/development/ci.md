@@ -174,11 +174,9 @@ The workflow identifies ASP.NET services from `Program.cs` and project
 metadata, requires `services/api`, verifies each matching Dockerfile and
 builds the images from the repository root. Non-ASP.NET service directories
 are reported as skipped rather than being silently treated as backend images.
-The workflow separately builds the Member 1 Experience & Biodiversity agent
-image and three future role shells from
-`infrastructure/docker/agentic-ai/<agent>/Dockerfile`. The Member 1 image
-contains a stateless private runtime; the other images do not. This build is
-not evidence of cross-agent orchestration or live provider integration.
+The workflow separately builds the four runtime-only Agentic AI image shells
+from `infrastructure/docker/agentic-ai/<agent>/Dockerfile`; these images contain
+no executable agent code and do not imply that G07 has passed.
 
 The stack-health workflow is intentionally heavy. It is not a direct push
 workflow: it listens for completed image workflows, proceeds only when the

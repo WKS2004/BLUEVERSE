@@ -270,26 +270,8 @@ services:
       context: .
       dockerfile: infrastructure/docker/agentic-ai/experience-biodiversity/Dockerfile
     image: blueverse/agent-experience-biodiversity:local
-    restart: unless-stopped
-    expose:
-      - "8080"
-    environment:
-      PORT: 8080
-      EXPERIENCE_SERVICE_URL: ${EXPERIENCE_SERVICE_URL:-http://experience-biodiversity:8080}
-      PLANNER_SERVICE_URL: ${PLANNER_SERVICE_URL:-http://coastal-planner:8080}
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.6-flash}
-      GEMINI_API_BASE_URL: ${GEMINI_API_BASE_URL:-https://generativelanguage.googleapis.com/v1beta}
-      GEMINI_TIMEOUT_SECONDS: ${GEMINI_TIMEOUT_SECONDS:-8}
-    healthcheck:
-      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2).read()"]
-      interval: 15s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
     networks:
       - blueverse_internal
-      - blueverse_agent_egress
 
   agent-marine-conditions:
     profiles: ["agentic-ai"]
