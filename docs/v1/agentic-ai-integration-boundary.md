@@ -11,14 +11,16 @@ contracts.
 
 ## Status and governing boundary
 
-The repository contains a private Member 1 Experience & Biodiversity agent
-service with read-only tools. It is not a public client endpoint, and the other
-three roles and cross-agent orchestration remain unimplemented. The team owner
-reported G07 acceptance on 2026-10-13; the branch tracker records that report.
-This document continues to define the integration boundary. The repository
-requirements and implemented sources remain authoritative. Any exact public
-route, internal service URL, DTO, status code, availability enum and retry
-policy must be implemented in source before it is described as live.
+Private runtimes are present for Experience & Biodiversity, Marine Conditions,
+and Planning & Coordination. The Planner dispatch and checkpoint path is
+partial; the full four-agent workflow, Safety Operations role, AI-00 decisions
+and live compatibility evidence remain outstanding. G00 and G07 acceptance
+are recorded from Adithya Gunawardana's 2026-10-13 team-meeting report; meeting
+minutes and signatures are not in the repository. The repository requirements
+and implemented sources remain authoritative. Any exact public route, internal
+service URL, DTO, status code, availability enum and retry policy must be
+finalized in the owning contract and implemented before it is described as
+live.
 
 The v1 work has two separate deliveries:
 

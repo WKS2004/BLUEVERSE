@@ -1,5 +1,20 @@
 # v1 requirements coverage and development readiness
 
+**Shared G00 update — 2026-10-13:** Adithya Gunawardana reports that the team
+agreed in a meeting to finalize the current four component contracts and move
+to Agentic AI deployment. Shared G00 is recorded as accepted on that report;
+meeting minutes and individual signatures were not supplied in this repository.
+G07 acceptance was recorded separately on Adithya Gunawardana's explicit
+instruction on 2026-10-13. The earlier integration evidence snapshot remains
+unchanged; acceptance does not resolve AI-00 decisions or assert new runtime
+evidence.
+
+**G07 acceptance update — 2026-10-13:** Adithya Gunawardana explicitly
+accepted G07 and directed Agentic AI implementation to begin. This records
+that acceptance. The latest execution evidence remains the 2026-10-12
+integration snapshot below; no new Docker or live-provider evidence was
+collected in this session.
+
 **Member 3 branch update, 2026-10-05:** Coastal Planner and its React workflows
 now have the implementation and verification described in
 [the planner guide](../development/coastal-planner.md). Other owner services,
@@ -13,7 +28,8 @@ adds 500 ms search, pinned tabs, shared cards and record-specific pagination
 across all collections, refresh-safe forms and full details/actions from Logs.
 New audit snapshots show verified person/roles and original field changes.
 Legacy gaps remain explicit. Approved regression coverage is recorded in that
-contract; shared G00/G07 and live producer/agent acceptance remain pending.
+contract; G00/G07 acceptance is recorded, while live producer/agent acceptance
+remains pending.
 
 This is the handoff checklist for the four member components and their four
 distinct Agentic AI roles. It preserves the 25 September 2026 baseline audit

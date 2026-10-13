@@ -85,7 +85,7 @@ bash scripts/Unix/bash/sync-web-lockfile.sh
 docker compose --profile dev build
 ```
 
-The four future Agentic AI image shells are excluded from the local runtime
+The optional Agentic AI images are excluded from the normal local runtime
 stack. To build the DHI Python images without starting them:
 
 ```bash
@@ -96,9 +96,15 @@ docker compose --profile agentic-ai build \
   agent-safety-operations
 ```
 
-They contain no executable agent code and only print the Python version when
-started. Keep the profile out of `up` until G07 is accepted and the assigned
-agent branches provide their workloads and readiness behavior.
+Experience & Biodiversity, Marine Conditions, and Planning & Coordination
+have private runtimes; Safety Operations remains a runtime shell. The
+optional profile keeps them on the internal network with no host-published
+ports. Planner dispatch is disabled by default. Set `AGENTIC_SERVICE_KEY`,
+`AGENTIC_MODEL_NAME`, and `AGENTIC_MODEL_API_KEY` in local `.env` to
+configure Planner dispatch. Gemini is the configured default; do not send
+personal or sensitive data through a free-tier key. The runtimes have no
+database credentials, and unavailable models or specialist services produce
+unavailable/blocked outcomes.
 
 ## Start
 

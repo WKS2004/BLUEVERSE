@@ -1,6 +1,6 @@
 # BLUEVERSE
 
-The [2026-10-02 record navigation and activity update](docs/v1/coastal-operations-record-navigation-and-audit.md) adds 500 ms search, pinned category tabs, shared record cards and 5/10/25/50/100 Assessments/Alerts per page across all collections. Create/edit workspace intent survives refresh; unsaved inputs are not persisted. Logs opens the same full details/actions. New activity captures the verified person/roles and exact field changes; older missing details remain unavailable. G07 acceptance was reported by the team owner on 2026-10-13; shared G00 ratification and live producer/agent acceptance remain integration work.
+The [2026-10-02 record navigation and activity update](docs/v1/coastal-operations-record-navigation-and-audit.md) adds 500 ms search, pinned category tabs, shared record cards and 5/10/25/50/100 Assessments/Alerts per page across all collections. Create/edit workspace intent survives refresh; unsaved inputs are not persisted. Logs opens the same full details/actions. New activity captures the verified person/roles and exact field changes; older missing details remain unavailable. G00 and G07 acceptance are recorded from Adithya Gunawardana's 2026-10-13 team-meeting report; meeting minutes and signatures are not in the repository. Live producer and specialist-agent integration remain pending.
 
 **Coastal Tourism & Marine Resilience**
 
@@ -77,7 +77,9 @@ Marine Safety, and Experience & Biodiversity operations to their private
 services, which own their PostgreSQL-backed behavior, provider adapters and
 component business rules. The API remains the only client-facing boundary and
 receives only the authentication, permission and routing integration needed to
-expose those services. Executable Agentic AI remains gated on accepted G07.
+expose those services. G07 acceptance was recorded on 2026-10-13. Partial
+Planning & Coordination implementation runs only when explicitly enabled;
+specialist agents and AI-00 decisions remain outstanding.
 React and Flutter never call member services or Agentic AI directly. See
 [ADR-0020](docs/adr/ADR-0020-member-component-service-boundaries.md), the
 [v1 documentation index](docs/v1/README.md) and the
@@ -194,7 +196,8 @@ Its Marine Safety and Coastal Planner dependencies return `NOT_CONNECTED`
 without sending requests until their route, payload and authorized service
 identity are agreed. Planner, Marine Safety and Experience adapters use their
 implemented public API routes and caller permissions. Live provider behavior,
-shared G00 ratification and executable Agentic AI remain G00/G07 gates.
+G00 and G07 acceptance are recorded. Live provider compatibility and
+specialist-agent integration remain pending; AI-00 decisions remain open.
 Configure Docker-internal peer addresses in `.env`. The edge gateway allows
 6 MiB request bodies on assessment-item routes to carry a 5 MiB PNG with
 multipart framing; the service enforces the per-image limit. Auth and all
@@ -468,9 +471,12 @@ assessment titles and IANA time-zone/location choices while retaining existing
 UTC instants; the planner migration supplies `Asia/Colombo` to existing
 itineraries without changing their IDs or schedules.
 
-Four optional, runtime-only Agentic AI image shells use the DHI Python 3.13
-Alpine image. They contain no agent implementation and are excluded from the
-normal stack. Build them without starting them with:
+Four optional Agentic AI images use the DHI Python 3.13 Alpine image and are
+excluded from the normal stack. Private runtimes are present for Experience &
+Biodiversity, Marine Conditions, and Planning & Coordination; Safety
+Operations remains a runtime shell. The full four-agent workflow and live
+provider and peer integration remain incomplete. Build the images without
+starting them with:
 
 ```bash
 docker compose --profile agentic-ai build \
@@ -480,9 +486,16 @@ docker compose --profile agentic-ai build \
   agent-safety-operations
 ```
 
-They have no host-published ports and join only the internal Docker network;
-actual workloads and health behavior remain gated on G07 and their assigned
-`agentic-ai/**` branches.
+The private runtimes have no host-published ports and join only the internal
+Docker network. Planner dispatch is disabled by default. Set
+`AGENTIC_SERVICE_KEY`, `AGENTIC_MODEL_NAME`, and `AGENTIC_MODEL_API_KEY` in
+local `.env` to configure the Planner runtime. Gemini is the configured
+default; `AGENTIC_MODEL_PROVIDER=openai-compatible` and
+`AGENTIC_MODEL_BASE_URL` select an OpenAI-compatible provider. Gemini
+free-tier inputs and outputs may be used to improve Google products; do not
+send personal or sensitive data through a free-tier key. Missing models or
+specialist services produce unavailable/blocked states and cannot change
+deterministic eligibility or safety outcomes.
 
 The API signs the authenticated actor and `operations.*` permission claims with
 `COASTAL_OPERATIONS_CONTEXT_KEY`; bearer tokens and cookies are removed before
@@ -676,7 +689,9 @@ The web and backend build workflows run on supported branch families when their 
 
 The Docker backend workflow builds `services/api` first and then discovers and
 builds the other ASP.NET service directories, including Auth and all four
-component services, followed by the four runtime-only Agentic AI image shells.
+component services, followed by the four optional Agentic AI images. Private
+workloads are present for Experience & Biodiversity, Marine Conditions, and
+Planning & Coordination; Safety Operations remains a shell.
 The stack-health workflow maps each service folder to its
 public health route (including the `/api/operations/health` route), supplies
 masked ephemeral signing keys for the isolated CI stack, prints diagnostics

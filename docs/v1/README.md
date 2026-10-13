@@ -86,15 +86,18 @@ in the [canonical owner map](../project/ai-team-members.md).
 The 2026-09-26 repository audit gave a **GO for G00** and a **conditional GO
 for member coding after G00**. Member 2's component scope was accepted at its
 own G00 review on 2026-09-27, and its backend and React implementation are now
-present on `features/marine-safety`; the shared team G00 remains in progress.
+present on `features/marine-safety`; G00 acceptance was recorded from Adithya
+Gunawardana's team meeting report on 2026-10-13.
 See the [current status snapshot](requirements-coverage-and-readiness.md#current-implementation-snapshot--2026-10-03)
 and [branch tracker](member-branch-workflow.md#component-branch-status).
 After the full G00 exit criteria are satisfied, all four complete member
 components can proceed concurrently on their single feature branches.
-The Member 1 Experience & Biodiversity agent is implemented as a private,
-stateless specialist. The other agent roles, cross-agent orchestration and
-full golden workflow remain incomplete. The repository is not yet v1 complete
-or ready for final assessment.
+G00 and G07 acceptance were recorded from Adithya Gunawardana's 2026-10-13
+team-meeting report; meeting minutes and signatures are not in the repository.
+Private Experience & Biodiversity, Marine Conditions, and Planning &
+Coordination runtimes are present, but AI-00 decisions, Safety Operations,
+live peer compatibility, the full golden workflow and final assessment
+readiness remain outstanding.
 See the detailed [final start-readiness decision and exit
 criteria](requirements-coverage-and-readiness.md#final-start-readiness-decision--2026-09-26).
 

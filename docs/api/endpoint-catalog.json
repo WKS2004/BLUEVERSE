@@ -2,7 +2,7 @@
   "schema": 1,
   "status": "active",
   "auditedAt": "2026-10-12",
-  "purpose": "Fast, repository-local inventory of implemented frontend routes, gateway routes, public API endpoints, test-only routes, and Agentic AI endpoint status.",
+  "purpose": "Fast, repository-local inventory of implemented frontend routes, gateway routes, public API, private service, test-only, and Agentic AI endpoints.",
   "authority": {
     "uiWorkflowRegistry": "docs/contracts/ui-integration.json",
     "backendSources": [
@@ -2843,6 +2843,20 @@
       ]
     }
   ],
+  "internalServiceEndpoints": [
+    {
+      "id": "planner-agent-execution-state-write",
+      "method": "PUT",
+      "path": "/internal/agentic/executions/{workflowId:guid}",
+      "ownerService": "coastal-planner",
+      "auth": "service-key",
+      "publicBoundary": "internal-service",
+      "status": "implemented",
+      "description": "Stores minimized Agentic AI execution checkpoints in Planner-owned PostgreSQL state.",
+      "usage": "Called only by the private planning-coordination service. Requires the shared service key and an existing Planner workflow; clients and the public gateway must not call this route.",
+      "source": "services/coastal-planner/Controllers/AgentExecutionStateController.cs"
+    }
+  ],
   "testOnlyEndpoints": [
     {
       "id": "api-test-errors",
@@ -2890,7 +2904,7 @@
     }
   ],
   "aiEndpoints": {
-    "status": "none-implemented",
+    "status": "implemented",
     "clientAccess": "forbidden",
     "sourceDirectories": [
       "services/ai",
@@ -2900,8 +2914,45 @@
     "documentationSources": [
       "docs/agentic-ai"
     ],
-    "entries": [],
-    "notes": "The repository contains Agentic AI architecture and workflow documentation plus runtime-only DHI Python image shells under the opt-in Compose profile; it has no executable AI service, agent or AI API endpoint. Do not invent or expose target routes. When an AI service is implemented, add each endpoint here and keep clients behind the public API boundary."
+    "entries": [
+      {
+        "id": "planning-coordination-live",
+        "method": "GET",
+        "path": "/health/live",
+        "ownerService": "planning-coordination",
+        "auth": "anonymous",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Process liveness only.",
+        "usage": "Docker liveness probe. Does not indicate model, specialist, Planner database, or dispatch readiness.",
+        "source": "services/ai/planning-coordination/planning_coordination/service.py"
+      },
+      {
+        "id": "planning-coordination-readiness",
+        "method": "GET",
+        "path": "/internal/agentic/agents/planning-coordination/health",
+        "ownerService": "planning-coordination",
+        "auth": "service-key",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Reports coarse private model/runtime configuration readiness.",
+        "usage": "Planner-to-agent availability check. Does not guarantee a later dispatch succeeds.",
+        "source": "services/ai/planning-coordination/planning_coordination/service.py"
+      },
+      {
+        "id": "planning-coordination-dispatch",
+        "method": "POST",
+        "path": "/internal/agentic/agents/planning-coordination/dispatch",
+        "ownerService": "planning-coordination",
+        "auth": "service-key",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Validates and coordinates one bounded planner execution using configured specialist roles.",
+        "usage": "Called by Coastal Planner after deterministic recommendation generation. Model plans are allowlist-validated; specialist outputs are identity/schema checked; failures remain explicit and cannot alter deterministic eligibility or safety outcomes.",
+        "source": "services/ai/planning-coordination/planning_coordination/service.py"
+      }
+    ],
+    "notes": "Planning & Coordination implements agent-scoped private health and dispatch routes under /internal/agentic/agents/planning-coordination. Experience & Biodiversity and Marine Conditions now have separate private specialist runtimes; Safety Operations remains a runtime shell. Clients must use the public API. Gemini defaults are provisional and AI-00 provider and data-handling decisions remain open."
   },
   "forbiddenPatterns": [
     "/api/v1",

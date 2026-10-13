@@ -1,9 +1,13 @@
 # Agentic AI architecture — v1 target
 
-**Implementation status:** the Member 1 Experience & Biodiversity specialist
-runtime and its read-only tools are implemented under
-`services/agents/experience-biodiversity`. The remaining three roles and the
-end-to-end orchestration workflow are not implemented. This is the v1 target contract derived from
+**Implementation status (2026-10-13):** private runtimes are present for
+Experience & Biodiversity, Marine Conditions, and Planning & Coordination.
+Planning & Coordination has a private dispatch API, validated plan
+orchestration, specialist adapters and Planner-owned execution-state
+persistence. The Experience & Biodiversity and Marine Conditions specialists
+also have private implementations. Safety Operations and end-to-end
+four-agent integration remain incomplete; this is partial implementation,
+not v1 readiness. This v1 target contract is derived from
 [PROJECT_REQUIREMENTS.md](../../PROJECT_REQUIREMENTS.md). The
 [v1 index](../v1/README.md) links separate contracts for each member's agent.
 Before selecting a runtime, model/provider or retrieval design, use the
@@ -81,7 +85,21 @@ timestamps. Do not persist hidden reasoning, credentials or unnecessary
 sensitive data. Exact schemas and transport boundaries belong in the
 accepted ADRs and data/service contracts.
 
-The eventual orchestration framework remains undecided in
+The current provider adapter uses Google's native Gemini Interactions API
+by default, with an optional OpenAI-compatible adapter. Runtime
+configuration remains required, and dispatch stays disabled by default.
+Gemini is Adithya Gunawardana's selected implementation preference; shared
+AI-00 provider approval, model choice, data-processing review, specialist
+report schemas and runtime decisions remain open in
+[ADR-0007](../adr/ADR-0007-agentic-ai-framework.md) and
+[ADR-0008](../adr/ADR-0008-agent-workflow-state.md). This adapter is a
+provisional integration seam, not an accepted framework decision. Agent API
+routes use `/internal/agentic/agents/{agent-id}/{operation}` namespaces. The
+Planning Coordination dispatch route retains its established
+`/internal/agentic/agents/planning-coordination/{health,dispatch}` routes;
+specialist routes remain unimplemented targets until their owners deliver
+those services. The
+eventual orchestration framework remains undecided in
 [ADR-0007](../adr/ADR-0007-agentic-ai-framework.md). Whether the agents run
 in one private process or several does not change the public API, tool,
 validation or approval boundaries.

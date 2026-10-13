@@ -1,9 +1,10 @@
 # Agentic AI implementation blueprint — v1
 
-**Status:** target specification and implementation checklist. The repository
-does not yet contain the v1 Agentic AI runtime, executable agents, production
-tools, or model integration. This document describes what the team must build
-and decide; it is not evidence that any item is implemented.
+**Status:** target specification and implementation checklist. Partial AI-02
+Planning & Coordination runtime exists; specialist agents, production tools,
+approved provider/model and golden workflow remain unimplemented. This
+document describes remaining work and decisions; it is not evidence that
+end-to-end AI behavior is ready.
 
 **Scope:** the four v1 responsibilities and workflows in
 [`PROJECT_REQUIREMENTS.md`](../../PROJECT_REQUIREMENTS.md), the four

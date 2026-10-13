@@ -15,11 +15,21 @@ status and decision, final result and timestamps as relevant. Persist only
 what is needed to operate and audit the workflow; never persist hidden
 model reasoning, secrets or unnecessary sensitive data.
 
+## Partial AI-02 implementation — 2026-10-13
+
+Planning Coordination uses a Planner-owned `agent_execution_states` table
+keyed to an existing business workflow. The private agent writes through a
+Planner service-key endpoint and has no database credentials. Stored state is
+schema-versioned and bounded. This is a provisional component implementation
+for review, not acceptance of a shared runtime state architecture or
+retention policy.
+
 ## Consequences
 
-The four-agent responsibilities and assessed flow are defined, but the
-table design, ownership, retention and restart/recovery strategy remain
-open. Finalize those with the PostgreSQL/EF Core schema before accepting
-this ADR. Member 1's current specialist is stateless and persists no
-agent-owned execution state; it does not settle the shared workflow-state
-decision. This proposed record is not evidence of an implemented schema.
+Cross-agent state ownership, retention, restart/recovery, concurrency and
+shared schema remain open. Planning & Coordination persists bounded
+checkpoints in Planner-owned state; the Experience & Biodiversity specialist
+is stateless and owns no execution-state store. Neither implementation
+settles the shared workflow-state decision. Finalize that design with the
+PostgreSQL/EF Core schema before accepting this ADR. This proposal is not
+evidence of end-to-end workflow-state implementation.

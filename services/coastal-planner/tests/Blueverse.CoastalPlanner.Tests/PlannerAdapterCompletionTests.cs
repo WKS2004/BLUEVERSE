@@ -106,7 +106,7 @@ public sealed class PlannerAdapterCompletionTests
         Assert.Equal(expected, (await client.CheckAvailabilityAsync(default)).Status);
         var outcome = await client.DispatchAsync(new(Guid.NewGuid(), Guid.NewGuid()), default);
         Assert.Equal("UNAVAILABLE", outcome.Status);
-        Assert.All(calls, path => Assert.Equal("/internal/agentic/health", path));
+        Assert.All(calls, path => Assert.Equal("/internal/agentic/agents/planning-coordination/health", path));
         Assert.Contains("not enabled", outcome.Message);
     }
 

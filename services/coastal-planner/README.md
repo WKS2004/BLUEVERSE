@@ -97,7 +97,12 @@ for current routes, schedule/freshness requirements, permissions, durable review
 history, Docker setup, explicit PostgreSQL checks and pending owner contracts.
 Catalogue/marine/operations services are absent from this branch. The fake ML
 service is synthetic and does not establish a real IT3091 integration.
-Pre-G07 AI remains a non-executing private access seam.
+Planning Coordination runs only when `AgenticAi__Enabled=true` and the
+private service key and model provider settings are configured. Its private
+execution checkpoints are stored by Planner through the service-key route.
+The AI service has no database credentials. The model/provider and specialist
+contracts remain provisional; AI output cannot change deterministic planner
+eligibility or safety outcomes.
 
 The suite uses deterministic in-memory persistence for provider-independent
 application behavior and an HTTP test server for JWT permissions, owner

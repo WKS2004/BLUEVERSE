@@ -270,6 +270,13 @@ the smaller shared-client workflow contract.
 | `GET` | `/api/marine/assessments/{id:guid}` | `permission:marine.profile.read` | Returns one persisted suitability assessment with copied condition values and its exact profile criteria and citations. Supports audit and explanation after profile changes or provider-snapshot retention; unrecoverable older evidence remains explicitly marked incomplete. Reads Marine-owned records without contacting the activity catalogue or provider. |
 | `POST` | `/api/marine/safety-profiles/{id:guid}/review` | `permission:all(marine.profile.read,marine.profile.manage)` | Reviews and activates an evidence-backed immutable safety-profile draft. A different authorized manager approves a pending version after reviewing its wind, wave and swell sources and rationales. Approval records reviewer and effective time and atomically supersedes the previous active version. Requires verified published Member 1 activity data. Unavailable catalogue returns structured ACTIVITY_DATA_UNAVAILABLE 503 with Retry-After: 5 and null data; no new draft or review result is stored. See docs/api/marine-dependency-availability.md. |
 
+## Private service endpoints
+
+These routes are private service-to-service endpoints and are not exposed through the public API gateway.
+
+| Method | Path | Authorization | Purpose and use |
+|---|---|---|---|
+| `PUT` | `/internal/agentic/executions/{workflowId:guid}` | `service-key` | Called only by the private planning-coordination service. Requires the shared service key and an existing Planner workflow; clients and the public gateway must not call this route. |
 ## Test host only
 
 These routes exist in test fixtures and are not production endpoints.
@@ -283,4 +290,8 @@ These routes exist in test fixtures and are not production endpoints.
 
 ## Agentic AI endpoints
 
-None implemented. Clients must use the public API; target architecture does not create a live route.
+| Method | Path | Use |
+|---|---|---|
+| `GET` | `/health/live` | Docker liveness probe. Does not indicate model, specialist, Planner database, or dispatch readiness. |
+| `GET` | `/internal/agentic/agents/planning-coordination/health` | Planner-to-agent availability check. Does not guarantee a later dispatch succeeds. |
+| `POST` | `/internal/agentic/agents/planning-coordination/dispatch` | Called by Coastal Planner after deterministic recommendation generation. Model plans are allowlist-validated; specialist outputs are identity/schema checked; failures remain explicit and cannot alter deterministic eligibility or safety outcomes. |
