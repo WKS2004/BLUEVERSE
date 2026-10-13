@@ -1,23 +1,24 @@
 # Agentic AI tools — v1 target
 
-**Implementation status:** no executable Agentic AI tools are checked in.
-The names below are candidate allowlisted operations from the v1
-requirements, not API routes or callable production tools.
+**Implementation status:** the Member 1 Experience & Biodiversity service has
+five read-only tools checked in under
+`services/agents/experience-biodiversity`. The other tool sets below remain
+target contracts; their presence here does not make them callable.
 
 The [implementation blueprint](implementation-blueprint.md) defines the full
 tool execution checklist, authoritative source map, model/retrieval boundary,
 and pre-implementation decisions. Read it before introducing a new class of
 tool such as document retrieval or RAG.
 
-| Agent | Candidate read-only tools |
+| Agent | Implemented or candidate read-only tools |
 |---|---|
 | Coastal Experience & Biodiversity | destination_lookup, activity_lookup, offering_lookup, schedule_lookup, biodiversity_prediction_lookup |
 | Marine Conditions Intelligence | weather_forecast_lookup, marine_forecast_lookup, condition_snapshot_lookup |
 | Safety & Operations | safety_profile_lookup, operational_status_lookup, active_alert_lookup, operational_constraint_lookup |
 | Planning & Coordination | Delegates configured steps to specialist agents; it cannot create or grant itself tools. |
 
-The candidate `biodiversity_prediction_lookup` belongs to the post-G07
-Coastal Experience & Biodiversity Agent. Its backend handler may call only
+The implemented `biodiversity_prediction_lookup` belongs to the Member 1
+Coastal Experience & Biodiversity Agent. Its handler may call only
 the validated Adithya Gunawardana (Member 3) prediction contract; Adithya Gunawardana (Member 3) owns the ordinary v1
 IT3091 service adapter on its `features/**` branch. The agent and tool do not
 call the private IT3091 service directly. Keep prediction unavailability,

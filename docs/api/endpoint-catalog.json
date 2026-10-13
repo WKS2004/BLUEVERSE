@@ -740,6 +740,16 @@
       "usage": "Keeps Marine Safety private. Protected requests replace client credentials with a request-bound actor context; anonymous health and Swagger requests are forwarded without an actor context. Missing Auth verification or unreachable/timed-out Marine returns structured availability metadata; unrelated routes and received upstream errors are preserved. Ambiguous proxy writes are not retryable and have no Retry-After hint."
     },
     {
+      "id": "agent-marine-conditions-yarp-route",
+      "method": "ANY",
+      "path": "/api/agents/marine-conditions/{**catch-all}",
+      "type": "reverse-proxy",
+      "upstream": "agent-marine-conditions",
+      "source": "services/api/appsettings.json",
+      "description": "API-gateway route that forwards Marine Conditions Intelligence Agent requests to the private agent service.",
+      "usage": "Routes requests to the Marine Conditions Intelligence Agent under /api/agents/marine-conditions without route collision with other agents (/api/agents/coastal-planner, /api/agents/biodiversity, /api/agents/operations)."
+    },
+    {
       "id": "experience-biodiversity-health-yarp-route",
       "method": "ANY",
       "path": "/api/experiences/health",
@@ -2028,6 +2038,32 @@
       "source": "services/experience-biodiversity/Controllers/AgentSeamController.cs"
     },
     {
+      "id": "experience-agent-info",
+      "method": "GET",
+      "path": "/api/experiences/agent/info",
+      "ownerService": "experience-biodiversity",
+      "publicBoundary": "api",
+      "operationId": "GetExperienceAgentInfo",
+      "status": "implemented",
+      "auth": "permission:experiences.catalogue.read",
+      "description": "Inspects the Coastal Experience & Biodiversity Agent runtime status, Google AI Studio Gemini model configuration, and allowlisted read-only tools.",
+      "usage": "Namespaced under /api/experiences/agent/info so Member 1–4 agents have zero route collisions; returns live agent metadata when connected or safe not_connected fallback when offline.",
+      "source": "services/experience-biodiversity/Controllers/AgentSeamController.cs"
+    },
+    {
+      "id": "experience-agent-context-reports",
+      "method": "POST",
+      "path": "/api/experiences/agent/context-reports",
+      "ownerService": "experience-biodiversity",
+      "publicBoundary": "api",
+      "operationId": "GenerateExperienceAgentContextReport",
+      "status": "implemented",
+      "auth": "permission:experiences.catalogue.read",
+      "description": "Generates a validated, read-only Coastal Experience & Biodiversity Agent context report with optional Google AI Studio Gemini synthesis.",
+      "usage": "Validates workflowId, stepId, objective, and selectors, then invokes /api/experiences/agent/context-reports on the private agent runtime with safe not_connected/unavailable fallback.",
+      "source": "services/experience-biodiversity/Controllers/AgentSeamController.cs"
+    },
+    {
       "id": "experience-availability-evaluate",
       "method": "POST",
       "path": "/api/experiences/availability/evaluations",
@@ -2916,7 +2952,7 @@
         "source": "services/ai/planning-coordination/planning_coordination/service.py"
       }
     ],
-    "notes": "Executable Planning & Coordination service implements agent-scoped private health and dispatch routes under /internal/agentic/agents/planning-coordination. Clients must use the public API. Gemini is the default configured provider; AI-00 approval remains open. Other agent service endpoints are unique targets but their services remain unimplemented."
+    "notes": "Planning & Coordination implements agent-scoped private health and dispatch routes under /internal/agentic/agents/planning-coordination. Experience & Biodiversity and Marine Conditions now have separate private specialist runtimes; Safety Operations remains a runtime shell. Clients must use the public API. Gemini defaults are provisional and AI-00 provider and data-handling decisions remain open."
   },
   "forbiddenPatterns": [
     "/api/v1",

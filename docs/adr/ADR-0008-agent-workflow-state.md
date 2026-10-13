@@ -27,6 +27,9 @@ retention policy.
 ## Consequences
 
 Cross-agent state ownership, retention, restart/recovery, concurrency and
-shared schema remain open. Finalize those with the PostgreSQL/EF Core design
-before accepting this ADR. This proposed record is not evidence of
-end-to-end implementation.
+shared schema remain open. Planning & Coordination persists bounded
+checkpoints in Planner-owned state; the Experience & Biodiversity specialist
+is stateless and owns no execution-state store. Neither implementation
+settles the shared workflow-state decision. Finalize that design with the
+PostgreSQL/EF Core schema before accepting this ADR. This proposal is not
+evidence of end-to-end workflow-state implementation.

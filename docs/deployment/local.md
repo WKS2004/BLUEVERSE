@@ -22,8 +22,9 @@ Planner, Marine Safety, Experience & Biodiversity, the public API and Auth.
 Coastal Planner provides trip planning and review workflows; Marine Safety
 provides conditions and safety workflows and calls Open-Meteo server-side.
 Experience & Biodiversity provides catalogue management, nearby discovery, map
-vector tile support and pre-G07 Agentic AI dispatch seams. Clients reach each
-private service through the public API.
+vector tile support and the private Member 1 Agentic AI dispatch seam. Clients reach each
+private service through the public API. The opt-in Member 1 agent image is
+described below; it remains private and is reached through the owning service.
 
 ## Prerequisites
 
@@ -84,7 +85,7 @@ bash scripts/Unix/bash/sync-web-lockfile.sh
 docker compose --profile dev build
 ```
 
-The four future Agentic AI image shells are excluded from the local runtime
+The optional Agentic AI images are excluded from the normal local runtime
 stack. To build the DHI Python images without starting them:
 
 ```bash
@@ -95,17 +96,15 @@ docker compose --profile agentic-ai build \
   agent-safety-operations
 ```
 
-Planning Coordination runs a private HTTP service; the other role images
-remain shells. The profile is optional and keeps all AI services on the
-internal network. Gemini is the default provider. Set `AGENTIC_SERVICE_KEY`,
-`AGENTIC_MODEL_NAME`, and `AGENTIC_MODEL_API_KEY` in local `.env`; then set
-`AGENTIC_AI_ENABLED=true` to enable Planner dispatch. Gemini quotas depend on
-model and Google AI Studio project tier. Google's billing terms state that
-free-tier inputs and outputs may be used to improve Google products. Do not
-send personal or sensitive data with a free-tier key; keep dispatch disabled
-until data handling is approved. Without specialist services, execution
-returns unavailable/blocked status. The AI service is disabled by default and
-has no database credentials.
+Experience & Biodiversity, Marine Conditions, and Planning & Coordination
+have private runtimes; Safety Operations remains a runtime shell. The
+optional profile keeps them on the internal network with no host-published
+ports. Planner dispatch is disabled by default. Set `AGENTIC_SERVICE_KEY`,
+`AGENTIC_MODEL_NAME`, and `AGENTIC_MODEL_API_KEY` in local `.env` to
+configure Planner dispatch. Gemini is the configured default; do not send
+personal or sensitive data through a free-tier key. The runtimes have no
+database credentials, and unavailable models or specialist services produce
+unavailable/blocked outcomes.
 
 ## Start
 

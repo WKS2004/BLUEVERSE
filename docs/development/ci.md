@@ -175,9 +175,10 @@ metadata, requires `services/api`, verifies each matching Dockerfile and
 builds the images from the repository root. Non-ASP.NET service directories
 are reported as skipped rather than being silently treated as backend images.
 The workflow separately builds four Agentic AI images from
-`infrastructure/docker/agentic-ai/<agent>/Dockerfile`. Planning Coordination
-has a partial executable service; three role images remain shells. These
-builds do not establish live model or specialist integration evidence.
+`infrastructure/docker/agentic-ai/<agent>/Dockerfile`. Private workloads
+exist for Experience & Biodiversity, Marine Conditions, and Planning &
+Coordination; Safety Operations remains a shell. Image builds do not establish
+live model or peer-integration evidence.
 
 The stack-health workflow is intentionally heavy. It is not a direct push
 workflow: it listens for completed image workflows, proceeds only when the

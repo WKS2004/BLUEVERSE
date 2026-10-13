@@ -1,6 +1,6 @@
 # BLUEVERSE v1 documentation
 
-The latest [record navigation/activity follow-up](coastal-operations-record-navigation-and-audit.md) adds 500 ms search, pinned tabs, shared cards, record-specific cursor pagination, refresh-safe workspace intent and full details/actions from Logs. New audit events contain verified person/roles and exact field snapshots. This supersedes prior debounce/page-label descriptions; shared G00/G07 and live integration acceptance remain Pending.
+The latest [record navigation/activity follow-up](coastal-operations-record-navigation-and-audit.md) adds 500 ms search, pinned tabs, shared cards, record-specific cursor pagination, refresh-safe workspace intent and full details/actions from Logs. New audit events contain verified person/roles and exact field snapshots. This supersedes prior debounce/page-label descriptions; G07 acceptance was reported by the team owner on 2026-10-13, while shared G00 ratification and live integration evidence remain open.
 
 This directory is the human-readable and agent-readable implementation guide
 for the frozen v1 scope in [PROJECT_REQUIREMENTS.md](../../PROJECT_REQUIREMENTS.md).
@@ -92,9 +92,12 @@ See the [current status snapshot](requirements-coverage-and-readiness.md#current
 and [branch tracker](member-branch-workflow.md#component-branch-status).
 After the full G00 exit criteria are satisfied, all four complete member
 components can proceed concurrently on their single feature branches.
-G07 acceptance was recorded on 2026-10-13. Planning & Coordination
-implementation has begun; AI-00 decisions, specialist services, full
-integration evidence and final assessment readiness remain outstanding.
+G00 and G07 acceptance were recorded from Adithya Gunawardana's 2026-10-13
+team-meeting report; meeting minutes and signatures are not in the repository.
+Private Experience & Biodiversity, Marine Conditions, and Planning &
+Coordination runtimes are present, but AI-00 decisions, Safety Operations,
+live peer compatibility, the full golden workflow and final assessment
+readiness remain outstanding.
 See the detailed [final start-readiness decision and exit
 criteria](requirements-coverage-and-readiness.md#final-start-readiness-decision--2026-09-26).
 

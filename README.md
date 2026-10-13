@@ -1,13 +1,13 @@
 # BLUEVERSE
 
-The [2026-10-02 record navigation and activity update](docs/v1/coastal-operations-record-navigation-and-audit.md) adds 500 ms search, pinned category tabs, shared record cards and 5/10/25/50/100 Assessments/Alerts per page across all collections. Create/edit workspace intent survives refresh; unsaved inputs are not persisted. Logs opens the same full details/actions. New activity captures the verified person/roles and exact field changes; older missing details remain unavailable. G00 and G07 acceptance are recorded in the v1 readiness docs; live specialist-agent integration remains pending.
+The [2026-10-02 record navigation and activity update](docs/v1/coastal-operations-record-navigation-and-audit.md) adds 500 ms search, pinned category tabs, shared record cards and 5/10/25/50/100 Assessments/Alerts per page across all collections. Create/edit workspace intent survives refresh; unsaved inputs are not persisted. Logs opens the same full details/actions. New activity captures the verified person/roles and exact field changes; older missing details remain unavailable. G00 and G07 acceptance are recorded from Adithya Gunawardana's 2026-10-13 team-meeting report; meeting minutes and signatures are not in the repository. Live producer and specialist-agent integration remain pending.
 
 **Coastal Tourism & Marine Resilience**
 
 Coastal Operations publication, permissions, record activity and the separate
 Assessment/Alert client pages follow the [2026-10-01 contract](docs/v1/coastal-operations-publication-and-ui.md).
 Assessment publication uses submit and stores a durable business delivery
-envelope.
+envelope; the current Operations publication path does not dispatch an agent.
 Service startup applies the additive dispatch migration along with existing
 Coastal Operations migrations, including `20261001204558_CoastalDraftEvidenceRemoval`
 and `20261002081218_CoastalDetailedAudit`.
@@ -35,8 +35,10 @@ integrated full-stack and Agentic AI project. The submission target is
 backed by the public API gateway, internal Auth service and PostgreSQL. The
 The four v1 member components, their private service sources and both client
 workflows are present on this integration branch. Live peer/provider
-compatibility, shared G00/G07 acceptance and executable agents remain
-integration targets. See the linked component contracts and implementation
+compatibility and shared G00 ratification remain integration targets. The
+Member 1 experience specialist now runs as a private stateless Python service;
+cross-component orchestration and the other agent roles remain future work.
+See the linked component contracts and implementation
 evidence for current scope and remaining dependencies.
 
 ## Project identity
@@ -469,10 +471,12 @@ assessment titles and IANA time-zone/location choices while retaining existing
 UTC instants; the planner migration supplies `Asia/Colombo` to existing
 itineraries without changing their IDs or schedules.
 
-Four optional Agentic AI images use the DHI Python 3.13 Alpine image. The
-Planning & Coordination service is implemented; other role images remain
-runtime shells. The profile is excluded from the normal stack. Build all
-images with:
+Four optional Agentic AI images use the DHI Python 3.13 Alpine image and are
+excluded from the normal stack. Private runtimes are present for Experience &
+Biodiversity, Marine Conditions, and Planning & Coordination; Safety
+Operations remains a runtime shell. The full four-agent workflow and live
+provider and peer integration remain incomplete. Build the images without
+starting them with:
 
 ```bash
 docker compose --profile agentic-ai build \
@@ -482,19 +486,16 @@ docker compose --profile agentic-ai build \
   agent-safety-operations
 ```
 
-They have no host-published ports and join only the internal Docker network.
-Set `AGENTIC_SERVICE_KEY`, `AGENTIC_MODEL_NAME`, and
-`AGENTIC_MODEL_API_KEY` in local `.env` to configure Gemini. The service uses
-Google AI Studio's Gemini Interactions API by default. Set
-`AGENTIC_MODEL_PROVIDER=openai-compatible` plus `AGENTIC_MODEL_BASE_URL` only
-when using an OpenAI-compatible provider. Gemini free-tier access and quotas
-vary by model, project and current Google limits; check Google AI Studio before
-use. Gemini free-tier inputs and outputs may be used to improve Google
-products, per Google's billing terms; do not send personal or sensitive data
-through a free-tier key. Keep the feature disabled until the project's data
-handling is approved. Set `AGENTIC_AI_ENABLED=true` to let Coastal Planner
-dispatch. Missing model or specialist services produce unavailable/blocked
-states and never alter deterministic eligibility or safety outcomes.
+The private runtimes have no host-published ports and join only the internal
+Docker network. Planner dispatch is disabled by default. Set
+`AGENTIC_SERVICE_KEY`, `AGENTIC_MODEL_NAME`, and `AGENTIC_MODEL_API_KEY` in
+local `.env` to configure the Planner runtime. Gemini is the configured
+default; `AGENTIC_MODEL_PROVIDER=openai-compatible` and
+`AGENTIC_MODEL_BASE_URL` select an OpenAI-compatible provider. Gemini
+free-tier inputs and outputs may be used to improve Google products; do not
+send personal or sensitive data through a free-tier key. Missing models or
+specialist services produce unavailable/blocked states and cannot change
+deterministic eligibility or safety outcomes.
 
 The API signs the authenticated actor and `operations.*` permission claims with
 `COASTAL_OPERATIONS_CONTEXT_KEY`; bearer tokens and cookies are removed before
@@ -688,8 +689,9 @@ The web and backend build workflows run on supported branch families when their 
 
 The Docker backend workflow builds `services/api` first and then discovers and
 builds the other ASP.NET service directories, including Auth and all four
-component services. The optional Agentic AI profile includes Planning &
-Coordination runtime and three future role image shells.
+component services, followed by the four optional Agentic AI images. Private
+workloads are present for Experience & Biodiversity, Marine Conditions, and
+Planning & Coordination; Safety Operations remains a shell.
 The stack-health workflow maps each service folder to its
 public health route (including the `/api/operations/health` route), supplies
 masked ephemeral signing keys for the isolated CI stack, prints diagnostics

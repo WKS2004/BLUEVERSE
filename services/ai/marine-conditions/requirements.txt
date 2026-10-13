@@ -1,0 +1,4 @@
+# Core runtime: standard library utilized for maximum reliability and portability on dhi.io/python:3.13-alpine
+# Optional test tooling installed by CI:
+# pytest>=8.0.0
+# pytest-cov>=5.0.0

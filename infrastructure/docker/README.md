@@ -10,7 +10,7 @@ Custom Dockerfiles remain here so application codebases can stay close to their 
 - `coastal-planner/` — ASP.NET Core Coastal Planner service
 - `experience-biodiversity/` — ASP.NET Core Experience & Biodiversity service
 - `marine-safety/` — ASP.NET Core Marine Safety service
-- `agentic-ai/` — four private Python runtime image shells for the paired v1 agent roles
+- `agentic-ai/` — four opt-in private Python images for the paired v1 agent roles
 - `frontend/` — React build + static Nginx runtime
 - `edge-nginx/` — local reverse proxy configuration
 
@@ -58,10 +58,11 @@ multi-stage builds and exec-form runtime entry points; their health probes call
 the service's built-in `--healthcheck` mode.
 
 Agentic AI images use `dhi.io/python:3.13-alpine` under the opt-in
-`agentic-ai` Compose profile. Planning Coordination has a private HTTP
-runtime; the other three remain shells. Set model and shared service-key
-values through local environment configuration. Planner dispatch is disabled
-by default. Build images with:
+`agentic-ai` Compose profile. Private runtimes are present for Experience &
+Biodiversity, Marine Conditions, and Planning & Coordination; Safety
+Operations remains a shell. Planner dispatch is disabled by default. Set
+model and shared service-key values through local environment configuration.
+Build the images with:
 
 ```sh
 docker compose --profile agentic-ai build \
@@ -72,9 +73,10 @@ docker compose --profile agentic-ai build \
 ```
 
 All four services join only the internal Docker network and publish no host
-ports. Planning Coordination exposes private liveness, readiness and dispatch
-routes. Provider choice and specialist integrations remain provisional; the
-other agents do not yet implement their target service contracts.
+ports. Planning & Coordination exposes private liveness, readiness and
+dispatch routes; the Experience & Biodiversity and Marine Conditions roles
+have private specialist routes. Provider approval, cross-agent integration
+and the full target workflow remain open.
 
 Every ASP.NET backend service should keep its Dockerfile in a matching directory under `infrastructure/docker/<service-name>/Dockerfile`. The Docker backend workflow discovers first-level ASP.NET services under `services`, builds the public `api` service first, and then builds the remaining services one by one.
 

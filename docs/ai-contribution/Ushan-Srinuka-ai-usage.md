@@ -1195,3 +1195,151 @@
 - Summary of what the AI Agent did: Inspected all three management sections on the installed update, exercised Android's approximate-to-precise upgrade and current-location action, checked real place search and map panning, compared the map camera before/after switching tabs, and resumed device checks after USB debugging reauthorization. Recorded the owner's pinch-zoom result and synchronized the verification document and G00 implementation evidence.
 - AI output accepted/changed/rejected: Retained the already tested APK and public API workflows; accepted the native precision upgrade and the owner's confirmation that pinch zoom works without switching tabs. No additional implementation changes or live authoring writes were needed. Preserved earlier AI records and shared gate decisions, kept device coordinates out of repository evidence, and did not author the student's assessed reflection.
 - Verification/evidence: Destinations (5), Activities (4) and Offerings (3) loaded with the leading offset removed. Android fine/coarse permission granted; current-location centering and nearby empty-result handling worked; background permission absent. Hikkaduwa returned five live results and focused the selected place. Panning stayed within the map tab; captured map pixels were identical after Explore → Map. Pinch zoom was confirmed by the owner, not simulated by ADB. Post-restart app log checks returned zero matching Flutter/Android errors. C: .gradle remained absent and Gradle/Pub/TEMP/TMP resolved under D:\WKS\FlutterBuildCache. Both contract validators and git diff --check passed; the previously completed 152-test Flutter run, clean analysis, 35 validator tests and successful Android build remain the automated evidence because source code did not change during this continuation. iOS, signed release/production HTTPS and live CRUD acceptance remain unverified; see docs/testing/experience-mobile-rebuild.md.
+
+
+## 2026-10-13 — Analyze Coastal Experience & Biodiversity Agent and plan AI-01a implementation
+
+- Date/time or time range: 2026-10-13 01:00–01:10 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Antigravity
+- Tool/App: Antigravity IDE, PowerShell, Python contract validators
+- AI Model: Gemini 3.8 Flash
+- Summary of the user's request: Fully analyze the Agent Component of experience-biodiversity assigned for Ushan, begin implementation of the agent component, and update the AI-Usage log as Ushan.
+- Summary of what the AI Agent did: Conducted an architectural, contract, and codebase analysis for Member 1's Coastal Experience & Biodiversity Agent. Checked `docs/v1/agents/member-1-coastal-experience-biodiversity-agent.md`, `docs/agentic-ai/`, ADR-0007, ADR-0019, ADR-0020, and the existing `services/experience-biodiversity/Controllers/AgentSeamController.cs` pre-G07 seam. Inspected repository branch state on `agentic-ai/experience-biodiversity`, Docker Compose agent profiles, and container image shells (`infrastructure/docker/agentic-ai/experience-biodiversity/Dockerfile`). Formulated the structural plan and technical specification for AI-01a runtime service, allowlisted read tools, typed input/output schemas, and test harnesses.
+- AI output accepted/changed/rejected: Maintained strictly all architectural invariants (read-only specialist agent role, no direct calls to IT3091 or public API bypassing, preserved pre-G07 seam and existing 101 backend test suite, no secret persistence, no fabricated predictions). Avoided unapproved git commits or pushes. Did not author the student's assessed reflection.
+- Verification/evidence: Repository endpoint catalog validator (`validate_endpoint_catalog.py`) passed (134 public endpoints, 54 routes); UI integration contract validator (`validate_ui_integrations.py`) passed. Git status verified on clean branch `agentic-ai/experience-biodiversity`.
+
+
+## 2026-10-13 — Implement Coastal Experience & Biodiversity Agent service and Docker packaging
+
+- Date/time or time range: 2026-10-13 01:20–01:35 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Antigravity
+- Tool/App: Antigravity IDE, PowerShell, Docker, Python 3.13, Pytest
+- AI Model: Gemini 3.8 Flash
+- Summary of the user's request: Proceed with the implementation of the Coastal Experience & Biodiversity agent component and update the AI-Usage log as Ushan.
+- Summary of what the AI Agent did: Implemented the executable specialist agent role under `services/agents/experience-biodiversity/` strictly aligned with the Agentic AI CI workflow test paths (`.github/workflows/agentic-ai-tests.yml`). Authored zero-dependency standard library schemas (`schemas.py`), allowlisted read-only tools (`tools.py`: `destination_lookup`, `activity_lookup`, `offering_lookup`, `schedule_lookup`, `biodiversity_prediction_lookup`), the agent orchestrator (`agent.py`), HTTP server runtime (`server.py`), project metadata (`pyproject.toml`, `requirements.txt`), and automated unit/integration test suite (`test_experience_agent.py`). Updated the Dockerfile in `infrastructure/docker/agentic-ai/experience-biodiversity/Dockerfile` to build directly on the minimal Docker Hardened Image `dhi.io/python:3.13-alpine` without requiring external package managers or shell dependencies in the container.
+- AI output accepted/changed/rejected: Maintained all architectural requirements: read-only tools, deterministic status preservation, provenance integrity (ADR-0019), zero state mutations, zero secret storage, and prompt injection resilience. Standard library implementation was used to maintain full compatibility with the minimal DHI Alpine Python image. Kept existing git commits/pushes unexecuted in accordance with the agent rules. Student's individual reflection was not authored.
+- Verification/evidence: Pytest ran 5 test cases covering full report synthesis, biodiversity unavailable/stale handling without hallucination, skipped biodiversity lookups, missing destination handling, and prompt injection resistance—all 5 tests passed (100%). Docker image `blueverse/agent-experience-biodiversity:local` built successfully; temporary container booted cleanly and passed live HTTP checks on `/health`, `/api/agent/info`, and `POST /api/agent/generate`. Validated endpoint catalog (`validate_endpoint_catalog.py`) and UI integrations (`validate_ui_integrations.py`) both passed.
+
+
+## 2026-10-13 — Recheck and harden Coastal Experience & Biodiversity Agent implementation
+
+- Date/time or time range: 2026-10-13 01:40–01:56 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Antigravity
+- Tool/App: Antigravity IDE, PowerShell, Docker, Python 3.13, Pytest
+- AI Model: Gemini 3.8 Flash
+- Summary of the user's request: Recheck the Coastal Experience & Biodiversity Agent implementation once again and provide all details of the implementation and verification.
+- Summary of what the AI Agent did: Audited `services/agents/experience-biodiversity/` against `services/experience-biodiversity/` C# controllers/DTOs (`DestinationsController.cs`, `ActivitiesController.cs`, `OfferingsController.cs`, `AvailabilityController.cs`, `IBiodiversityConsumerService.cs`, `IEvaluationService.cs`), `docs/v1/agents/member-1-coastal-experience-biodiversity-agent.md`, `docs/v1/g00/member-1-experience-biodiversity.md`, and `ADR-0019`. Removed unused third-party runtime dependencies from `pyproject.toml` and `requirements.txt` to match the minimal `dhi.io/python:3.13-alpine` image; added `[tool.setuptools.packages.find]` and `pythonpath = ["src"]` for CI discovery. Hardened `schemas.py` with strict non-empty UUID validation, coordinate bounds ($[-90, 90]$, $[-180, 180]$), ISO-8601 time-window validation (`period_ends_at > period_starts_at`), unknown/secret field rejection, and separated `publication_status`, `schedule_status`, `availability_status`, and `operational_restriction` fields on `OfferingContext` and `ScheduleContext`. Aligned `schedule_lookup` in `tools.py` with the canonical `GET /api/experiences/offerings/{id}/schedules` endpoint and window coverage checks, and hardened `biodiversity_prediction_lookup` to enforce `destinationId` matching, required model provenance (`modelVersion`, `provider`), `stale`/`invalid` status handling, and full-list rejection on any malformed or out-of-range (`habitatSuitability` $\notin [0, 1]$) species prediction. Added contradictory selector detection (`destination_id` / `activity_id` vs `offering`) in `agent.py`, bounded request body size in `server.py`, and expanded `test_experience_agent.py` to 13 test functions (`EXP-AI-001`..`EXP-AI-020`) covering all 10 mandatory validation categories plus live HTTP server endpoint tests.
+- AI output accepted/changed/rejected: Accepted the hardened contract alignment, separated publication/schedule/availability status fields, strict ADR-0019 provenance and score validation, and expanded 13-test suite. Kept all 5 original test functions intact while expanding coverage. Did not commit or push changes and did not author the student's assessed reflection.
+- Verification/evidence: `python -B -m pytest services/agents/experience-biodiversity/tests` passed all 13/13 tests (`EXP-AI-001`..`EXP-AI-020`) with `report_test_metrics.py` reporting 13 passed, 0 failed. Rebuilt `blueverse/agent-experience-biodiversity:local` from `infrastructure/docker/agentic-ai/experience-biodiversity/Dockerfile` on `dhi.io/python:3.13-alpine` and verified live `/health`, `/api/agent/info`, and `POST /api/agent/generate` responses inside the container. Repository validators (`validate_agent_resources.py`, `validate_endpoint_catalog.py`, `validate_ui_integrations.py`) and all 35 validator/CI script unit tests passed.
+
+
+## 2026-10-13 — Implement Google AI Studio Gemini integration and agent-specific endpoints
+
+- Date/time or time range: 2026-10-13 02:05–02:32 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Antigravity
+- Tool/App: Antigravity IDE, PowerShell, Docker, Python 3.13, Pytest, .NET 10 SDK
+- AI Model: Gemini 3.1 Pro
+- Summary of the user's request: Check if the Coastal Experience & Biodiversity Agent supports Google AI Studio Gemini Model APIs, implement the necessary compatibility with Google AI Studio Gemini, and create service API endpoints specific to the `experience-biodiversity` agent so there are no endpoint collisions when all member agents merge.
+- Summary of what the AI Agent did: Implemented a zero-dependency Google AI Studio Gemini REST client (`services/agents/experience-biodiversity/src/blueverse_experience_agent/gemini_client.py`) using Python 3.13 standard library (`urllib.request`, `ssl`, `json`) for full compatibility with `dhi.io/python:3.13-alpine`. Configured `GeminiConfig` (`GEMINI_API_KEY`, `GEMINI_MODEL="gemini-2.5-flash"`, `GEMINI_API_BASE_URL`, `GEMINI_TIMEOUT_SECONDS`, `GEMINI_TEMPERATURE`, `GEMINI_MAX_OUTPUT_TOKENS`) with `x-goog-api-key` header transmission, hidden chain-of-thought (`"thought": true`) stripping, untrusted-output JSON and tool-allowlist validation, and graceful free-tier HTTP 429 rate-limit fallback (`ModelExecutionStatus.RATE_LIMITED`). Added `ModelExecutionSummary` to `schemas.py` and wired synthesis into `CoastalExperienceAgent` (`agent.py`). Namespaced the Python agent HTTP server (`server.py`) exclusively under `/api/experiences/agent/{health,info,context-reports,generate}` so un-namespaced or peer agent routes (`/api/agent/...`, `/api/marine/agent/...`, `/api/planner/agent/...`) return `404`. Added `IExperienceAgentConsumerService` (`Services/IExperienceAgentConsumerService.cs`), DTOs (`DTOs/AgentSeamDtos.cs`), and agent-specific endpoints (`GET /api/experiences/agent/info` and `POST /api/experiences/agent/context-reports`) to `services/experience-biodiversity/Controllers/AgentSeamController.cs` while preserving `GET /api/experiences/agent/context` (`EXP-API-AGENT-001` / `EXP-API-AUTHZ-004`). Registered the two new endpoints in `docs/api/endpoint-catalog.json`, regenerated `docs/api/endpoint-catalog.md`, and added unit/integration tests in `test_experience_agent.py` (`EXP-AI-021`..`EXP-AI-023`) and `AgentSeamApiTests.cs` (`EXP-API-AGENT-002`, `EXP-API-AGENT-003`).
+- AI output accepted/changed/rejected: Accepted the zero-dependency Google AI Studio Gemini client, untrusted model output validation, hidden thought stripping, and `/api/experiences/agent/...` route isolation across both the Python agent and C# `experience-biodiversity` service. Preserved all existing C# integration tests without modification, did not store or log API keys or hidden reasoning, did not commit or push to Git, and did not author the student's assessed reflection.
+- Verification/evidence: `python -B -m pytest services/agents/experience-biodiversity/tests` passed 16/16 tests (`EXP-AI-001`..`EXP-AI-023`). Rebuilt `blueverse/agent-experience-biodiversity:local` on `dhi.io/python:3.13-alpine`. `validate_agent_resources.py`, `validate_endpoint_catalog.py` (136 public endpoints, 54 frontend routes), `validate_ui_integrations.py`, and `git diff --check` all passed.
+
+## 2026-10-13 — Review and correct experience agent endpoint documentation
+
+- Date/time or time range: 2026-10-13 03:11 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex
+- AI Model: GPT-6
+- Summary of the user's request: Analyze the current experience-biodiversity agent implementation in this branch, then fix the issues found.
+- Summary of what the AI Agent did: Reviewed the runtime, component API seam, Compose configuration, branch gate tracker, agent contracts and related ADRs. Corrected the agent README's stale `/api/agent/...` endpoint paths to the namespaced routes exposed by `server.py`. The runtime changes remain pending the repository-required AI-00 and component acceptance evidence; the local tracker still records G07 as Planned, AI-00 ADRs as Proposed, and Ushan's component acceptance as pending.
+- AI output accepted/changed/rejected: Accepted the README route correction. Deferred runtime code and test changes until the recorded post-G07/AI-00 prerequisites are confirmed. No existing tests were changed.
+- Verification/evidence: Compared `services/agents/experience-biodiversity/README.md` with the routes in `services/agents/experience-biodiversity/src/blueverse_experience_agent/server.py`; no tests were run.
+
+## 2026-10-13 — Correct and harden Experience & Biodiversity Agent runtime
+
+- Date/time or time range: 2026-10-13 03:11–03:42 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell
+- AI Model: GPT-6
+- Summary of the user's request: Continue implementing the runtime issues found in the current Experience & Biodiversity Agent branch, based on the user's report that G07 and agent implementation start were accepted; update existing tests as authorized.
+- Summary of what the AI Agent did: Corrected schedule parsing to match the actual schedule DTO, filter target dates in each schedule timezone, and query the singular `OFFERING` interval-availability route before reporting an interval as available. Removed any inference of seat capacity from schedule activation and rejected biodiversity output without a matching destination ID. Made the agent HTTP server threaded and require a non-empty Bearer token on report POSTs. Restricted Gemini input to normalized statuses and fixed section names, accepted only a unique section selection, rendered summaries locally, bounded provider/API deadlines, and restricted API-key transmission to Google's HTTPS endpoint. Added Compose provider configuration, healthcheck and outbound bridge, synchronized setup and agent status documentation, and updated Python tests. Recorded G07 as owner-reported acceptance without inventing meeting minutes or PR evidence.
+- AI output accepted/changed/rejected: Accepted the user's authorization to implement the agent. Corrected the prior assumption that a schedule endpoint provided seat availability and corrected the availability route from plural `offerings` to singular `OFFERING` based on the controller source. Did not modify earlier contribution records, commit, push, or author the student's reflection.
+- Verification/evidence: Endpoint catalog validation passed (136 public endpoints; 54 frontend routes), UI integration validation passed, Agent resource validation passed (23 skills), `docker compose config --quiet` passed with validation-only placeholders, Python source compilation/import and targeted runtime smoke checks passed, and the .NET test project compiled. The Python pytest suite could not start because the bundled interpreter does not include pytest and the Windows Store `python.exe` alias is inaccessible. The .NET testhost aborted after 90 seconds without connecting; Docker engine access is denied in this environment. `git diff --check` passed.
+
+## 2026-10-13 — Configure local Experience & Biodiversity Agent environment
+
+- Date/time or time range: 2026-10-13 06:56 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell
+- AI Model: GPT-6
+- Summary of the user's request: Add the remaining Experience & Biodiversity Agent environment settings to the local `.env`, leaving the API key for the user to provide.
+- Summary of what the AI Agent did: Consolidated the six agent environment assignments, preserved nonempty existing values and unrelated `.env` entries, and left `GEMINI_API_KEY` blank.
+- AI output accepted/changed/rejected: Accepted the settings for the service addresses, Gemini model, endpoint and timeout; consolidated duplicate assignments; left the API key empty. Rejected none.
+- Verification/evidence: Confirmed one assignment for each of the six agent variables and an empty API key without printing any values. `docker compose config --quiet` passed with process-local validation placeholders for two existing required secrets; `git diff --check` passed.
+
+## 2026-10-13 — Run focused Experience & Biodiversity Gemini checks
+
+- Date/time or time range: 2026-10-13 07:02 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Python
+- AI Model: GPT-6
+- Summary of the user's request: Run a sample Experience & Biodiversity agent test after the user added `GEMINI_API_KEY`, and provide the outputs.
+- Summary of what the AI Agent did: Attempted the focused pytest case, then directly invoked its existing test function because the bundled Python has no pytest package. The test assertions passed. Also attempted one synthetic live Gemini smoke request; DNS resolution failed before a provider response.
+- AI output accepted/changed/rejected: Accepted the focused test result. No source or test files were changed. The live request result was reported as unavailable; the API key validity remains unverified.
+- Verification/evidence: Standard pytest invocation stopped with `No module named pytest`. Direct invocation reported `Passed: 1, Failed: 0, Skipped: 0`. Live Gemini client reported `unavailable` with `URLError:[Errno 11001] getaddrinfo failed`; no key or raw headers were printed.
+
+## 2026-10-13 — Build Experience & Biodiversity agent in DHI Python stages
+
+- Date/time or time range: 2026-10-13 07:11 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell
+- AI Model: GPT-6
+- Summary of the user's request: Use `dhi.io/python:3.13-alpine-dev` to install the Experience & Biodiversity agent package and copy it into `dhi.io/python:3.13-alpine` for runtime.
+- Summary of what the AI Agent did: Converted the agent Dockerfile to a dev/runtime multi-stage build that installs the project and its declared runtime dependencies into `/install`, then copies that installation into `/opt/agent-site` in the runtime image. Re-included the package README in the Docker context because its metadata references it, and updated the Docker infrastructure README to describe the current image.
+- AI output accepted/changed/rejected: Accepted the requested DHI build and runtime image tags. Kept pytest and coverage dependencies out of the final image because they are test-only. No existing tests were changed.
+- Verification/evidence: `docker compose --env-file .env config --quiet` passed using process-local validation placeholders for two unrelated required secrets. Required Docker build source paths and `.dockerignore` exception were present; `git diff --check` passed. The image build could not start because Docker was denied access to `C:\Users\MSI\.docker\buildx\.lock`.
+
+
+## 2026-10-13 — Recheck live Gemini model smoke request
+
+- Date/time or time range: 2026-10-13 07:15 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Python runtime
+- AI Model: GPT-6
+- Summary of the user's request: Recheck the live Gemini model smoke request using the locally configured environment.
+- Summary of what the AI Agent did: Sent one minimal Google AI Studio request through the existing Gemini client with synthetic destination context. The request returned unavailable because DNS resolution failed before Gemini returned an HTTP response. No API key or raw request headers were printed; no source or test files were changed.
+- AI output accepted/changed/rejected: Accepted the sanitized transport failure as the observed result. Gemini API key validity remains unverified because the request did not reach the provider. No code or test changes were needed.
+- Verification/evidence: Provider `google-ai-studio`, model `gemini-2.5-flash`, status `unavailable`, latency 35.42 ms, token counts unavailable; client detail `URLError:[Errno 11001] getaddrinfo failed`. The client used the key from local `.env` without displaying it.
+
+## 2026-10-13 — Fix container-side Gemini configuration
+
+- Date/time or time range: 2026-10-13 07:35–07:38 +05:30 (Asia/Colombo)
+- GitHub Username: `Ushan-Srinuka`
+- Team Member Name (actual): Ushan Srinuka
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, Docker, Python 3.13
+- AI Model: GPT-6
+- Summary of the user's request: Investigate and fix the local system configuration behind the live Gemini test failure, then rerun the test.
+- Summary of what the AI Agent did: Removed a malformed standalone `$18` line that prevented Compose from parsing `.env`; generated distinct local-only values for the two required service signing keys missing from `.env`; aligned `GEMINI_MODEL` with the successful Gemini 3.6 Flash runtime configuration; validated Compose; built and started the agent using the requested DHI dev/runtime stages; and invoked the agent's Gemini client from inside its running container.
+- AI output accepted/changed/rejected: Changed the local `.env` configuration based on the Compose parse failure and verified in-container request. Preserved the user's Gemini API key without printing or logging it. Generated local secrets remain in ignored `.env`; no secret values were recorded. No tests were changed in this configuration fix.
+- Verification/evidence: `docker compose --env-file .env --profile agentic-ai config --quiet` passed. The built container was healthy on `blueverse_agent_egress` and `blueverse_internal`. A live request from the container returned provider `google-ai-studio`, model `gemini-3.6-flash`, status `used`, latency 1731.65 ms, 109 prompt tokens and 9 candidate tokens, with no provider error. `.env` is ignored by Git.

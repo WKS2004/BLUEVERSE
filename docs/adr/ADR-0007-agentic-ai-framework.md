@@ -13,20 +13,22 @@ the fixed workflow rather than redefine it.
 ## Decision
 
 Select and justify a framework or custom orchestration approach before
-implementing the four-agent workflow. This proposed ADR does not claim a
-framework has been selected or that an executable service exists.
+completing the four-agent workflow. Private component runtimes now exist for
+Experience & Biodiversity, Marine Conditions, and Planning & Coordination,
+but this proposed ADR does not claim that a team-wide framework has been
+selected.
 
 ## Container image preparation — 2026-10-13
 
 At the user's direction, the repository has four opt-in, per-role Docker
 images based on `dhi.io/python:3.13-alpine`, wired to the private Docker
-network. Three remain runtime shells. Planning Coordination has a standard
-library HTTP runtime and a provider-neutral OpenAI-compatible adapter. This
-is a provisional implementation choice for the assigned component, not
-team-wide framework approval. The service is disabled by default. No
-model/provider is selected or approved; configuration must meet the
-assignment's institutional/no-cost requirement and pass data-handling review.
-Other specialist services remain unimplemented.
+network. Experience & Biodiversity, Marine Conditions, and Planning &
+Coordination have private runtimes; Safety Operations remains a shell.
+Planning & Coordination uses a standard-library HTTP runtime and a
+provider adapter. These are provisional component implementations, not
+team-wide framework approval. Planner dispatch is disabled by default.
+Gemini is configured by default for current runtimes, but model/provider
+approval, data handling and AI-00 decisions remain open.
 
 ## Consequences
 
