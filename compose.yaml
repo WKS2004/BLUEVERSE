@@ -321,6 +321,8 @@ networks:
   blueverse_internal:
     name: blueverse_internal
     internal: true
+  blueverse_agent_egress:
+    name: blueverse_agent_egress
   blueverse_database:
     name: blueverse_database
 

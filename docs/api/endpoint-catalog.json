@@ -2028,6 +2028,32 @@
       "source": "services/experience-biodiversity/Controllers/AgentSeamController.cs"
     },
     {
+      "id": "experience-agent-info",
+      "method": "GET",
+      "path": "/api/experiences/agent/info",
+      "ownerService": "experience-biodiversity",
+      "publicBoundary": "api",
+      "operationId": "GetExperienceAgentInfo",
+      "status": "implemented",
+      "auth": "permission:experiences.catalogue.read",
+      "description": "Inspects the Coastal Experience & Biodiversity Agent runtime status, Google AI Studio Gemini model configuration, and allowlisted read-only tools.",
+      "usage": "Namespaced under /api/experiences/agent/info so Member 1–4 agents have zero route collisions; returns live agent metadata when connected or safe not_connected fallback when offline.",
+      "source": "services/experience-biodiversity/Controllers/AgentSeamController.cs"
+    },
+    {
+      "id": "experience-agent-context-reports",
+      "method": "POST",
+      "path": "/api/experiences/agent/context-reports",
+      "ownerService": "experience-biodiversity",
+      "publicBoundary": "api",
+      "operationId": "GenerateExperienceAgentContextReport",
+      "status": "implemented",
+      "auth": "permission:experiences.catalogue.read",
+      "description": "Generates a validated, read-only Coastal Experience & Biodiversity Agent context report with optional Google AI Studio Gemini synthesis.",
+      "usage": "Validates workflowId, stepId, objective, and selectors, then invokes /api/experiences/agent/context-reports on the private agent runtime with safe not_connected/unavailable fallback.",
+      "source": "services/experience-biodiversity/Controllers/AgentSeamController.cs"
+    },
+    {
       "id": "experience-availability-evaluate",
       "method": "POST",
       "path": "/api/experiences/availability/evaluations",

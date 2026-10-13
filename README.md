@@ -1,13 +1,13 @@
 # BLUEVERSE
 
-The [2026-10-02 record navigation and activity update](docs/v1/coastal-operations-record-navigation-and-audit.md) adds 500 ms search, pinned category tabs, shared record cards and 5/10/25/50/100 Assessments/Alerts per page across all collections. Create/edit workspace intent survives refresh; unsaved inputs are not persisted. Logs opens the same full details/actions. New activity captures the verified person/roles and exact field changes; older missing details remain unavailable. Shared G00/G07 and live producer/agent acceptance remain pending.
+The [2026-10-02 record navigation and activity update](docs/v1/coastal-operations-record-navigation-and-audit.md) adds 500 ms search, pinned category tabs, shared record cards and 5/10/25/50/100 Assessments/Alerts per page across all collections. Create/edit workspace intent survives refresh; unsaved inputs are not persisted. Logs opens the same full details/actions. New activity captures the verified person/roles and exact field changes; older missing details remain unavailable. G07 acceptance was reported by the team owner on 2026-10-13; shared G00 ratification and live producer/agent acceptance remain integration work.
 
 **Coastal Tourism & Marine Resilience**
 
 Coastal Operations publication, permissions, record activity and the separate
 Assessment/Alert client pages follow the [2026-10-01 contract](docs/v1/coastal-operations-publication-and-ui.md).
 Assessment publication uses submit and stores a durable business delivery
-envelope; before G07 no executable agent or live Agentic AI endpoint is called.
+envelope; the current Operations publication path does not dispatch an agent.
 Service startup applies the additive dispatch migration along with existing
 Coastal Operations migrations, including `20261001204558_CoastalDraftEvidenceRemoval`
 and `20261002081218_CoastalDetailedAudit`.
@@ -35,8 +35,10 @@ integrated full-stack and Agentic AI project. The submission target is
 backed by the public API gateway, internal Auth service and PostgreSQL. The
 The four v1 member components, their private service sources and both client
 workflows are present on this integration branch. Live peer/provider
-compatibility, shared G00/G07 acceptance and executable agents remain
-integration targets. See the linked component contracts and implementation
+compatibility and shared G00 ratification remain integration targets. The
+Member 1 experience specialist now runs as a private stateless Python service;
+cross-component orchestration and the other agent roles remain future work.
+See the linked component contracts and implementation
 evidence for current scope and remaining dependencies.
 
 ## Project identity

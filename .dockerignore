@@ -3,6 +3,7 @@
 .agents
 docs
 *.md
+!services/agents/experience-biodiversity/README.md
 .env
 .env.*
 **/node_modules
