@@ -8,9 +8,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY services/ai/marine-conditions/requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt || true
-
 COPY services/ai/marine-conditions/ /app/
 
 EXPOSE 8080

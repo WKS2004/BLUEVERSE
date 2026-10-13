@@ -2952,7 +2952,7 @@
         "source": "services/ai/planning-coordination/planning_coordination/service.py"
       }
     ],
-    "notes": "Planning & Coordination implements agent-scoped private health and dispatch routes under /internal/agentic/agents/planning-coordination. Experience & Biodiversity and Marine Conditions now have separate private specialist runtimes; Safety Operations remains a runtime shell. Clients must use the public API. Gemini defaults are provisional and AI-00 provider and data-handling decisions remain open."
+    "notes": "Planning & Coordination implements agent-scoped private health and dispatch routes under /internal/agentic/agents/planning-coordination. Experience & Biodiversity and Marine Conditions have separate private specialist runtimes. Safety Operations has a proposal package and Gemini egress proxy, but its image remains a runtime shell and no Safety Operations dispatch endpoint is implemented. Clients must use the public API. Provider and data-handling decisions remain subject to their recorded review."
   },
   "forbiddenPatterns": [
     "/api/v1",

@@ -2541,3 +2541,184 @@ push was made.
 - Summary of what the AI Agent did: Traced the container restart to the local context-signing key being 43-character unpadded Base64URL, while both API and Coastal Operations require standard padded Base64. Normalized the ignored local `.env` value to standard Base64 without changing its decoded 32-byte key, removed the predictable fixed key from `.env.example`, and clarified WSL/Linux and padding instructions in setup documentation.
 - AI output accepted/changed/rejected: Preserved the existing standard-Base64 contract and signing key bytes. Replaced the committed example value with an empty required setting so developers generate a private local key. No service code or tests were changed.
 - Verification/evidence: `docker compose config --quiet` passed; `docker compose up -d` started the stack; all eight health-checked services, including Coastal Operations and the API, reported healthy, and the frontend was running. `http://127.0.0.1/api/health` returned HTTP 200. `git diff --check` passed with only existing line-ending notices; `.env` remains ignored and no secret value was recorded. No commit or push was made.
+## 2026-10-13 — Safety & Operations Agent analysis and gate review
+
+- Date/time or time range: 2026-10-13 01:09–01:10 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop, PowerShell
+- AI Model: GPT-6
+- Summary of the user's request: Fully analyze Wanshaja's Safety & Operations Agent, begin implementation, and record AI usage as Wanshaja.
+- Summary of what the AI Agent did: Reviewed the primary requirements, Member 4 component and agent contracts, G00/G07 tracker, Agentic AI architecture/safety/tool/evaluation docs, ADR-0007/0008, endpoint inventory and current Coastal Operations source. Mapped the role's read-only evidence inputs, structured proposal output, deterministic validation and human approval boundary, failure behavior, cross-agent dependencies and unresolved design decisions. Confirmed the current branch contains only the pre-G07 disconnected typed seam and a Docker image shell, with no executable agent/runtime. Identified that the dispatch port currently returns only a delivery outcome and no production path was found for receiving and persisting the structured proposal.
+- AI output accepted/changed/rejected: Retained the proposal-only role and read-only tools from the target contract. Did not implement the executable agent because shared G00/G07 are pending and AI-00 plus AI-01a/AI-01b/AI-02 precede Wanshaja's AI-03 work. No application source was changed.
+- Verification/evidence: Current branch is `agentic-ai/safety-operations`; the readiness review records shared G00 Pending, G07 open and hosted transport evidence open; the branch tracker marks G07 Planned. ADR-0007 and ADR-0008 remain Proposed. `services/coastal-operations/Program.cs` registers `DisconnectedAssessmentProposalPort`; the assessment dispatch worker retains `NOT_CONNECTED` and does not call a delivery endpoint in this state. `infrastructure/docker/agentic-ai/safety-operations/Dockerfile` only prints the Python version. The endpoint catalog has no Agentic AI route. Reviewed `docs/v1/agents/member-4-safety-operations-agent.md`, `docs/v1/member-branch-workflow.md`, `docs/v1/requirements-coverage-and-readiness.md`, `docs/agentic-ai/architecture.md`, `docs/agentic-ai/implementation-blueprint.md`, `docs/agentic-ai/evaluation.md`, and the relevant Coastal Operations dispatch source. No tests were run.
+
+## 2026-10-13 — Start Safety & Operations Agent core
+
+- Date/time or time range: 2026-10-13 01:28 (Asia/Colombo; implementation pass)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop, PowerShell, bundled Python, .NET, npm, Flutter and Docker
+- AI Model: GPT-6
+- Summary of the user's request: Treat the team meeting as confirmation that the current components are finalized, provide implementation analysis and a plan, then start Wanshaja's Safety & Operations Agent without pursuing G00 documentation.
+- Summary of what the AI Agent did: Reconciled the Member 4 agent contract with the existing dispatch envelope and Agentic AI architecture, then created a provider-independent Python core with versioned bounded input/output contracts, deterministic evidence gates, correlation and evidence-reference validation, prompt/data separation, a fixed read-only tool-name allowlist, and safe unavailable/invalid outcomes. Added the first 22 contract and safety tests. Kept the service transport, provider adapter, tool handlers, durable AI execution state and Coastal Operations proposal handoff unimplemented pending AI-00 decisions; no G00 files were changed.
+- AI output accepted/changed/rejected: Accepted the user's meeting-level confirmation as authorization to begin Agentic AI work. Preserved the proposal-only role with no approval or execution capability. Used a provider port and no active model tool grants; did not choose a provider, paid service, orchestration framework, persistence boundary or service-auth contract. No tests were changed or weakened, and no individual reflection was authored.
+- Verification/evidence: The new agent suite passed 22/22; endpoint catalog validation, UI integration validation and its 42 tests passed. React tests passed 384/384, lint and production build passed; the build retained its existing large-chunk warning. `git diff --check` passed. The repository-wide agent-resource validator reports a pre-existing generated `.pyc` under `.agents/scripts/__pycache__`. The attempted backend suites hit VSTest testhost timeouts for API, Auth, Experience and Marine; Planner and Operations were cancelled before results. Flutter analysis/tests returned no output and were cancelled. Docker Compose checks were unavailable because the Docker Desktop daemon was not running. No commit or push was made.
+
+## 2026-10-13 — Add Gemini provider adapter
+
+- Date/time or time range: 2026-10-13 01:31–01:34 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop, PowerShell, bundled Python, official Google AI for Developers documentation
+- AI Model: GPT-6
+- Summary of the user's request: Use Google AI Studio Gemini models under their free quota as the Safety & Operations Agent provider.
+- Summary of what the AI Agent did: Checked Google's current API, structured-output, key-authentication, interaction-storage and billing documentation. Added a Gemini Interactions API `ModelPort` adapter using an explicitly configured model, API key header, structured recommendation schema, disabled interaction storage, no model tools, bounded response parsing, transient-failure mapping and safe errors. Added an explicit environment gate requiring a data-handling review, documented provider configuration, and added offline adapter tests.
+- AI output accepted/changed/rejected: Accepted Google AI Studio Gemini as the provider direction. Kept the concrete model ID configurable rather than silently choosing or falling back. The adapter requires the privacy/data-handling approval flag and does not make live calls until configured. No API key, paid service, model output, hidden reasoning or personal data was recorded.
+- Verification/evidence: All 31 Safety & Operations agent/provider tests passed; Python AST syntax validation passed; `git diff --check` passed with the existing AI-usage file line-ending notice. No Gemini API request was made because no key or approved data-handling configuration was supplied. No commit or push was made.
+
+## 2026-10-13 — Recheck Safety & Operations Agent implementation
+
+- Date/time or time range: 2026-10-13 01:40–01:53 (Asia/Colombo; implementation recheck)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop, PowerShell, Python 3.12.14, Codex Security and official Google AI for Developers documentation
+- AI Model: GPT-6
+- Summary of the user's request: Recheck the Safety & Operations Agent implementation and provide all implementation and verification details.
+- Summary of what the AI Agent did: Re-read the new agent contracts, model adapter, prompt, tool registry, tests and README; checked the Member 4 contract, Google provider terms and current Coastal Operations dispatch wiring. Re-ran the 31 agent/provider tests, parsed all agent Python files, and performed targeted checks for unfiltered report facts and evidence expiry before an operation period. Completed Codex Security diff scan `8fefa7f1-1c4f-40f8-98a2-8090888f92b8`, recording three validated findings: external-model fact minimization, cross-origin redirect key forwarding, and evidence expiry before the requested activity period.
+- AI output accepted/changed/rejected: Accepted the source-based findings and documented targeted mitigations. No implementation or test assertions were changed during this review. No live Gemini request and no real secret or personal data were used. The report-only scope was retained; no remediation patch was applied.
+- Verification/evidence: Safety & Operations tests passed 31/31; AST parsing passed for all 9 Python files under `services/agents`; targeted checks confirmed that email/accessToken facts pass through and that evidence expiring at 12:30 still produces `SUCCEEDED` for an operation starting at 13:00 assessed at 12:00. The bundled Python 3.12.14 redirect handler source copies request headers to eligible redirected requests; loopback reproduction was blocked by the host socket policy. `git diff --check` passed with the AI-usage file line-ending notice. No live Gemini request was made because no key/project configuration was present. No commit or push was made.
+
+## 2026-10-13 — Safety & Operations security finding remediation
+
+- Date/time or time range: 2026-10-13 02:05–02:23 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex, PowerShell, bundled Python runtime
+- AI Model: GPT-6
+- Summary of the user's request: Fix the validated issues found during the Safety & Operations agent implementation checkup.
+- Summary of what the AI Agent did: Added category-specific typed fact allowlists at input and provider boundaries, projected model context to contract fields, kept report source text local and validated provider-facing references/status/timestamps, rejected Gemini redirects to prevent API-key forwarding, and required marine evidence to cover the requested operation period while preserving assessment-time validity for other report categories. Updated package documentation and added regression coverage.
+- AI output accepted/changed/rejected: Accepted the three validated findings. Revised the initial blanket fact omission to preserve source-backed operational fields while stripping unknown and free-form data; applied the projection at direct Gemini adapter calls too. Narrowed period coverage to marine evidence per the owning contract. Did not include credentials or perform live provider calls.
+- Verification/evidence: Safety & Operations tests passed 41/41; AST parsing passed for all 9 Python files; `git diff --check` completed without content errors (AI-usage file line-ending notice only). Regression coverage checks sensitive facts and source/instruction aliases are absent from provider payloads, safe marine status/freshness/wind speed are preserved, malformed typed fields and references fail before sending, redirects produce no follow-up request, marine expiry before the operation fails, equality at the marine period end passes, and non-marine evidence retains assessment-time validity. No commit or push was made.
+
+## 2026-10-13 — Check Docker deployment and assessment dispatch
+
+- Date/time or time range: 2026-10-13 02:24–02:37 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop, PowerShell, Docker Desktop, bundled Python runtime
+- AI Model: GPT-6
+- Summary of the user's request: Verify the Docker implementation and determine whether the Safety & Operations Agent can be called through the Coastal Operations Assessments UI after publication; implement necessary fixes.
+- Summary of what the AI Agent did: Validated Compose configuration, built the full default stack and all four Agentic AI profile images, ran the Safety & Operations image, and started the default stack for runtime checks. Confirmed healthy backend containers and HTTP 200 responses for the Assessment SPA route, public API health and Coastal Operations liveness through the edge gateway. Traced both client publish actions through the public submit API, durable assessment delivery worker and DI registration; confirmed production still uses `DisconnectedAssessmentProposalPort` and the G07 tracker remains Planned. Stopped the temporary stack and removed only the test volumes created during this check.
+- AI output accepted/changed/rejected: Accepted the Docker build, runtime and source-path results. Rejected the assumption that publishing currently invokes the agent: the image only prints its Python version, the package is not hosted as a network service, and member dispatch remains disconnected. Added no runtime, model or UI call wiring while the repository's G07 integration gate remains open. No live Gemini request or credential handling was performed.
+- Verification/evidence: `docker compose config --quiet` passed; `docker compose --profile agentic-ai build` built every service image; the agent image exited 0 after printing `Python 3.13.16`; all nine default Compose services reached healthy/running status; Docker-internal probes returned HTTP 200 for `/operations/assessments`, `/api/health` and `/api/operations/health/live`; UI integration validation passed; endpoint catalog validation passed with 134 public endpoints and no AI endpoints. G07 and Member 4 integration status were checked in `docs/v1/member-branch-workflow.md`. No application or test source changed; no commit or push was made.
+
+## 2026-10-13 — Make assessment submission the Safety Agent workflow trigger
+
+- Date/time or time range: 2026-10-13 02:51–02:55 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop, PowerShell
+- AI Model: GPT-6
+- Summary of the user's request: Ensure users cannot call the Safety & Operations Agent directly from either UI; allow the assessment submission workflow to trigger it server-side.
+- Summary of what the AI Agent did: Traced the public assessment submit operation through Coastal Operations persistence, its durable dispatch envelope and private background delivery port. Confirmed the Safety & Operations port remains disconnected before G07 and no Safety Agent execution endpoint is exposed to the clients. Clarified the submission-only invocation rule and current disconnected status in the Agentic AI architecture document. Identified a separate, unused Experience Agent context/status seam in the UI contract and client data layers; it does not execute the Safety Agent.
+- AI output accepted/changed/rejected: Accepted the assessment workflow as the only Safety Agent entry point. Kept the UI/API contract unchanged because the existing assessment submit flow already creates the private dispatch envelope; did not enable the disconnected runtime or remove the separate Experience status seam.
+- Verification/evidence: `git diff --check` reported no content errors (only existing Windows line-ending notices). `docs/v1/member-branch-workflow.md` and the local `origin/dev` copy both still mark G07 `Planned`; the Member 4 row records peer integration as intentionally partial. No code or test sources changed, no automated tests or Docker commands were run, and no commit or push was made.
+
+## 2026-10-13 — Verify the Coastal Operations server-side agent call boundary
+
+- Date/time or time range: 2026-10-13 03:08 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop, PowerShell
+- AI Model: GPT-6
+- Summary of the user's request: Add the C# backend changes so Coastal Operations calls the Safety & Operations Agent internally after assessment submission, while keeping direct UI-to-agent calls disallowed.
+- Summary of what the AI Agent did: Rechecked the C# submission outbox, private dispatch port, dependency-injection registration and worker; verified that the Python Safety package has no HTTP listener, that the submitted envelope lacks the agent's five required validated reports, and that the agreed private dispatch route is reserved until G07. Confirmed the branch and local `origin/dev` tracker still show G07 as planned and Coastal Operations peer integration as partial. Did not add an HTTP caller or enable agent execution before those prerequisites are satisfied.
+- AI output accepted/changed/rejected: Accepted the server-only workflow invocation architecture. Rejected adding a C# caller to an absent/incomplete private endpoint or presenting an envelope as a successful agent dispatch.
+- Verification/evidence: Source review of `services/coastal-operations/Application/AssessmentProposalPort.cs`, `AssessmentDispatchDelivery.cs`, `Program.cs`, `services/agents/safety_operations/`, `docs/v1/g00/member-4-coastal-operations.md` and both copies of `docs/v1/member-branch-workflow.md`. No application or test source changed; no automated tests or Docker commands were run; no commit or push was made.
+
+## 2026-10-13 — Scope the Safety Agent handoff to Coastal Operations
+
+- Date/time or time range: 2026-10-13 03:15 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop, PowerShell
+- AI Model: GPT-6
+- Summary of the user's request: Limit the Safety Agent implementation review and handoff to code owned by Coastal Operations, since the agent belongs to that component.
+- Summary of what the AI Agent did: Rechecked Coastal Operations' submission handler, private dispatch worker, port and DI registration. Confirmed those files provide the server-only workflow boundary but still bind to a disconnected port; the Safety package has no callable transport, and its validated input contract is not present in the Coastal Operations dispatch envelope. Confirmed the repo's G07 gate and current Coastal Operations partial-integration status.
+- AI output accepted/changed/rejected: Accepted Coastal Operations as the sole server-side trigger owner. Did not add a client call, speculative C# HTTP client, or an executable agent handoff without an implemented private endpoint and accepted post-G07 contract.
+- Verification/evidence: Read `services/coastal-operations/Application/AssessmentProposalPort.cs`, `AssessmentDispatchDelivery.cs`, `Program.cs`, `AssessmentDispatchContracts.cs`, the Safety contract and the G07/G00 source records. No application or test source changed; no automated tests or Docker commands were run; no commit or push was made.
+
+## 2026-10-13 — Recheck implementation prerequisites for the Coastal Operations caller
+
+- Date/time or time range: 2026-10-13 03:22 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop, PowerShell
+- AI Model: GPT-6
+- Summary of the user's request: Proceed with the necessary implementation, scoped to Coastal Operations because it owns the Safety Agent workflow.
+- Summary of what the AI Agent did: Rechecked only the Coastal Operations dispatch path, its private port and DI binding, the assigned Safety package transport, and the component's G07 record. Confirmed that Coastal Operations already persists and polls the server-side handoff seam, but DI remains disconnected and no callable Safety Agent transport exists. Did not add a speculative caller to an absent endpoint.
+- AI output accepted/changed/rejected: Accepted Coastal Operations as the sole trigger owner. Kept the port disconnected because G07 remains `Planned`, the agreed private route is reserved until G07, and the agent request contract is not represented by the current Coastal Operations payload.
+- Verification/evidence: Reviewed `AssessmentProposalPort.cs`, `AssessmentDispatchDelivery.cs`, `Program.cs`, `AssessmentDispatchContracts.cs`, the Safety Operations Python package, `docs/v1/g00/member-4-coastal-operations.md` and `docs/v1/member-branch-workflow.md` on this branch and local `origin/dev`. No application or test source changed; no automated tests or Docker commands were run; no commit or push was made.
+
+## 2026-10-13 — Configure Gemini environment defaults and rerun checks
+
+- Date/time or time range: 2026-10-13 06:52 +05:30 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop, PowerShell
+- AI Model: GPT-6
+- Summary of the user's request: Add the remaining Gemini runtime variables to the local environment and template, then test the model again.
+- Summary of what the AI Agent did: Added a safe `false` data-handling approval default and a 2048-token cap to the ignored local `.env`; added blank key/model placeholders and the same defaults to `.env.example`; updated the Safety Operations README. Checked configuration without displaying the credential. Did not enable provider calls or send a live request because the review flag is not approved and G07 remains Planned.
+- AI output accepted/changed/rejected: Accepted the missing configuration fields and safe defaults; did not set the approval flag to true or make a live model call without the required data-handling review and G07 acceptance.
+- Verification/evidence: Gemini configuration preflight rejected the disabled approval flag as expected. Agent suite passed 41/41 deterministic tests. `git diff --check` completed with only existing Windows line-ending notices. No API key or model value was recorded.
+
+## 2026-10-13 — Check Gemini configuration and live provider response
+
+- Date/time or time range: 2026-10-13 06:58 +05:30 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop, PowerShell, local Python adapter
+- AI Model: GPT-6
+- Summary of the user's request: Rerun the Safety & Operations agent checks after enabling `GEMINI_DATA_HANDLING_APPROVED`.
+- Summary of what the AI Agent did: Loaded the local configuration without printing credentials and sent one synthetic Safety Operations request through the Gemini adapter. The sandbox attempt returned `MODEL_UNAVAILABLE`; a network-enabled attempt returned `MODEL_FAILURE`. Reran the deterministic agent suite. No assessment data or credentials were recorded.
+- AI output accepted/changed/rejected: Accepted the user's local approval-flag change for this test; the live provider result did not confirm successful model operation. No application behavior or provider output was changed.
+- Verification/evidence: `python -m unittest discover -s services/agents/tests -p "test_*.py"` passed 41/41. The live adapter smoke did not pass (`UNAVAILABLE` / `MODEL_FAILURE`); the adapter sanitizes provider details, so this run does not distinguish provider rejection from invalid response. The sandbox HTTPS reachability check returned false. `git diff --check` reported no whitespace errors, with line-ending notices only.
+
+## 2026-10-13 — Add a private Gemini egress path for Safety Operations
+
+- Date/time or time range: 2026-10-13 07:19 +05:30 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop, PowerShell, Docker Desktop, Python
+- AI Model: GPT-6
+- Summary of the user's request: Give the private Safety Operations agent a safe Docker path to Google AI Studio Gemini, limited to agent-to-model communication.
+- Summary of what the AI Agent did: Added a dedicated internal Docker network for the Safety Operations container and a restricted HTTPS CONNECT proxy. Only the proxy joins the egress bridge; the agent transport pins the Gemini origin/proxy and cannot bypass through `NO_PROXY`; the proxy restricts host/port, rejects non-public DNS addresses, bounds connections/tunnels and emits no tunnel logs. Passed the Gemini API key only to the agent container. Updated Compose, DHI Dockerfiles, Docker CI build list, networking/setup docs, test matrix and ADR-0028.
+- AI output accepted/changed/rejected: Accepted the private allowlisted proxy design. Kept the agent off general outbound networking and did not add a public agent endpoint or trigger a model generation/workflow in these network checks.
+- Verification/evidence: All 51 `services/agents/tests` cases passed. `docker compose --env-file .env --profile agentic-ai config --quiet` passed; both DHI images built. The proxy reported healthy; a credential-free test from the agent container received CONNECT 200 and completed Gemini TLS, direct Gemini egress was blocked, and a non-Gemini CONNECT received 403. The actual Python adapter also sent an empty `{}` request with no API key and received provider HTTP 403 through the proxy; no model generation occurred. The temporary proxy was stopped afterward. `git diff --check` reported no whitespace errors; only line-ending notices appeared. No API key or model payload was printed or recorded.
+
+## 2026-10-13 — Run a live Gemini smoke test through private egress
+
+- Date/time or time range: 2026-10-13 07:26 +05:30 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop, PowerShell, Docker Desktop, Python
+- AI Model: GPT-6
+- Summary of the user's request: Run a live test to determine whether the Safety Operations agent can call Gemini through the private Docker egress path.
+- Summary of what the AI Agent did: Confirmed the local Gemini configuration passed validation, submitted synthetic assessment data through the Safety Operations agent and internal egress proxy, then made one sanitized diagnostic call to capture only the provider HTTP status. No assessment was persisted and no action was executed.
+- AI output accepted/changed/rejected: Accepted the sanitized result as failure evidence. Gemini generation was not confirmed; no provider response body or model output was recorded and no application code was changed during this smoke test.
+- Verification/evidence: The proxy was healthy before the calls. The provider returned HTTP 404 through the proxy; the agent returned `UNAVAILABLE` / `MODEL_FAILURE`. The temporary `gemini-egress-proxy` container was stopped after the test. No API key or request/response payload was displayed or recorded.

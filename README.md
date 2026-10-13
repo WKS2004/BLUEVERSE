@@ -471,31 +471,41 @@ assessment titles and IANA time-zone/location choices while retaining existing
 UTC instants; the planner migration supplies `Asia/Colombo` to existing
 itineraries without changing their IDs or schedules.
 
-Four optional Agentic AI images use the DHI Python 3.13 Alpine image and are
-excluded from the normal stack. Private runtimes are present for Experience &
-Biodiversity, Marine Conditions, and Planning & Coordination; Safety
-Operations remains a runtime shell. The full four-agent workflow and live
-provider and peer integration remain incomplete. Build the images without
-starting them with:
+Four optional Agentic AI role images use the DHI Python 3.13 Alpine image and
+are excluded from the normal stack. Private runtimes are present for Experience
+& Biodiversity, Marine Conditions, and Planning & Coordination. Safety
+Operations includes its proposal package but remains a runtime shell whose
+default command prints the Python version and exits. The full four-agent
+workflow and live provider and peer integration remain incomplete. Build the
+images without starting them with:
 
 ```bash
 docker compose --profile agentic-ai build \
   agent-experience-biodiversity \
   agent-marine-conditions \
   agent-planning-coordination \
-  agent-safety-operations
+  agent-safety-operations \
+  gemini-egress-proxy
 ```
 
-The private runtimes have no host-published ports and join only the internal
-Docker network. Planner dispatch is disabled by default. Set
-`AGENTIC_SERVICE_KEY`, `AGENTIC_MODEL_NAME`, and `AGENTIC_MODEL_API_KEY` in
-local `.env` to configure the Planner runtime. Gemini is the configured
-default; `AGENTIC_MODEL_PROVIDER=openai-compatible` and
-`AGENTIC_MODEL_BASE_URL` select an OpenAI-compatible provider. Gemini
-free-tier inputs and outputs may be used to improve Google products; do not
-send personal or sensitive data through a free-tier key. Missing models or
-specialist services produce unavailable/blocked states and cannot change
-deterministic eligibility or safety outcomes.
+The Safety Operations container and Gemini proxy have no host-published ports.
+The agent stays on internal Docker networks. The proxy alone also joins a
+dedicated outbound bridge and permits CONNECT only to
+`generativelanguage.googleapis.com:443`; TLS remains end-to-end with Google,
+and the API key is provided only to the agent. Compose passes `GEMINI_API_KEY`,
+`GEMINI_MODEL`, `GEMINI_DATA_HANDLING_APPROVED` and
+`GEMINI_MAX_OUTPUT_TOKENS` from `.env` to that container. Keep the approval
+value `false` until the provider data-handling review is complete. This network
+path does not start model requests or activate the disconnected Coastal
+Operations workflow; Safety Operations agent dispatch remains unimplemented.
+Planner dispatch is disabled by default. Set `AGENTIC_SERVICE_KEY`,
+`AGENTIC_MODEL_NAME`, and `AGENTIC_MODEL_API_KEY` in local `.env` to
+configure the Planner runtime. Gemini is the configured default; set
+`AGENTIC_MODEL_PROVIDER=openai-compatible` and `AGENTIC_MODEL_BASE_URL` to
+select an OpenAI-compatible provider. Do not send personal or sensitive data
+through a free-tier key. Missing models or specialist services produce
+unavailable/blocked states and cannot change deterministic eligibility or
+safety outcomes.
 
 The API signs the authenticated actor and `operations.*` permission claims with
 `COASTAL_OPERATIONS_CONTEXT_KEY`; bearer tokens and cookies are removed before
@@ -689,9 +699,10 @@ The web and backend build workflows run on supported branch families when their 
 
 The Docker backend workflow builds `services/api` first and then discovers and
 builds the other ASP.NET service directories, including Auth and all four
-component services, followed by the four optional Agentic AI images. Private
-workloads are present for Experience & Biodiversity, Marine Conditions, and
-Planning & Coordination; Safety Operations remains a shell.
+component services, followed by the four Agentic AI role images and the Gemini
+egress proxy. Private runtimes are present for Experience & Biodiversity,
+Marine Conditions, and Planning & Coordination; Safety Operations remains a
+proposal package in a runtime shell.
 The stack-health workflow maps each service folder to its
 public health route (including the `/api/operations/health` route), supplies
 masked ephemeral signing keys for the isolated CI stack, prints diagnostics

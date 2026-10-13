@@ -5,15 +5,20 @@ Experience & Biodiversity, Marine Conditions, and Planning & Coordination.
 Planning & Coordination has a private dispatch API, validated plan
 orchestration, specialist adapters and Planner-owned execution-state
 persistence. The Experience & Biodiversity and Marine Conditions specialists
-also have private implementations. Safety Operations and end-to-end
-four-agent integration remain incomplete; this is partial implementation,
-not v1 readiness. This v1 target contract is derived from
+also have private implementations. This branch adds the Safety Operations
+proposal package, Gemini adapter and private egress proxy; its image remains a
+runtime shell and Safety Operations dispatch is not implemented. End-to-end
+four-agent integration remains incomplete. The v1 tracker records G07 as
+owner-reported accepted, while live provider and peer integration remains
+pending. This is partial implementation, not v1 readiness. This target
+contract is derived from
 [PROJECT_REQUIREMENTS.md](../../PROJECT_REQUIREMENTS.md). The
 [v1 index](../v1/README.md) links separate contracts for each member's agent.
-Before selecting a runtime, model/provider or retrieval design, use the
-[implementation blueprint](implementation-blueprint.md) as the shared
-human-and-agent handoff; it distinguishes binding safety/workflow requirements
-from decisions still open in ADRs.
+Google AI Studio Gemini is selected for the existing Safety Operations
+adapter; the shared runtime/framework and provider choices for other agent
+roles remain open. Use the [implementation blueprint](implementation-blueprint.md)
+as the shared human-and-agent handoff; it distinguishes binding
+safety/workflow requirements from decisions still open in ADRs.
 
 **Implementation boundary:** use the [v1 component relationship map](../v1/component-relationships.md)
 and [member branch workflow](../v1/member-branch-workflow.md) for ownership
@@ -23,8 +28,10 @@ is a stateless private Python HTTP service that reads through the accepted
 member-service contracts. It does not own durable workflow state or provide
 cross-agent orchestration. The broad runtime/framework and shared state choices
 remain open in ADR-0007/0008. The other specialist agents, planner
-orchestration, safety proposal workflow and golden evaluations remain to be
-implemented on their assigned `agentic-ai/**` branches. See the
+orchestration and integrations have implementation code in this baseline.
+The Safety Operations agent workflow, end-to-end four-agent integration and
+golden evaluations remain to be implemented on their assigned
+`agentic-ai/**` branches. See the
 [canonical owner map](../project/ai-team-members.md).
 
 ## Four distinct responsibilities
@@ -53,12 +60,21 @@ high-impact proposal pauses for authorized human approval; the Wanshaja Sooriyab
 service revalidates and executes an eligible approved action and records its
 business/audit history.
 
-Member services implement their business workflows and typed private
-adapters/availability behavior. The current Member 1 role is stateless and
-does not persist agent-owned execution state. The owning member service checks
-its configured private AI dependency and exposes only the accepted coarse
-workflow/readiness state through the public contract; the private probe
-remains server-to-server. Keep this distinct from
+For Safety & Operations, the user's assessment submission is the workflow
+entry point. The clients call only the authenticated public assessment-submit
+operation; they do not call an agent endpoint, choose an agent, or send model
+requests. Coastal Operations persists the submitted assessment and its
+dispatch envelope, then its server-side delivery worker hands that envelope
+to the private Agentic AI workflow after the post-G07 integration is enabled.
+There is no public route for directly starting or invoking the Safety &
+Operations Agent. Assessment status may report workflow availability and
+outcome, but it does not expose a direct agent operation. The dispatch port
+remains disconnected; a queued envelope must not be reported as an agent run
+or proposal until the private Safety Operations integration is implemented
+and enabled. The Member 1 role is a stateless private specialist and does not
+persist agent-owned execution state. Member services expose only the accepted
+coarse workflow/readiness state through the public contract; private probes
+remain server-to-server. Keep this distinct from
 `GET /api/health` liveness and database readiness. A healthy probe does not
 guarantee a later dispatch will succeed; dispatches need bounded timeouts and
 safe persisted outcomes.

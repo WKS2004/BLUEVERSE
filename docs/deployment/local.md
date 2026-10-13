@@ -85,26 +85,43 @@ bash scripts/Unix/bash/sync-web-lockfile.sh
 docker compose --profile dev build
 ```
 
-The optional Agentic AI images are excluded from the normal local runtime
-stack. To build the DHI Python images without starting them:
+The optional Agentic AI role images and Gemini egress proxy are excluded from
+the normal local runtime stack. Private runtimes are present for Experience &
+Biodiversity, Marine Conditions, and Planning & Coordination. Safety
+Operations includes its proposal package, but its default command only prints
+the Python version and exits. Build the DHI Python images without starting
+them:
 
 ```bash
 docker compose --profile agentic-ai build \
   agent-experience-biodiversity \
   agent-marine-conditions \
   agent-planning-coordination \
-  agent-safety-operations
+  agent-safety-operations \
+  gemini-egress-proxy
 ```
 
+The Safety Operations adapter uses the fixed internal URL
+`http://gemini-egress-proxy:3128`. Compose supplies the Gemini API key and model
+settings only to the agent container. The proxy is reachable only from the
+agent's dedicated internal network, has no published host port, and allows
+CONNECT only to `generativelanguage.googleapis.com:443`. It does not receive
+the API key or decrypt/log the TLS stream. The agent itself has no direct
+outbound network, and its transport rejects `NO_PROXY` or alternate-proxy
+bypasses. Keep `GEMINI_DATA_HANDLING_APPROVED=false` until the provider
+data-handling review is complete. This networking path does not trigger a model
+request, expose an agent endpoint, or activate Coastal Operations dispatch;
+Safety Operations dispatch remains unimplemented.
+
 Experience & Biodiversity, Marine Conditions, and Planning & Coordination
-have private runtimes; Safety Operations remains a runtime shell. The
-optional profile keeps them on the internal network with no host-published
-ports. Planner dispatch is disabled by default. Set `AGENTIC_SERVICE_KEY`,
-`AGENTIC_MODEL_NAME`, and `AGENTIC_MODEL_API_KEY` in local `.env` to
-configure Planner dispatch. Gemini is the configured default; do not send
-personal or sensitive data through a free-tier key. The runtimes have no
-database credentials, and unavailable models or specialist services produce
-unavailable/blocked outcomes.
+have private runtimes; Safety Operations remains a proposal package in a
+runtime shell. The optional profile keeps them on the internal network with no
+host-published ports. Planner dispatch is disabled by default. Set
+`AGENTIC_SERVICE_KEY`, `AGENTIC_MODEL_NAME`, and `AGENTIC_MODEL_API_KEY` in
+local `.env` to configure Planner dispatch. Gemini is the configured default;
+do not send personal or sensitive data through a free-tier key. The runtimes
+have no database credentials, and unavailable models or specialist services
+produce unavailable/blocked outcomes.
 
 ## Start
 
