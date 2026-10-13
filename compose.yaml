@@ -279,6 +279,14 @@ services:
       context: .
       dockerfile: infrastructure/docker/agentic-ai/marine-conditions/Dockerfile
     image: blueverse/agent-marine-conditions:local
+    expose:
+      - "8080"
+    environment:
+      PORT: 8080
+      OPEN_METEO_WEATHER_URL: ${OPEN_METEO_WEATHER_URL:-https://api.open-meteo.com/v1/forecast}
+      OPEN_METEO_MARINE_URL: ${OPEN_METEO_MARINE_URL:-https://marine-api.open-meteo.com/v1/marine}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash}
     networks:
       - blueverse_internal
 
