@@ -8,7 +8,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY services/ai/marine-conditions/ /app/
+COPY services/agents/marine-conditions/ /app/
 
 EXPOSE 8080
 

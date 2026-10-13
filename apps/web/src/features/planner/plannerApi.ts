@@ -40,6 +40,35 @@ export type RecommendationResult = {
   outcome?: 'MATCHES_FOUND' | 'NO_MATCHES' | 'DEPENDENCIES_UNAVAILABLE'
 }
 
+export type PlannerAgentStep = {
+  agentId: string
+  status: string
+  summary?: string | null
+  sourceReferences: string[]
+  uncertaintyNotes: string[]
+  errorCode?: string | null
+}
+
+export type PlannerSafetyProposal = {
+  assessmentId: string
+  targetId: string
+  targetStateVersion: number
+  recommendation: string
+  proposedAction: string | null
+  summary: string
+  evidenceReferences: string[]
+  uncertainties: string[]
+  reviewSuggestion: string
+  producedAtUtc: string
+}
+
+export type PlannerAgentExecutionSummary = {
+  status: string
+  objectiveSummary: string
+  steps: PlannerAgentStep[]
+  safetyProposal: PlannerSafetyProposal | null
+}
+
 export type WorkflowStatus = {
   workflowId: string
   workflowType: string
@@ -50,6 +79,9 @@ export type WorkflowStatus = {
   completedAt: string | null
   resultSummary: string | null
   failureReason: string | null
+  aiDependencyStatus: string
+  aiExecutionStatus: string
+  aiExecutionSummary?: PlannerAgentExecutionSummary | null
 }
 
 export type BiodiversityPrediction = {
@@ -253,7 +285,32 @@ function optionalInstant(value: unknown): boolean {
 }
 
 function textList(value: unknown): boolean {
-  return Array.isArray(value) && value.every(v => typeof v === 'string')
+  return Array.isArray(value) && value.every(v => typeof v === 'string' && v.length <= 1000)
+}
+
+function isAgentStep(value: unknown): value is PlannerAgentStep {
+  return object(value) && typeof value.agentId === 'string' && value.agentId.length <= 100 &&
+    typeof value.status === 'string' && value.status.length <= 100 &&
+    (value.summary == null || typeof value.summary === 'string' && value.summary.length <= 2000) &&
+    textList(value.sourceReferences) && textList(value.uncertaintyNotes) &&
+    (value.errorCode == null || typeof value.errorCode === 'string' && value.errorCode.length <= 100)
+}
+
+function isSafetyProposal(value: unknown): value is PlannerSafetyProposal {
+  return object(value) && typeof value.assessmentId === 'string' && typeof value.targetId === 'string' &&
+    typeof value.targetStateVersion === 'number' && Number.isInteger(value.targetStateVersion) &&
+    typeof value.recommendation === 'string' && value.recommendation.length <= 100 &&
+    (value.proposedAction == null || typeof value.proposedAction === 'string' && value.proposedAction.length <= 100) &&
+    typeof value.summary === 'string' && value.summary.length <= 2000 &&
+    textList(value.evidenceReferences) && textList(value.uncertainties) &&
+    typeof value.reviewSuggestion === 'string' && value.reviewSuggestion.length <= 2000 && instant(value.producedAtUtc)
+}
+
+function isAgentExecutionSummary(value: unknown): value is PlannerAgentExecutionSummary {
+  return object(value) && typeof value.status === 'string' && value.status.length <= 100 &&
+    typeof value.objectiveSummary === 'string' && value.objectiveSummary.length <= 2000 &&
+    Array.isArray(value.steps) && value.steps.length <= 12 && value.steps.every(isAgentStep) &&
+    (value.safetyProposal === null || value.safetyProposal === undefined || isSafetyProposal(value.safetyProposal))
 }
 
 function zone(value: unknown): boolean {
@@ -697,7 +754,10 @@ export function getWorkflow(workflowId: string): Promise<WorkflowStatus> {
       typeof v.status === 'string' &&
       instant(v.createdAt) &&
       optionalText(v.resultSummary) &&
-      optionalText(v.failureReason)
+      optionalText(v.failureReason) &&
+      typeof v.aiDependencyStatus === 'string' &&
+      typeof v.aiExecutionStatus === 'string' &&
+      (!Object.hasOwn(v, 'aiExecutionSummary') || v.aiExecutionSummary === null || isAgentExecutionSummary(v.aiExecutionSummary))
   )
 }
 

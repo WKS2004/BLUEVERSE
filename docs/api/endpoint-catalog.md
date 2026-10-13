@@ -86,7 +86,6 @@ the smaller shared-client workflow contract.
 | `ANY` | `/_blueverse/errors/404` | `frontend` | Serves the branded not-found page for frontend Nginx 404 responses while SPA routes continue to load through index.html. |
 | `ANY` | `/_blueverse/errors/500` | `frontend` | Serves the branded temporary-error page when the frontend Nginx layer raises a server error. |
 | `ANY` | `/api/marine/{**catch-all}` | `marine-safety` | Keeps Marine Safety private. Protected requests replace client credentials with a request-bound actor context; anonymous health and Swagger requests are forwarded without an actor context. Missing Auth verification or unreachable/timed-out Marine returns structured availability metadata; unrelated routes and received upstream errors are preserved. Ambiguous proxy writes are not retryable and have no Retry-After hint. |
-| `ANY` | `/api/agents/marine-conditions/{**catch-all}` | `agent-marine-conditions` | Routes requests to the Marine Conditions Intelligence Agent under /api/agents/marine-conditions without route collision with other agents (/api/agents/coastal-planner, /api/agents/biodiversity, /api/agents/operations). |
 | `ANY` | `/api/experiences/health` | `experience-biodiversity` | Forwards the health endpoint without requiring an Auth-issued JWT; it reports database availability while keeping the private service host inaccessible to clients. |
 | `ANY` | `/api/experiences/swagger/{documentName}/swagger.json` | `experience-biodiversity` | Exposes the service contract to the unified Swagger UI without requiring a JWT or exposing the private service host. |
 | `ANY` | `/api/experiences/{**catch-all}` | `experience-biodiversity` | Requires an Auth-issued JWT validated by the API gateway and private service for component paths not matched by the public-read or named-permission routes. |
@@ -292,6 +291,27 @@ These routes exist in test fixtures and are not production endpoints.
 
 | Method | Path | Use |
 |---|---|---|
+| `GET` | `/health` | Docker liveness probe; reports configuration state only and does not call Gemini. |
+| `GET` | `/api/experiences/agent/health` | Private agent availability check; configuration status does not guarantee dispatch success. |
+| `GET` | `/api/experiences/agent/info` | Private runtime inspection only; never exposed through the public gateway. |
+| `POST` | `/api/experiences/agent/context-reports` | Private specialist route; supports caller Bearer authentication and configured internal service-key authentication. Service-key requests read only the minimized published catalogue and do not impersonate a user. |
+| `POST` | `/api/experiences/agent/generate` | Private route; same validation, Bearer or internal service-key auth, and response behavior as context-reports. |
+| `GET` | `/health` | Docker liveness probe; the route does not call Gemini. |
+| `POST` | `/api/agents/marine-conditions/invocations` | Private Docker-network route. Current request/response contract is not yet compatible with Planning & Coordination’s typed specialist envelope. `/report` remains an alias. |
+| `GET` | `/health/live` | Docker liveness probe. Does not indicate model configuration or dispatch readiness. |
+| `GET` | `/internal/agentic/agents/safety-operations/health` | Planner-to-agent availability check; calls remain disabled unless configured, enabled and approved. |
+| `POST` | `/internal/agentic/agents/safety-operations/dispatch` | Private route, disabled by default. Never authorizes, approves, executes or publishes a proposed action; model output is schema-validated. |
 | `GET` | `/health/live` | Docker liveness probe. Does not indicate model, specialist, Planner database, or dispatch readiness. |
 | `GET` | `/internal/agentic/agents/planning-coordination/health` | Planner-to-agent availability check. Does not guarantee a later dispatch succeeds. |
 | `POST` | `/internal/agentic/agents/planning-coordination/dispatch` | Called by Coastal Planner after deterministic recommendation generation. Model plans are allowlist-validated; specialist outputs are identity/schema checked; failures remain explicit and cannot alter deterministic eligibility or safety outcomes. |
+| `GET` | `/api/agents/marine-conditions/health` | Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route. |
+| `GET` | `/agents/marine-conditions/health` | Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route. |
+| `GET` | `/api/health` | Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route. |
+| `GET` | `/` | Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route. |
+| `POST` | `/agents/marine-conditions/invocations` | Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route. |
+| `POST` | `/api/agents/marine-conditions/report` | Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route. |
+| `POST` | `/agents/marine-conditions/report` | Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route. |
+| `POST` | `/invocations` | Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route. |
+| `POST` | `/report` | Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route. |
+| `POST` | `/api/invocations` | Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route. |
+| `POST` | `/api/report` | Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route. |

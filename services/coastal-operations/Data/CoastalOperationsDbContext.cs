@@ -87,6 +87,7 @@ public sealed class CoastalOperationsDbContext(DbContextOptions<CoastalOperation
             entity.Property(x => x.AiDependencyStatus).HasMaxLength(24).IsRequired();
             entity.Property(x => x.AiDispatchOutcome).HasMaxLength(24).IsRequired();
             entity.Property(x => x.ComponentDependenciesJson).HasColumnType("jsonb").HasDefaultValueSql("'[]'::jsonb").IsRequired();
+            entity.Property(x => x.AgentExecutionSummaryJson).HasMaxLength(32768);
             entity.Property(x => x.Version).IsConcurrencyToken();
             entity.HasMany(x => x.Proposals).WithOne(x => x.Assessment).HasForeignKey(x => x.AssessmentId).OnDelete(DeleteBehavior.Cascade);
             entity.HasMany(x => x.Decisions).WithOne(x => x.Assessment).HasForeignKey(x => x.AssessmentId).OnDelete(DeleteBehavior.Cascade);

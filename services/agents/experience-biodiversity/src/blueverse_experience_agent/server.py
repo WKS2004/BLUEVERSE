@@ -12,6 +12,7 @@ route collisions when all four BLUEVERSE member agents merge:
 from __future__ import annotations
 
 import json
+import hmac
 import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Dict, Optional
@@ -110,7 +111,21 @@ class AgentHttpHandler(BaseHTTPRequestHandler):
         if path in ("/api/experiences/agent/context-reports", "/api/experiences/agent/generate"):
             auth_scheme, separator, auth_value = self.headers.get("Authorization", "").partition(" ")
             token = auth_value.strip() if separator and auth_scheme.lower() == "bearer" else ""
-            if not token:
+            raw_authorization = self.headers.get("Authorization", "").strip()
+            supplied_service_key = self.headers.get("X-Blueverse-Service-Key", "")
+            configured_service_key = os.getenv("AGENTIC_SERVICE_KEY", "")
+            if raw_authorization and supplied_service_key:
+                self._send_json(401, {"error": "Unauthorized", "detail": "Use one authentication method"})
+                return
+            service_mode = bool(
+                supplied_service_key
+                and configured_service_key
+                and len(supplied_service_key) <= 512
+                and hmac.compare_digest(
+                    supplied_service_key.encode("utf-8"), configured_service_key.encode("utf-8")
+                )
+            )
+            if not token and not service_mode:
                 self._send_json(401, {"error": "Unauthorized", "detail": "A Bearer token is required"})
                 return
 
@@ -139,7 +154,11 @@ class AgentHttpHandler(BaseHTTPRequestHandler):
                 raw_json = json.loads(body)
                 agent_input = ExperienceAgentInput.from_dict(raw_json)
                 active_agent = getattr(self, "agent", None) or agent_instance
-                report = active_agent.generate_report(agent_input, auth_token=token)
+                report = active_agent.generate_report(
+                    agent_input,
+                    auth_token=token or None,
+                    service_mode=service_mode,
+                )
                 self._send_json(200, report.to_dict())
             except json.JSONDecodeError:
                 self._send_json(

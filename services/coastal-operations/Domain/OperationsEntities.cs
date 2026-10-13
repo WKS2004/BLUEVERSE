@@ -16,6 +16,7 @@ public sealed class Assessment
     public string AiDependencyStatus { get; set; } = "NOT_CONNECTED";
     public string AiDispatchOutcome { get; set; } = "NOT_REQUESTED";
     public bool AiDispatchRetryable { get; set; }
+    public string? AgentExecutionSummaryJson { get; set; }
     public string ComponentDependenciesJson { get; set; } = "[]";
     public Guid InitiatedBy { get; set; }
     public int Version { get; set; } = 1;

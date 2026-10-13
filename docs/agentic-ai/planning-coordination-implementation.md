@@ -15,9 +15,11 @@ operations status, user authorization or itinerary state.
 The AI service has private liveness, Planning Coordination readiness and
 dispatch routes under agent-specific namespaces. It has no public port. Each
 specialist adapter targets a distinct `/internal/agentic/agents/{agent-id}/dispatch`
-route, so future agent services can use separate route namespaces. Experience,
-Marine and Safety endpoints remain target paths; those services are not yet
-implemented. Coastal Planner persists checkpoints in
+route. Experience and Marine have private role-specific HTTP APIs, but their
+current request/response contracts do not yet match Planning's typed specialist
+envelope. Safety Operations now has its own private dispatch endpoint and
+typed proposal-only contract. End-to-end peer compatibility remains pending.
+Coastal Planner persists checkpoints in
 `coastal_planner.agent_execution_states` through
 `PUT /internal/agentic/executions/{workflowId}`. That route requires
 `X-Blueverse-Service-Key`, an existing Planner workflow and a versioned state
@@ -45,15 +47,20 @@ unnecessary user data are stored.
 
 ## Gemini integration and provider configuration
 
-- Gemini is the default provider and uses Google's Interactions REST API with
-  `x-goog-api-key`, schema-constrained JSON output, `store:false`, an 8-second
-  timeout and deterministic plan validation. The API key stays in an
-  environment variable and never enters a URL or log.
-- Configure `AGENTIC_MODEL_NAME` and `AGENTIC_MODEL_API_KEY`. The Gemini API
-  base defaults to Google AI Studio's `v1beta` endpoint and may be overridden
-  by `AGENTIC_GEMINI_API_BASE_URL` for compatible test servers.
-- `AGENTIC_MODEL_PROVIDER=openai-compatible` retains the earlier adapter;
-  configure `AGENTIC_MODEL_BASE_URL`, model and key for that option.
+- Gemini is the default provider and uses Google's `generateContent` REST API
+  with `x-goog-api-key`, JSON response schema, an 8-second timeout, hidden
+  thought-part filtering and deterministic local plan validation. The key
+  stays in the agent-specific environment variable and never enters a URL or
+  log. The provider request does not include a `store:false` field; provider
+  retention and data handling remain an AI-00 decision.
+- Configure `PLANNING_COORDINATION_GEMINI_ENABLED=true`,
+  `PLANNING_COORDINATION_GEMINI_MODEL` and
+  `PLANNING_COORDINATION_GEMINI_API_KEY`. The adapter pins the Google AI
+  Studio HTTPS `v1beta` origin; the model path is escaped before request.
+- The optional OpenAI-compatible adapter uses only
+  `PLANNING_COORDINATION_OPENAI_COMPATIBLE_BASE_URL`,
+  `PLANNING_COORDINATION_OPENAI_COMPATIBLE_MODEL` and
+  `PLANNING_COORDINATION_OPENAI_COMPATIBLE_API_KEY`.
 - Provider selection is Adithya Gunawardana's requested implementation
   preference, not shared AI-00/provider approval or a data-processing review.
   Free-tier access, eligible models and quotas vary by Google project and
@@ -63,7 +70,10 @@ unnecessary user data are stored.
   handling is reviewed; do not send personal or sensitive data through a
   free-tier key.
 - Specialist role URLs and report names follow current v1 agent contracts.
-  Those agent services and exact report schemas are not yet implemented.
+  Partial Experience, Marine and Safety runtimes are present under
+  `services/agents`, but the Experience and Marine response shapes do not yet
+  match Planning's versioned specialist envelope. Cross-agent report schemas
+  still need owner alignment and integration validation.
 - Reports require matching workflow, step and agent identities, expected
   report type, `SUCCEEDED`, source references, uncertainty notes and a
   timezone-aware production timestamp. Report bodies remain bounded JSON;
@@ -79,7 +89,7 @@ implementation is disabled by default with `AGENTIC_AI_ENABLED=false`.
 Run deterministic contract tests:
 
 ```powershell
-python -m unittest discover -s services/ai/planning-coordination/tests -v
+python -m unittest discover -s services/agents/planning-coordination/tests -v
 ```
 
 Run endpoint catalog validation:
@@ -89,7 +99,9 @@ python .agents/scripts/validate_endpoint_catalog.py --write-markdown
 python .agents/scripts/validate_endpoint_catalog.py
 ```
 
-The `agentic-ai` Compose profile contains three specialist image shells.
-Dispatch therefore returns explicit unavailable/blocked state until those
-owners implement compatible services. Live model, PostgreSQL migration and
-Compose evidence require configured dependencies and Docker.
+The `agentic-ai` Compose profile contains the agent services and Gemini egress
+proxy. Agent-specific Gemini calls and Planner dispatch remain disabled by
+default. The direct E&B/Marine APIs still need adapters for Planning's
+versioned specialist envelope before the golden workflow is compatible. Live
+provider tests require each agent's distinct key, explicit enablement and the
+shared data-handling review; no committed example contains secrets.

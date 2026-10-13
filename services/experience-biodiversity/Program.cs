@@ -23,6 +23,20 @@ if (args.Contains("--healthcheck", StringComparer.Ordinal))
 
 var builder = WebApplication.CreateBuilder(args);
 
+if (args.Contains("--seed-synthetic-demo-data", StringComparer.Ordinal))
+{
+    if (!builder.Environment.IsDevelopment())
+    {
+        Console.Error.WriteLine("Synthetic demo data can only be seeded when ASPNETCORE_ENVIRONMENT is Development.");
+        Environment.ExitCode = 2;
+        return;
+    }
+
+    Environment.ExitCode = await SyntheticDemoDataSeedCommand.RunAsync(
+        builder.Configuration.GetConnectionString("DefaultConnection") ?? string.Empty);
+    return;
+}
+
 var signingKey = builder.Configuration["JWT_SIGNING_KEY"];
 if (string.IsNullOrWhiteSpace(signingKey))
 {

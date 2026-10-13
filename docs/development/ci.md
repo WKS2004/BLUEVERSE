@@ -118,7 +118,7 @@ Authoritative tests stay beside their owning implementation:
 - Flutter: `apps/mobile/test` and `apps/mobile/integration_test`;
 - backend: service-local test projects under `services/<service>`; and
 - Agentic AI: each service-local `tests/` directory under
-  `services/ai`, `services/ai-agents` or `services/agents`.
+  `services/ai-agents` or `services/agents`.
 
 Each test workflow preserves the runner exit code, prints an aggregate metrics
 row, appends a summary table, uploads console/result artifacts and prints a

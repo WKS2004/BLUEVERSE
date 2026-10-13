@@ -4,7 +4,7 @@ namespace Blueverse.ExperienceBiodiversity.DTOs;
 
 public sealed record AgentContextResponseDto(
     string AgentName,
-    string Status, // "not_connected"
+    string Status, // "connected" | "not_connected" | "unavailable"
     string Detail,
     IReadOnlyList<string> PlannedTools,
     DateTimeOffset CheckedAt);

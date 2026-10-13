@@ -1,21 +1,27 @@
 # Agentic AI tools — v1 target
 
-**Implementation status:** the Member 1 Experience & Biodiversity service has
-five read-only tools checked in under
-`services/agents/experience-biodiversity`. The other tool sets below remain
-target contracts; their presence here does not make them callable.
+**Implementation status (2026-10-13):** Experience & Biodiversity and Marine
+Conditions have provisional read-only tool implementations under
+`services/agents/experience-biodiversity` and
+`services/agents/marine-conditions`. Planning & Coordination has a provisional
+delegation path to configured specialist endpoints. Safety & Operations has a
+candidate allowlist and input/output guards, but no authoritative read-tool
+handlers are connected and its runtime allowlist is empty. These are
+role-local implementations; they do not establish compatible tool envelopes
+or an integrated four-agent workflow. AI-00 tool and schema decisions remain
+pending.
 
 The [implementation blueprint](implementation-blueprint.md) defines the full
 tool execution checklist, authoritative source map, model/retrieval boundary,
 and pre-implementation decisions. Read it before introducing a new class of
 tool such as document retrieval or RAG.
 
-| Agent | Implemented or candidate read-only tools |
+| Agent | Current source status and implemented or candidate read-only tools |
 |---|---|
-| Coastal Experience & Biodiversity | destination_lookup, activity_lookup, offering_lookup, schedule_lookup, biodiversity_prediction_lookup |
-| Marine Conditions Intelligence | weather_forecast_lookup, marine_forecast_lookup, condition_snapshot_lookup |
-| Safety & Operations | safety_profile_lookup, operational_status_lookup, active_alert_lookup, operational_constraint_lookup |
-| Planning & Coordination | Delegates configured steps to specialist agents; it cannot create or grant itself tools. |
+| Coastal Experience & Biodiversity | Provisional read-only handlers: destination_lookup, activity_lookup, offering_lookup, schedule_lookup, biodiversity_prediction_lookup. |
+| Marine Conditions Intelligence | Provisional read-only handlers: weather_forecast_lookup, marine_forecast_lookup, condition_snapshot_lookup. |
+| Safety & Operations | Candidate capabilities only: safety_profile_lookup, operational_status_lookup, active_alert_lookup, operational_constraint_lookup. No authoritative handlers are connected; the runtime tool allowlist is empty. |
+| Planning & Coordination | Provisional delegation to configured specialist endpoints; no independent tool registry. It cannot create or grant itself tools. |
 
 The implemented `biodiversity_prediction_lookup` belongs to the Member 1
 Coastal Experience & Biodiversity Agent. Its handler may call only

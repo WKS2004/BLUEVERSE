@@ -160,6 +160,102 @@ class EndpointCatalogRejectionTests(unittest.TestCase):
             self.assertEqual({entry["section"] for entry in routes.values()},
                              {"aiEndpoints", "testOnlyEndpoints"})
 
+    def test_python_agent_routes_are_discovered_under_services_agents(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "services/agents/safety-operations/server.py"
+            source.parent.mkdir(parents=True, exist_ok=True)
+            source.write_text(
+                'HEALTH_PATH = "/internal/agentic/agents/safety-operations/health"\n'
+                'class Handler:\n'
+                '    def do_GET(self):\n'
+                '        if self.path == "/health/live":\n'
+                '            self.send_response(200)\n'
+                '        if self.path == HEALTH_PATH:\n'
+                '            self._authorized()\n'
+                '    def do_POST(self):\n'
+                '        if self.path != "/internal/agentic/agents/safety-operations/dispatch":\n'
+                '            self._authorized()\n'
+            )
+            marine = root / "services/agents/marine-conditions/app.py"
+            marine.parent.mkdir(parents=True, exist_ok=True)
+            marine.write_text(
+                'class Handler:\n'
+                '    HEALTH_ROUTES = ("/health", "/api/agents/marine-conditions/health")\n'
+                '    INVOCATION_ROUTES = ("/invocations", "/api/agents/marine-conditions/invocations")\n'
+                '    def do_GET(self):\n'
+                '        path = self.path.split("?")[0]\n'
+                '        if path in self.HEALTH_ROUTES:\n'
+                '            self.send_response(200)\n'
+                '    def do_POST(self):\n'
+                '        path = self.path.split("?")[0]\n'
+                '        if path in self.INVOCATION_ROUTES:\n'
+                '            self.send_response(200)\n'
+            )
+            experience = root / "services/agents/experience-biodiversity/server.py"
+            experience.parent.mkdir(parents=True, exist_ok=True)
+            experience.write_text(
+                'class Handler:\n'
+                '    def do_POST(self):\n'
+                '        path = self.path.split("?")[0]\n'
+                '        if path in ("/api/experiences/agent/context-reports", "/api/experiences/agent/generate"):\n'
+                '            scheme = self.headers.get("Authorization", "")\n'
+                '            if scheme == "Bearer":\n'
+                '                self.send_response(200)\n'
+            )
+
+            errors: list[str] = []
+            routes = VALIDATOR.discover_endpoints(root, errors)
+            self.assertEqual(errors, [])
+            self.assertEqual(
+                routes[(
+                    "services/agents/safety-operations/server.py",
+                    "GET",
+                    "/health/live",
+                )]["auth"],
+                "anonymous",
+            )
+            self.assertEqual(
+                routes[(
+                    "services/agents/safety-operations/server.py",
+                    "GET",
+                    "/internal/agentic/agents/safety-operations/health",
+                )]["auth"],
+                "service-key",
+            )
+            self.assertEqual(
+                routes[(
+                    "services/agents/marine-conditions/app.py",
+                    "GET",
+                    "/api/agents/marine-conditions/health",
+                )]["ownerService"],
+                "marine-conditions",
+            )
+            self.assertEqual(
+                routes[(
+                    "services/agents/marine-conditions/app.py",
+                    "POST",
+                    "/api/agents/marine-conditions/invocations",
+                )]["auth"],
+                "anonymous",
+            )
+            self.assertEqual(
+                routes[(
+                    "services/agents/experience-biodiversity/server.py",
+                    "POST",
+                    "/api/experiences/agent/context-reports",
+                )]["auth"],
+                "bearer",
+            )
+            self.assertEqual(
+                routes[(
+                    "services/agents/safety-operations/server.py",
+                    "POST",
+                    "/internal/agentic/agents/safety-operations/dispatch",
+                )]["auth"],
+                "service-key",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

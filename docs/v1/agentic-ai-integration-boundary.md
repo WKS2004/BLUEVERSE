@@ -11,13 +11,16 @@ contracts.
 
 ## Status and governing boundary
 
-Private runtimes are present for Experience & Biodiversity, Marine Conditions,
-and Planning & Coordination. The Planner dispatch and checkpoint path is
-partial; the full four-agent workflow, Safety Operations role, AI-00 decisions
-and live compatibility evidence remain outstanding. G00 and G07 acceptance
-are recorded from Adithya Gunawardana's 2026-10-13 team-meeting report; meeting
-minutes and signatures are not in the repository. The repository requirements
-and implemented sources remain authoritative. Any exact public route, internal
+Provisional private runtimes for Experience & Biodiversity, Marine Conditions,
+Planning & Coordination, and Safety & Operations are present under
+`services/agents`. The Planner dispatch/checkpoint path and Safety tool
+handlers remain partial; role-local suites do not establish compatible
+cross-agent envelopes, a complete four-agent workflow, live provider
+compatibility, or AI-00 approval. G00 and G07 acceptance are recorded per
+Adithya Gunawardana's 2026-10-13 team-owner report; meeting minutes and
+signatures are not in the repository. AI-00 provider, shared-schema and
+data-handling decisions remain pending. The repository requirements and
+implemented sources remain authoritative. Any exact public route, internal
 service URL, DTO, status code, availability enum and retry policy must be
 finalized in the owning contract and implemented before it is described as
 live.

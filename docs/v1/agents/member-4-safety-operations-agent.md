@@ -2,7 +2,7 @@
 contract_id: v1.agent.safety-operations
 contract_type: agent_role
 release: v1
-implementation_status: target_not_implemented
+implementation_status: partial_implementation
 owner_label: member_4
 owner_full_name: "Wanshaja Sooriyabandara"
 owner_github_username: "WKS2004"
@@ -16,15 +16,21 @@ business_component: "../components/member-4-coastal-operations-advisories-alerts
 
 The user-directed publication handoff is specified in
 [the component publication contract](../coastal-operations-publication-and-ui.md).
-The future entry point consumes the stable dispatch ID and immutable published
-assessment/context snapshot, deduplicates delivery and correlates results with
-the business workflow. Raw assessment photos are not agent inputs. No runtime
-route is claimed before G07; alerts do not independently dispatch this agent.
+The current partial runtime provides an authenticated private proposal route,
+but it is not yet connected to the published-assessment workflow or an
+end-to-end specialist contract. The future entry point consumes the stable
+dispatch ID and immutable published assessment/context snapshot, deduplicates
+delivery and correlates results with the business workflow. Raw assessment
+photos are not agent inputs. Alerts do not independently dispatch this agent.
 
-**Target status:** there is no executable v1 Safety & Operations agent/runtime
-in the current foundation. This contract describes recommendation behavior;
-it does not claim the operations service, approval workflow or tool set is
-implemented.
+**Implementation status (2026-10-13):** A read-only proposal agent, typed
+input/output validation, private liveness/health/dispatch routes, and a Gemini
+`generateContent` adapter are present under
+`services/agents/safety-operations`. Its provider calls are disabled by
+default and require both the agent enable flag and explicit data-handling
+approval. The shared AI-00 provider/data contract, peer integration, business
+dispatch, approval workflow and tools remain incomplete; this is not a claim
+that the complete Safety & Operations workflow is implemented.
 
 **Assigned owner:** Wanshaja Sooriyabandara (`@WKS2004`), requirement trace
 label Member 4. Component branch: `features/coastal-operations`; actual agent
@@ -32,15 +38,13 @@ branch, after G07: `agentic-ai/safety-operations`.
 
 **Owning business component:** [Coastal Operations, Advisories & Alerts](../components/member-4-coastal-operations-advisories-alerts.md).
 
-**Implementation sequence:** do not implement an executable agent, model
-call or tool before all four business components pass G07. After that gate,
-follow the post-G07 sequence in the [member branch and integration workflow](../member-branch-workflow.md); this
-agent consumes validated planner/specialist evidence and never approves or
-executes its own proposal.
-Before G07, the owning Wanshaja Sooriyabandara (Member 4) feature branch prepares only the public
-assessment/proposal contract, private backend adapter and
-not-connected/unavailable behavior defined in the [member integration boundary](../agentic-ai-integration-boundary.md).
-Implement this actual proposal agent on an `agentic-ai/**` branch after G07.
+**Implementation sequence:** G07 acceptance is recorded in the
+[member branch and integration workflow](../member-branch-workflow.md). The
+current runtime is provisional until AI-00 is accepted and must continue to
+consume validated planner/specialist evidence without approving or executing
+its own proposal. The owning Wanshaja Sooriyabandara (Member 4) feature branch
+prepares the public assessment/proposal contract and private backend adapter
+described by the [member integration boundary](../agentic-ai-integration-boundary.md).
 
 ## 1. Responsibility and strict separation
 

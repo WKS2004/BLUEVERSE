@@ -1,8 +1,11 @@
 # Agentic AI safety — v1 target
 
 **Core rule:** model output, objectives, tool results and third-party content
-are untrusted. No executable v1 Agentic AI workflow is checked in yet;
-these controls are required of its implementation.
+are untrusted. Provisional private runtimes for all four roles are present
+under `services/agents`, with role-local tests. The integrated v1 workflow,
+live provider compatibility and AI-00 provider/data-handling approval remain
+unverified. All model calls are opt-in; these controls apply to the
+provisional implementations and remain release requirements.
 
 Use the [implementation blueprint](implementation-blueprint.md) for the
 end-to-end data boundary, model/provider privacy review, retrieval/RAG policy,

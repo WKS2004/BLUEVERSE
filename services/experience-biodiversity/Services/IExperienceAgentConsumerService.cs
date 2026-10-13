@@ -58,8 +58,8 @@ public sealed class ExperienceAgentConsumerService : IExperienceAgentConsumerSer
             ?? configuration["Services:ExperienceAgentUrl"]
             ?? "http://agent-experience-biodiversity:8080"
         ).TrimEnd('/');
-        _defaultModelName = configuration["GEMINI_MODEL"]
-            ?? configuration["Gemini:Model"]
+        _defaultModelName = configuration["EXPERIENCE_BIODIVERSITY_GEMINI_MODEL"]
+            ?? configuration["ExperienceAgent:GeminiModel"]
             ?? "gemini-3.6-flash";
     }
 

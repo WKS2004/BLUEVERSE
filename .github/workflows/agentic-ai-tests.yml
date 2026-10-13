@@ -4,7 +4,6 @@ on:
   push:
     branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
     paths:
-      - "services/ai/**"
       - "services/ai-agents/**"
       - "services/agents/**"
       - ".github/scripts/**"
@@ -12,7 +11,6 @@ on:
   pull_request:
     branches: ["main", "dev", "features/**", "agentic-ai/**", "claude/**", "codex/**", "antigravity/**", "gemini/**", "maintenance/**", "bug-fixes/**"]
     paths:
-      - "services/ai/**"
       - "services/ai-agents/**"
       - "services/agents/**"
       - ".github/scripts/**"
@@ -57,7 +55,7 @@ jobs:
 
           if [[ "$target" == "main" || "$target" == "dev" || ("$EVENT_NAME" == "push" && "$BEFORE_SHA" =~ ^0+$) ]]; then
             affected=true
-          elif [[ "$affected" != true ]] && git diff --name-only "$diff_range" | grep -Eq '^(services/(ai|ai-agents|agents)/|\.github/(scripts/|workflows/agentic-ai-tests\.yml$))'; then
+          elif [[ "$affected" != true ]] && git diff --name-only "$diff_range" | grep -Eq '^(services/(ai-agents|agents)/|\.github/(scripts/|workflows/agentic-ai-tests\.yml$))'; then
             affected=true
           fi
 
@@ -93,7 +91,7 @@ jobs:
           export PYTHONPATH="$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/services:${PYTHONPATH:-}"
           overall_status=0
           service_dirs=()
-          ai_roots=(services/ai services/ai-agents services/agents)
+          ai_roots=(services/ai-agents services/agents)
 
           for ai_root in "${ai_roots[@]}"; do
             while IFS= read -r -d '' test_dir; do
@@ -104,7 +102,7 @@ jobs:
           done
 
           if [[ ${#service_dirs[@]} -eq 0 ]]; then
-            echo "No Agentic AI test suites found under services/ai, services/ai-agents, or services/agents."
+            echo "No Agentic AI test suites found under services/ai-agents or services/agents."
             echo "This workflow currently reports zero tests until AI service tests are added."
             python .github/scripts/report_test_metrics.py --results-root test-results/ai --scope "Agentic AI"
             exit 0
@@ -114,7 +112,6 @@ jobs:
             service_root="${service_dir%/tests}"
             service="${service_root#services/}"
             case "$service" in
-              ai/*) service="${service#ai/}" ;;
               ai-agents/*) service="${service#ai-agents/}" ;;
               agents/*) service="${service#agents/}" ;;
             esac

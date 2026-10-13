@@ -19,22 +19,15 @@ public sealed class AgentSeamController : ControllerBase
     }
 
     [HttpGet("context")]
-    public IActionResult GetAgentContext()
+    public async Task<IActionResult> GetAgentContext(CancellationToken cancellationToken)
     {
-        // Pre-G07 typed seam: returns explicit not_connected status as dictated by ADR-0007 and ADR-0020
+        var info = await _agentConsumerService.GetAgentInfoAsync(cancellationToken);
         var seam = new AgentContextResponseDto(
-            AgentName: "Coastal Experience & Biodiversity Agent",
-            Status: "not_connected",
-            Detail: "Member component business workflows are active. Executable Agentic AI orchestration is scheduled for post-G07 integration. Read-only context Seam is active.",
-            PlannedTools: new[]
-            {
-                "destination_lookup",
-                "activity_lookup",
-                "offering_lookup",
-                "schedule_lookup",
-                "biodiversity_prediction_lookup"
-            },
-            CheckedAt: DateTimeOffset.UtcNow);
+            AgentName: info.AgentName,
+            Status: info.Status,
+            Detail: info.Detail,
+            PlannedTools: info.Tools,
+            CheckedAt: info.CheckedAt);
 
         return Ok(seam);
     }

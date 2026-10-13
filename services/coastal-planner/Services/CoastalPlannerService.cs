@@ -245,7 +245,9 @@ public partial class CoastalPlannerService : ICoastalPlannerService
             {
                 await _coordinationClient.DispatchAsync(new PlanningCoordinationRequest(
                     workflow.WorkflowId, recommendationId, request.TargetDestinationId, request.StartsAt,
-                    request.EndsAt, request.PreferredActivityIds ?? []), ct);
+                    request.EndsAt, request.PreferredActivityIds ?? [], workflow.Objective,
+                    request.ExperienceLevel ?? "INTERMEDIATE", request.DurationHours,
+                    request.IncludeBiodiversityContext), ct);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
             catch (Exception ex)
@@ -325,8 +327,11 @@ public partial class CoastalPlannerService : ICoastalPlannerService
 
         var ai = _coordinationClient is null ? new PlanningCoordinationAvailability("NOT_CONNECTED", false) :
             await _coordinationClient.CheckAvailabilityAsync(ct);
-        var aiExecutionStatus = await _db.AgentExecutionStates.Where(x => x.WorkflowId == workflow.WorkflowId)
-            .Select(x => x.Status).SingleOrDefaultAsync(ct) ?? "NOT_STARTED";
+        var aiExecutionState = await _db.AgentExecutionStates.Where(x => x.WorkflowId == workflow.WorkflowId)
+            .Select(x => new { x.Status, x.StateJson }).SingleOrDefaultAsync(ct);
+        var aiExecutionStatus = aiExecutionState?.Status ?? "NOT_STARTED";
+        var aiExecutionSummary = aiExecutionState is null ? null :
+            AgentExecutionSummaryProjector.Project(workflow.WorkflowId, aiExecutionState.Status, aiExecutionState.StateJson);
         return new WorkflowStatusDto(
             WorkflowId: workflow.WorkflowId,
             WorkflowType: workflow.WorkflowType,
@@ -338,7 +343,8 @@ public partial class CoastalPlannerService : ICoastalPlannerService
             ResultSummary: workflow.ResultSummary,
             FailureReason: workflow.FailureReason,
             AiDependencyStatus: ai.Status,
-            AiExecutionStatus: aiExecutionStatus
+            AiExecutionStatus: aiExecutionStatus,
+            AiExecutionSummary: aiExecutionSummary
         );
     }
 

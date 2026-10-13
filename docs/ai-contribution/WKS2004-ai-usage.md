@@ -2722,3 +2722,68 @@ push was made.
 - Summary of what the AI Agent did: Confirmed the local Gemini configuration passed validation, submitted synthetic assessment data through the Safety Operations agent and internal egress proxy, then made one sanitized diagnostic call to capture only the provider HTTP status. No assessment was persisted and no action was executed.
 - AI output accepted/changed/rejected: Accepted the sanitized result as failure evidence. Gemini generation was not confirmed; no provider response body or model output was recorded and no application code was changed during this smoke test.
 - Verification/evidence: The proxy was healthy before the calls. The provider returned HTTP 404 through the proxy; the agent returned `UNAVAILABLE` / `MODEL_FAILURE`. The temporary `gemini-egress-proxy` container was stopped after the test. No API key or request/response payload was displayed or recorded.
+
+## 2026-10-13 — Restore agent Docker layout and verify scoped Gemini setup
+
+- Date/time or time range: 2026-10-13 09:57 +05:30 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop, PowerShell, Docker Desktop
+- AI Model: GPT-6
+- Summary of the user's request: Resolve incoming merge conflicts, restore the private agent Docker layout, move agents into `services/agents`, give each agent a dedicated Gemini key/model slot and update backend boundaries to align with the requested private network design.
+- Summary of what the AI Agent did: Resolved all unmerged paths with a subagent, removed the Marine agent's public API route, regenerated the endpoint catalog, moved the agent sources, added role-scoped model configuration and default-off Gemini calls, routed agent HTTPS through a Google-only egress proxy, updated the Experience and Planner backend seams, and documented the verified state. The local ignored `.env` now has four blank role-specific key variables. Kept the Marine and Safety backend dispatch paths disconnected where their approved contracts are not yet present.
+- AI output accepted/changed/rejected: Accepted the private agent network and scoped-key design and the incoming changes after merging them with the current work. Revised the Marine route test to remove an unnecessary socket stub. Did not enable model calls or invent Member 2/4 backend contracts while AI-00 remains pending.
+- Verification/evidence: No unmerged files remain. All four Python agent suites passed (22, 54, 24 and 61; Marine/Safety also report 10/31 subtests); Experience, Planner and API suites passed (103, 132 and 58). All five agent/proxy DHI images built and reached healthy status; runtime network inspection showed only the proxy on `blueverse_agent_egress`. Compose and endpoint catalogs validated; catalog regression tests passed 20/20. Marine Safety passed 183 tests; Coastal Operations passed 332 tests with six opt-in PostgreSQL cases skipped. See `docs/testing/test-matrix.md`. No API keys or model payloads were recorded.
+
+## 2026-10-13 — Remove legacy Gemini settings and verify four key bindings
+
+- Date/time or time range: 2026-10-13 10:12 +05:30 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop, PowerShell, Docker Desktop
+- AI Model: GPT-6
+- Summary of the user's request: Remove the old generic Gemini configuration after the four agent keys were added, then continue validation.
+- Summary of what the AI Agent did: Removed four `LEGACY_UNASSIGNED_GEMINI_*` assignments from the ignored local `.env`; confirmed `.env.example` already contained only the four role-specific key placeholders. Verified all four local key variables are populated without reading or displaying their values. Kept every model-generation and orchestration switch false. Through the private egress proxy, requested only model metadata for each configured model from within its corresponding agent container; no prompt, business data or model-generation request was sent. Removed the temporary containers afterward.
+- AI output accepted/changed/rejected: Accepted the four HTTP 200 metadata responses as credential, model-availability and private-egress evidence only. Did not treat them as proof of model generation, agent dispatch or the cross-agent workflow; AI-00 remains pending.
+- Verification/evidence: All four configured models were returned by Google with `generateContent` listed as supported. Compose configuration and final whitespace checks passed. No credential values or provider response bodies were captured. See `docs/testing/test-matrix.md`.
+
+## 2026-10-13 — Re-run the public API suite after merge resolution
+
+- Date/time or time range: 2026-10-13 10:20 +05:30 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop, PowerShell, .NET SDK 10.0.400
+- AI Model: GPT-6
+- Summary of the user's request: Continue validation after resolving incoming merge conflicts and adding the four role-specific Gemini keys.
+- Summary of what the AI Agent did: Retried the affected reverse-proxy tests and full Public API suite. Sandboxed VSTest could not connect to its testhost; rerunning in the authorized host context completed successfully. No test files or implementation were changed during this verification.
+- AI output accepted/changed/rejected: Accepted the completed test results. Did not treat the earlier sandbox timeouts as assertion failures or alter/skip tests.
+- Verification/evidence: `ReverseProxyTests` passed 4/4; the complete `Blueverse.Api.Tests` suite passed 58/58. Both successful runs used `--no-build --no-restore`. No credentials or model data were recorded.
+
+## 2026-10-13 — Add full test runners and validate local agent workflows
+
+- Date/time or time range: 2026-10-13 11:25–12:42 +05:30 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop, PowerShell, Bash, Flutter, .NET SDK, Python, Docker Desktop
+- AI Model: GPT-6
+- Summary of the user's request: Add simple Bash and PowerShell full-suite runners for React, Flutter, four backend services and four agents; complete Docker/data/UI verification; and try both local agent workflows three times.
+- Summary of what the AI Agent did: Added ten runners per shell plus student-facing instructions; removed the Windows Flutter runner's junction-based cache step; fixed agent runner setup issues with a subagent. Ran all suites and repaired two dispatch boundaries: tourist JSON now declares content length, and operational execution checkpoints remain owned by Coastal Operations instead of the tourist Planner store. Added safe status logging and updated local test evidence.
+- AI output accepted/changed/rejected: Accepted the requested runner coverage and synthetic test workflows. Changed the broken request framing and workflow-state ownership after live failures. Rejected any claim that Gemini or cross-agent workflows succeeded: all three tourist and all three operations attempts reached Planning Coordination but received Gemini HTTP 503 before specialist delegation. No proposal was approved and no operational state changed.
+- Verification/evidence: React 397/397; Flutter 295/295; backends 106, 183, 134 and 339 passed (six opt-in PostgreSQL cases skipped); agents 24, 54, 31 and 61 passed, with 10 Marine and 31 Safety unittest subtests. UI and endpoint-catalog validators passed; all ten PowerShell and Bash runner files parsed; Docker images for Planner and Planning Coordination rebuilt. The existing synthetic catalogue contained 24 records. Workflow outcomes and limitations are recorded in `docs/testing/test-matrix.md`. No credentials or provider response bodies were recorded.
+
+## 2026-10-13 — Build Android APK with the requested gateway address
+
+- Date/time or time range: 2026-10-13 12:38–12:47 (Asia/Colombo)
+- GitHub Username: `WKS2004`
+- Team Member Name (actual): Wanshaja Sooriyabandara
+- Agent Name: Codex
+- Tool/App: ChatGPT Codex desktop, PowerShell, Flutter, Gradle
+- AI Model: GPT-6
+- Summary of the user's request: Build the Flutter mobile app for the detected device, configure the API address as `10.111.186.188`, and use `D:\WKS\FlutterBuildCache`.
+- Summary of what the AI Agent did: Built the Android debug APK with `BLUEVERSE_API_BASE_URL=http://10.111.186.188:80`, using the cache directory for Gradle, Pub and temporary files, then copied the APK into the cache output folder. Device installation was unavailable because the ADB server failed to start.
+- AI output accepted/changed/rejected: Accepted the requested host and kept it as a compile-time build setting rather than committing an environment-specific IP to app source.
+- Verification/evidence: `flutter build apk --debug` succeeded in 417.3 seconds. The APK is 202,800,982 bytes; the workspace and cache copies have matching SHA-256 `CCBDACF1581E8E94AFA754C7DDDF156BEAAED77A4CE62104B6FE9CCEB0220147`. `flutter devices`/`adb devices -l` could not start the ADB daemon, so installation was not performed. A workstation TCP/80 probe to the requested address failed.

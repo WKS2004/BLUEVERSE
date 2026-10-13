@@ -1,16 +1,18 @@
 # Agentic AI architecture — v1 target
 
-**Implementation status (2026-10-13):** private runtimes are present for
-Experience & Biodiversity, Marine Conditions, and Planning & Coordination.
-Planning & Coordination has a private dispatch API, validated plan
-orchestration, specialist adapters and Planner-owned execution-state
-persistence. The Experience & Biodiversity and Marine Conditions specialists
-also have private implementations. This branch adds the Safety Operations
-proposal package, Gemini adapter and private egress proxy; its image remains a
-runtime shell and Safety Operations dispatch is not implemented. End-to-end
-four-agent integration remains incomplete. The v1 tracker records G07 as
-owner-reported accepted, while live provider and peer integration remains
-pending. This is partial implementation, not v1 readiness. This target
+**Implementation status (2026-10-13):** provisional private runtimes for all
+four roles are present under `services/agents`. Experience & Biodiversity and
+Marine Conditions provide specialist APIs; Planning & Coordination has a
+private dispatch API, bounded plan orchestration and Planner-owned execution
+checkpoints; Safety & Operations provides a proposal-only private API. The
+single Gemini egress proxy and DHI Compose profile are also present. Role-local
+suites pass, but Experience and Marine response contracts do not yet match
+Planning's versioned specialist envelope, Safety is not connected to the
+published-assessment workflow, and the golden four-agent workflow is not
+integrated. G07 acceptance is recorded per the 2026-10-13 team-owner report;
+meeting minutes and signatures are absent. AI-00 provider, shared-schema and
+data-handling decisions and live provider/peer compatibility remain pending.
+This is partial implementation, not v1 readiness. This v1 target
 contract is derived from
 [PROJECT_REQUIREMENTS.md](../../PROJECT_REQUIREMENTS.md). The
 [v1 index](../v1/README.md) links separate contracts for each member's agent.
@@ -23,15 +25,15 @@ safety/workflow requirements from decisions still open in ADRs.
 **Implementation boundary:** use the [v1 component relationship map](../v1/component-relationships.md)
 and [member branch workflow](../v1/member-branch-workflow.md) for ownership
 and integration evidence. The team owner reported G07 acceptance on
-2026-10-13; the repository tracker records that report. The Member 1 runtime
-is a stateless private Python HTTP service that reads through the accepted
-member-service contracts. It does not own durable workflow state or provide
-cross-agent orchestration. The broad runtime/framework and shared state choices
-remain open in ADR-0007/0008. The other specialist agents, planner
-orchestration and integrations have implementation code in this baseline.
-The Safety Operations agent workflow, end-to-end four-agent integration and
-golden evaluations remain to be implemented on their assigned
-`agentic-ai/**` branches. See the
+2026-10-13; the repository tracker records that report, but meeting minutes
+and signatures are absent. The Experience & Biodiversity runtime is a
+stateless private Python HTTP service that reads through member-service
+contracts. It does not own durable workflow state or provide cross-agent
+orchestration. Planning persists execution checkpoints through the Planner
+service; Safety produces a proposal but does not authorize or execute a
+protected action. The broad runtime/framework and shared-state choices remain
+open in ADR-0007/0008. The current implementations are provisional and do not
+establish cross-agent compatibility or completed golden evaluations. See the
 [canonical owner map](../project/ai-team-members.md).
 
 ## Four distinct responsibilities
@@ -101,21 +103,24 @@ timestamps. Do not persist hidden reasoning, credentials or unnecessary
 sensitive data. Exact schemas and transport boundaries belong in the
 accepted ADRs and data/service contracts.
 
-The current provider adapter uses Google's native Gemini Interactions API
-by default, with an optional OpenAI-compatible adapter. Runtime
-configuration remains required, and dispatch stays disabled by default.
-Gemini is Adithya Gunawardana's selected implementation preference; shared
-AI-00 provider approval, model choice, data-processing review, specialist
-report schemas and runtime decisions remain open in
+The four provisional provider adapters use Google's Gemini `generateContent`
+REST API with role-specific API keys. The Planning adapter also retains an
+optional OpenAI-compatible implementation path. Agent-specific model calls
+and Planner dispatch remain disabled by default; Safety additionally requires
+an explicit data-handling approval and sends provider traffic through the
+host-restricted egress proxy. Gemini is Adithya Gunawardana's selected
+implementation preference, not a shared AI-00 approval. Shared provider/model
+approval, data-processing review, specialist report schemas and runtime
+decisions remain open in
 [ADR-0007](../adr/ADR-0007-agentic-ai-framework.md) and
 [ADR-0008](../adr/ADR-0008-agent-workflow-state.md). This adapter is a
 provisional integration seam, not an accepted framework decision. Agent API
 routes use `/internal/agentic/agents/{agent-id}/{operation}` namespaces. The
 Planning Coordination dispatch route retains its established
 `/internal/agentic/agents/planning-coordination/{health,dispatch}` routes;
-specialist routes remain unimplemented targets until their owners deliver
-those services. The
-eventual orchestration framework remains undecided in
+private specialist routes now exist, but Experience and Marine response
+contracts are not yet compatible with Planning's versioned specialist
+envelope. The eventual orchestration framework remains undecided in
 [ADR-0007](../adr/ADR-0007-agentic-ai-framework.md). Whether the agents run
 in one private process or several does not change the public API, tool,
 validation or approval boundaries.

@@ -9,6 +9,7 @@ an error rather than a reason to silently trust stale documentation.
 from __future__ import annotations
 
 import json
+import ast
 import re
 import sys
 from pathlib import Path
@@ -513,20 +514,136 @@ def discover_endpoints(repo_root: Path, errors: list[str]) -> dict[tuple[str, st
         ):
             for match in re.finditer(pattern, text):
                 record("GET", match.group(1), "anonymous")
-    for source in sorted((repo_root / "services" / "ai").rglob("*.py")):
-        source_name = source.relative_to(repo_root).as_posix()
-        text = source.read_text(encoding="utf-8-sig")
-        for match in re.finditer(
-            r'@endpoint\("(GET|POST|PUT|PATCH|DELETE)", "([^"]+)"[^\r\n]*\)\s*\r?\n\s*def\s+(\w+)',
-            text,
-        ):
-            method, path, operation = match.groups()
-            decorator = match.group(0).splitlines()[0]
-            auth_match = re.search(r'auth="([^"]+)"', decorator)
-            auth = auth_match.group(1) if auth_match else "service-key"
-            key = (source_name, method, _normalise_path(path))
-            endpoints[key] = {"section": "aiEndpoints", "auth": auth or "service-key",
-                              "ownerService": "planning-coordination", "operationId": operation}
+    ai_roots = ("ai", "ai-agents", "agents")
+    for root_name in ai_roots:
+        for source in sorted((repo_root / "services" / root_name).rglob("*.py")):
+            parts = source.relative_to(repo_root).parts
+            if "tests" in (part.lower() for part in parts):
+                continue
+            source_name = source.relative_to(repo_root).as_posix()
+            text = source.read_text(encoding="utf-8-sig")
+            try:
+                module = ast.parse(text, filename=source_name)
+            except SyntaxError as exc:
+                errors.append(f"invalid Python syntax in Agentic AI source {source_name}: {exc}")
+                continue
+
+            module_strings: dict[str, str | tuple[str, ...]] = {}
+
+            def literal_strings(node: ast.AST) -> str | tuple[str, ...] | None:
+                if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                    return node.value
+                if isinstance(node, (ast.Tuple, ast.List, ast.Set)):
+                    values = [literal_strings(item) for item in node.elts]
+                    if all(isinstance(item, str) for item in values):
+                        return tuple(values)  # type: ignore[arg-type]
+                if isinstance(node, ast.Name):
+                    return module_strings.get(node.id)
+                return None
+
+            for statement in module.body:
+                if isinstance(statement, (ast.Assign, ast.AnnAssign)):
+                    targets = statement.targets if isinstance(statement, ast.Assign) else [statement.target]
+                    value = literal_strings(statement.value) if statement.value is not None else None
+                    if isinstance(value, str):
+                        for target in targets:
+                            if isinstance(target, ast.Name):
+                                module_strings[target.id] = value
+
+            def auth_for(node: ast.AST, fallback: str = "anonymous") -> str:
+                names = {item.id for item in ast.walk(node) if isinstance(item, ast.Name)}
+                attributes = {item.attr for item in ast.walk(node) if isinstance(item, ast.Attribute)}
+                string_constants = {
+                    item.value for item in ast.walk(node)
+                    if isinstance(item, ast.Constant) and isinstance(item.value, str)
+                }
+                if "_authorized" in names or "_authorized" in attributes:
+                    return "service-key"
+                if "Authorization" in string_constants and any("Bearer" in value for value in string_constants):
+                    return "bearer"
+                return fallback
+
+            def routes_from_condition(
+                test: ast.AST,
+                class_strings: dict[str, str | tuple[str, ...]],
+            ) -> tuple[list[str], bool]:
+                if not isinstance(test, ast.Compare) or not test.comparators:
+                    return [], False
+                left = test.left
+                is_path = (
+                    isinstance(left, ast.Name) and left.id == "path"
+                    or isinstance(left, ast.Attribute) and left.attr == "path"
+                )
+                if not is_path:
+                    return [], False
+                routes: list[str] = []
+                is_guard = False
+                for operator, comparator in zip(test.ops, test.comparators):
+                    value: str | tuple[str, ...] | None
+                    if isinstance(comparator, ast.Attribute) and isinstance(comparator.value, ast.Name) and comparator.value.id == "self":
+                        value = class_strings.get(comparator.attr)
+                    elif isinstance(comparator, ast.Name):
+                        value = module_strings.get(comparator.id)
+                    else:
+                        value = literal_strings(comparator)
+                    if isinstance(value, str):
+                        values = (value,)
+                    elif isinstance(value, tuple):
+                        values = value
+                    else:
+                        continue
+                    routes.extend(item for item in values if item.startswith("/"))
+                    is_guard = is_guard or isinstance(operator, ast.NotEq)
+                return routes, is_guard
+
+            for class_node in (node for node in ast.walk(module) if isinstance(node, ast.ClassDef)):
+                class_strings: dict[str, str | tuple[str, ...]] = {}
+                for statement in class_node.body:
+                    if isinstance(statement, (ast.Assign, ast.AnnAssign)):
+                        targets = statement.targets if isinstance(statement, ast.Assign) else [statement.target]
+                        value = literal_strings(statement.value) if statement.value is not None else None
+                        if value is not None:
+                            for target in targets:
+                                if isinstance(target, ast.Name):
+                                    class_strings[target.id] = value
+                for method in (item for item in class_node.body if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef))):
+                    method_name = method.name.lower()
+                    if method_name not in {"do_get", "do_post", "do_put", "do_patch", "do_delete"}:
+                        continue
+                    http_method = method_name.removeprefix("do_").upper()
+                    method_auth = auth_for(method)
+                    for item in ast.walk(method):
+                        if not isinstance(item, ast.If):
+                            continue
+                        route_paths, is_guard = routes_from_condition(item.test, class_strings)
+                        if not route_paths:
+                            continue
+                        route_auth = auth_for(item) if not is_guard else auth_for(method, method_auth)
+                        for route_path in route_paths:
+                            key = (source_name, http_method, _normalise_path(route_path))
+                            endpoints[key] = {
+                                "section": "aiEndpoints",
+                                "auth": route_auth,
+                                "ownerService": parts[2] if len(parts) > 2 else "agent",
+                                "operationId": method.name,
+                            }
+
+            # Decorator metadata is the explicit route table used by the
+            # Planning & Coordination runtime and remains authoritative there.
+            for match in re.finditer(
+                r'@endpoint\("(GET|POST|PUT|PATCH|DELETE)", "([^"]+)"[^\r\n]*\)\s*\r?\n\s*def\s+(\w+)',
+                text,
+            ):
+                method, path, operation = match.groups()
+                decorator = match.group(0).splitlines()[0]
+                auth_match = re.search(r'auth="([^"]+)"', decorator)
+                auth = auth_match.group(1) if auth_match else "service-key"
+                key = (source_name, method, _normalise_path(path))
+                endpoints[key] = {
+                    "section": "aiEndpoints", "auth": auth or "service-key",
+                    "ownerService": parts[2] if len(parts) > 2 else "agent",
+                    "operationId": operation,
+                }
     return endpoints
 
 

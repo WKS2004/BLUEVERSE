@@ -22,13 +22,13 @@ selected.
 
 At the user's direction, the repository has four opt-in, per-role Docker
 images based on `dhi.io/python:3.13-alpine`, wired to the private Docker
-network. Experience & Biodiversity, Marine Conditions, and Planning &
-Coordination have private runtimes; Safety Operations remains a shell.
-Planning & Coordination uses a standard-library HTTP runtime and a
-provider adapter. These are provisional component implementations, not
-team-wide framework approval. Planner dispatch is disabled by default.
-Gemini is configured by default for current runtimes, but model/provider
-approval, data handling and AI-00 decisions remain open.
+network, plus a narrow Gemini egress proxy for Safety & Operations.
+Experience & Biodiversity, Marine Conditions, Planning & Coordination, and
+Safety & Operations have private runtimes under `services/agents`. Gemini
+adapters use agent-scoped credentials and are disabled by default. Planning &
+Coordination and Safety & Operations use standard-library HTTP runtimes. These
+are provisional component implementations, not team-wide framework approval;
+model/provider approval, data handling and AI-00 decisions remain open.
 
 ## Container image preparation — 2026-10-13
 

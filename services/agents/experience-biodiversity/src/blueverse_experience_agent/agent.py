@@ -23,6 +23,7 @@ from .schemas import (
     OfferingContext,
     ScheduleContext,
 )
+from .catalogue_tools import PublishedCatalogueOnlyTools
 from .tools import ExperienceAgentTools
 
 
@@ -42,14 +43,28 @@ class CoastalExperienceAgent:
         self,
         tools: Optional[ExperienceAgentTools] = None,
         gemini_client: Optional[GeminiClient] = None,
+        service_key_tools: Optional[ExperienceAgentTools] = None,
     ):
         self.tools = tools or ExperienceAgentTools()
+        self.service_key_tools = service_key_tools or PublishedCatalogueOnlyTools(
+            experience_service_url=self.tools.experience_service_url,
+            planner_service_url=self.tools.planner_service_url,
+            timeout_seconds=self.tools.timeout_seconds,
+            max_retries=self.tools.max_retries,
+        )
         self.gemini_client = gemini_client or GeminiClient()
 
     def generate_report(
-        self, agent_input: ExperienceAgentInput, auth_token: Optional[str] = None
+        self,
+        agent_input: ExperienceAgentInput,
+        auth_token: Optional[str] = None,
+        service_mode: bool = False,
     ) -> ExperienceBiodiversityContextReport:
         """Run the specialist agent workflow and generate the structured context report."""
+        tools = self.service_key_tools if service_mode else self.tools
+        if service_mode:
+            # Service-key calls are intentionally limited to published catalogue reads.
+            auth_token = None
         audited_tools: List[AuditableToolCall] = []
         evidence_refs: List[str] = []
         uncertainty_gaps: List[str] = []
@@ -66,7 +81,7 @@ class CoastalExperienceAgent:
 
         # 1. Lookup Destination if specified
         if agent_input.destination_id:
-            destination, audit = self.tools.destination_lookup(
+            destination, audit = tools.destination_lookup(
                 agent_input.destination_id,
                 agent_input.workflow_id,
                 agent_input.step_id,
@@ -87,7 +102,7 @@ class CoastalExperienceAgent:
 
         # 2. Lookup Activity if specified
         if agent_input.activity_id:
-            activity, audit = self.tools.activity_lookup(
+            activity, audit = tools.activity_lookup(
                 agent_input.activity_id,
                 agent_input.workflow_id,
                 agent_input.step_id,
@@ -111,7 +126,7 @@ class CoastalExperienceAgent:
 
         # 3. Lookup Offering if specified
         if agent_input.offering_id:
-            offering, audit = self.tools.offering_lookup(
+            offering, audit = tools.offering_lookup(
                 agent_input.offering_id,
                 agent_input.workflow_id,
                 agent_input.step_id,
@@ -143,7 +158,7 @@ class CoastalExperienceAgent:
                     )
 
                 # 4. Lookup Schedule when offering is resolved
-                schedule, sched_audit = self.tools.schedule_lookup(
+                schedule, sched_audit = tools.schedule_lookup(
                     agent_input.offering_id,
                     agent_input.target_date,
                     agent_input.workflow_id,
@@ -178,7 +193,7 @@ class CoastalExperienceAgent:
                         evidence_refs.append(
                             f"Schedule:{offering.offering_id}:Slots={len(schedule.slots)}"
                         )
-                        if not any(s.is_open for s in schedule.slots):
+                        if not service_mode and not any(s.is_open for s in schedule.slots):
                             uncertainty_gaps.append(
                                 "No open schedule slots found for the requested timeframe."
                             )
@@ -204,7 +219,7 @@ class CoastalExperienceAgent:
         # 5. Biodiversity prediction lookup (optional / contextual via ADR-0019)
         target_dest_id = agent_input.destination_id or (offering.destination_id if offering else None)
         if agent_input.include_biodiversity and target_dest_id and not has_contradictory_selectors:
-            biodiversity, audit = self.tools.biodiversity_prediction_lookup(
+            biodiversity, audit = tools.biodiversity_prediction_lookup(
                 target_dest_id,
                 agent_input.workflow_id,
                 agent_input.step_id,

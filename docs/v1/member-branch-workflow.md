@@ -195,19 +195,26 @@ private adapter. The Member 1 specialist implementation is on its assigned
 dependency availability. See the
 [Agentic AI integration boundary](agentic-ai-integration-boundary.md).
 
-The team owner reports that all four components passed G07 and accepted the
-start of Agentic AI implementation on 2026-10-13. Keep agent code on branches
-under `agentic-ai/**`, separate from `features/**`. The remaining work sequence
-is:
+Adithya Gunawardana reports that all four components passed G07 and accepted
+the start of Agentic AI implementation on 2026-10-13; meeting minutes and
+signatures are not present in the repository. Provisional source for all four
+role runtimes is present in the current checkout, with local role-suite results
+of Experience & Biodiversity 22, Marine Conditions 54, Planning & Coordination
+24, and Safety & Operations 61 tests passed. These results do not establish
+shared AI-00 approval, live provider/peer compatibility, or the integrated
+golden workflow. Keep agent code on branches under `agentic-ai/**`, separate
+from `features/**`. AI-00 remains pending. The table tracks ownership and
+remaining acceptance work; it does not imply that the provisional source is
+already accepted on its assigned branch:
 
 | Work | Assigned owner and account | Branch | Relationship/dependency |
 |---|---|---|---|
-| AI-00 — Runtime, shared schemas, persistence/safety decisions and evaluation gates | All four owners | `agentic-ai/runtime-foundation` | Starts after G07 and accepted runtime/tool/state contracts. |
-| AI-01a — Ushan Srinuka (Member 1) Experience & Biodiversity Agent | Ushan Srinuka (`@Ushan-Srinuka`) | `agentic-ai/experience-biodiversity` | In progress under team-owner reported G07 acceptance; implements a stateless private specialist while general orchestration/shared state decisions remain open. |
-| AI-01b — Sanuda Abeysinghe (Member 2) Marine Conditions Agent | Sanuda Abeysinghe (`@sanudaabey`) | `agentic-ai/marine-conditions` | Starts after AI-00 and Sanuda's component is accepted; may run with AI-01a. |
-| AI-02 — Adithya Gunawardana (Member 3) Planning & Coordination Agent | Adithya Gunawardana (`@AdithyaGunawardana`) | `agentic-ai/planning-coordination` | Consumes the validated Ushan and Sanuda agent reports. |
-| AI-03 — Wanshaja Sooriyabandara (Member 4) Safety & Operations Agent | Wanshaja Sooriyabandara (`@WKS2004`) | `agentic-ai/safety-operations` | Consumes planner/evidence output and submits a proposal through Wanshaja's component; it cannot approve or execute. |
-| AI-04 — Golden workflow and evaluations | All four owners | `agentic-ai/golden-flow-evaluation` | Exercises all four roles, deterministic validation, human approval, protected execution, audit and safe failure. |
+| AI-00 — Runtime, shared schemas, persistence/safety decisions and evaluation gates | All four owners | `agentic-ai/runtime-foundation` | Pending. Resolve provider, shared tool/schema, persistence, data-handling and evaluation decisions before enabling live model calls or accepting runtime compatibility. |
+| AI-01a — Ushan Srinuka (Member 1) Experience & Biodiversity Agent | Ushan Srinuka (`@Ushan-Srinuka`) | `agentic-ai/experience-biodiversity` | Provisional source is present in this checkout; 22 role-local tests pass. Stateless specialist behavior is not integrated golden-flow or live-provider evidence. |
+| AI-01b — Sanuda Abeysinghe (Member 2) Marine Conditions Agent | Sanuda Abeysinghe (`@sanudaabey`) | `agentic-ai/marine-conditions` | Provisional source is present in this checkout; 54 role-local tests pass. Shared envelope compatibility and live-provider approval remain open. |
+| AI-02 — Adithya Gunawardana (Member 3) Planning & Coordination Agent | Adithya Gunawardana (`@AdithyaGunawardana`) | `agentic-ai/planning-coordination` | Provisional source is present in this checkout; 24 role-local tests pass. Compatibility with validated specialist reports remains open. |
+| AI-03 — Wanshaja Sooriyabandara (Member 4) Safety & Operations Agent | Wanshaja Sooriyabandara (`@WKS2004`) | `agentic-ai/safety-operations` | Provisional source is present in this checkout; 61 role-local tests pass. It remains proposal-only; authoritative tool handlers, integrated dispatch and protected execution are not established. |
+| AI-04 — Golden workflow and evaluations | All four owners | `agentic-ai/golden-flow-evaluation` | Integrated all-role golden workflow and release evaluation remain pending; the role-local suites above are not substitutes. |
 
 This sequence applies only to Agentic AI implementation after the domain gate.
 It does not impose an order on the four member feature branches.

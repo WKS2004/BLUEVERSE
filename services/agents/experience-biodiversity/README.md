@@ -24,8 +24,14 @@ Executable specialist Agentic AI service for the Coastal Experience & Biodiversi
 Schedule DTOs do not contain seat availability. The agent reports schedule
 coverage separately and uses the experience service's interval availability
 endpoint before marking a requested period `AVAILABLE`; a date-only request
-never implies open capacity. Every tool call forwards the caller's Bearer
-token, and agent report POSTs reject requests without one.
+never implies open capacity. Tourist report requests continue to use the
+caller Bearer token and existing detail tools. For callerless operational
+assessment dispatch, the private service may instead authenticate with
+`X-Blueverse-Service-Key`; that path uses only
+`GET /api/experiences/catalogue`, which returns published, minimized context,
+and does not call the planner biodiversity endpoint or forward a user token.
+The service key is checked against `AGENTIC_SERVICE_KEY` and is never stored in
+workflow state or report data.
 
 ## Internal HTTP Endpoints
 
@@ -42,7 +48,14 @@ with the other member agents.
 
 Start the ordinary `dev` stack, then run
 `docker compose --profile agentic-ai up -d agent-experience-biodiversity`.
-The optional `GEMINI_API_KEY` enables Google AI Studio section selection.
+Gemini section selection is opt-in. Set
+`EXPERIENCE_BIODIVERSITY_GEMINI_ENABLED=true` and configure this agent's
+`EXPERIENCE_BIODIVERSITY_GEMINI_API_KEY`. It does not read a shared Gemini key.
+Configure the same internal `AGENTIC_SERVICE_KEY` used by Planning Coordination
+for callerless operational assessment dispatch.
+The model is selected with `EXPERIENCE_BIODIVERSITY_GEMINI_MODEL`; provider
+calls use Google's `generateContent` endpoint and send the key in the
+`x-goog-api-key` header.
 Without it the service returns deterministic context. The model receives only
 fixed section names and normalized status enums. Its output cannot author
 report text or choose tools. The service has a healthcheck, no host-published

@@ -124,25 +124,14 @@ public sealed class ReverseProxyTests
 
     [Fact]
     [Trait("CaseId", "API-PROXY-004")]
-    public async Task API_PROXY_004_agent_marine_conditions_requests_are_forwarded_to_agent_cluster()
+    public async Task API_PROXY_004_agent_marine_conditions_route_is_not_exposed_through_public_api()
     {
-        await using var destination = await StubDestinationServer.StartAsync();
-        var overrides = new Dictionary<string, string?>
-        {
-            ["ReverseProxy:Clusters:agent-marine-conditions:Destinations:agent-marine-conditions:Address"] = destination.Address
-        };
-
-        using var factory = new ApiWebApplicationFactory(overrides);
+        using var factory = new ApiWebApplicationFactory();
         using var client = factory.CreateClient();
 
         using var response = await client.GetAsync("/api/agents/marine-conditions/health");
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        var body = await response.Content.ReadAsStringAsync();
-        using var document = JsonDocument.Parse(body);
-        var root = document.RootElement;
-        Assert.Equal("GET", root.GetProperty("method").GetString());
-        Assert.Equal("/api/agents/marine-conditions/health", root.GetProperty("path").GetString());
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal(string.Empty, await response.Content.ReadAsStringAsync());
     }
 
     private static string CreateToken(params string[] permissions)

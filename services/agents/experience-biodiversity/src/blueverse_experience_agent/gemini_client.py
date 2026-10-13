@@ -101,27 +101,31 @@ class GeminiConfig:
 
     @classmethod
     def from_env(cls) -> GeminiConfig:
-        raw_key = os.getenv("GEMINI_API_KEY", "").strip()
-        model = os.getenv("GEMINI_MODEL", DEFAULT_GEMINI_MODEL).strip() or DEFAULT_GEMINI_MODEL
+        raw_key = os.getenv("EXPERIENCE_BIODIVERSITY_GEMINI_API_KEY", "").strip()
+        enabled = os.getenv("EXPERIENCE_BIODIVERSITY_GEMINI_ENABLED", "false").strip().lower() == "true"
+        model = (
+            os.getenv("EXPERIENCE_BIODIVERSITY_GEMINI_MODEL", DEFAULT_GEMINI_MODEL).strip()
+            or DEFAULT_GEMINI_MODEL
+        )
         base_url = (
-            os.getenv("GEMINI_API_BASE_URL", DEFAULT_GEMINI_BASE_URL).strip()
+            os.getenv("EXPERIENCE_BIODIVERSITY_GEMINI_API_BASE_URL", DEFAULT_GEMINI_BASE_URL).strip()
             or DEFAULT_GEMINI_BASE_URL
         ).rstrip("/")
         try:
-            timeout = float(os.getenv("GEMINI_TIMEOUT_SECONDS", "8.0"))
+            timeout = float(os.getenv("EXPERIENCE_BIODIVERSITY_GEMINI_TIMEOUT_SECONDS", "8.0"))
         except ValueError:
             timeout = 8.0
         try:
-            temperature = float(os.getenv("GEMINI_TEMPERATURE", "0.1"))
+            temperature = float(os.getenv("EXPERIENCE_BIODIVERSITY_GEMINI_TEMPERATURE", "0.1"))
         except ValueError:
             temperature = 0.1
         try:
-            max_tokens = int(os.getenv("GEMINI_MAX_OUTPUT_TOKENS", "1024"))
+            max_tokens = int(os.getenv("EXPERIENCE_BIODIVERSITY_GEMINI_MAX_OUTPUT_TOKENS", "1024"))
         except ValueError:
             max_tokens = 1024
 
         return cls(
-            api_key=raw_key if raw_key else None,
+            api_key=raw_key if enabled and raw_key else None,
             model=model,
             base_url=base_url,
             timeout_seconds=max(1.0, min(timeout, MAX_PROVIDER_TIMEOUT_SECONDS)),
@@ -170,7 +174,8 @@ class GeminiClient:
                     status=ModelExecutionStatus.SKIPPED_NO_API_KEY,
                     latency_ms=0.0,
                     synthesis_summary=(
-                        "Deterministic tool-grounded context assembled (GEMINI_API_KEY not configured; "
+                        "Deterministic tool-grounded context assembled "
+                        "(EXPERIENCE_BIODIVERSITY_GEMINI_ENABLED is false or its API key is not configured; "
                         "LLM narrative synthesis skipped)."
                     ),
                 ),

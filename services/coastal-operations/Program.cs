@@ -82,7 +82,10 @@ builder.Services.AddDbContext<CoastalOperationsDbContext>(options =>
             errorCodesToAdd: null)));
 
 builder.Services.Configure<ComponentDependencyOptions>(builder.Configuration.GetSection("ComponentDependencies"));
+builder.Services.Configure<AgenticAiOptions>(builder.Configuration.GetSection("AgenticAi"));
 builder.Services.AddHttpClient(ComponentDependencyCollector.HttpClientName, client =>
+    client.Timeout = Timeout.InfiniteTimeSpan);
+builder.Services.AddHttpClient(HttpAssessmentProposalPort.HttpClientName, client =>
     client.Timeout = Timeout.InfiniteTimeSpan);
 builder.Services.AddSingleton<ComponentDependencyHealthRegistry>();
 builder.Services.AddScoped<IComponentDependencyCollector, ComponentDependencyCollector>();
@@ -97,7 +100,7 @@ builder.Services.Configure<EvidenceStorageOptions>(builder.Configuration.GetSect
 builder.Services.AddSingleton<IAssessmentEvidenceStorage, FileSystemAssessmentEvidenceStorage>();
 builder.Services.AddSingleton<AssessmentEvidenceSanitizer>();
 builder.Services.AddScoped<AssessmentEvidenceApplicationService>();
-builder.Services.AddSingleton<IAssessmentProposalPort, DisconnectedAssessmentProposalPort>();
+builder.Services.AddScoped<IAssessmentProposalPort, HttpAssessmentProposalPort>();
 builder.Services.AddScoped<AssessmentDispatchDelivery>();
 builder.Services.AddHostedService<AssessmentDispatchHostedService>();
 builder.Services.AddHostedService<AlertExpirationHostedService>();

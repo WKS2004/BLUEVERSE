@@ -528,14 +528,37 @@ class ExperienceAgentTools:
                 )
 
         date_filtered_slots = [entry for entry in parsed_slots if matches_requested_date(entry)]
-        period_filtered_slots = [
-            entry
-            for entry in date_filtered_slots
-            if request_start is None or (entry[1] < request_end and entry[2] > request_start)
-        ]
+        period_timezone_unverified = False
+
+        def matches_requested_period_dates(entry: Tuple[ScheduleSlot, datetime, datetime]) -> bool:
+            """Keep schedule evidence on the requested local calendar dates.
+
+            The exact requested interval is evaluated separately below. Keeping
+            same-day slots outside that interval lets the report distinguish an
+            offering that is scheduled from one whose requested window has no
+            coverage.
+            """
+            nonlocal period_timezone_unverified
+            if request_start is None or request_end is None:
+                return True
+            try:
+                local_zone = ZoneInfo(entry[0].time_zone_id)
+                requested_start_date = request_start.astimezone(local_zone).date()
+                requested_end_date = request_end.astimezone(local_zone).date()
+                slot_start_date = entry[1].astimezone(local_zone).date()
+                slot_end_date = entry[2].astimezone(local_zone).date()
+            except (ZoneInfoNotFoundError, ValueError):
+                period_timezone_unverified = True
+                requested_start_date = request_start.astimezone(timezone.utc).date()
+                requested_end_date = request_end.astimezone(timezone.utc).date()
+                slot_start_date = entry[1].astimezone(timezone.utc).date()
+                slot_end_date = entry[2].astimezone(timezone.utc).date()
+            return slot_start_date <= requested_end_date and slot_end_date >= requested_start_date
+
+        period_date_slots = [entry for entry in date_filtered_slots if matches_requested_period_dates(entry)]
         covering_active_slots = [
             entry
-            for entry in period_filtered_slots
+            for entry in period_date_slots
             if entry[0].is_active
             and request_start is not None
             and request_end is not None
@@ -547,6 +570,10 @@ class ExperienceAgentTools:
         if date_timezone_unverified:
             reason_codes.append(
                 "DATE_TIMEZONE_UNVERIFIED: The runtime lacks timezone data; date filtering includes conservative candidates."
+            )
+        if period_timezone_unverified:
+            reason_codes.append(
+                "PERIOD_TIMEZONE_UNVERIFIED: The runtime lacks timezone data; period-date filtering uses conservative UTC dates."
             )
         availability_status = "NOT_EVALUATED"
         evaluated_at: Optional[str] = None
@@ -612,15 +639,15 @@ class ExperienceAgentTools:
             if availability_status == "UNKNOWN":
                 reason_codes.append("AVAILABILITY_UNVERIFIED: The experience service did not provide a valid evaluation.")
 
-        elif not any(slot.is_active for slot, _, _ in period_filtered_slots):
+        elif not any(slot.is_active for slot, _, _ in period_date_slots):
             reason_codes.append(
                 "NO_ACTIVE_SCHEDULE: No active schedule matched the requested date."
                 if requested_date is not None
                 else "NO_ACTIVE_SCHEDULE: No active schedules were returned."
             )
 
-        is_scheduled = any(slot.is_active for slot, _, _ in period_filtered_slots)
-        slots = [slot for slot, _, _ in period_filtered_slots]
+        is_scheduled = any(slot.is_active for slot, _, _ in period_date_slots)
+        slots = [slot for slot, _, _ in period_date_slots]
 
         if availability_status == "AVAILABLE":
             covering_ids = {slot.slot_id for slot, _, _ in covering_active_slots}

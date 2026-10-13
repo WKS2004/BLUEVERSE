@@ -57,16 +57,12 @@ ASP.NET Core 10 runtime, and PostgreSQL 16. The ASP.NET Dockerfiles use
 multi-stage builds and exec-form runtime entry points; their health probes call
 the service's built-in `--healthcheck` mode.
 
-The four Agentic AI role images and the Gemini egress proxy use
-`dhi.io/python:3.13-alpine` under the opt-in `agentic-ai` Compose profile.
-Private runtimes are present for Experience & Biodiversity, Marine Conditions,
-and Planning & Coordination. The Safety Operations image copies its proposal
-package but its default command still only prints the Python version and
-exits. The egress proxy is a separate bounded standard-library service; it
-accepts CONNECT only to `generativelanguage.googleapis.com:443` and never
-receives the API key. Planner dispatch is disabled by default. Set model and
-shared service-key values through local environment configuration. Build the
-profile images with:
+Agentic AI images use `dhi.io/python:3.13-alpine` under the opt-in
+`agentic-ai` Compose profile. Each of the four agent roles has a private
+runtime, and one Gemini egress proxy is included. Each role reads only its own
+Gemini API key environment variable; no key is passed to the proxy or backend.
+Model calls and Planner dispatch are disabled by default. Safety & Operations
+additionally requires explicit data-handling approval. Build the images with:
 
 ```sh
 docker compose --profile agentic-ai build \
@@ -77,16 +73,19 @@ docker compose --profile agentic-ai build \
   gemini-egress-proxy
 ```
 
-The Safety Operations container joins the private service network and a
-dedicated internal Gemini network. The proxy alone also joins a separate
-outbound bridge; neither container publishes a host port. The agent transport
-cannot bypass the proxy through `NO_PROXY` or use an alternate proxy address.
-This egress plumbing does not enable the disconnected Safety Operations
-proposal workflow; dispatch remains unimplemented. All role images publish no
-host ports. Planning & Coordination exposes private liveness, readiness and
-dispatch routes; the Experience & Biodiversity and Marine Conditions roles
-have private specialist routes. Provider approval, cross-agent integration
-and the full target workflow remain open.
+All agent containers are attached only to the internal network and publish no
+host ports. Experience & Biodiversity, Marine Conditions and Planning use
+`HTTPS_PROXY` and `https_proxy` for `http://gemini-egress-proxy:3128`; Safety
+uses its explicit scoped proxy transport. The proxy alone is dual-homed on the
+internal network and outbound bridge, accepts CONNECT only to
+`generativelanguage.googleapis.com:443`, and receives no API key. This is the
+only agentic service with outbound network access. Marine Conditions' direct
+Open-Meteo sourcing is blocked under this policy pending Member 2 service
+mediation; no direct egress bypass is allowed. Planning & Coordination and
+Safety & Operations expose private liveness, readiness and dispatch routes;
+Experience & Biodiversity and Marine Conditions retain namespaced private
+specialist routes. AI-00 provider approval, shared specialist contract
+alignment and the full target workflow remain open.
 
 Every ASP.NET backend service should keep its Dockerfile in a matching directory under `infrastructure/docker/<service-name>/Dockerfile`. The Docker backend workflow discovers first-level ASP.NET services under `services`, builds the public `api` service first, and then builds the remaining services one by one.
 

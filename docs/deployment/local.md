@@ -20,7 +20,10 @@ Operations startup or readiness; their latest outcomes appear in assessment
 responses and the health response. The same Compose topology includes Coastal
 Planner, Marine Safety, Experience & Biodiversity, the public API and Auth.
 Coastal Planner provides trip planning and review workflows; Marine Safety
-provides conditions and safety workflows and calls Open-Meteo server-side.
+provides conditions and safety workflows. Direct Open-Meteo sourcing from the
+Marine Conditions agent is blocked by the Gemini-only egress proxy and remains
+unresolved until Member 2 service mediation; the agent has no direct egress
+bypass.
 Experience & Biodiversity provides catalogue management, nearby discovery, map
 vector tile support and the private Member 1 Agentic AI dispatch seam. Clients reach each
 private service through the public API. The opt-in Member 1 agent image is
@@ -86,11 +89,9 @@ docker compose --profile dev build
 ```
 
 The optional Agentic AI role images and Gemini egress proxy are excluded from
-the normal local runtime stack. Private runtimes are present for Experience &
-Biodiversity, Marine Conditions, and Planning & Coordination. Safety
-Operations includes its proposal package, but its default command only prints
-the Python version and exits. Build the DHI Python images without starting
-them:
+the normal local runtime stack. Provisional private runtimes for all four
+roles are present under `services/agents`. Build the DHI Python images without
+starting them:
 
 ```bash
 docker compose --profile agentic-ai build \
@@ -101,27 +102,24 @@ docker compose --profile agentic-ai build \
   gemini-egress-proxy
 ```
 
-The Safety Operations adapter uses the fixed internal URL
-`http://gemini-egress-proxy:3128`. Compose supplies the Gemini API key and model
-settings only to the agent container. The proxy is reachable only from the
-agent's dedicated internal network, has no published host port, and allows
-CONNECT only to `generativelanguage.googleapis.com:443`. It does not receive
-the API key or decrypt/log the TLS stream. The agent itself has no direct
-outbound network, and its transport rejects `NO_PROXY` or alternate-proxy
-bypasses. Keep `GEMINI_DATA_HANDLING_APPROVED=false` until the provider
-data-handling review is complete. This networking path does not trigger a model
-request, expose an agent endpoint, or activate Coastal Operations dispatch;
-Safety Operations dispatch remains unimplemented.
-
-Experience & Biodiversity, Marine Conditions, and Planning & Coordination
-have private runtimes; Safety Operations remains a proposal package in a
-runtime shell. The optional profile keeps them on the internal network with no
-host-published ports. Planner dispatch is disabled by default. Set
-`AGENTIC_SERVICE_KEY`, `AGENTIC_MODEL_NAME`, and `AGENTIC_MODEL_API_KEY` in
-local `.env` to configure Planner dispatch. Gemini is the configured default;
-do not send personal or sensitive data through a free-tier key. The runtimes
-have no database credentials, and unavailable models or specialist services
-produce unavailable/blocked outcomes.
+All four roles have private runtimes under `services/agents`. Set each role's
+own `*_GEMINI_API_KEY` and `*_GEMINI_ENABLED` values in local `.env` to
+configure that role; the four keys are not shared. Safety & Operations also
+requires `SAFETY_OPERATIONS_GEMINI_DATA_HANDLING_APPROVED=true` before its
+model calls; all model calls and Planner dispatch are disabled by default.
+`AGENTIC_SERVICE_KEY` protects private dispatch routes. The four agent
+containers are internal-only and publish no host ports. Experience &
+Biodiversity, Marine Conditions and Planning use both `HTTPS_PROXY` and
+`https_proxy` set to `http://gemini-egress-proxy:3128`; Safety uses its explicit
+scoped proxy transport. The proxy alone has outbound network access and allows
+CONNECT only to `generativelanguage.googleapis.com:443`. It receives no API
+keys and does not decrypt or log TLS. Agent runtimes have no database
+credentials. `AGENTIC_AI_ENABLED` also configures assessment dispatch in
+Coastal Operations; enable it only with the matching private service key and
+the Planning & Coordination runtime on the internal Docker network. Gemini
+calls remain disabled unless each role's own enable flag and key are set;
+Safety additionally requires its explicit data-handling approval. Unavailable
+models or specialist services produce unavailable/blocked outcomes.
 
 ## Start
 
