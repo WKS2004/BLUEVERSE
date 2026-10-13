@@ -1,20 +1,30 @@
 # syntax=docker/dockerfile:1
 
 # Coastal Experience & Biodiversity Agent (Member 1 — Ushan Srinuka)
-# Executable Agentic AI role runtime using Hardened Alpine Python 3.13 image.
-FROM dhi.io/python:3.13-alpine
+# Install the application in the DHI development image, then copy the installed
+# package into the minimal DHI runtime image.
+FROM dhi.io/python:3.13-alpine-dev AS dev
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PYTHONPATH="/app/src" \
-    PORT=8080 \
-    GEMINI_MODEL="gemini-2.5-flash" \
-    GEMINI_API_BASE_URL="https://generativelanguage.googleapis.com/v1beta"
+WORKDIR /build
+
+COPY services/agents/experience-biodiversity/pyproject.toml ./pyproject.toml
+COPY services/agents/experience-biodiversity/README.md ./README.md
+COPY services/agents/experience-biodiversity/src/ ./src/
+
+RUN python3 -m pip install --disable-pip-version-check --no-cache-dir --no-compile --target=/install .
+
+FROM dhi.io/python:3.13-alpine AS runtime
 
 WORKDIR /app
 
-# Copy application source code
-COPY services/agents/experience-biodiversity/src/ /app/src/
+COPY --from=dev /install/ /opt/agent-site/
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH="/opt/agent-site" \
+    PORT=8080 \
+    GEMINI_MODEL="gemini-3.6-flash" \
+    GEMINI_API_BASE_URL="https://generativelanguage.googleapis.com/v1beta"
 
 EXPOSE 8080
 

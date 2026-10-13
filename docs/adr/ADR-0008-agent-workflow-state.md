@@ -20,4 +20,6 @@ model reasoning, secrets or unnecessary sensitive data.
 The four-agent responsibilities and assessed flow are defined, but the
 table design, ownership, retention and restart/recovery strategy remain
 open. Finalize those with the PostgreSQL/EF Core schema before accepting
-this ADR. This proposed record is not evidence of an implemented schema.
+this ADR. Member 1's current specialist is stateless and persists no
+agent-owned execution state; it does not settle the shared workflow-state
+decision. This proposed record is not evidence of an implemented schema.

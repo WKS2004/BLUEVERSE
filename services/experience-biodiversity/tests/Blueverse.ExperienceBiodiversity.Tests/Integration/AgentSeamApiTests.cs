@@ -52,7 +52,7 @@ public sealed class AgentSeamApiTests : IClassFixture<TestWebApplicationFactory>
         Assert.Equal("v1.agent.experience-biodiversity", info.AgentId);
         Assert.Equal("/api/experiences/agent", info.EndpointPrefix);
         Assert.Equal("google-ai-studio", info.ModelProvider);
-        Assert.Equal("gemini-2.5-flash", info.ModelName);
+        Assert.Equal("gemini-3.6-flash", info.ModelName);
         Assert.True(info.ReadOnly);
         Assert.Contains("destination_lookup", info.Tools);
         Assert.Contains("biodiversity_prediction_lookup", info.Tools);
@@ -120,6 +120,6 @@ public sealed class AgentSeamApiTests : IClassFixture<TestWebApplicationFactory>
         Assert.Equal(workflowId, envelope.WorkflowId);
         Assert.NotNull(envelope.ModelExecution);
         Assert.Equal("google-ai-studio", envelope.ModelExecution.Provider);
-        Assert.Equal("gemini-2.5-flash", envelope.ModelExecution.Model);
+        Assert.Equal("gemini-3.6-flash", envelope.ModelExecution.Model);
     }
 }

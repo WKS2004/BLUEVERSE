@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 from uuid import UUID
@@ -63,7 +63,7 @@ def parse_iso8601_timestamp(value: Any, field_name: str) -> datetime:
     except ValueError as exc:
         raise ValueError(f"{field_name} must be a valid ISO-8601 timestamp") from exc
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
+        raise ValueError(f"{field_name} must include an explicit UTC offset")
     return dt
 
 
@@ -94,7 +94,7 @@ class ModelExecutionStatus(str, Enum):
 @dataclass(frozen=True)
 class ModelExecutionSummary:
     provider: str = "google-ai-studio"
-    model: str = "gemini-2.5-flash"
+    model: str = "gemini-3.6-flash"
     status: ModelExecutionStatus = ModelExecutionStatus.SKIPPED_NO_API_KEY
     latency_ms: float = 0.0
     prompt_tokens: Optional[int] = None
@@ -320,6 +320,16 @@ class ExperienceAgentInput:
             parse_non_empty_uuid(self.activity_id, "activity_id")
         if self.offering_id is not None:
             parse_non_empty_uuid(self.offering_id, "offering_id")
+
+        if self.target_date is not None:
+            if not isinstance(self.target_date, str) or len(self.target_date) != 10:
+                raise ValueError("target_date must use YYYY-MM-DD format")
+            try:
+                parsed_target_date = date.fromisoformat(self.target_date)
+            except ValueError as exc:
+                raise ValueError("target_date must use a valid YYYY-MM-DD date") from exc
+            if parsed_target_date.isoformat() != self.target_date:
+                raise ValueError("target_date must use YYYY-MM-DD format")
 
         if not (self.destination_id or self.activity_id or self.offering_id):
             raise ValueError(

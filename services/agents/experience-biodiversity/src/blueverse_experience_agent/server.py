@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import json
 import os
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Dict, Optional
 
 from .agent import CoastalExperienceAgent
@@ -108,6 +108,12 @@ class AgentHttpHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         path = self.path.split("?", 1)[0]
         if path in ("/api/experiences/agent/context-reports", "/api/experiences/agent/generate"):
+            auth_scheme, separator, auth_value = self.headers.get("Authorization", "").partition(" ")
+            token = auth_value.strip() if separator and auth_scheme.lower() == "bearer" else ""
+            if not token:
+                self._send_json(401, {"error": "Unauthorized", "detail": "A Bearer token is required"})
+                return
+
             try:
                 content_length = int(self.headers.get("Content-Length", "0"))
             except ValueError:
@@ -131,11 +137,6 @@ class AgentHttpHandler(BaseHTTPRequestHandler):
             try:
                 body = self.rfile.read(content_length).decode("utf-8")
                 raw_json = json.loads(body)
-                auth_header = self.headers.get("Authorization")
-                token: Optional[str] = None
-                if auth_header and auth_header.startswith("Bearer "):
-                    token = auth_header[len("Bearer ") :].strip() or None
-
                 agent_input = ExperienceAgentInput.from_dict(raw_json)
                 active_agent = getattr(self, "agent", None) or agent_instance
                 report = active_agent.generate_report(agent_input, auth_token=token)
@@ -172,8 +173,9 @@ def create_http_server(
     host: str = "0.0.0.0",
     port: int = 8080,
     agent: Optional[CoastalExperienceAgent] = None,
-) -> HTTPServer:
-    httpd = HTTPServer((host, port), AgentHttpHandler)
+) -> ThreadingHTTPServer:
+    httpd = ThreadingHTTPServer((host, port), AgentHttpHandler)
+    httpd.daemon_threads = True
     if agent is not None:
         AgentHttpHandler.agent = agent
     return httpd

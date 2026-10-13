@@ -1,13 +1,13 @@
 # BLUEVERSE
 
-The [2026-10-02 record navigation and activity update](docs/v1/coastal-operations-record-navigation-and-audit.md) adds 500 ms search, pinned category tabs, shared record cards and 5/10/25/50/100 Assessments/Alerts per page across all collections. Create/edit workspace intent survives refresh; unsaved inputs are not persisted. Logs opens the same full details/actions. New activity captures the verified person/roles and exact field changes; older missing details remain unavailable. Shared G00/G07 and live producer/agent acceptance remain pending.
+The [2026-10-02 record navigation and activity update](docs/v1/coastal-operations-record-navigation-and-audit.md) adds 500 ms search, pinned category tabs, shared record cards and 5/10/25/50/100 Assessments/Alerts per page across all collections. Create/edit workspace intent survives refresh; unsaved inputs are not persisted. Logs opens the same full details/actions. New activity captures the verified person/roles and exact field changes; older missing details remain unavailable. G07 acceptance was reported by the team owner on 2026-10-13; shared G00 ratification and live producer/agent acceptance remain integration work.
 
 **Coastal Tourism & Marine Resilience**
 
 Coastal Operations publication, permissions, record activity and the separate
 Assessment/Alert client pages follow the [2026-10-01 contract](docs/v1/coastal-operations-publication-and-ui.md).
 Assessment publication uses submit and stores a durable business delivery
-envelope; before G07 no executable agent or live Agentic AI endpoint is called.
+envelope; the current Operations publication path does not dispatch an agent.
 Service startup applies the additive dispatch migration along with existing
 Coastal Operations migrations, including `20261001204558_CoastalDraftEvidenceRemoval`
 and `20261002081218_CoastalDetailedAudit`.
@@ -35,8 +35,10 @@ integrated full-stack and Agentic AI project. The submission target is
 backed by the public API gateway, internal Auth service and PostgreSQL. The
 The four v1 member components, their private service sources and both client
 workflows are present on this integration branch. Live peer/provider
-compatibility, shared G00/G07 acceptance and executable agents remain
-integration targets. See the linked component contracts and implementation
+compatibility and shared G00 ratification remain integration targets. The
+Member 1 experience specialist now runs as a private stateless Python service;
+cross-component orchestration and the other agent roles remain future work.
+See the linked component contracts and implementation
 evidence for current scope and remaining dependencies.
 
 ## Project identity
@@ -466,9 +468,18 @@ assessment titles and IANA time-zone/location choices while retaining existing
 UTC instants; the planner migration supplies `Asia/Colombo` to existing
 itineraries without changing their IDs or schedules.
 
-Four optional, runtime-only Agentic AI image shells use the DHI Python 3.13
-Alpine image. They contain no agent implementation and are excluded from the
-normal stack. Build them without starting them with:
+The Member 1 agent is opt-in under the `agentic-ai` profile. Set `GEMINI_API_KEY`
+in the ignored local `.env` to enable optional Google AI Studio section
+selection. It defaults to `gemini-3.6-flash` with an eight-second bounded model
+request; override `GEMINI_MODEL` when needed. Without a key, deterministic
+context reporting remains available.
+The agent reaches experience/planner services on the internal network and uses
+a dedicated outbound bridge to reach Google AI Studio; it has no
+host-published port. The model receives normalized statuses and fixed section
+names only, and cannot author report text or invoke tools.
+
+The Member 1 agent image and three future role shells use the DHI Python 3.13
+Alpine image. Build the four images with:
 
 ```bash
 docker compose --profile agentic-ai build \
@@ -478,9 +489,10 @@ docker compose --profile agentic-ai build \
   agent-safety-operations
 ```
 
-They have no host-published ports and join only the internal Docker network;
-actual workloads and health behavior remain gated on G07 and their assigned
-`agentic-ai/**` branches.
+The three remaining images are packaging shells. Start the implemented Member 1
+agent with `docker compose --profile agentic-ai up -d
+agent-experience-biodiversity`. It joins the private service network and the
+dedicated provider egress network; no host port is published.
 
 The API signs the authenticated actor and `operations.*` permission claims with
 `COASTAL_OPERATIONS_CONTEXT_KEY`; bearer tokens and cookies are removed before
@@ -674,7 +686,8 @@ The web and backend build workflows run on supported branch families when their 
 
 The Docker backend workflow builds `services/api` first and then discovers and
 builds the other ASP.NET service directories, including Auth and all four
-component services, followed by the four runtime-only Agentic AI image shells.
+component services, followed by the Member 1 agent image and three future
+Agentic AI image shells.
 The stack-health workflow maps each service folder to its
 public health route (including the `/api/operations/health` route), supplies
 masked ephemeral signing keys for the isolated CI stack, prints diagnostics

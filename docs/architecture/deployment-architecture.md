@@ -20,8 +20,9 @@ deployment and production PostgreSQL evidence remain open.
   client.
 - PostgreSQL: managed PostgreSQL on Render or an equivalent managed provider
 - Redis: managed Redis-compatible service when introduced
-- Agentic AI: internal runtime and deployment to be chosen for the defined
-  four-agent v1 workflow; no executable service is checked in yet
+- Agentic AI: the Member 1 Experience & Biodiversity specialist runs as a
+  private stateless Python service in the opt-in Compose profile. The other
+  agent roles and the shared orchestration/deployment design remain open.
 - Biodiversity ML: private inference runtime and model startup to be
   documented when the separate IT3091 model is available
 

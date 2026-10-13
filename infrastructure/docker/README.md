@@ -57,11 +57,12 @@ ASP.NET Core 10 runtime, and PostgreSQL 16. The ASP.NET Dockerfiles use
 multi-stage builds and exec-form runtime entry points; their health probes call
 the service's built-in `--healthcheck` mode.
 
-The four future Agentic AI images use `dhi.io/python:3.13-alpine` and are
-available under the opt-in `agentic-ai` Compose profile. They are runtime-only
-image shells: no agent source, dependencies, listener, health endpoint, model
-configuration or tool implementation is included. Their default command only
-prints the Python version and exits. Build them with:
+The Agentic AI images are available under the opt-in `agentic-ai` Compose
+profile. The Experience & Biodiversity image installs its Python package in a
+`dhi.io/python:3.13-alpine-dev` build stage and copies the installed package
+into the `dhi.io/python:3.13-alpine` runtime stage. Test-only dependencies are
+not copied into the runtime image. The other three images remain runtime-only
+shells. Build them with:
 
 ```sh
 docker compose --profile agentic-ai build \
@@ -72,9 +73,9 @@ docker compose --profile agentic-ai build \
 ```
 
 All four services join only the internal Docker network and publish no host
-ports. Keep them out of runtime deployments until G07 is accepted and their
-assigned `agentic-ai/**` branches add the executable workloads and reviewed
-health/readiness behavior.
+ports. Only the Experience & Biodiversity image currently has an executable
+agent runtime; the remaining role shells need their assigned workloads and
+reviewed health/readiness behavior before they can run as agents.
 
 Every ASP.NET backend service should keep its Dockerfile in a matching directory under `infrastructure/docker/<service-name>/Dockerfile`. The Docker backend workflow discovers first-level ASP.NET services under `services`, builds the public `api` service first, and then builds the remaining services one by one.
 

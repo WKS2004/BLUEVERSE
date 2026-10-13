@@ -9,7 +9,7 @@ Tools:
 
 Strictly preserves:
 - Read-only operations (zero state modifications).
-- Resilient timeouts (2.0s default) and bounded retries (max 2 retries).
+- Resilient 0.5s timeouts and one bounded retry by default.
 - Authoritative error statuses: NOT_FOUND, UNAUTHORIZED, UNAVAILABLE, INVALID_PAYLOAD, STALE.
 - Prediction provenance and uncertainty; never invents or extrapolates predictions.
 """
@@ -22,8 +22,10 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
+from dataclasses import replace
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from .schemas import (
     ActivityContext,
@@ -49,8 +51,8 @@ class ExperienceAgentTools:
         self,
         experience_service_url: str = "http://experience-biodiversity:8080",
         planner_service_url: str = "http://coastal-planner:8080",
-        timeout_seconds: float = 2.0,
-        max_retries: int = 2,
+        timeout_seconds: float = 0.5,
+        max_retries: int = 1,
     ):
         self.experience_service_url = experience_service_url.rstrip("/")
         self.planner_service_url = planner_service_url.rstrip("/")
@@ -372,149 +374,278 @@ class ExperienceAgentTools:
         started_at = datetime.now(timezone.utc).isoformat()
         canonical_id = parse_non_empty_uuid(offering_id, "offering_id")
         url = f"{self.experience_service_url}/api/experiences/offerings/{urllib.parse.quote(canonical_id)}/schedules"
-        query_params: Dict[str, str] = {}
-        if target_date:
-            query_params["date"] = target_date
-        if period_starts_at:
-            query_params["startsAt"] = period_starts_at
-        if period_ends_at:
-            query_params["endsAt"] = period_ends_at
-        if query_params:
-            url += "?" + urllib.parse.urlencode(query_params)
+
+        if (period_starts_at is None) != (period_ends_at is None):
+            raise ValueError("period_starts_at and period_ends_at must be provided together")
+
+        requested_date: Optional[date] = None
+        request_start: Optional[datetime] = None
+        request_end: Optional[datetime] = None
+        try:
+            if target_date is not None:
+                if not isinstance(target_date, str) or len(target_date) != 10:
+                    raise ValueError("target_date must use YYYY-MM-DD format")
+                requested_date = date.fromisoformat(target_date)
+                if requested_date.isoformat() != target_date:
+                    raise ValueError("target_date must use YYYY-MM-DD format")
+            if period_starts_at is not None and period_ends_at is not None:
+                request_start = parse_iso8601_timestamp(period_starts_at, "period_starts_at")
+                request_end = parse_iso8601_timestamp(period_ends_at, "period_ends_at")
+                if request_end <= request_start:
+                    raise ValueError("period_ends_at must be later than period_starts_at")
+        except ValueError as exc:
+            return None, AuditableToolCall(
+                tool_name="schedule_lookup",
+                workflow_id=workflow_id,
+                step_id=step_id,
+                started_at=started_at,
+                elapsed_ms=0.0,
+                outcome="INVALID_INPUT",
+                error_summary=str(exc),
+            )
 
         status, data, elapsed_ms, retries = self._execute_http_get(url, auth_token)
 
-        if status == 200 and data is not None:
-            raw_slots: List[Dict[str, Any]] = []
-            reason_codes: List[str] = []
-            operational_restriction: Optional[Dict[str, Any]] = None
-            evaluated_at: Optional[str] = None
-            notes: Optional[str] = None
-            explicit_avail_status: Optional[str] = None
-
-            if isinstance(data, list):
-                raw_slots = [item for item in data if isinstance(item, dict)]
-            elif isinstance(data, dict):
-                raw_slots = [item for item in (data.get("slots") or data.get("schedules") or []) if isinstance(item, dict)]
-                reason_codes = [str(r) for r in (data.get("reasonCodes") or [])]
-                operational_restriction = data.get("operationalRestriction")
-                evaluated_at = data.get("evaluatedAt")
-                notes = data.get("notes")
-                if data.get("status"):
-                    explicit_avail_status = str(data["status"]).strip().upper()
-            else:
-                audit = AuditableToolCall(
-                    tool_name="schedule_lookup",
-                    workflow_id=workflow_id,
-                    step_id=step_id,
-                    started_at=started_at,
-                    elapsed_ms=elapsed_ms,
-                    outcome="INVALID_PAYLOAD",
-                    error_summary="Schedule response was neither a list nor an object",
-                    retry_count=retries,
-                )
-                return None, audit
-
-            slots: List[ScheduleSlot] = []
-            for idx, s in enumerate(raw_slots):
-                slot_id = str(s.get("id") or s.get("slotId") or f"slot-{idx}")
-                start_str = str(s.get("startsAt") or s.get("startTime") or "")
-                end_str = str(s.get("endsAt") or s.get("endTime") or "")
-                is_active = bool(s.get("isActive", True))
-                is_open = bool(s.get("isOpen", is_active)) and is_active
-                slots.append(
-                    ScheduleSlot(
-                        slot_id=slot_id,
-                        offering_id=str(s.get("offeringId") or canonical_id),
-                        start_time=start_str,
-                        end_time=end_str,
-                        time_zone_id=str(s.get("timeZoneId") or "UTC"),
-                        is_active=is_active,
-                        is_open=is_open,
-                        capacity_remaining=s.get("capacityRemaining"),
-                        created_at=s.get("createdAt"),
-                        updated_at=s.get("updatedAt"),
-                    )
-                )
-
-            open_slots = [s for s in slots if s.is_open]
-            is_scheduled = (
-                bool(data.get("isScheduled", len(open_slots) > 0))
-                if isinstance(data, dict)
-                else len(open_slots) > 0
-            )
-
-            # Evaluate interval coverage if period_starts_at and period_ends_at were requested
-            if period_starts_at and period_ends_at:
-                req_start = parse_iso8601_timestamp(period_starts_at, "period_starts_at")
-                req_end = parse_iso8601_timestamp(period_ends_at, "period_ends_at")
-                matching_window = False
-                for slot in open_slots:
-                    try:
-                        slot_start = parse_iso8601_timestamp(slot.start_time, "slot.start_time")
-                        slot_end = parse_iso8601_timestamp(slot.end_time, "slot.end_time")
-                        if slot_start <= req_start and slot_end >= req_end:
-                            matching_window = True
-                            break
-                    except ValueError:
-                        continue
-                if not matching_window and "NO_SCHEDULE_COVERAGE" not in reason_codes:
-                    reason_codes.append("NO_SCHEDULE_COVERAGE: No active schedule encompasses the requested interval.")
-
-            # Check operational restrictions if present
-            if isinstance(operational_restriction, dict):
-                source_status = str(operational_restriction.get("sourceStatus") or "").upper()
-                if operational_restriction.get("hasRestriction") is True:
-                    reason_text = operational_restriction.get("reason") or "Active restriction imposed by coastal operations."
-                    reason_codes.append(f"OPERATIONAL_RESTRICTION_ACTIVE: {reason_text}")
-                if source_status == "UNAVAILABLE":
-                    reason_codes.append(
-                        "OPERATIONAL_SERVICE_UNAVAILABLE: Operational review status could not be verified."
-                    )
-                    explicit_avail_status = "UNKNOWN"
-
-            if explicit_avail_status:
-                availability_status = explicit_avail_status
-            elif any("OPERATIONAL_SERVICE_UNAVAILABLE" in r for r in reason_codes):
-                availability_status = "UNKNOWN"
-            elif reason_codes or not is_scheduled or len(open_slots) == 0:
-                availability_status = "UNAVAILABLE"
-            else:
-                availability_status = "AVAILABLE"
-
-            sched = ScheduleContext(
-                offering_id=canonical_id,
-                is_scheduled=is_scheduled,
-                slots=slots,
-                availability_status=availability_status,
-                reason_codes=reason_codes,
-                operational_restriction=operational_restriction,
-                evaluated_at=evaluated_at,
-                notes=notes,
-            )
-            audit = AuditableToolCall(
+        if status != 200:
+            outcome = "NOT_FOUND" if status == 404 else ("UNAUTHORIZED" if status in (401, 403) else "UNAVAILABLE")
+            return None, AuditableToolCall(
                 tool_name="schedule_lookup",
                 workflow_id=workflow_id,
                 step_id=step_id,
                 started_at=started_at,
                 elapsed_ms=elapsed_ms,
-                outcome="SUCCESS",
+                outcome=outcome,
+                error_summary=f"Schedule endpoint returned HTTP {status}",
                 retry_count=retries,
             )
-            return sched, audit
 
-        outcome = "NOT_FOUND" if status == 404 else ("UNAUTHORIZED" if status in (401, 403) else "UNAVAILABLE")
-        audit = AuditableToolCall(
+        if isinstance(data, list):
+            raw_slots = data
+        elif isinstance(data, dict) and isinstance(data.get("slots", data.get("schedules")), list):
+            raw_slots = data.get("slots", data.get("schedules"))
+        else:
+            return None, AuditableToolCall(
+                tool_name="schedule_lookup",
+                workflow_id=workflow_id,
+                step_id=step_id,
+                started_at=started_at,
+                elapsed_ms=elapsed_ms,
+                outcome="INVALID_PAYLOAD",
+                error_summary="Schedule response must be a list of schedule DTOs",
+                retry_count=retries,
+            )
+
+        if any(not isinstance(item, dict) for item in raw_slots):
+            return None, AuditableToolCall(
+                tool_name="schedule_lookup",
+                workflow_id=workflow_id,
+                step_id=step_id,
+                started_at=started_at,
+                elapsed_ms=elapsed_ms,
+                outcome="INVALID_PAYLOAD",
+                error_summary="Schedule response contains a non-object item",
+                retry_count=retries,
+            )
+
+        parsed_slots: List[Tuple[ScheduleSlot, datetime, datetime]] = []
+        try:
+            for item in raw_slots:
+                slot_id = parse_non_empty_uuid(item.get("id"), "schedule.id")
+                returned_offering_id = parse_non_empty_uuid(item.get("offeringId"), "schedule.offeringId")
+                if returned_offering_id != canonical_id:
+                    raise ValueError("Schedule response contains a slot for a different offering")
+
+                starts_at_raw = item.get("startsAt")
+                ends_at_raw = item.get("endsAt")
+                slot_start = parse_iso8601_timestamp(starts_at_raw, "schedule.startsAt")
+                slot_end = parse_iso8601_timestamp(ends_at_raw, "schedule.endsAt")
+                if slot_end <= slot_start:
+                    raise ValueError("Schedule endsAt must be later than startsAt")
+
+                timezone_id = item.get("timeZoneId")
+                is_active = item.get("isActive")
+                if not isinstance(timezone_id, str) or not timezone_id.strip():
+                    raise ValueError("Schedule timeZoneId must be a non-empty string")
+                if not isinstance(is_active, bool):
+                    raise ValueError("Schedule isActive must be a boolean")
+
+                slot = ScheduleSlot(
+                    slot_id=slot_id,
+                    offering_id=returned_offering_id,
+                    start_time=str(starts_at_raw),
+                    end_time=str(ends_at_raw),
+                    time_zone_id=timezone_id.strip(),
+                    is_active=is_active,
+                    # The schedules endpoint has no seat/capacity field. Do not infer openness from IsActive.
+                    is_open=False,
+                    capacity_remaining=None,
+                    created_at=item.get("createdAt"),
+                    updated_at=item.get("updatedAt"),
+                )
+                parsed_slots.append((slot, slot_start, slot_end))
+        except (TypeError, ValueError) as exc:
+            return None, AuditableToolCall(
+                tool_name="schedule_lookup",
+                workflow_id=workflow_id,
+                step_id=step_id,
+                started_at=started_at,
+                elapsed_ms=elapsed_ms,
+                outcome="INVALID_PAYLOAD",
+                error_summary=str(exc),
+                retry_count=retries,
+            )
+
+        date_timezone_unverified = False
+
+        def matches_requested_date(entry: Tuple[ScheduleSlot, datetime, datetime]) -> bool:
+            nonlocal date_timezone_unverified
+            if requested_date is None:
+                return True
+            try:
+                local_zone = ZoneInfo(entry[0].time_zone_id)
+                return (
+                    entry[1].astimezone(local_zone).date()
+                    <= requested_date
+                    <= entry[2].astimezone(local_zone).date()
+                )
+            except (ZoneInfoNotFoundError, ValueError):
+                # Minimal runtimes may not ship the IANA database. Keep a
+                # conservative candidate window and disclose that filtering
+                # could not be exact; interval availability is still checked
+                # by the authoritative experience service below.
+                date_timezone_unverified = True
+                try:
+                    requested_start = datetime.combine(
+                        requested_date, datetime.min.time(), tzinfo=timezone.utc
+                    )
+                    possible_local_start = requested_start - timedelta(hours=14)
+                    possible_local_end = requested_start + timedelta(days=1, hours=14)
+                except OverflowError:
+                    return True
+                return (
+                    entry[1].astimezone(timezone.utc) < possible_local_end
+                    and entry[2].astimezone(timezone.utc) > possible_local_start
+                )
+
+        date_filtered_slots = [entry for entry in parsed_slots if matches_requested_date(entry)]
+        period_filtered_slots = [
+            entry
+            for entry in date_filtered_slots
+            if request_start is None or (entry[1] < request_end and entry[2] > request_start)
+        ]
+        covering_active_slots = [
+            entry
+            for entry in period_filtered_slots
+            if entry[0].is_active
+            and request_start is not None
+            and request_end is not None
+            and entry[1] <= request_start
+            and entry[2] >= request_end
+        ]
+
+        reason_codes: List[str] = []
+        if date_timezone_unverified:
+            reason_codes.append(
+                "DATE_TIMEZONE_UNVERIFIED: The runtime lacks timezone data; date filtering includes conservative candidates."
+            )
+        availability_status = "NOT_EVALUATED"
+        evaluated_at: Optional[str] = None
+        total_elapsed_ms = elapsed_ms
+        total_retries = retries
+        availability_audit_outcome = "SUCCESS"
+        availability_error: Optional[str] = None
+
+        if request_start is not None and request_end is not None:
+            availability_query = urllib.parse.urlencode(
+                {
+                    "periodStartsAt": period_starts_at,
+                    "periodEndsAt": period_ends_at,
+                }
+            )
+            availability_url = (
+                f"{self.experience_service_url}/api/experiences/OFFERING/"
+                f"{urllib.parse.quote(canonical_id)}/availability?{availability_query}"
+            )
+            availability_http_status, availability_data, availability_elapsed_ms, availability_retries = (
+                self._execute_http_get(availability_url, auth_token)
+            )
+            total_elapsed_ms += availability_elapsed_ms
+            total_retries += availability_retries
+
+            if availability_http_status == 200 and isinstance(availability_data, dict):
+                try:
+                    response_type = str(availability_data.get("targetType") or "").strip().upper()
+                    response_id = parse_non_empty_uuid(availability_data.get("targetId"), "availability.targetId")
+                    response_status = str(availability_data.get("status") or "").strip().upper()
+                    if response_type != "OFFERING" or response_id != canonical_id:
+                        raise ValueError("Availability response did not match the requested offering")
+                    if response_status not in {"AVAILABLE", "UNAVAILABLE"}:
+                        raise ValueError("Availability response status must be AVAILABLE or UNAVAILABLE")
+
+                    evaluated_at_raw = availability_data.get("evaluatedAt")
+                    if evaluated_at_raw is not None:
+                        parse_iso8601_timestamp(evaluated_at_raw, "availability.evaluatedAt")
+                        evaluated_at = str(evaluated_at_raw)
+
+                    if response_status == "AVAILABLE" and not covering_active_slots:
+                        raise ValueError("Availability response says AVAILABLE but no active schedule covers the interval")
+
+                    availability_status = response_status
+                    if response_status == "UNAVAILABLE":
+                        availability_audit_outcome = "SUCCESS"
+                        reason_codes.append("SOURCE_UNAVAILABLE: The experience service evaluated this interval as unavailable.")
+                except (TypeError, ValueError) as exc:
+                    availability_status = "UNKNOWN"
+                    availability_audit_outcome = "INVALID_PAYLOAD"
+                    availability_error = str(exc)
+            else:
+                availability_status = "UNKNOWN"
+                availability_audit_outcome = (
+                    "NOT_FOUND" if availability_http_status == 404
+                    else "UNAUTHORIZED" if availability_http_status in (401, 403)
+                    else "UNAVAILABLE"
+                )
+                availability_error = f"Availability endpoint returned HTTP {availability_http_status}"
+
+            if not covering_active_slots and "NO_SCHEDULE_COVERAGE" not in reason_codes:
+                reason_codes.append("NO_SCHEDULE_COVERAGE: No active schedule covers the requested interval.")
+            if availability_status == "UNKNOWN":
+                reason_codes.append("AVAILABILITY_UNVERIFIED: The experience service did not provide a valid evaluation.")
+
+        elif not any(slot.is_active for slot, _, _ in period_filtered_slots):
+            reason_codes.append(
+                "NO_ACTIVE_SCHEDULE: No active schedule matched the requested date."
+                if requested_date is not None
+                else "NO_ACTIVE_SCHEDULE: No active schedules were returned."
+            )
+
+        is_scheduled = any(slot.is_active for slot, _, _ in period_filtered_slots)
+        slots = [slot for slot, _, _ in period_filtered_slots]
+
+        if availability_status == "AVAILABLE":
+            covering_ids = {slot.slot_id for slot, _, _ in covering_active_slots}
+            slots = [replace(slot, is_open=slot.slot_id in covering_ids) for slot in slots]
+
+        audit_outcome = availability_audit_outcome
+        if audit_outcome == "SUCCESS" and availability_status == "UNKNOWN":
+            audit_outcome = "UNAVAILABLE"
+        return ScheduleContext(
+            offering_id=canonical_id,
+            is_scheduled=is_scheduled,
+            slots=slots,
+            availability_status=availability_status,
+            reason_codes=reason_codes,
+            evaluated_at=evaluated_at,
+        ), AuditableToolCall(
             tool_name="schedule_lookup",
             workflow_id=workflow_id,
             step_id=step_id,
             started_at=started_at,
-            elapsed_ms=elapsed_ms,
-            outcome=outcome,
-            error_summary=f"HTTP status {status}",
-            retry_count=retries,
+            elapsed_ms=total_elapsed_ms,
+            outcome=audit_outcome,
+            error_summary=availability_error,
+            retry_count=total_retries,
         )
-        return None, audit
 
     # 5. biodiversity_prediction_lookup (ADR-0019)
     def biodiversity_prediction_lookup(
@@ -535,30 +666,32 @@ class ExperienceAgentTools:
         if status == 200 and isinstance(data, dict):
             # 1. Verify destinationId matches requested destination (ADR-0019 / IBiodiversityConsumerService)
             raw_resp_dest_id = data.get("destinationId")
-            if raw_resp_dest_id is not None:
-                try:
-                    resp_dest_id = parse_non_empty_uuid(str(raw_resp_dest_id), "response.destinationId")
-                except ValueError:
-                    resp_dest_id = None
-                if resp_dest_id != canonical_dest_id:
-                    msg = "The biodiversity service returned a different destination; its predictions were discarded."
-                    return (
-                        BiodiversityContext(
-                            status=BiodiversityStatus.INVALID,
-                            predictions=[],
-                            uncertainty_notes=msg,
-                        ),
-                        AuditableToolCall(
-                            tool_name="biodiversity_prediction_lookup",
-                            workflow_id=workflow_id,
-                            step_id=step_id,
-                            started_at=started_at,
-                            elapsed_ms=elapsed_ms,
-                            outcome="INVALID_PAYLOAD",
-                            error_summary=msg,
-                            retry_count=retries,
-                        ),
-                    )
+            try:
+                resp_dest_id = parse_non_empty_uuid(raw_resp_dest_id, "response.destinationId")
+            except ValueError:
+                resp_dest_id = None
+            if resp_dest_id != canonical_dest_id:
+                msg = (
+                    "The biodiversity service omitted or returned a different destination; "
+                    "its predictions were discarded."
+                )
+                return (
+                    BiodiversityContext(
+                        status=BiodiversityStatus.INVALID,
+                        predictions=[],
+                        uncertainty_notes=msg,
+                    ),
+                    AuditableToolCall(
+                        tool_name="biodiversity_prediction_lookup",
+                        workflow_id=workflow_id,
+                        step_id=step_id,
+                        started_at=started_at,
+                        elapsed_ms=elapsed_ms,
+                        outcome="INVALID_PAYLOAD",
+                        error_summary=msg,
+                        retry_count=retries,
+                    ),
+                )
 
             remote_status = str(data.get("status", "unavailable")).strip().lower()
             if remote_status == "available":

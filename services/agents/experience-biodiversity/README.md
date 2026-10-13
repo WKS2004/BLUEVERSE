@@ -21,11 +21,33 @@ Executable specialist Agentic AI service for the Coastal Experience & Biodiversi
 4. `schedule_lookup` — `GET /api/experiences/offerings/{id}/schedules`
 5. `biodiversity_prediction_lookup` — `GET /api/planner/biodiversity/predictions?destinationId={id}`
 
+Schedule DTOs do not contain seat availability. The agent reports schedule
+coverage separately and uses the experience service's interval availability
+endpoint before marking a requested period `AVAILABLE`; a date-only request
+never implies open capacity. Every tool call forwards the caller's Bearer
+token, and agent report POSTs reject requests without one.
+
 ## Internal HTTP Endpoints
 
 - `GET /health` — Container health probe
-- `GET /api/agent/info` — Agent identity, owner metadata, and tool allowlist
-- `POST /api/agent/generate` — Validates `ExperienceAgentInput` and returns `ExperienceBiodiversityContextReport`
+- `GET /api/experiences/agent/health` — Namespaced container health probe
+- `GET /api/experiences/agent/info` — Agent identity, owner metadata, model configuration, and tool allowlist
+- `POST /api/experiences/agent/context-reports` — Validates `ExperienceAgentInput` and returns `ExperienceBiodiversityContextReport`
+- `POST /api/experiences/agent/generate` — Compatibility alias for context report generation
+
+The `/api/experiences/agent/...` prefix is required to avoid route collisions
+with the other member agents.
+
+## Local Compose runtime
+
+Start the ordinary `dev` stack, then run
+`docker compose --profile agentic-ai up -d agent-experience-biodiversity`.
+The optional `GEMINI_API_KEY` enables Google AI Studio section selection.
+Without it the service returns deterministic context. The model receives only
+fixed section names and normalized status enums. Its output cannot author
+report text or choose tools. The service has a healthcheck, no host-published
+port and a 20-second API consumer deadline; the provider timeout is capped at
+8 seconds.
 
 ## Running Tests
 

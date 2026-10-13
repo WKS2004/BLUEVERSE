@@ -60,7 +60,7 @@ public sealed class ExperienceAgentConsumerService : IExperienceAgentConsumerSer
         ).TrimEnd('/');
         _defaultModelName = configuration["GEMINI_MODEL"]
             ?? configuration["Gemini:Model"]
-            ?? "gemini-2.5-flash";
+            ?? "gemini-3.6-flash";
     }
 
     public async Task<ExperienceAgentInfoResponseDto> GetAgentInfoAsync(CancellationToken cancellationToken = default)
@@ -166,7 +166,7 @@ public sealed class ExperienceAgentConsumerService : IExperienceAgentConsumerSer
         try
         {
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeoutCts.CancelAfter(TimeSpan.FromSeconds(8));
+            timeoutCts.CancelAfter(TimeSpan.FromSeconds(20));
 
             using var httpRequest = new HttpRequestMessage(HttpMethod.Post, targetUrl)
             {
@@ -180,8 +180,8 @@ public sealed class ExperienceAgentConsumerService : IExperienceAgentConsumerSer
             }
 
             using var response = await _httpClient.SendAsync(httpRequest, timeoutCts.Token);
+            var body = await response.Content.ReadAsStringAsync(timeoutCts.Token);
             var elapsedMs = stopwatch.ElapsedMilliseconds;
-            var body = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (response.IsSuccessStatusCode && !string.IsNullOrWhiteSpace(body))
             {
@@ -215,7 +215,26 @@ public sealed class ExperienceAgentConsumerService : IExperienceAgentConsumerSer
                 status: "unavailable",
                 detail: $"Coastal Experience & Biodiversity Agent returned HTTP {(int)response.StatusCode}; safe fallback active.");
         }
-        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or JsonException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (OperationCanceledException ex)
+        {
+            _logger.LogInformation(
+                "Coastal Experience & Biodiversity Agent at {TargetUrl} exceeded the request deadline ({Error}); returning safe unavailable envelope.",
+                targetUrl,
+                ex.Message);
+
+            return FallbackReportEnvelope(
+                request,
+                targetUrl,
+                stopwatch.ElapsedMilliseconds,
+                responded: false,
+                status: "unavailable",
+                detail: "Coastal Experience & Biodiversity Agent request exceeded its execution deadline; safe fallback active.");
+        }
+        catch (HttpRequestException ex)
         {
             _logger.LogInformation(
                 "Coastal Experience & Biodiversity Agent at {TargetUrl} was unreachable ({Error}); returning safe not_connected envelope.",
@@ -229,6 +248,17 @@ public sealed class ExperienceAgentConsumerService : IExperienceAgentConsumerSer
                 responded: false,
                 status: "not_connected",
                 detail: "Coastal Experience & Biodiversity Agent runtime is not currently reachable; safe fallback active.");
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogWarning(ex, "Malformed report JSON returned by Experience Agent at {TargetUrl}", targetUrl);
+            return FallbackReportEnvelope(
+                request,
+                targetUrl,
+                stopwatch.ElapsedMilliseconds,
+                responded: true,
+                status: "unavailable",
+                detail: "Coastal Experience & Biodiversity Agent returned an invalid report; safe fallback active.");
         }
     }
 
