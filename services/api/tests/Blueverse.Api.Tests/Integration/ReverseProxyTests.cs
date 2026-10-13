@@ -122,6 +122,18 @@ public sealed class ReverseProxyTests
         Assert.True(manageMutationBody.GetProperty("authorizationHeaderForwarded").GetBoolean());
     }
 
+    [Fact]
+    [Trait("CaseId", "API-PROXY-004")]
+    public async Task API_PROXY_004_agent_marine_conditions_route_is_not_exposed_through_public_api()
+    {
+        using var factory = new ApiWebApplicationFactory();
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync("/api/agents/marine-conditions/health");
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal(string.Empty, await response.Content.ReadAsStringAsync());
+    }
+
     private static string CreateToken(params string[] permissions)
     {
         var claims = new List<Claim>

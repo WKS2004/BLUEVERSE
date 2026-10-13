@@ -1,13 +1,16 @@
 # BLUEVERSE
 
-The [2026-10-02 record navigation and activity update](docs/v1/coastal-operations-record-navigation-and-audit.md) adds 500 ms search, pinned category tabs, shared record cards and 5/10/25/50/100 Assessments/Alerts per page across all collections. Create/edit workspace intent survives refresh; unsaved inputs are not persisted. Logs opens the same full details/actions. New activity captures the verified person/roles and exact field changes; older missing details remain unavailable. Shared G00/G07 and live producer/agent acceptance remain pending.
+The [2026-10-02 record navigation and activity update](docs/v1/coastal-operations-record-navigation-and-audit.md) adds 500 ms search, pinned category tabs, shared record cards and 5/10/25/50/100 Assessments/Alerts per page across all collections. Create/edit workspace intent survives refresh; unsaved inputs are not persisted. Logs opens the same full details/actions. New activity captures the verified person/roles and exact field changes; older missing details remain unavailable. G00 and G07 acceptance are recorded from Adithya Gunawardana's 2026-10-13 team-meeting report; meeting minutes and signatures are not in the repository. Live producer and specialist-agent integration remain pending.
 
 **Coastal Tourism & Marine Resilience**
 
 Coastal Operations publication, permissions, record activity and the separate
 Assessment/Alert client pages follow the [2026-10-01 contract](docs/v1/coastal-operations-publication-and-ui.md).
 Assessment publication uses submit and stores a durable business delivery
-envelope; before G07 no executable agent or live Agentic AI endpoint is called.
+envelope. When local Agentic AI is enabled, a submitted assessment dispatches
+to the private Planning & Coordination Agent. Returned proposals remain
+review-only: an authorized human decision is required before an operational
+state change.
 Service startup applies the additive dispatch migration along with existing
 Coastal Operations migrations, including `20261001204558_CoastalDraftEvidenceRemoval`
 and `20261002081218_CoastalDetailedAudit`.
@@ -34,10 +37,15 @@ integrated full-stack and Agentic AI project. The submission target is
 **v0 plus v1**. React and Flutter implement the shared Auth registration and session workflows,
 backed by the public API gateway, internal Auth service and PostgreSQL. The
 The four v1 member components, their private service sources and both client
-workflows are present on this integration branch. Live peer/provider
-compatibility, shared G00/G07 acceptance and executable agents remain
-integration targets. See the linked component contracts and implementation
-evidence for current scope and remaining dependencies.
+workflows are present on this integration branch. Four role-scoped agent
+services and Planning & Coordination orchestration are implemented behind
+local opt-in configuration. The agents stay on the private Docker network and
+use the internal Gemini egress proxy. Model metadata was reachable for each
+configured role, but the 2026-10-13 live workflow attempts received HTTP 503
+from Gemini generation at the Planning Coordination step, so successful
+four-agent execution is not yet verified. See
+[`docs/testing/test-matrix.md`](docs/testing/test-matrix.md) for the latest
+suite results and live-workflow evidence.
 
 ## Project identity
 
@@ -75,7 +83,9 @@ Marine Safety, and Experience & Biodiversity operations to their private
 services, which own their PostgreSQL-backed behavior, provider adapters and
 component business rules. The API remains the only client-facing boundary and
 receives only the authentication, permission and routing integration needed to
-expose those services. Executable Agentic AI remains gated on accepted G07.
+expose those services. G07 acceptance was recorded on 2026-10-13. Partial
+Planning & Coordination implementation runs only when explicitly enabled;
+specialist agents and AI-00 decisions remain outstanding.
 React and Flutter never call member services or Agentic AI directly. See
 [ADR-0020](docs/adr/ADR-0020-member-component-service-boundaries.md), the
 [v1 documentation index](docs/v1/README.md) and the
@@ -192,7 +202,8 @@ Its Marine Safety and Coastal Planner dependencies return `NOT_CONNECTED`
 without sending requests until their route, payload and authorized service
 identity are agreed. Planner, Marine Safety and Experience adapters use their
 implemented public API routes and caller permissions. Live provider behavior,
-shared G00 ratification and executable Agentic AI remain G00/G07 gates.
+G00 and G07 acceptance are recorded. Live provider compatibility and
+specialist-agent integration remain pending; AI-00 decisions remain open.
 Configure Docker-internal peer addresses in `.env`. The edge gateway allows
 6 MiB request bodies on assessment-item routes to carry a 5 MiB PNG with
 multipart framing; the service enforces the per-image limit. Auth and all
@@ -466,21 +477,42 @@ assessment titles and IANA time-zone/location choices while retaining existing
 UTC instants; the planner migration supplies `Asia/Colombo` to existing
 itineraries without changing their IDs or schedules.
 
-Four optional, runtime-only Agentic AI image shells use the DHI Python 3.13
-Alpine image. They contain no agent implementation and are excluded from the
-normal stack. Build them without starting them with:
+Four optional Agentic AI runtimes and one Gemini egress proxy use the DHI
+Python 3.13 Alpine image and are excluded from the normal stack. Provisional
+private runtimes for Experience & Biodiversity, Marine Conditions, Planning &
+Coordination, and Safety & Operations are present under `services/agents`.
+Role-local suites exist; integrated workflow and live provider/peer evidence
+remain incomplete. Build the images without starting them with:
 
 ```bash
 docker compose --profile agentic-ai build \
   agent-experience-biodiversity \
   agent-marine-conditions \
   agent-planning-coordination \
-  agent-safety-operations
+  agent-safety-operations \
+  gemini-egress-proxy
 ```
 
-They have no host-published ports and join only the internal Docker network;
-actual workloads and health behavior remain gated on G07 and their assigned
-`agentic-ai/**` branches.
+The private runtimes have no host-published ports and use the internal-only
+Docker network. Each agent sends Gemini HTTPS requests through the single
+egress proxy; the proxy alone joins the outbound bridge and permits CONNECT
+only to `generativelanguage.googleapis.com:443`. TLS remains end-to-end with
+Google, and the API key is provided only to its role's agent container.
+Experience & Biodiversity, Marine Conditions, Planning & Coordination, and
+Safety & Operations each have a separate API-key variable and
+`*_GEMINI_ENABLED` flag, false by default. Safety additionally requires
+`SAFETY_OPERATIONS_GEMINI_DATA_HANDLING_APPROVED=true`. Set
+`AGENTIC_SERVICE_KEY` for private service-to-service authorization. Planner
+dispatch and Gemini calls default to disabled and can be enabled explicitly
+through each role's environment flags after local configuration. Coastal
+Operations reads `AGENTIC_AI_ENABLED`, `AGENTIC_AI_URL`,
+`AGENTIC_SERVICE_KEY`, and `AGENTIC_DISPATCH_TIMEOUT_SECONDS` to dispatch
+submitted assessments to the private Planning & Coordination service; it
+fails closed when dispatch is disabled or the agent is unavailable. Marine's
+current direct Open-Meteo sourcing is blocked by this egress policy until it
+is mediated by the Member 2 service. Missing models or specialist services
+produce unavailable/blocked states and cannot change deterministic
+eligibility or safety outcomes.
 
 The API signs the authenticated actor and `operations.*` permission claims with
 `COASTAL_OPERATIONS_CONTEXT_KEY`; bearer tokens and cookies are removed before
@@ -632,6 +664,11 @@ and reuse of cached dependencies. For USB testing, pass
 `--dart-define=BLUEVERSE_API_BASE_URL=http://127.0.0.1:80` after setting up
 `adb reverse tcp:80 tcp:80`.
 
+Use the [local test runners](docs/testing/local-test-runners.md) to run any of
+the ten complete React, Flutter, backend-service or Agentic AI test suites
+with a commented PowerShell or Bash script. The runners execute package tests
+on the host and leave Compose services and data volumes untouched.
+
 ## CI
 
 GitHub Actions contains separate source, test, contract, repository-policy
@@ -674,7 +711,10 @@ The web and backend build workflows run on supported branch families when their 
 
 The Docker backend workflow builds `services/api` first and then discovers and
 builds the other ASP.NET service directories, including Auth and all four
-component services, followed by the four runtime-only Agentic AI image shells.
+component services, followed by the four Agentic AI role images and the Gemini
+egress proxy. Private runtimes are present for Experience & Biodiversity,
+Marine Conditions, and Planning & Coordination; Safety Operations remains a
+proposal package in a runtime shell.
 The stack-health workflow maps each service folder to its
 public health route (including the `/api/operations/health` route), supplies
 masked ephemeral signing keys for the isolated CI stack, prints diagnostics

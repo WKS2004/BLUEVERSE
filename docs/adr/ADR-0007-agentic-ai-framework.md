@@ -13,8 +13,22 @@ the fixed workflow rather than redefine it.
 ## Decision
 
 Select and justify a framework or custom orchestration approach before
-implementing the four-agent workflow. This proposed ADR does not claim a
-framework has been selected or that an executable service exists.
+completing the four-agent workflow. Private component runtimes now exist for
+Experience & Biodiversity, Marine Conditions, and Planning & Coordination,
+but this proposed ADR does not claim that a team-wide framework has been
+selected.
+
+## Container image preparation — 2026-10-13
+
+At the user's direction, the repository has four opt-in, per-role Docker
+images based on `dhi.io/python:3.13-alpine`, wired to the private Docker
+network, plus a narrow Gemini egress proxy for Safety & Operations.
+Experience & Biodiversity, Marine Conditions, Planning & Coordination, and
+Safety & Operations have private runtimes under `services/agents`. Gemini
+adapters use agent-scoped credentials and are disabled by default. Planning &
+Coordination and Safety & Operations use standard-library HTTP runtimes. These
+are provisional component implementations, not team-wide framework approval;
+model/provider approval, data handling and AI-00 decisions remain open.
 
 ## Container image preparation — 2026-10-13
 

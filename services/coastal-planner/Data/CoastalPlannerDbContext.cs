@@ -15,6 +15,7 @@ public class CoastalPlannerDbContext : DbContext
     public DbSet<RecommendationSession> Recommendations => Set<RecommendationSession>();
     public DbSet<ItineraryEvaluation> ItineraryEvaluations => Set<ItineraryEvaluation>();
     public DbSet<BiodiversityPredictionCache> BiodiversityPredictions => Set<BiodiversityPredictionCache>();
+    public DbSet<AgentExecutionState> AgentExecutionStates => Set<AgentExecutionState>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -36,6 +37,20 @@ public class CoastalPlannerDbContext : DbContext
             entity.HasIndex(e => e.CreatedAtUtc);
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.InitiatorUserId);
+        });
+
+        modelBuilder.Entity<AgentExecutionState>(entity =>
+        {
+            entity.ToTable("agent_execution_states", "coastal_planner", table =>
+                table.HasCheckConstraint("CK_agent_execution_states_status",
+                    "\"Status\" IN ('PLANNING', 'DELEGATING', 'BLOCKED', 'COMPLETED', 'UNAVAILABLE', 'SAFE_FAILURE')"));
+            entity.HasKey(e => e.WorkflowId);
+            entity.Property(e => e.Status).HasMaxLength(32).IsRequired();
+            entity.Property(e => e.CorrelationId).HasMaxLength(80).IsRequired();
+            entity.Property(e => e.StateJson).HasColumnType("jsonb").IsRequired();
+            entity.HasOne<PlanningWorkflow>().WithOne().HasForeignKey<AgentExecutionState>(e => e.WorkflowId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => e.UpdatedAtUtc);
         });
 
         modelBuilder.Entity<Itinerary>(entity =>

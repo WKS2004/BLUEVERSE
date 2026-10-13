@@ -187,6 +187,10 @@ services:
       COASTAL_OPERATIONS_CONTEXT_KEY: ${COASTAL_OPERATIONS_CONTEXT_KEY:?Set COASTAL_OPERATIONS_CONTEXT_KEY in .env}
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-blueverse};Username=${POSTGRES_USER:-blueverse};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       ComponentDependencies__Member1Experience__BaseAddress: ${EXPERIENCE_SERVICE_URL:-http://experience-biodiversity:8080}
+      AgenticAi__Enabled: ${AGENTIC_AI_ENABLED:-false}
+      AgenticAi__BaseUrl: ${AGENTIC_AI_URL:-http://agent-planning-coordination:8080}
+      AgenticAi__ServiceKey: ${AGENTIC_SERVICE_KEY:-}
+      AgenticAi__DispatchTimeoutSeconds: ${AGENTIC_DISPATCH_TIMEOUT_SECONDS:-120}
       EvidenceStorage__RootPath: /var/lib/coastal-operations/evidence
     depends_on:
       postgres:
@@ -217,6 +221,9 @@ services:
       PeerServices__BiodiversityApiKey: ${BIODIVERSITY_ML_API_KEY:-}
       PeerServices__BiodiversityEnabled: ${BIODIVERSITY_ML_ENABLED:-true}
       PeerServices__BiodiversityExpectedModelVersion: ${BIODIVERSITY_ML_MODEL_VERSION:-fake-v1}
+      AgenticAi__Enabled: ${AGENTIC_AI_ENABLED:-false}
+      AgenticAi__BaseUrl: ${AGENTIC_AI_URL:-http://agent-planning-coordination:8080}
+      AgenticAi__ServiceKey: ${AGENTIC_SERVICE_KEY:-}
       JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY in .env}
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-blueverse};Username=${POSTGRES_USER:-blueverse};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     healthcheck:
@@ -270,6 +277,32 @@ services:
       context: .
       dockerfile: infrastructure/docker/agentic-ai/experience-biodiversity/Dockerfile
     image: blueverse/agent-experience-biodiversity:local
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      PORT: 8080
+      EXPERIENCE_SERVICE_URL: ${EXPERIENCE_SERVICE_URL:-http://experience-biodiversity:8080}
+      PLANNER_SERVICE_URL: ${PLANNER_SERVICE_URL:-http://coastal-planner:8080}
+      AGENTIC_SERVICE_KEY: ${AGENTIC_SERVICE_KEY:-}
+      EXPERIENCE_BIODIVERSITY_GEMINI_ENABLED: ${EXPERIENCE_BIODIVERSITY_GEMINI_ENABLED:-false}
+      EXPERIENCE_BIODIVERSITY_GEMINI_API_KEY: ${EXPERIENCE_BIODIVERSITY_GEMINI_API_KEY:-}
+      EXPERIENCE_BIODIVERSITY_GEMINI_MODEL: ${EXPERIENCE_BIODIVERSITY_GEMINI_MODEL:-gemini-3.6-flash}
+      EXPERIENCE_BIODIVERSITY_GEMINI_API_BASE_URL: ${EXPERIENCE_BIODIVERSITY_GEMINI_API_BASE_URL:-https://generativelanguage.googleapis.com/v1beta}
+      EXPERIENCE_BIODIVERSITY_GEMINI_TIMEOUT_SECONDS: ${EXPERIENCE_BIODIVERSITY_GEMINI_TIMEOUT_SECONDS:-8}
+      HTTPS_PROXY: http://gemini-egress-proxy:3128
+      https_proxy: http://gemini-egress-proxy:3128
+      NO_PROXY: localhost,127.0.0.1,api,auth,coastal-operations,coastal-planner,marine-safety,experience-biodiversity,agent-experience-biodiversity,agent-marine-conditions,agent-planning-coordination,agent-safety-operations
+      no_proxy: localhost,127.0.0.1,api,auth,coastal-operations,coastal-planner,marine-safety,experience-biodiversity,agent-experience-biodiversity,agent-marine-conditions,agent-planning-coordination,agent-safety-operations
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2).read()"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      gemini-egress-proxy:
+        condition: service_healthy
     networks:
       - blueverse_internal
 
@@ -279,6 +312,30 @@ services:
       context: .
       dockerfile: infrastructure/docker/agentic-ai/marine-conditions/Dockerfile
     image: blueverse/agent-marine-conditions:local
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      PORT: 8080
+      OPEN_METEO_WEATHER_URL: ${OPEN_METEO_WEATHER_URL:-https://api.open-meteo.com/v1/forecast}
+      OPEN_METEO_MARINE_URL: ${OPEN_METEO_MARINE_URL:-https://marine-api.open-meteo.com/v1/marine}
+      MARINE_CONDITIONS_GEMINI_ENABLED: ${MARINE_CONDITIONS_GEMINI_ENABLED:-false}
+      MARINE_CONDITIONS_GEMINI_API_KEY: ${MARINE_CONDITIONS_GEMINI_API_KEY:-}
+      MARINE_CONDITIONS_GEMINI_MODEL: ${MARINE_CONDITIONS_GEMINI_MODEL:-gemini-3.6-flash}
+      MARINE_CONDITIONS_GEMINI_BASE_URL: ${MARINE_CONDITIONS_GEMINI_BASE_URL:-https://generativelanguage.googleapis.com/v1beta}
+      HTTPS_PROXY: http://gemini-egress-proxy:3128
+      https_proxy: http://gemini-egress-proxy:3128
+      NO_PROXY: localhost,127.0.0.1,api,auth,coastal-operations,coastal-planner,marine-safety,experience-biodiversity,agent-experience-biodiversity,agent-marine-conditions,agent-planning-coordination,agent-safety-operations
+      no_proxy: localhost,127.0.0.1,api,auth,coastal-operations,coastal-planner,marine-safety,experience-biodiversity,agent-experience-biodiversity,agent-marine-conditions,agent-planning-coordination,agent-safety-operations
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2).read()"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      gemini-egress-proxy:
+        condition: service_healthy
     networks:
       - blueverse_internal
 
@@ -288,6 +345,37 @@ services:
       context: .
       dockerfile: infrastructure/docker/agentic-ai/planning-coordination/Dockerfile
     image: blueverse/agent-planning-coordination:local
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      PORT: 8080
+      AGENTIC_ENABLED: ${AGENTIC_AI_ENABLED:-false}
+      AGENTIC_SERVICE_KEY: ${AGENTIC_SERVICE_KEY:-}
+      PLANNER_SERVICE_URL: http://coastal-planner:8080
+      PLANNING_COORDINATION_MODEL_PROVIDER: ${PLANNING_COORDINATION_MODEL_PROVIDER:-gemini}
+      PLANNING_COORDINATION_GEMINI_ENABLED: ${PLANNING_COORDINATION_GEMINI_ENABLED:-false}
+      PLANNING_COORDINATION_GEMINI_MODEL: ${PLANNING_COORDINATION_GEMINI_MODEL:-gemini-3.6-flash}
+      PLANNING_COORDINATION_GEMINI_API_KEY: ${PLANNING_COORDINATION_GEMINI_API_KEY:-}
+      PLANNING_COORDINATION_OPENAI_COMPATIBLE_BASE_URL: ${PLANNING_COORDINATION_OPENAI_COMPATIBLE_BASE_URL:-}
+      PLANNING_COORDINATION_OPENAI_COMPATIBLE_MODEL: ${PLANNING_COORDINATION_OPENAI_COMPATIBLE_MODEL:-}
+      PLANNING_COORDINATION_OPENAI_COMPATIBLE_API_KEY: ${PLANNING_COORDINATION_OPENAI_COMPATIBLE_API_KEY:-}
+      EXPERIENCE_AGENT_URL: ${EXPERIENCE_AGENT_URL:-http://agent-experience-biodiversity:8080}
+      MARINE_AGENT_URL: ${MARINE_AGENT_URL:-http://agent-marine-conditions:8080}
+      SAFETY_OPERATIONS_AGENT_URL: ${SAFETY_OPERATIONS_AGENT_URL:-http://agent-safety-operations:8080}
+      HTTPS_PROXY: http://gemini-egress-proxy:3128
+      https_proxy: http://gemini-egress-proxy:3128
+      NO_PROXY: localhost,127.0.0.1,api,auth,coastal-operations,coastal-planner,marine-safety,experience-biodiversity,agent-experience-biodiversity,agent-marine-conditions,agent-planning-coordination,agent-safety-operations
+      no_proxy: localhost,127.0.0.1,api,auth,coastal-operations,coastal-planner,marine-safety,experience-biodiversity,agent-experience-biodiversity,agent-marine-conditions,agent-planning-coordination,agent-safety-operations
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health/live', timeout=2).read()"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      gemini-egress-proxy:
+        condition: service_healthy
     networks:
       - blueverse_internal
 
@@ -297,9 +385,63 @@ services:
       context: .
       dockerfile: infrastructure/docker/agentic-ai/safety-operations/Dockerfile
     image: blueverse/agent-safety-operations:local
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      PORT: 8080
+      AGENTIC_ENABLED: ${AGENTIC_AI_ENABLED:-false}
+      AGENTIC_SERVICE_KEY: ${AGENTIC_SERVICE_KEY:-}
+      SAFETY_OPERATIONS_GEMINI_ENABLED: ${SAFETY_OPERATIONS_GEMINI_ENABLED:-false}
+      SAFETY_OPERATIONS_GEMINI_DATA_HANDLING_APPROVED: ${SAFETY_OPERATIONS_GEMINI_DATA_HANDLING_APPROVED:-false}
+      SAFETY_OPERATIONS_GEMINI_API_KEY: ${SAFETY_OPERATIONS_GEMINI_API_KEY:-}
+      SAFETY_OPERATIONS_GEMINI_MODEL: ${SAFETY_OPERATIONS_GEMINI_MODEL:-gemini-3.6-flash}
+      SAFETY_OPERATIONS_GEMINI_EGRESS_PROXY_URL: http://gemini-egress-proxy:3128
+      SAFETY_OPERATIONS_GEMINI_MAX_OUTPUT_TOKENS: ${SAFETY_OPERATIONS_GEMINI_MAX_OUTPUT_TOKENS:-2048}
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health/live', timeout=2).read()"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      gemini-egress-proxy:
+        condition: service_healthy
     networks:
       - blueverse_internal
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
 
+  gemini-egress-proxy:
+    profiles: ["agentic-ai"]
+    build:
+      context: .
+      dockerfile: infrastructure/docker/agentic-ai/gemini-egress-proxy/Dockerfile
+    image: blueverse/gemini-egress-proxy:local
+    container_name: blueverse-gemini-egress-proxy
+    restart: unless-stopped
+    expose:
+      - "3128"
+    read_only: true
+    user: "65532:65532"
+    cap_drop: ["ALL"]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 128m
+    cpus: 0.5
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import socket; s=socket.create_connection(('127.0.0.1',3128),timeout=1); s.close()"]
+      interval: 10s
+      timeout: 2s
+      retries: 3
+      start_period: 2s
+    networks:
+      - blueverse_internal
+      - blueverse_agent_egress
   it3091-fake:
     profiles: ["dev"]
     build:
@@ -321,9 +463,10 @@ networks:
   blueverse_internal:
     name: blueverse_internal
     internal: true
+  blueverse_agent_egress:
+    name: blueverse_agent_egress
   blueverse_database:
     name: blueverse_database
-
 volumes:
   blueverse_postgres_data:
     name: blueverse_postgres_data

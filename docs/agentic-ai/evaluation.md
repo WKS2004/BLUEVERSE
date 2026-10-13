@@ -1,8 +1,13 @@
 # Agentic AI evaluation — v1 target
 
-**Implementation status:** the golden workflow and agent suites are not yet
-implemented. Evaluation evidence must come from executed tests and
-demonstrations, not from this document.
+**Implementation status (2026-10-13):** the current checkout has partial,
+role-local suites with confirmed results: Experience & Biodiversity 22,
+Marine Conditions 54, Planning & Coordination 24, and Safety & Operations 61
+tests passed. These local suites do not establish an integrated four-agent
+golden workflow, live peer/provider compatibility, or provider/data-handling
+approval. AI-00 remains pending; full workflow and release-evaluation evidence
+must come from executed end-to-end checks and demonstrations, not this
+document.
 
 The [implementation blueprint](implementation-blueprint.md) groups the model,
 retrieval, deployment, observability and release decisions that the evaluation

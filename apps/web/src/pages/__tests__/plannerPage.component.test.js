@@ -130,9 +130,17 @@ test('WEB-PLANNER-UI-008 activities are selected by name and sent as canonical I
 test('WEB-PLANNER-UI-009 result evidence, cautions and uncertainty remain visible', async () => {
   install({ [`GET /api/planner/recommendations/${R}`]: { ...recommendations, candidates: [{ ...candidate, suitability: { ...candidate.suitability, status: 'CAUTION' } }], uncertaintyNotes: ['Wildlife context unavailable.'] } })
   render(`/planner/recommendations/${R}`); await screen.findByRole('heading', { name: candidate.title })
+  assert.ok(screen.getByRole('heading', { name: 'Here’s what the checks found' })); assert.ok(screen.getByText('Suggestions returned').parentElement.textContent.includes('1'))
   assert.ok(screen.getByText('A caution to review')); assert.ok(screen.getByText('Why this fits'))
   assert.ok(screen.getByText('Wildlife context unavailable.')); assert.ok(screen.getByText(/No verified wildlife context was attached/))
   assert.equal(screen.queryByText('95%'), null)
+})
+test('WEB-PLANNER-UI-040 recommendation outcomes distinguish no matches from unavailable checks (ui-integration: planner-recommendation-result)', async () => {
+  install({ [`GET /api/planner/recommendations/${R}`]: { ...recommendations, outcome: 'DEPENDENCIES_UNAVAILABLE', candidates: [], uncertaintyNotes: ['Marine conditions unavailable.'] } })
+  render(`/planner/recommendations/${R}`)
+  await screen.findByText(/Some live coastal checks were unavailable/)
+  assert.ok(screen.getByRole('heading', { name: 'No verified matches for this trip.' }))
+  assert.ok(screen.getByText('Marine conditions unavailable.'))
 })
 test('WEB-PLANNER-UI-010 required dependency failure shows a recoverable empty state', async () => {
   install({ [`GET /api/planner/recommendations/${R}`]: { ...recommendations, candidates: [], uncertaintyNotes: ['Marine conditions unavailable.'] } })
@@ -155,9 +163,35 @@ test('WEB-PLANNER-UI-012 absent catalogue explains recovery without asking for U
   assert.equal(screen.queryByLabelText('Destination'), null)
 })
 test('WEB-PLANNER-UI-013 workflow inspection uses the public route and reports failures', async () => {
-  install({ [`GET /api/planner/workflows/${I}`]: { workflowId: I, workflowType: 'Recommendation', status: 'FAILED', initiatorUserId: D, objective: 'Coastal day', createdAt: start, completedAt: end, resultSummary: null, failureReason: 'Please retry this search.' } })
+  install({ [`GET /api/planner/workflows/${I}`]: { workflowId: I, workflowType: 'Recommendation', status: 'FAILED', initiatorUserId: D, objective: 'Coastal day', createdAt: start, completedAt: end, resultSummary: null, failureReason: 'Please retry this search.', aiDependencyStatus: 'AVAILABLE', aiExecutionStatus: 'SAFE_FAILURE' } })
   render(`/planner/recommendations/${R}`); await screen.findByRole('heading', { name: candidate.title })
-  fireEvent.click(screen.getByRole('button', { name: 'View search status' })); await screen.findByText('Please retry this search.')
+  fireEvent.click(screen.getByRole('button', { name: 'View coordination status' })); await screen.findByText('Please retry this search.')
+  const statusPanel = screen.getByRole('heading', { name: 'Planning agent coordination' }).closest('section')
+  assert.ok(within(statusPanel).getByText('Available')); assert.ok(within(statusPanel).getByText('Stopped safely'))
+  assert.ok(within(statusPanel).getByText(/does not include separate responses from each delegated agent/))
+})
+test('WEB-PLANNER-UI-041 workflow inspection shows delegated agent findings and uncertainty', async () => {
+  install({ [`GET /api/planner/workflows/${I}`]: {
+    workflowId: I, workflowType: 'Recommendation', status: 'COMPLETED', initiatorUserId: D,
+    objective: 'Plan a coastal day', createdAt: start, completedAt: end, resultSummary: null, failureReason: null,
+    aiDependencyStatus: 'AVAILABLE', aiExecutionStatus: 'COMPLETED',
+    aiExecutionSummary: {
+      status: 'COMPLETED', objectiveSummary: 'Three coastal checks were gathered for your selected dates.',
+      steps: [
+        { agentId: 'experience-biodiversity', status: 'COMPLETED', summary: 'A published lagoon experience is available.', sourceReferences: ['experience-1'], uncertaintyNotes: [] },
+        { agentId: 'marine-safety', status: 'COMPLETED', summary: 'Conditions are suitable for this activity.', sourceReferences: ['marine-1'], uncertaintyNotes: ['Check the local marine notice again before departure.'] },
+      ],
+      safetyProposal: null,
+    },
+  } })
+  render(`/planner/recommendations/${R}`); await screen.findByRole('heading', { name: candidate.title })
+  fireEvent.click(screen.getByRole('button', { name: 'View coordination status' }))
+  assert.ok(await screen.findByText('Three coastal checks were gathered for your selected dates.'))
+  assert.ok(screen.getByRole('heading', { name: 'Coastal experiences & wildlife' }))
+  assert.ok(screen.getByRole('heading', { name: 'Marine conditions' }))
+  assert.ok(screen.getByText('A published lagoon experience is available.'))
+  assert.ok(screen.getByText('Check the local marine notice again before departure.'))
+  assert.equal(screen.queryByText(/does not include separate responses/), null)
 })
 test('WEB-PLANNER-UI-014 optional biodiversity shows metadata without claiming a sighting', async () => {
   install({ [`GET /api/planner/biodiversity/predictions?destinationId=${D}&activityId=${A}`]: { contractVersion: 1, destinationId: D, activityId: A, status: 'AVAILABLE', message: 'Wildlife context is available. A prediction does not guarantee a sighting.', predictedSpecies: [{ speciesId: R, commonName: 'Green turtle', scientificName: 'Chelonia mydas', habitatSuitability: .8, confidenceLevel: 'HIGH' }], modelMetadata: { modelVersion: 'fixture-v1', inferenceTimestamp: start }, provenance: { provider: 'test-provider', modelVersion: 'fixture-v1', inferenceTimestamp: start }, limitations: 'Not a guaranteed sighting.' } })

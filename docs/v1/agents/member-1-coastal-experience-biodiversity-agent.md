@@ -2,7 +2,7 @@
 contract_id: v1.agent.experience-biodiversity
 contract_type: agent_role
 release: v1
-implementation_status: target_not_implemented
+implementation_status: in_progress
 owner_label: member_1
 owner_full_name: "Ushan Srinuka"
 owner_github_username: "Ushan-Srinuka"
@@ -14,24 +14,26 @@ business_component: "../components/member-1-coastal-experience-biodiversity-disc
 
 # Ushan Srinuka (Member 1) — Coastal Experience & Biodiversity Agent
 
-**Target status:** no executable v1 agent/runtime/tool implementation is
-present in the current foundation. This is a specification for a distinct
-Agentic AI responsibility, not an assertion that an inference model or agent
-exists.
+**Implementation status:** a read-only specialist runtime and typed lookup
+tools are present under `services/agents/experience-biodiversity`. The current
+implementation assembles validated destination, activity, offering, schedule
+and optional biodiversity context. The other three agent roles and the full
+orchestration workflow are not implemented by this service.
 
 **Assigned owner:** Ushan Srinuka (`@Ushan-Srinuka`), requirement trace label
-Member 1. Component branch: `features/experience-biodiversity`; actual agent
-branch, after G07: `agentic-ai/experience-biodiversity`.
+Member 1. Component branch: `features/experience-biodiversity`; agent branch:
+`agentic-ai/experience-biodiversity`.
 
 **Owning business component:** [Coastal Experience & Biodiversity Discovery](../components/member-1-coastal-experience-biodiversity-discovery.md).
 
-**Implementation sequence:** do not implement an executable agent, model
-call or tool before all four business components pass G07. After that gate,
-follow the post-G07 sequence in the [member branch and integration workflow](../member-branch-workflow.md).
-Before G07, the owning Ushan Srinuka (Member 1) feature branch prepares only the public
-workflow contract, private backend adapter and not-connected/unavailable
-behavior defined in the [member integration boundary](../agentic-ai-integration-boundary.md).
-Implement this actual agent on an `agentic-ai/**` branch after G07.
+The team owner reported G07 acceptance and approval to begin agent
+implementation on 2026-10-13; the repository tracker records that report. The
+current branch implements this Member 1 specialist independently of the
+general orchestration decision. The runtime is stateless and uses the owning
+service's existing data/API contracts. Optional Gemini output can select only
+validated report sections; the implementation renders all returned summary
+text locally. See the [branch tracker](../member-branch-workflow.md) for the
+remaining shared-contract and integration evidence.
 
 ## 1. Responsibility and intended use
 

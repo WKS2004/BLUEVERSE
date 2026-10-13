@@ -7,6 +7,7 @@ const {
   createAssessment,
   decideAlert,
   getEvidenceImage,
+  getAssessmentDetail,
   listAssessments,
   uploadAssessmentEvidence,
 } = await loadWebModule('/src/features/coastalOperations/operationsApi.ts')
@@ -110,6 +111,21 @@ test('WEB-OPS-API-006 authorization failures show a safe message instead of serv
     assert.equal(error.status, 403)
     assert.equal(error.message, 'Your current permissions do not allow this action.')
     assert.doesNotMatch(error.message, /private service|stack trace/i)
+    return true
+  })
+})
+
+test('WEB-OPS-API-007 malformed agent findings are rejected with a safe response error', async () => {
+  globalThis.fetch = async () => jsonResponse({ assessment: {}, decisions: [], evidence: [], agentExecutionSummary: {
+    status: 'COMPLETED', objectiveSummary: 'Checked the coastal assessment.',
+    steps: [{ agentId: 'marine-safety', status: 'COMPLETED', summary: 'Checked.', sourceReferences: 'invalid', uncertaintyNotes: [] }],
+    safetyProposal: null,
+  } })
+
+  await assert.rejects(getAssessmentDetail('assessment-1', { quiet: true }), error => {
+    assert.ok(error instanceof CoastalOperationsApiError)
+    assert.equal(error.status, 502)
+    assert.match(error.message, /could not complete that coastal operations request/i)
     return true
   })
 })

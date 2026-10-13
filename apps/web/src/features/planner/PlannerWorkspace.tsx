@@ -122,10 +122,41 @@ function Content() {
     {loading ? <p aria-live="polite" className="py-16 text-coast-muted">Preparing your coastal planner…</p> : recommendationId ? <>
       <div className="mb-8 flex flex-wrap items-end justify-between gap-6 rounded-[2rem] border border-coast-line bg-white p-7 sm:p-10"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-coast-teal">Your coastal possibilities</p><h1 className="mt-4 font-display text-4xl tracking-[-0.04em] sm:text-5xl">A day worth making time for.</h1><p className="mt-3 max-w-xl text-coast-muted">Compare suggestions and review any cautions, then save the experience you’d like to plan around.</p></div><Link className={secondaryButton} to="/planner/plan">Create another plan</Link></div>
       {!result ? <button className={primaryButton} onClick={() => { setLoading(true); setReload(n => n + 1) }}>Try loading again</button> : <>
-        {result.uncertaintyNotes.length > 0 && <aside className="mb-7 rounded-2xl border border-amber-200 bg-amber-50 px-6 py-5"><h2 className="font-bold text-amber-950">A few things to know</h2><p className="mt-2 text-sm leading-6 text-amber-950">Some information could not be verified. Suggestions are planning guidance, not a booking or a guarantee of safety.</p><details className="mt-3 text-sm text-amber-950"><summary className="cursor-pointer font-semibold focus-visible:outline-2">See what could not be checked</summary><ul className="mt-3 space-y-2">{result.uncertaintyNotes.map(note => <li key={note}>{note.replace(/[0-9a-f]{8}-[0-9a-f-]{27,}/gi, 'this experience')}</li>)}</ul></details></aside>}
+        <section aria-labelledby="planner-response-title" aria-live="polite" className="mb-7 grid gap-5 rounded-3xl border border-coast-line bg-coast-paper p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-7">
+          <div><p className="text-xs font-extrabold tracking-[0.15em] text-coast-blue">PLANNING RESPONSE</p><h2 className="mt-2 font-display text-2xl" id="planner-response-title">Here’s what the checks found</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-coast-muted">{recommendationOutcomeMessage(result)}</p></div>
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:min-w-52"><div><dt className="text-xs font-bold text-coast-muted">Suggestions returned</dt><dd className="mt-1 font-display text-xl">{result.candidates.length}</dd></div><div><dt className="text-xs font-bold text-coast-muted">Other options not shown</dt><dd className="mt-1 font-display text-xl">{result.excludedCandidatesCount}</dd></div></dl>
+        </section>
+        {result.uncertaintyNotes.length > 0 && <aside className="mb-7 rounded-2xl border border-amber-200 bg-amber-50 px-6 py-5"><h2 className="font-bold text-amber-950">Information to review</h2><p className="mt-2 text-sm leading-6 text-amber-950">Some information could not be verified. Suggestions are planning guidance, not a booking or a guarantee of safety.</p><details className="mt-3 text-sm text-amber-950"><summary className="cursor-pointer font-semibold focus-visible:outline-2">See what could not be checked</summary><ul className="mt-3 space-y-2">{result.uncertaintyNotes.map(note => <li key={note}>{note.replace(/[0-9a-f]{8}-[0-9a-f-]{27,}/gi, 'this experience')}</li>)}</ul></details></aside>}
         {result.candidates.length ? <div className="grid gap-6 lg:grid-cols-2">{result.candidates.map((candidate, index) => <Candidate key={`${candidate.offeringId}-${candidate.scheduledStart}`} candidate={candidate} index={index} canSave={hasAllPermissions(user, ['planner.itineraries.manage'])} canInspect={hasAllPermissions(user, ['planner.biodiversity.read'])} onChoose={choose} />)}</div> : <section className="rounded-3xl border border-coast-line bg-white px-8 py-14 text-center"><div aria-hidden="true" className="mb-5 text-4xl text-coast-teal">≈</div><h2 className="font-display text-2xl">No verified matches for this trip.</h2><p className="mx-auto mt-3 max-w-lg leading-7 text-coast-muted">Try another time, widen your trip window, or choose a different activity. When condition information is unavailable, we leave an experience out.</p><Link className={`${primaryButton} mt-6`} to="/planner/plan">Adjust your trip</Link></section>}
-        <div className="mt-8 flex flex-wrap items-center justify-between gap-4 text-xs text-coast-muted"><p>Search completed {dateTime(result.generatedAt)} · Experience times shown in the destination’s local time zone</p>{hasAllPermissions(user, ['planner.workflows.read']) && <button disabled={busy} className="min-h-11 rounded-full px-4 font-semibold underline decoration-coast-line underline-offset-4 focus-visible:outline-2 focus-visible:outline-coast-blue" onClick={inspectWorkflow}>View search status</button>}</div>
-        {workflow && <p aria-live="polite" className="rounded-2xl bg-coast-sage p-5 text-sm">{workflow.status === 'FAILED' ? workflow.failureReason : workflow.resultSummary ?? 'Your search has finished.'}</p>}
+        <div className="mt-8 flex flex-wrap items-center justify-between gap-4 text-xs text-coast-muted"><p>Search completed {dateTime(result.generatedAt)} · Experience times shown in the destination’s local time zone</p>{hasAllPermissions(user, ['planner.workflows.read']) && <button disabled={busy} className="min-h-11 rounded-full px-4 font-semibold underline decoration-coast-line underline-offset-4 focus-visible:outline-2 focus-visible:outline-coast-blue disabled:cursor-wait" onClick={inspectWorkflow}>{busy ? 'Checking coordination…' : 'View coordination status'}</button>}</div>
+        {workflow && <section aria-labelledby="planner-coordination-title" aria-live="polite" className="mt-3 rounded-2xl border border-coast-line bg-white p-5 text-sm">
+          <h2 className="font-bold" id="planner-coordination-title">Planning agent coordination</h2>
+          <dl className="mt-3 grid gap-3 sm:grid-cols-2"><div><dt className="text-xs font-bold text-coast-muted">Coordinator availability</dt><dd className="mt-1 font-semibold">{humanWorkflowStatus(workflow.aiDependencyStatus)}</dd></div><div><dt className="text-xs font-bold text-coast-muted">Agent execution</dt><dd className="mt-1 font-semibold">{humanWorkflowStatus(workflow.aiExecutionStatus)}</dd></div></dl>
+          <p className="mt-3 leading-6 text-coast-muted">{agentExecutionDescription(workflow.aiExecutionStatus)}</p>
+          {workflow.status === 'FAILED' && workflow.failureReason && <p className="mt-3 rounded-xl bg-red-50 p-3 leading-6 text-red-900" role="alert">{workflow.failureReason}</p>}
+          {workflow.status !== 'FAILED' && workflow.resultSummary && <p className="mt-3 leading-6">{workflow.resultSummary}</p>}
+          {workflow.aiExecutionSummary ? <div className="mt-4 border-t border-coast-line pt-4">
+            <h3 className="font-bold">What the coastal checks found</h3>
+            <p className="mt-2 leading-6 text-coast-muted">{workflow.aiExecutionSummary.objectiveSummary}</p>
+            {workflow.aiExecutionSummary.steps.length > 0 && <ul className="mt-3 grid gap-3">
+              {workflow.aiExecutionSummary.steps.map((step, index) => <li className="rounded-2xl bg-coast-paper p-4" key={`${step.agentId}-${index}`}>
+                <div className="flex flex-wrap items-center justify-between gap-2"><h4 className="font-semibold">{agentDisplayName(step.agentId)}</h4><span className="rounded-full bg-white px-3 py-1 text-xs font-bold">{agentStepStatus(step.status)}</span></div>
+                {step.summary && <p className="mt-2 text-sm leading-6">{step.summary}</p>}
+                {step.sourceReferences.length > 0 && <p className="mt-2 text-xs text-coast-muted">Evidence sources considered: {step.sourceReferences.length}</p>}
+                {step.uncertaintyNotes.length > 0 && <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950"><p className="font-semibold">Information to review</p><ul className="mt-1 list-disc space-y-1 pl-5">{step.uncertaintyNotes.map((note, noteIndex) => <li key={`${noteIndex}-${note}`}>{note}</li>)}</ul></div>}
+              </li>)}
+            </ul>}
+            {workflow.aiExecutionSummary.safetyProposal && <div className="mt-3 rounded-2xl border border-coast-glass bg-coast-sage p-4">
+              <h4 className="font-bold">Safety recommendation</h4>
+              <p className="mt-2 text-sm font-semibold">{humanAgentValue(workflow.aiExecutionSummary.safetyProposal.recommendation)}</p>
+              <p className="mt-2 text-sm leading-6">{workflow.aiExecutionSummary.safetyProposal.summary}</p>
+              {workflow.aiExecutionSummary.safetyProposal.proposedAction && <p className="mt-2 text-sm">Suggested operational action: <span className="font-semibold">{humanAgentValue(workflow.aiExecutionSummary.safetyProposal.proposedAction)}</span></p>}
+              {workflow.aiExecutionSummary.safetyProposal.evidenceReferences.length > 0 && <p className="mt-2 text-xs text-coast-muted">Evidence sources considered: {workflow.aiExecutionSummary.safetyProposal.evidenceReferences.length}</p>}
+              {workflow.aiExecutionSummary.safetyProposal.uncertainties.length > 0 && <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">{workflow.aiExecutionSummary.safetyProposal.uncertainties.map((note, index) => <li key={`${index}-${note}`}>{note}</li>)}</ul>}
+              <p className="mt-3 border-t border-coast-glass pt-3 text-xs leading-5 text-coast-muted">This is a recommendation for planning. It does not reserve an experience or change coastal access.</p>
+            </div>}
+          </div> : <p className="mt-3 border-t border-coast-line pt-3 text-xs leading-5 text-coast-muted">This status response reports coordinator availability and execution state. It does not include separate responses from each delegated agent.</p>}
+        </section>}
       </>}
     </> : <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
       <section className="rounded-3xl border border-coast-line bg-white p-6 sm:p-9"><div className="mb-8"><p className="text-xs font-bold uppercase tracking-[0.18em] text-coast-teal">Start with what suits you</p><h2 className="mt-2 font-display text-3xl tracking-tight">Where shall we go?</h2><p className="mt-3 leading-6 text-coast-muted">Your next coastal day starts here. Plan up to 30 days ahead.</p></div>
@@ -141,6 +172,65 @@ function Content() {
     </div>}
     <dialog ref={saveDialog} aria-labelledby="save-trip-title" className="m-auto w-[calc(100%-2rem)] max-w-lg rounded-3xl border-0 bg-white p-7 text-coast-ink shadow-xl backdrop:bg-coast-ink/40"><form onSubmit={save}><h2 id="save-trip-title" className="font-display text-2xl">Make this day yours.</h2><p className="mt-3 text-sm leading-6 text-coast-muted">Save a private trip to edit and review later. Saving a plan doesn’t book the experience.</p><label htmlFor="save-trip-name" className="mt-6 block text-sm font-bold">Trip name<input id="save-trip-name" required disabled={Boolean(appendTo)} maxLength={150} className={field} value={tripTitle} onChange={e => setTripTitle(e.target.value)} /></label>{savedTrips === null ? <button disabled={busy} className={secondaryButton + " mt-5"} type="button" onClick={() => loadSavedTrips()}>Add to a saved trip instead</button> : <div className="mt-5"><label className="text-sm font-bold" htmlFor="append-trip">Save to<select id="append-trip" className={field} value={appendTo} onChange={e => setAppendTo(e.target.value)}><option value="">A new trip</option>{savedTrips.map(trip => <option key={trip.itineraryId} value={trip.itineraryId}>{trip.title}</option>)}</select></label><div className="mt-3 flex gap-3"><button className={secondaryButton} disabled={busy || tripPage === 1} type="button" onClick={() => loadSavedTrips(tripPage - 1)}>Previous trips</button><button className={secondaryButton} disabled={busy || savedTrips.length < 20} type="button" onClick={() => loadSavedTrips(tripPage + 1)}>More trips</button></div></div>}{saveError && <p role="alert" className="mt-4 text-sm text-amber-900">{saveError}</p>}<div className="mt-6 flex flex-wrap gap-3"><button disabled={busy || !tripTitle.trim()} className={primaryButton} type="submit">{busy ? 'Saving…' : 'Save my trip'}</button><button disabled={busy} className={secondaryButton} type="button" onClick={() => { saveDialog.current?.close(); setSelected(null) }}>Cancel</button></div></form></dialog>
   </>
+}
+
+function recommendationOutcomeMessage(result: RecommendationResult): string {
+  if (result.outcome === 'DEPENDENCIES_UNAVAILABLE') return 'Some live coastal checks were unavailable, so not every option could be verified. Review the information below before making plans.'
+  if (result.outcome === 'NO_MATCHES') return 'No experience passed the available checks for this search. Adjust the time or preferences and try again.'
+  if (result.outcome === 'MATCHES_FOUND') return `The planner returned ${result.candidates.length} option${result.candidates.length === 1 ? '' : 's'}. Each card shows the returned reasons and current availability, marine suitability and operational status.`
+  if (result.candidates.length > 0) return `The planner returned ${result.candidates.length} option${result.candidates.length === 1 ? '' : 's'}. Review the reasons and coastal checks on each card.`
+  return 'The planner returned no options for this search. Review any unavailable information below, then adjust your time or preferences and try again.'
+}
+
+function humanWorkflowStatus(value: string): string {
+  const labels: Record<string, string> = {
+    AVAILABLE: 'Available',
+    NOT_CONNECTED: 'Not connected',
+    UNAVAILABLE: 'Unavailable',
+    NOT_STARTED: 'No agent run recorded',
+    PLANNING: 'Planning',
+    DELEGATING: 'Gathering delegated results',
+    BLOCKED: 'Blocked',
+    COMPLETED: 'Completed',
+    SAFE_FAILURE: 'Stopped safely',
+  }
+  return labels[value] ?? 'Status not recognized'
+}
+
+function agentExecutionDescription(value: string): string {
+  const descriptions: Record<string, string> = {
+    NOT_STARTED: 'No agent execution is recorded for this workflow. The suggestions above show the planner’s checked results.',
+    PLANNING: 'The planning agent has begun working on this workflow. Check the coordination status again for updates.',
+    DELEGATING: 'The planning agent is gathering delegated coastal information. Check the coordination status again for updates.',
+    BLOCKED: 'The coordination workflow is blocked. Review the dependency availability and check again for an updated status.',
+    COMPLETED: 'Agent coordination is complete. Review the coastal findings and any uncertainties below.',
+    UNAVAILABLE: 'Agent coordination is unavailable. The recommendation cards still show the data returned by the planner.',
+    SAFE_FAILURE: 'The agent workflow stopped safely. No agent proposal or action is included in this response.',
+  }
+  return descriptions[value] ?? 'The service returned an execution state this screen does not recognize.'
+}
+
+function agentDisplayName(agentId: string): string {
+  const names: Record<string, string> = {
+    'experience-biodiversity': 'Coastal experiences & wildlife',
+    'marine-safety': 'Marine conditions',
+    'safety-operations': 'Safety & Operations',
+    'planning-coordination': 'Planning coordination',
+  }
+  return names[agentId] ?? 'Coastal check'
+}
+
+function agentStepStatus(value: string): string {
+  const statuses: Record<string, string> = {
+    COMPLETED: 'Complete', SUCCEEDED: 'Complete', AVAILABLE: 'Complete',
+    RUNNING: 'In progress', IN_PROGRESS: 'In progress', PLANNING: 'In progress',
+    UNAVAILABLE: 'Unavailable', FAILED: 'Could not complete', SAFE_FAILURE: 'Stopped safely',
+  }
+  return statuses[value.toUpperCase()] ?? 'Status not verified'
+}
+
+function humanAgentValue(value: string): string {
+  return value.toLowerCase().split('_').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(' ')
 }
 
 function Candidate({ candidate, index, canSave, canInspect, onChoose }: { candidate: RecommendationCandidate; index: number; canSave: boolean; canInspect: boolean; onChoose: (candidate: RecommendationCandidate) => void }) {

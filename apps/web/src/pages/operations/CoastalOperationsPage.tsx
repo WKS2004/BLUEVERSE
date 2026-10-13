@@ -52,6 +52,21 @@ function label(value: string | null | undefined) {
   return value.toLowerCase().split('_').map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ')
 }
 
+function assessmentDispatchMessage(assessment: Assessment, hasAgentSummary = false) {
+  switch (assessment.aiDispatchOutcome) {
+    case 'NOT_REQUESTED': return 'No agent delivery is recorded for this assessment, so there is no agent result to show yet.'
+    case 'NOT_STARTED': return 'No agent delivery attempt is recorded yet, so there is no agent result to show.'
+    case 'SUCCEEDED': return hasAgentSummary
+      ? 'The Safety & Operations agent completed its review. Its findings are shown below for an authorized person to consider.'
+      : 'Delivery to the Safety & Operations agent succeeded. This response contains delivery status, but no validated proposal or action.'
+    case 'UNAVAILABLE': return assessment.aiDispatchRetryable
+      ? 'Agent delivery is unavailable. The service marks it as retryable; refresh the assessment to check its current status.'
+      : 'Agent delivery is unavailable and is not marked as retryable. No agent result is available.'
+    case 'INVALID_RESULT': return 'The returned agent result did not pass validation. No proposal or operational action is available.'
+    default: return 'The agent delivery status is not recognized. No proposal or action is shown.'
+  }
+}
+
 function formatDate(value: string) {
   const date = new Date(value)
   return Number.isNaN(date.valueOf()) ? 'Time not available' : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date)
@@ -63,6 +78,35 @@ function StatusPill({ value }: { value: string }) {
   const quiet = ['DRAFT', 'NOT_CONNECTED', 'NOT_REQUESTED', 'NOT_STARTED', 'SUBMITTED', 'PROPOSED', 'UNKNOWN', 'PENDING_APPROVAL', 'CANCELLED', 'WITHDRAWN', 'EXPIRED', 'RESOLVED', 'LOW', 'MODERATE'].includes(normalized)
   const styles = positive ? 'bg-coast-sage text-coast-deep' : quiet ? 'bg-coast-sand text-coast-muted' : 'bg-red-50 text-red-900'
   return <span className={`inline-flex min-h-7 items-center rounded-full px-3 text-xs font-bold ${styles}`}>{label(value)}</span>
+}
+
+function agentDisplayName(agentId: string) {
+  const names: Record<string, string> = {
+    'experience-biodiversity': 'Coastal experiences & wildlife',
+    'marine-safety': 'Marine conditions',
+    'safety-operations': 'Safety & Operations',
+    'planning-coordination': 'Planning coordination',
+  }
+  return names[agentId] ?? 'Coastal check'
+}
+
+function agentStepStatus(value: string) {
+  const statuses: Record<string, string> = {
+    COMPLETED: 'Complete', SUCCEEDED: 'Complete', AVAILABLE: 'Complete',
+    RUNNING: 'In progress', IN_PROGRESS: 'In progress', PLANNING: 'In progress',
+    UNAVAILABLE: 'Unavailable', FAILED: 'Could not complete', SAFE_FAILURE: 'Stopped safely',
+  }
+  return statuses[value.toUpperCase()] ?? 'Status not verified'
+}
+
+function humanAgentValue(value: string) {
+  return value.toLowerCase().split('_').map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ')
+}
+
+function isCurrentValidatedProposal(proposal: NonNullable<AssessmentDetail['proposals']>[number], assessment: Assessment) {
+  return proposal.validationStatus.toUpperCase() === 'VALIDATED' &&
+    proposal.targetType === assessment.targetType && proposal.targetId.toLowerCase() === assessment.targetId.toLowerCase() &&
+    Boolean(proposal.proposedState) && Date.parse(proposal.expiresAt) > Date.now()
 }
 
 function Notice({ tone = 'info', children }: { tone?: 'info' | 'success' | 'error'; children: ReactNode }) {
@@ -155,7 +199,7 @@ function CoastalOperationsWorkspace({ user, section, origin }: { user: AuthUser 
     if (canReadAlerts && showAlerts) requests.push(listAlerts({ ...query, pageSize, cursor: pageCursors[pageIndex] }, { quiet: true, signal: controller.signal }).then((page) => {
       if (current) { setAlertError(null); setAlertItems(page.items); setAlertCursor(page.nextCursor) }
     }).catch((error: unknown) => { if (current) setAlertError(error instanceof Error ? error.message : 'Alerts could not be loaded. Please retry.') }))
-    void Promise.all(requests).finally(() => { if (current) setRecordsLoading(false) })
+    if (requests.length > 0) void Promise.all(requests).finally(() => { if (current) setRecordsLoading(false) })
     return () => { current = false; controller.abort() }
   }, [canReadAssessments, canReadAlerts, showAssessments, showAlerts, query, refreshKey, pageSize, pageIndex, pageCursors])
 
@@ -292,8 +336,8 @@ function CoastalOperationsWorkspace({ user, section, origin }: { user: AuthUser 
     setBusy(true)
     try {
       if (action === 'submit') {
-        await submitAssessmentDraft(assessment.assessmentId, assessment.version)
-        setNotice({ text: 'The assessment was submitted. No automated proposal was created.', tone: 'success' })
+        const submitted = await submitAssessmentDraft(assessment.assessmentId, assessment.version)
+        setNotice({ text: `Assessment submitted. ${assessmentDispatchMessage(submitted)}`, tone: 'success' })
       } else {
         await cancelAssessmentDraft(assessment.assessmentId, assessment.version)
         setNotice({ text: 'The assessment draft was cancelled and retained in the audit history for authorized reviewers.', tone: 'success' })
@@ -389,7 +433,13 @@ function CoastalOperationsWorkspace({ user, section, origin }: { user: AuthUser 
     }).catch((error: unknown) => { if (current) { setSelectedAlert(null); setAlertDetailError(error instanceof Error ? error.message : 'We could not open this advisory. Retry.') } })
     return () => { current = false; controller.abort() }
   }, [selectedAlertId, canReadAlerts, refreshKey, origin])
-  function renderAssessmentDetails() { return <div className="mt-4 rounded-3xl border border-coast-line bg-white p-6 sm:p-8">
+  function renderAssessmentDetails() {
+    const summary = detail?.assessment.assessmentId === selectedAssessmentId ? detail.agentExecutionSummary : null
+    const proposals = detail?.assessment.assessmentId === selectedAssessmentId ? detail.proposals ?? [] : []
+    const currentValidatedProposals = detail?.assessment.assessmentId === selectedAssessmentId
+      ? proposals.filter((proposal) => isCurrentValidatedProposal(proposal, detail.assessment))
+      : []
+    return <div className="mt-4 rounded-3xl border border-coast-line bg-white p-6 sm:p-8">
                       {detailError?.assessmentId === selectedAssessmentId && <Notice tone="error">{detailError.message}</Notice>}
                       {detail?.assessment.assessmentId !== selectedAssessmentId && detailError?.assessmentId !== selectedAssessmentId && <p aria-live="polite" className="text-sm text-coast-muted">Opening the assessment…</p>}
                       {detail?.assessment.assessmentId === selectedAssessmentId && <div className="grid gap-7">
@@ -402,21 +452,57 @@ function CoastalOperationsWorkspace({ user, section, origin }: { user: AuthUser 
                           <p className="text-sm leading-6 text-coast-muted">Coastal context is checked after you submit this draft.</p>
                         </div>}
                         {detail.assessment.workflowStatus !== 'DRAFT' && <div className="grid gap-4 rounded-2xl bg-coast-sand p-4 sm:grid-cols-2 sm:p-5">
-                          <div><p className="text-xs font-bold text-coast-muted">Coastal context</p><p className="mt-1 text-sm font-bold">{label(detail.assessment.aiDependencyStatus)}</p></div>
+                          <div><p className="text-xs font-bold text-coast-muted">Safety & Operations agent availability</p><p className="mt-1 text-sm font-bold">{label(detail.assessment.aiDependencyStatus)}</p></div>
                           <div><p className="text-xs font-bold text-coast-muted">Assessment period</p><p className="mt-1 text-sm font-bold">{formatDate(detail.assessment.periodStartsAt)} – {formatDate(detail.assessment.periodEndsAt)}</p></div>
                         </div>}
                         <dl className="grid gap-3 rounded-2xl border border-coast-line bg-coast-pearl p-4 sm:grid-cols-2 sm:p-5"><div><dt className="text-xs font-bold text-coast-muted">Related coastal record</dt><dd className="mt-1 break-all text-sm font-semibold">{label(detail.assessment.targetType)} · {detail.assessment.targetId}</dd></div><div><dt className="text-xs font-bold text-coast-muted">Related coastal plan</dt><dd className="mt-1 break-all text-sm font-semibold">{detail.assessment.sourceWorkflowId || 'No plan linked'}</dd></div></dl>
-                        {detail.assessment.workflowStatus !== 'DRAFT' && detail.assessment.aiDependencyStatus === 'NOT_CONNECTED' && <Notice>Coastal context was recorded, but automated proposals are not available yet. No operational change has been suggested or applied.</Notice>}
-                        {detail.assessment.workflowStatus !== 'DRAFT' && detail.assessment.aiDependencyStatus === 'UNAVAILABLE' && <Notice>Coastal context could not be fully checked right now. The assessment remains submitted; refresh later to see the latest information.</Notice>}
+                        {detail.assessment.workflowStatus !== 'DRAFT' && <section aria-labelledby="assessment-agent-status-title" aria-live="polite" className="rounded-2xl border border-coast-line bg-white p-4 sm:p-5">
+                          <div className="flex flex-wrap items-center justify-between gap-3"><h4 className="font-bold" id="assessment-agent-status-title">Safety & Operations agent delivery</h4><StatusPill value={detail.assessment.aiDispatchOutcome} /></div>
+                          <p className="mt-3 text-sm leading-6 text-coast-ink">{assessmentDispatchMessage(detail.assessment, Boolean(summary || proposals.length))}</p>
+                          <p className="mt-2 text-xs leading-5 text-coast-muted">Agent findings support the review. They do not change an operational status; any change must follow the authorized human review process.</p>
+                          {detail.assessment.aiDispatchOutcome === 'UNAVAILABLE' && <p className="mt-2 text-xs font-semibold text-coast-muted">Retryable: {detail.assessment.aiDispatchRetryable ? 'Yes' : 'No'}</p>}
+                        </section>}
+                        {summary && <section aria-labelledby="assessment-agent-findings-title" aria-live="polite" className="rounded-2xl border border-coast-line bg-coast-paper p-4 sm:p-5">
+                          <div className="flex flex-wrap items-center justify-between gap-3"><h4 className="font-bold" id="assessment-agent-findings-title">What the coastal agents found</h4><StatusPill value={summary.status} /></div>
+                          <p className="mt-3 text-sm leading-6">{summary.objectiveSummary}</p>
+                          {summary.steps.length > 0 && <ul className="mt-4 grid gap-3">
+                            {summary.steps.map((step, index) => <li className="rounded-2xl border border-coast-line bg-white p-4" key={`${step.agentId}-${index}`}>
+                              <div className="flex flex-wrap items-center justify-between gap-2"><h5 className="font-semibold">{agentDisplayName(step.agentId)}</h5><span className="rounded-full bg-coast-sand px-3 py-1 text-xs font-bold">{agentStepStatus(step.status)}</span></div>
+                              {step.summary && <p className="mt-2 text-sm leading-6">{step.summary}</p>}
+                              {step.sourceReferences.length > 0 && <p className="mt-2 text-xs text-coast-muted">Evidence sources considered: {step.sourceReferences.length}</p>}
+                              {step.uncertaintyNotes.length > 0 && <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950"><p className="font-semibold">Information to review</p><ul className="mt-1 list-disc space-y-1 pl-5">{step.uncertaintyNotes.map((note, noteIndex) => <li key={`${noteIndex}-${note}`}>{note}</li>)}</ul></div>}
+                            </li>)}
+                          </ul>}
+                          {summary.safetyProposal && <div className="mt-4 rounded-2xl border border-coast-glass bg-coast-sage p-4">
+                            <h5 className="font-bold">Safety recommendation</h5>
+                            <p className="mt-2 text-sm font-semibold">{humanAgentValue(summary.safetyProposal.recommendation)}</p>
+                            <p className="mt-2 text-sm leading-6">{summary.safetyProposal.summary}</p>
+                            {summary.safetyProposal.proposedAction && <p className="mt-2 text-sm">Suggested action: <span className="font-semibold">{humanAgentValue(summary.safetyProposal.proposedAction)}</span></p>}
+                            {summary.safetyProposal.evidenceReferences.length > 0 && <p className="mt-2 text-xs text-coast-muted">Evidence sources considered: {summary.safetyProposal.evidenceReferences.length}</p>}
+                            {summary.safetyProposal.uncertainties.length > 0 && <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">{summary.safetyProposal.uncertainties.map((note, index) => <li key={`${index}-${note}`}>{note}</li>)}</ul>}
+                            <p className="mt-3 text-xs leading-5 text-coast-muted">Review guidance: {summary.safetyProposal.reviewSuggestion}</p>
+                          </div>}
+                        </section>}
+                        {proposals.length > 0 && <section aria-labelledby="assessment-proposals-title" className="rounded-2xl border border-coast-line p-4 sm:p-5">
+                          <h4 className="font-bold" id="assessment-proposals-title">Recommendations awaiting review</h4>
+                          <ul className="mt-3 grid gap-3">{proposals.map((proposal) => <li className="rounded-2xl bg-coast-paper p-4" key={proposal.proposalId}>
+                            <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-semibold">{proposal.proposedState ? humanAgentValue(proposal.proposedState) : 'No operational change proposed'}</p><StatusPill value={Date.parse(proposal.expiresAt) <= Date.now() ? 'EXPIRED' : proposal.validationStatus} /></div>
+                            <p className="mt-2 text-xs leading-5 text-coast-muted">Proposal {proposal.proposalVersion} · Expected state version {proposal.expectedTargetStateVersion ?? 'not recorded'} · Expires {formatDate(proposal.expiresAt)}</p>
+                            {proposal.requiresSeparateReviewer && <p className="mt-2 text-sm leading-6">A separate authorized reviewer must make the decision.</p>}
+                          </li>)}</ul>
+                          <p className="mt-3 text-xs leading-5 text-coast-muted">These recommendations are informational here. An authorized reviewer must inspect the assessment and use the formal decision process; no change is applied from this screen.</p>
+                        </section>}
                         {detail.assessment.componentDependencies.length > 0 && <div>
-                          <h4 className="font-bold">Coastal context checks</h4>
+                          <h4 className="font-bold">Supporting coastal checks</h4>
                           <ul className="mt-3 grid gap-2 sm:grid-cols-3">{detail.assessment.componentDependencies.map((dependency, index) => <li className="rounded-2xl border border-coast-line bg-coast-paper p-3" key={`${dependency.service}-${index}`}>
                             <p className="text-sm font-bold">{dependency.service === 'experience-biodiversity' ? 'Coastal experience' : dependency.service === 'marine-safety' ? 'Marine safety' : dependency.service === 'coastal-planner' ? 'Coastal planning' : 'Coastal context'}</p>
                             <div className="mt-2"><StatusPill value={dependency.status} /></div>
+                            <p className="mt-2 text-xs text-coast-muted">{dependency.attempts} attempt{dependency.attempts === 1 ? '' : 's'} · {dependency.retries} retr{dependency.retries === 1 ? 'y' : 'ies'} · Retryable: {dependency.retryable ? 'Yes' : 'No'}</p>
                             {dependency.checkedAt && <p className="mt-2 text-xs text-coast-muted">Checked {formatDate(dependency.checkedAt)}</p>}
                           </li>)}</ul>
                         </div>}
-                        {canDecideAssessment && detail.assessment.workflowStatus !== 'DRAFT' && <Notice>There is no validated proposal to approve or apply for this assessment yet.</Notice>}
+                        {canDecideAssessment && detail.assessment.workflowStatus !== 'DRAFT' && currentValidatedProposals.length === 0 && <Notice>There is no current validated proposal for this assessment to review.</Notice>}
+                        {canDecideAssessment && currentValidatedProposals.length > 0 && <Notice tone="success">A validated recommendation is ready for authorized human review. This screen does not approve it or apply an operational change.</Notice>}
                         {origin !== 'logs' && detail.assessment.workflowStatus === 'DRAFT' && <div className="flex flex-wrap gap-3 border-t border-coast-line pt-5">
                           {canUpdateAssessment && <button className="min-h-11 rounded-full border border-coast-line px-5 text-sm font-bold text-coast-deep hover:bg-coast-sage focus-visible:outline-2 focus-visible:outline-coast-blue" onClick={() => { setEditingAssessment(detail.assessment); setShowAssessmentForm(false); setShowAlertForm(false); setEditingAlert(null) }} type="button">Edit draft</button>}
                           {canSubmitAssessment && <button className="min-h-11 rounded-full bg-coast-deep px-5 text-sm font-extrabold text-white hover:bg-coast-blue focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coast-blue" onClick={() => setAssessmentConfirmation({ assessment: detail.assessment, action: 'submit' })} type="button">{section === 'all' ? 'Submit for review' : 'Publish assessment'}</button>}
@@ -434,7 +520,8 @@ function CoastalOperationsWorkspace({ user, section, origin }: { user: AuthUser 
                           {(canReadStatus || canReadHistory) && <div><h4 className="font-bold">Operational status and history</h4>{targetError && <p className="mt-2 text-xs leading-5 text-coast-muted">{targetError}</p>}{canReadStatus && targetStatus && <div className="mt-3 flex flex-wrap items-center gap-3 rounded-2xl bg-coast-sage p-4"><StatusPill value={targetStatus.operationalState} /><span className="text-xs text-coast-muted">Updated {formatDate(targetStatus.updatedAt)}</span></div>}{canReadHistory && <ul className="mt-3 grid gap-2">{targetHistory.length === 0 ? <li className="text-sm text-coast-muted">No operational state changes have been recorded.</li> : targetHistory.map((item) => <li className="rounded-2xl border border-coast-line p-3 text-sm" key={item.historyId}><span className="font-bold">{label(item.previousState)} → {label(item.newState)}</span><span className="ml-2 text-xs text-coast-muted">{formatDate(item.createdAt)}</span></li>)}</ul>}</div>}
                         </div>
                       </div>}
-                    </div> }
+                    </div>
+  }
   function renderAlertCard(alert: CoastalAlert) { return <OperationsRecordCard key={alert.alertId} record={alert} onOpen={selectedAlertId === alert.alertId ? undefined : () => { rememberOrigin(); setSelectedAlert(null); setAlertDetailError(null); setSelectedAlertId(alert.alertId) }} activity={canReadAudit && <><button className="mt-4 min-h-11 rounded-full border border-coast-line px-4 text-sm font-bold" onClick={() => setActiveAlertActivity((value) => value === alert.alertId ? null : alert.alertId)} type="button">{activeAlertActivity === alert.alertId ? 'Hide activity' : 'View activity'}</button>{activeAlertActivity === alert.alertId && <OperationsActivity key={`${alert.alertId}:${refreshKey}`} id={alert.alertId} kind="alert" revision={refreshKey} showReference={origin === 'logs'} />}</>}>
                     {origin !== 'logs' && (canUpdateAlerts && alert.lifecycle === 'PROPOSED' || canDeleteAlerts && alert.lifecycle === 'PROPOSED' || canPublishAlerts && alert.lifecycle === 'PROPOSED' || canResolveAlerts && alert.lifecycle === 'ACTIVE') && <div className="mt-4 flex flex-wrap gap-2">
                       {canUpdateAlerts && alert.lifecycle === 'PROPOSED' && <button className="min-h-10 rounded-full border border-coast-line px-4 text-xs font-bold text-coast-deep hover:bg-coast-sage focus-visible:outline-2 focus-visible:outline-coast-blue" onClick={() => { setShowAlertForm(false); setEditingAlert(alert); setShowAssessmentForm(false); setEditingAssessment(null) }} type="button">Edit draft</button>}

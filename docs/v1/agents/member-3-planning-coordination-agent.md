@@ -2,7 +2,7 @@
 contract_id: v1.agent.planning-coordination
 contract_type: agent_role
 release: v1
-implementation_status: target_not_implemented
+implementation_status: partial_implementation
 owner_label: member_3
 owner_full_name: "Adithya Gunawardana"
 owner_github_username: "AdithyaGunawardana"
@@ -14,9 +14,19 @@ business_component: "../components/member-3-smart-coastal-planner-itinerary-mana
 
 # Adithya Gunawardana (Member 3) — Planning & Coordination Agent
 
-**Target status:** no executable v1 planner, orchestration runtime or agent
-tools are present in the current foundation. This is the workflow coordinator
-contract, not an implementation claim.
+**Implementation status (2026-10-13):** partial executable implementation is
+checked in under `services/agents/planning-coordination`. It validates a bounded
+structured plan, delegates to configured specialist endpoints, validates
+response identity/provenance and persists structured execution checkpoints
+through Planner. All four role runtimes have provisional source in the current
+checkout; the Planning role-local suite reports 24 passing tests. Specialist
+envelope compatibility, integrated live execution, provider/data-handling
+approval and release evaluation remain open. This contract remains the target
+specification.
+
+Gemini uses the Google `generateContent` REST endpoint with Planning-specific
+configuration and `x-goog-api-key` authentication. Runtime calls remain opt-in
+while shared AI-00 and provider data-handling decisions are pending.
 
 **Assigned owner:** Adithya Gunawardana (`@AdithyaGunawardana`), requirement
 trace label Member 3. Component branch: `features/coastal-planner`; actual
@@ -24,14 +34,19 @@ agent branch, after G07: `agentic-ai/planning-coordination`.
 
 **Owning business component:** [Smart Coastal Planner & Itinerary Management](../components/member-3-smart-coastal-planner-itinerary-management.md).
 
-**Implementation sequence:** do not implement an executable agent, model
-call or tool before all four business components pass G07. After that gate,
-follow the post-G07 sequence in the [member branch and integration workflow](../member-branch-workflow.md),
-including the validated specialist-output handoff from Ushan Srinuka and Sanuda Abeysinghe.
-Before G07, the owning Adithya Gunawardana (Member 3) feature branch prepares only the public
-business workflow, private backend adapter and not-connected/unavailable
-behavior defined in the [member integration boundary](../agentic-ai-integration-boundary.md).
-Implement this actual planner agent on an `agentic-ai/**` branch after G07.
+**Implementation sequence and status:** G00 and G07 acceptance are recorded
+per Adithya Gunawardana's 2026-10-13 team-owner report; meeting minutes and
+signatures are not in the repository. The current checkout contains a
+provisional Planner runtime, but shared AI-00 provider, schema and
+data-handling decisions remain pending; Gemini calls stay opt-in. The
+assigned Agentic AI branch is `agentic-ai/planning-coordination`; source
+presence here does not establish branch acceptance, compatible specialist
+envelopes or integrated workflow readiness. Follow the current dependencies
+in the [member branch and integration workflow](../member-branch-workflow.md),
+including the validated specialist-output handoff from Ushan Srinuka and
+Sanuda Abeysinghe. The feature-branch business workflow and not-connected /
+unavailable behavior remain defined by the
+[member integration boundary](../agentic-ai-integration-boundary.md).
 
 ## 1. Responsibility and distinction
 

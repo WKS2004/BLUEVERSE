@@ -6,6 +6,13 @@ and the [member branch workflow](../member-branch-workflow.md).
 
 **Status:** Accepted for Member 2's component scope on 2026-09-27.
 
+**Shared G00 update — 2026-10-13:** Adithya Gunawardana reports that the team
+agreed in a meeting to finalize the current four component contracts and move
+to Agentic AI deployment. This records shared G00 ratification as reported by
+Adithya; meeting minutes and individual signatures were not supplied here.
+This supersedes earlier shared-G00-pending statements. G07 and live provider
+validation remain separate gates.
+
 **Owner:** Sanuda Abeysinghe (`@sanudaabey`) — frozen trace label Member 2.
 Feature branch: `features/marine-safety`; paired Agentic AI branch
 `agentic-ai/marine-conditions` remains post-G07.

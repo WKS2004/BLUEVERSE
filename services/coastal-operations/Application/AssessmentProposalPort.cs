@@ -9,7 +9,10 @@ public enum AssessmentAiAvailability
     Available
 }
 
-public sealed record ProposalDispatchOutcome(string Outcome, bool Retryable);
+public sealed record ProposalDispatchOutcome(
+    string Outcome,
+    bool Retryable,
+    AssessmentAgentExecutionSummaryResponse? Summary = null);
 
 /// <summary>
 /// Private, typed seam for the future Agentic AI runtime. Before G07 the

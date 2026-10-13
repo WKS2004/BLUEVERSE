@@ -1,9 +1,12 @@
 # Agentic AI implementation blueprint — v1
 
-**Status:** target specification and implementation checklist. The repository
-does not yet contain the v1 Agentic AI runtime, executable agents, production
-tools, or model integration. This document describes what the team must build
-and decide; it is not evidence that any item is implemented.
+**Status:** target specification and implementation checklist. Partial private
+runtimes for all four roles are present under `services/agents`, with a
+Gemini egress proxy and DHI Compose profile. Cross-agent response contracts,
+the approved shared provider/model and data-handling decisions, production
+workflow integration and golden evaluation remain incomplete. This document
+describes remaining work and decisions; it is not evidence that end-to-end AI
+behavior is ready.
 
 **Scope:** the four v1 responsibilities and workflows in
 [`PROJECT_REQUIREMENTS.md`](../../PROJECT_REQUIREMENTS.md), the four
@@ -42,7 +45,7 @@ tools, orchestration, agents or AI-owned execution state. See the
 
 | Term | Meaning in this project | Authority and limit |
 |---|---|---|
-| **Foundation language model / LLM** | A model used to interpret natural-language objectives and produce role-scoped structured plans, reports, or proposals. | Its output is untrusted. It does not own domain facts, permissions, safety thresholds, approval, or protected writes. The provider and model are not selected yet. |
+| **Foundation language model / LLM** | A model used to interpret natural-language objectives and produce role-scoped structured plans, reports, or proposals. | Its output is untrusted. It does not own domain facts, permissions, safety thresholds, approval, or protected writes. No provider/model is approved by shared AI-00; the current adapters provisionally target Gemini. |
 | **Agent** | A configured role consisting of a responsibility, versioned input/output contract, instructions, allowlisted tools, limits, and workflow participation. | Distinctness comes from real role behavior and visible participation, not different names or copied prompts. Roles may use the same compatible model. |
 | **Orchestrator** | The runtime that creates a plan, dispatches approved agent steps, validates handoffs, tracks dependencies, persists progress, and recovers or fails safely. | It may be a framework or project-owned code. That choice is open in [ADR-0007](../adr/ADR-0007-agentic-ai-framework.md). |
 | **Tool** | A narrowly scoped server-side operation with a fixed schema that reads approved BLUEVERSE evidence or invokes a specifically authorized workflow capability. | Tools are explicitly allowlisted per agent, validated, least-privileged, time-bounded, and audited. Agents cannot invent tools or call arbitrary networks. |

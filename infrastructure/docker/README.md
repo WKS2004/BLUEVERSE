@@ -10,7 +10,7 @@ Custom Dockerfiles remain here so application codebases can stay close to their 
 - `coastal-planner/` — ASP.NET Core Coastal Planner service
 - `experience-biodiversity/` — ASP.NET Core Experience & Biodiversity service
 - `marine-safety/` — ASP.NET Core Marine Safety service
-- `agentic-ai/` — four private Python runtime image shells for the paired v1 agent roles
+- `agentic-ai/` — four opt-in private Python role images and a Gemini egress proxy for the paired v1 agent roles
 - `frontend/` — React build + static Nginx runtime
 - `edge-nginx/` — local reverse proxy configuration
 
@@ -57,24 +57,35 @@ ASP.NET Core 10 runtime, and PostgreSQL 16. The ASP.NET Dockerfiles use
 multi-stage builds and exec-form runtime entry points; their health probes call
 the service's built-in `--healthcheck` mode.
 
-The four future Agentic AI images use `dhi.io/python:3.13-alpine` and are
-available under the opt-in `agentic-ai` Compose profile. They are runtime-only
-image shells: no agent source, dependencies, listener, health endpoint, model
-configuration or tool implementation is included. Their default command only
-prints the Python version and exits. Build them with:
+Agentic AI images use `dhi.io/python:3.13-alpine` under the opt-in
+`agentic-ai` Compose profile. Each of the four agent roles has a private
+runtime, and one Gemini egress proxy is included. Each role reads only its own
+Gemini API key environment variable; no key is passed to the proxy or backend.
+Model calls and Planner dispatch are disabled by default. Safety & Operations
+additionally requires explicit data-handling approval. Build the images with:
 
 ```sh
 docker compose --profile agentic-ai build \
   agent-experience-biodiversity \
   agent-marine-conditions \
   agent-planning-coordination \
-  agent-safety-operations
+  agent-safety-operations \
+  gemini-egress-proxy
 ```
 
-All four services join only the internal Docker network and publish no host
-ports. Keep them out of runtime deployments until G07 is accepted and their
-assigned `agentic-ai/**` branches add the executable workloads and reviewed
-health/readiness behavior.
+All agent containers are attached only to the internal network and publish no
+host ports. Experience & Biodiversity, Marine Conditions and Planning use
+`HTTPS_PROXY` and `https_proxy` for `http://gemini-egress-proxy:3128`; Safety
+uses its explicit scoped proxy transport. The proxy alone is dual-homed on the
+internal network and outbound bridge, accepts CONNECT only to
+`generativelanguage.googleapis.com:443`, and receives no API key. This is the
+only agentic service with outbound network access. Marine Conditions' direct
+Open-Meteo sourcing is blocked under this policy pending Member 2 service
+mediation; no direct egress bypass is allowed. Planning & Coordination and
+Safety & Operations expose private liveness, readiness and dispatch routes;
+Experience & Biodiversity and Marine Conditions retain namespaced private
+specialist routes. AI-00 provider approval, shared specialist contract
+alignment and the full target workflow remain open.
 
 Every ASP.NET backend service should keep its Dockerfile in a matching directory under `infrastructure/docker/<service-name>/Dockerfile`. The Docker backend workflow discovers first-level ASP.NET services under `services`, builds the public `api` service first, and then builds the remaining services one by one.
 

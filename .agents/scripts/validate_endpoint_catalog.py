@@ -9,6 +9,7 @@ an error rather than a reason to silently trust stale documentation.
 from __future__ import annotations
 
 import json
+import ast
 import re
 import sys
 from pathlib import Path
@@ -77,7 +78,7 @@ def _sources(value: Any) -> Iterable[str]:
 
 def _all_catalog_entries(catalog: dict[str, Any]) -> list[dict[str, Any]]:
     entries: list[dict[str, Any]] = []
-    for section in ("publicApiEndpoints", "testOnlyEndpoints"):
+    for section in ("publicApiEndpoints", "internalServiceEndpoints", "testOnlyEndpoints"):
         values = catalog.get(section, [])
         if isinstance(values, list):
             entries.extend(item for item in values if isinstance(item, dict))
@@ -94,6 +95,7 @@ def _validate_catalog_shape(
         errors.append("docs/api/endpoint-catalog.json must use schema 1")
 
     public = catalog.get("publicApiEndpoints")
+    internal = catalog.get("internalServiceEndpoints", [])
     test_only = catalog.get("testOnlyEndpoints")
     frontend = catalog.get("frontendRoutes")
     gateway = catalog.get("gatewayRoutes")
@@ -103,13 +105,16 @@ def _validate_catalog_shape(
     if not isinstance(test_only, list):
         errors.append("catalog testOnlyEndpoints must be a list")
         test_only = []
+    if not isinstance(internal, list):
+        errors.append("catalog internalServiceEndpoints must be a list")
+        internal = []
     if not isinstance(frontend, list) or not frontend:
         errors.append("catalog frontendRoutes must be a non-empty list")
         frontend = []
     if not isinstance(gateway, list) or not gateway:
         errors.append("catalog gatewayRoutes must be a non-empty list")
 
-    for section in ("publicApiEndpoints", "testOnlyEndpoints", "frontendRoutes", "gatewayRoutes"):
+    for section in ("publicApiEndpoints", "internalServiceEndpoints", "testOnlyEndpoints", "frontendRoutes", "gatewayRoutes"):
         values = catalog.get(section)
         if isinstance(values, list) and any(not isinstance(value, dict) for value in values):
             errors.append(f"{section} entries must be objects")
@@ -353,6 +358,8 @@ def _authorization(
         # authorization policy. Preserve that all-of relationship in the
         # catalog rather than flattening it to a single permission.
         return "permission:all(" + ",".join(permissions) + ")"
+    if re.search(r"\[\s*ServiceKeyRequired\s*\]", attributes):
+        return "service-key"
     if re.search(r"\[\s*Authorize\s*\(", attributes):
         errors.append(f"unsupported authorization options in {source}; extend source validation")
     return "authenticated" if re.search(r"\[\s*Authorize\b", attributes) else "anonymous"
@@ -424,11 +431,14 @@ def discover_endpoints(repo_root: Path, errors: list[str]) -> dict[tuple[str, st
         seen_http = 0
 
         def record(method: str, path: str, auth: str, operation: str = "") -> None:
+            route_section = section
+            if section == "publicApiEndpoints" and path.startswith("/internal/"):
+                route_section = "internalServiceEndpoints"
             key = (source_name, method, _normalise_path(path))
             if key in endpoints:
                 errors.append(f"duplicate source route: {key}")
             endpoints[key] = {
-                "section": section, "auth": auth, "ownerService": owner,
+                "section": route_section, "auth": auth, "ownerService": owner,
                 "operationId": operation,
             }
 
@@ -504,6 +514,136 @@ def discover_endpoints(repo_root: Path, errors: list[str]) -> dict[tuple[str, st
         ):
             for match in re.finditer(pattern, text):
                 record("GET", match.group(1), "anonymous")
+    ai_roots = ("ai", "ai-agents", "agents")
+    for root_name in ai_roots:
+        for source in sorted((repo_root / "services" / root_name).rglob("*.py")):
+            parts = source.relative_to(repo_root).parts
+            if "tests" in (part.lower() for part in parts):
+                continue
+            source_name = source.relative_to(repo_root).as_posix()
+            text = source.read_text(encoding="utf-8-sig")
+            try:
+                module = ast.parse(text, filename=source_name)
+            except SyntaxError as exc:
+                errors.append(f"invalid Python syntax in Agentic AI source {source_name}: {exc}")
+                continue
+
+            module_strings: dict[str, str | tuple[str, ...]] = {}
+
+            def literal_strings(node: ast.AST) -> str | tuple[str, ...] | None:
+                if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                    return node.value
+                if isinstance(node, (ast.Tuple, ast.List, ast.Set)):
+                    values = [literal_strings(item) for item in node.elts]
+                    if all(isinstance(item, str) for item in values):
+                        return tuple(values)  # type: ignore[arg-type]
+                if isinstance(node, ast.Name):
+                    return module_strings.get(node.id)
+                return None
+
+            for statement in module.body:
+                if isinstance(statement, (ast.Assign, ast.AnnAssign)):
+                    targets = statement.targets if isinstance(statement, ast.Assign) else [statement.target]
+                    value = literal_strings(statement.value) if statement.value is not None else None
+                    if isinstance(value, str):
+                        for target in targets:
+                            if isinstance(target, ast.Name):
+                                module_strings[target.id] = value
+
+            def auth_for(node: ast.AST, fallback: str = "anonymous") -> str:
+                names = {item.id for item in ast.walk(node) if isinstance(item, ast.Name)}
+                attributes = {item.attr for item in ast.walk(node) if isinstance(item, ast.Attribute)}
+                string_constants = {
+                    item.value for item in ast.walk(node)
+                    if isinstance(item, ast.Constant) and isinstance(item.value, str)
+                }
+                if "_authorized" in names or "_authorized" in attributes:
+                    return "service-key"
+                if "Authorization" in string_constants and any("Bearer" in value for value in string_constants):
+                    return "bearer"
+                return fallback
+
+            def routes_from_condition(
+                test: ast.AST,
+                class_strings: dict[str, str | tuple[str, ...]],
+            ) -> tuple[list[str], bool]:
+                if not isinstance(test, ast.Compare) or not test.comparators:
+                    return [], False
+                left = test.left
+                is_path = (
+                    isinstance(left, ast.Name) and left.id == "path"
+                    or isinstance(left, ast.Attribute) and left.attr == "path"
+                )
+                if not is_path:
+                    return [], False
+                routes: list[str] = []
+                is_guard = False
+                for operator, comparator in zip(test.ops, test.comparators):
+                    value: str | tuple[str, ...] | None
+                    if isinstance(comparator, ast.Attribute) and isinstance(comparator.value, ast.Name) and comparator.value.id == "self":
+                        value = class_strings.get(comparator.attr)
+                    elif isinstance(comparator, ast.Name):
+                        value = module_strings.get(comparator.id)
+                    else:
+                        value = literal_strings(comparator)
+                    if isinstance(value, str):
+                        values = (value,)
+                    elif isinstance(value, tuple):
+                        values = value
+                    else:
+                        continue
+                    routes.extend(item for item in values if item.startswith("/"))
+                    is_guard = is_guard or isinstance(operator, ast.NotEq)
+                return routes, is_guard
+
+            for class_node in (node for node in ast.walk(module) if isinstance(node, ast.ClassDef)):
+                class_strings: dict[str, str | tuple[str, ...]] = {}
+                for statement in class_node.body:
+                    if isinstance(statement, (ast.Assign, ast.AnnAssign)):
+                        targets = statement.targets if isinstance(statement, ast.Assign) else [statement.target]
+                        value = literal_strings(statement.value) if statement.value is not None else None
+                        if value is not None:
+                            for target in targets:
+                                if isinstance(target, ast.Name):
+                                    class_strings[target.id] = value
+                for method in (item for item in class_node.body if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef))):
+                    method_name = method.name.lower()
+                    if method_name not in {"do_get", "do_post", "do_put", "do_patch", "do_delete"}:
+                        continue
+                    http_method = method_name.removeprefix("do_").upper()
+                    method_auth = auth_for(method)
+                    for item in ast.walk(method):
+                        if not isinstance(item, ast.If):
+                            continue
+                        route_paths, is_guard = routes_from_condition(item.test, class_strings)
+                        if not route_paths:
+                            continue
+                        route_auth = auth_for(item) if not is_guard else auth_for(method, method_auth)
+                        for route_path in route_paths:
+                            key = (source_name, http_method, _normalise_path(route_path))
+                            endpoints[key] = {
+                                "section": "aiEndpoints",
+                                "auth": route_auth,
+                                "ownerService": parts[2] if len(parts) > 2 else "agent",
+                                "operationId": method.name,
+                            }
+
+            # Decorator metadata is the explicit route table used by the
+            # Planning & Coordination runtime and remains authoritative there.
+            for match in re.finditer(
+                r'@endpoint\("(GET|POST|PUT|PATCH|DELETE)", "([^"]+)"[^\r\n]*\)\s*\r?\n\s*def\s+(\w+)',
+                text,
+            ):
+                method, path, operation = match.groups()
+                decorator = match.group(0).splitlines()[0]
+                auth_match = re.search(r'auth="([^"]+)"', decorator)
+                auth = auth_match.group(1) if auth_match else "service-key"
+                key = (source_name, method, _normalise_path(path))
+                endpoints[key] = {
+                    "section": "aiEndpoints", "auth": auth or "service-key",
+                    "ownerService": parts[2] if len(parts) > 2 else "agent",
+                    "operationId": operation,
+                }
     return endpoints
 
 
@@ -512,6 +652,7 @@ def _validate_source_routes(catalog: dict[str, Any], errors: list[str]) -> None:
     documented: set[tuple[str, str, str]] = set()
     groups = [
         ("publicApiEndpoints", catalog.get("publicApiEndpoints", [])),
+        ("internalServiceEndpoints", catalog.get("internalServiceEndpoints", [])),
         ("testOnlyEndpoints", catalog.get("testOnlyEndpoints", [])),
         ("aiEndpoints", catalog.get("aiEndpoints", {}).get("entries", [])),
     ]
@@ -536,12 +677,18 @@ def _validate_source_routes(catalog: dict[str, Any], errors: list[str]) -> None:
                         errors.append(f"source/catalog {field} mismatch for {entry['id']}: expected {found[field]!r}")
                 if section == "publicApiEndpoints" and entry.get("publicBoundary") != "api":
                     errors.append(f"public endpoint {entry['id']} must use publicBoundary=api")
+                if section == "internalServiceEndpoints" and entry.get("publicBoundary") != "internal-service":
+                    errors.append(f"internal endpoint {entry['id']} must use publicBoundary=internal-service")
                 if section == "testOnlyEndpoints" and entry.get("publicBoundary") != "test-host":
                     errors.append(f"test endpoint {entry['id']} must use publicBoundary=test-host")
     for key in sorted(actual.keys() - documented):
         errors.append(f"implemented route is missing from endpoint catalog: {key}")
     ai_found = any(value["section"] == "aiEndpoints" for value in actual.values())
     ai = catalog["aiEndpoints"]
+    for entry in ai.get("entries", []):
+        for source in _sources(entry.get("source")):
+            if not source.startswith(("services/ai/", "services/ai-agents/", "services/agents/")):
+                errors.append(f"AI endpoint status entry {entry.get('id')} must reference an AI service source")
     expected_status = "implemented" if ai_found else "none-implemented"
     if ai.get("status") != expected_status:
         errors.append(f"AI endpoint status must be {expected_status} according to discovered routes")
@@ -701,6 +848,20 @@ def render_markdown(catalog: dict[str, Any]) -> str:
                 f"{_markdown_cell(entry['usage'])} |"
             )
         lines.append("")
+
+    lines.extend([
+        "## Private service endpoints",
+        "",
+        "These routes are private service-to-service endpoints and are not exposed through the public API gateway.",
+        "",
+        "| Method | Path | Authorization | Purpose and use |",
+        "|---|---|---|---|",
+    ])
+    for entry in catalog.get("internalServiceEndpoints", []):
+        lines.append(
+            f"| `{_markdown_cell(entry['method'])}` | `{_markdown_cell(entry['path'])}` | "
+            f"`{_markdown_cell(entry['auth'])}` | {_markdown_cell(entry['usage'])} |"
+        )
 
     lines.extend([
         "## Test host only",

@@ -8,20 +8,47 @@ blueverse_edge
   frontend
 
 blueverse_internal (internal=true)
+  edge-nginx
   api
   auth
+  coastal-operations
+  coastal-planner
+  experience-biodiversity
   marine-safety
+  it3091-fake (dev profile)
 
 blueverse_database
   auth
   marine-safety
+  coastal-operations
+  coastal-planner
+  experience-biodiversity
   postgres
+
+blueverse_gemini_internal (internal=true)
+  agent-safety-operations
+  gemini-egress-proxy
+
+blueverse_agent_egress
+  gemini-egress-proxy
 ```
 
 The edge gateway is connected to the edge and internal networks so it can
 receive host traffic and proxy to internal services. Auth and marine-safety
 also use the separate database network with PostgreSQL. The API reaches both
 through `blueverse_internal` and has no PostgreSQL credential.
+
+Marine Safety can reach Open-Meteo because `blueverse_database` is a regular
+bridge network with outbound access. The optional Safety Operations agent does
+not join that shared network: it joins the dedicated internal
+`blueverse_gemini_internal` network with `gemini-egress-proxy`. The proxy alone
+also joins `blueverse_agent_egress`; it accepts CONNECT only for
+`generativelanguage.googleapis.com:443`, resolves and pins a public address,
+and relays the agent's end-to-end TLS connection. The API key remains inside
+that TLS connection and is available only to the agent container. The proxy
+has no published host port, logs no tunnel content, and other Compose services
+are not connected to its private listener. See
+[ADR-0028](../adr/ADR-0028-gemini-egress-boundary.md).
 
 ## Routing
 

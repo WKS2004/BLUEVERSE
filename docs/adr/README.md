@@ -31,6 +31,7 @@ ADRs capture significant architectural decisions and their rationale.
 25. `ADR-0025-coastal-assessment-publication-dispatch.md`
 26. `ADR-0026-coastal-draft-evidence-removal.md`
 27. `ADR-0027-coastal-detailed-audit-snapshots.md`
+28. `ADR-0028-gemini-egress-boundary.md`
 
 Some decisions remain **Proposed / Pending implementation choice** because the foundation does not invent decisions that have not yet been made.
 
@@ -78,3 +79,4 @@ and separate client pages. It preserves the disconnected pre-G07 port.
 - [ADR-0026: Coastal draft evidence removal](ADR-0026-coastal-draft-evidence-removal.md) — retained audit metadata, draft-only mutation and durable content cleanup.
 
 - [ADR-0027: Coastal detailed activity snapshots](ADR-0027-coastal-detailed-audit-snapshots.md) — atomic field history and verified signed display identity.
+- [ADR-0028: Gemini model egress boundary](ADR-0028-gemini-egress-boundary.md) — private-agent-only CONNECT proxy, fixed Gemini host allowlist and end-to-end TLS.

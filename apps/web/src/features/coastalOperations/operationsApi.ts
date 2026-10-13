@@ -45,6 +45,48 @@ export type Evidence = {
   expiresAt: string
 }
 
+export type AssessmentAgentStep = {
+  agentId: string
+  status: string
+  summary: string | null
+  sourceReferences: string[]
+  uncertaintyNotes: string[]
+  errorCode?: string | null
+}
+
+export type AssessmentSafetyProposal = {
+  assessmentId: string
+  targetId: string
+  targetStateVersion: number
+  recommendation: string
+  proposedAction: string | null
+  summary: string
+  evidenceReferences: string[]
+  uncertainties: string[]
+  reviewSuggestion: string
+  producedAtUtc: string
+}
+
+export type AssessmentAgentExecutionSummary = {
+  status: string
+  objectiveSummary: string
+  steps: AssessmentAgentStep[]
+  safetyProposal: AssessmentSafetyProposal | null
+}
+
+export type AssessmentProposal = {
+  proposalId: string
+  proposalVersion: number
+  validationStatus: string
+  targetType: CoastalTargetType
+  targetId: string
+  proposedState: string | null
+  expectedTargetStateVersion: number | null
+  requiresSeparateReviewer: boolean
+  expiresAt: string
+  createdAt: string
+}
+
 export type AssessmentDetail = {
   assessment: Assessment
   decisions: Array<{
@@ -55,6 +97,8 @@ export type AssessmentDetail = {
     explanation: string | null
   }>
   evidence: Evidence[]
+  proposals?: AssessmentProposal[]
+  agentExecutionSummary?: AssessmentAgentExecutionSummary | null
 }
 
 export type CoastalPage<T> = { items: T[]; nextCursor: string | null }
@@ -168,6 +212,44 @@ function publicApiOptions(init: RequestInit = {}): RequestInit {
   }
 }
 
+function object(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function stringList(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string' && item.length <= 1000)
+}
+
+function validSafetyProposal(value: unknown): value is AssessmentSafetyProposal {
+  return object(value) && typeof value.assessmentId === 'string' && typeof value.targetId === 'string' &&
+    typeof value.targetStateVersion === 'number' && Number.isInteger(value.targetStateVersion) &&
+    typeof value.recommendation === 'string' && value.recommendation.length <= 100 &&
+    (value.proposedAction === null || typeof value.proposedAction === 'string' && value.proposedAction.length <= 100) &&
+    typeof value.summary === 'string' && value.summary.length <= 2000 && stringList(value.evidenceReferences) &&
+    stringList(value.uncertainties) && typeof value.reviewSuggestion === 'string' && value.reviewSuggestion.length <= 2000 &&
+    typeof value.producedAtUtc === 'string' && Number.isFinite(Date.parse(value.producedAtUtc))
+}
+
+function validAgentSummary(value: unknown): value is AssessmentAgentExecutionSummary {
+  return object(value) && typeof value.status === 'string' && value.status.length <= 100 &&
+    typeof value.objectiveSummary === 'string' && value.objectiveSummary.length <= 2000 &&
+    Array.isArray(value.steps) && value.steps.length <= 12 && value.steps.every((step) => object(step) &&
+      typeof step.agentId === 'string' && step.agentId.length <= 100 && typeof step.status === 'string' && step.status.length <= 100 &&
+      (step.summary === null || typeof step.summary === 'string' && step.summary.length <= 2000) &&
+      stringList(step.sourceReferences) && stringList(step.uncertaintyNotes) &&
+      (step.errorCode === undefined || step.errorCode === null || typeof step.errorCode === 'string' && step.errorCode.length <= 100)) &&
+    (value.safetyProposal === null || value.safetyProposal === undefined || validSafetyProposal(value.safetyProposal))
+}
+
+function validAssessmentProposal(value: unknown): value is AssessmentProposal {
+  return object(value) && typeof value.proposalId === 'string' && typeof value.proposalVersion === 'number' && Number.isInteger(value.proposalVersion) &&
+    typeof value.validationStatus === 'string' && ['DESTINATION', 'ACTIVITY', 'OFFERING', 'SESSION'].includes(String(value.targetType)) &&
+    typeof value.targetId === 'string' && (value.proposedState === null || typeof value.proposedState === 'string') &&
+    (value.expectedTargetStateVersion === null || typeof value.expectedTargetStateVersion === 'number' && Number.isInteger(value.expectedTargetStateVersion)) &&
+    typeof value.requiresSeparateReviewer === 'boolean' && typeof value.expiresAt === 'string' && Number.isFinite(Date.parse(value.expiresAt)) &&
+    typeof value.createdAt === 'string' && Number.isFinite(Date.parse(value.createdAt))
+}
+
 async function request<T>(send: () => Promise<Response>, quiet = false): Promise<T> {
   const operation = async () => {
     let response: Response
@@ -240,8 +322,14 @@ export function submitAssessmentDraft(assessmentId: string, expectedVersion: num
   return request<Assessment>(() => fetch('/api/operations/assessments/{assessmentId:guid}/submit'.replace('{assessmentId:guid}', encodeURIComponent(assessmentId)), publicApiOptions(jsonOptions('POST', { expectedVersion }, idempotencyKey()))))
 }
 
-export function getAssessmentDetail(assessmentId: string, options: { quiet?: boolean; signal?: AbortSignal } = {}) {
-  return request<AssessmentDetail>(() => fetch('/api/operations/assessments/{assessmentId:guid}'.replace('{assessmentId:guid}', encodeURIComponent(assessmentId)), publicApiOptions({ signal: options.signal })), options.quiet)
+export async function getAssessmentDetail(assessmentId: string, options: { quiet?: boolean; signal?: AbortSignal } = {}): Promise<AssessmentDetail> {
+  const detail = await request<AssessmentDetail>(() => fetch('/api/operations/assessments/{assessmentId:guid}'.replace('{assessmentId:guid}', encodeURIComponent(assessmentId)), publicApiOptions({ signal: options.signal })), options.quiet)
+  const raw = detail as unknown as Record<string, unknown>
+  if ((raw.agentExecutionSummary !== undefined && raw.agentExecutionSummary !== null && !validAgentSummary(raw.agentExecutionSummary)) ||
+    (raw.proposals !== undefined && (!Array.isArray(raw.proposals) || !raw.proposals.every(validAssessmentProposal)))) {
+    throw new CoastalOperationsApiError(502, friendlyMessage(502))
+  }
+  return detail
 }
 
 export function uploadAssessmentEvidence(assessmentId: string, image: File) {

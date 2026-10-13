@@ -99,7 +99,9 @@ public sealed record ReviewerDecisionResponse(
 public sealed record AssessmentDetailResponse(
     AssessmentResponse Assessment,
     IReadOnlyList<ReviewerDecisionResponse> Decisions,
-    IReadOnlyList<AssessmentEvidenceResponse> Evidence);
+    IReadOnlyList<AssessmentEvidenceResponse> Evidence,
+    IReadOnlyList<AssessmentProposalResponse>? Proposals = null,
+    AssessmentAgentExecutionSummaryResponse? AgentExecutionSummary = null);
 
 public sealed record AssessmentEvidenceResponse(
     Guid EvidenceId,

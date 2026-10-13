@@ -214,6 +214,8 @@ the smaller shared-client workflow contract.
 | `PATCH` | `/api/experiences/activities/{id:guid}/publication` | `permission:experiences.catalogue.manage` | Transitions an activity publication status with evaluation rules and audit reasons. Publishes, unpublishes, or archives an activity following lifecycle validation. |
 | `POST` | `/api/experiences/activities/{id:guid}/publication-evaluations` | `permission:experiences.catalogue.manage` | Evaluates whether an activity meets publication readiness without applying changes. Pre-flight validation checks before publishing an activity. |
 | `GET` | `/api/experiences/agent/context` | `authenticated` | Read-only private Agentic AI typed seam reporting component context and not-connected status. Pre-G07 integration seam providing typed schema and safe degradation for future AI orchestration. |
+| `GET` | `/api/experiences/agent/info` | `permission:experiences.catalogue.read` | Inspects the Coastal Experience & Biodiversity Agent runtime status, Google AI Studio Gemini model configuration, and allowlisted read-only tools. Namespaced under /api/experiences/agent/info so Member 1–4 agents have zero route collisions; returns live agent metadata when connected or safe not_connected fallback when offline. |
+| `POST` | `/api/experiences/agent/context-reports` | `permission:experiences.catalogue.read` | Generates a validated, read-only Coastal Experience & Biodiversity Agent context report with optional Google AI Studio Gemini synthesis. Validates workflowId, stepId, objective, and selectors, then invokes /api/experiences/agent/context-reports on the private agent runtime with safe not_connected/unavailable fallback. |
 | `POST` | `/api/experiences/availability/evaluations` | `permission:experiences.catalogue.read` | Evaluates real-time offering availability against schedule coverage, capacity, and operational status. Core non-CRUD business operation called by clients and booking workflows to verify experience availability. |
 | `GET` | `/api/experiences/destinations/{id:guid}/biodiversity` | `anonymous` | Consumes biodiversity data for a destination with safe degradation when Member 3 ML is unavailable. Retrieves ecological insights and species discovery information for coastal destinations. |
 | `GET` | `/api/experiences/destinations` | `anonymous` | Lists published coastal destinations or filters by region and status. Browses coastal destinations (Mirissa, Nilaveli, etc.) on web and mobile directories. |
@@ -267,6 +269,13 @@ the smaller shared-client workflow contract.
 | `GET` | `/api/marine/assessments/{id:guid}` | `permission:marine.profile.read` | Returns one persisted suitability assessment with copied condition values and its exact profile criteria and citations. Supports audit and explanation after profile changes or provider-snapshot retention; unrecoverable older evidence remains explicitly marked incomplete. Reads Marine-owned records without contacting the activity catalogue or provider. |
 | `POST` | `/api/marine/safety-profiles/{id:guid}/review` | `permission:all(marine.profile.read,marine.profile.manage)` | Reviews and activates an evidence-backed immutable safety-profile draft. A different authorized manager approves a pending version after reviewing its wind, wave and swell sources and rationales. Approval records reviewer and effective time and atomically supersedes the previous active version. Requires verified published Member 1 activity data. Unavailable catalogue returns structured ACTIVITY_DATA_UNAVAILABLE 503 with Retry-After: 5 and null data; no new draft or review result is stored. See docs/api/marine-dependency-availability.md. |
 
+## Private service endpoints
+
+These routes are private service-to-service endpoints and are not exposed through the public API gateway.
+
+| Method | Path | Authorization | Purpose and use |
+|---|---|---|---|
+| `PUT` | `/internal/agentic/executions/{workflowId:guid}` | `service-key` | Called only by the private planning-coordination service. Requires the shared service key and an existing Planner workflow; clients and the public gateway must not call this route. |
 ## Test host only
 
 These routes exist in test fixtures and are not production endpoints.
@@ -280,4 +289,29 @@ These routes exist in test fixtures and are not production endpoints.
 
 ## Agentic AI endpoints
 
-None implemented. Clients must use the public API; target architecture does not create a live route.
+| Method | Path | Use |
+|---|---|---|
+| `GET` | `/health` | Docker liveness probe; reports configuration state only and does not call Gemini. |
+| `GET` | `/api/experiences/agent/health` | Private agent availability check; configuration status does not guarantee dispatch success. |
+| `GET` | `/api/experiences/agent/info` | Private runtime inspection only; never exposed through the public gateway. |
+| `POST` | `/api/experiences/agent/context-reports` | Private specialist route; supports caller Bearer authentication and configured internal service-key authentication. Service-key requests read only the minimized published catalogue and do not impersonate a user. |
+| `POST` | `/api/experiences/agent/generate` | Private route; same validation, Bearer or internal service-key auth, and response behavior as context-reports. |
+| `GET` | `/health` | Docker liveness probe; the route does not call Gemini. |
+| `POST` | `/api/agents/marine-conditions/invocations` | Private Docker-network route. Current request/response contract is not yet compatible with Planning & Coordination’s typed specialist envelope. `/report` remains an alias. |
+| `GET` | `/health/live` | Docker liveness probe. Does not indicate model configuration or dispatch readiness. |
+| `GET` | `/internal/agentic/agents/safety-operations/health` | Planner-to-agent availability check; calls remain disabled unless configured, enabled and approved. |
+| `POST` | `/internal/agentic/agents/safety-operations/dispatch` | Private route, disabled by default. Never authorizes, approves, executes or publishes a proposed action; model output is schema-validated. |
+| `GET` | `/health/live` | Docker liveness probe. Does not indicate model, specialist, Planner database, or dispatch readiness. |
+| `GET` | `/internal/agentic/agents/planning-coordination/health` | Planner-to-agent availability check. Does not guarantee a later dispatch succeeds. |
+| `POST` | `/internal/agentic/agents/planning-coordination/dispatch` | Called by Coastal Planner after deterministic recommendation generation. Model plans are allowlist-validated; specialist outputs are identity/schema checked; failures remain explicit and cannot alter deterministic eligibility or safety outcomes. |
+| `GET` | `/api/agents/marine-conditions/health` | Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route. |
+| `GET` | `/agents/marine-conditions/health` | Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route. |
+| `GET` | `/api/health` | Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route. |
+| `GET` | `/` | Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route. |
+| `POST` | `/agents/marine-conditions/invocations` | Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route. |
+| `POST` | `/api/agents/marine-conditions/report` | Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route. |
+| `POST` | `/agents/marine-conditions/report` | Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route. |
+| `POST` | `/invocations` | Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route. |
+| `POST` | `/report` | Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route. |
+| `POST` | `/api/invocations` | Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route. |
+| `POST` | `/api/report` | Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route. |

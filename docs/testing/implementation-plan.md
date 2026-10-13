@@ -23,8 +23,8 @@ pending. The integration branch contains the v0 foundation plus Members 1–3:
 - `services/api`, `services/auth`, `services/experience-biodiversity`,
   `services/marine-safety` and `services/coastal-planner` are checked-in ASP.NET
   services with package-local test projects under their owning directories.
-- No executable Agentic AI service is present yet; the AI documentation defines
-  the target boundary and safety contract only.
+- Agentic AI services are being implemented under `services/agents`; current
+  provider, runtime, peer-contract and full-workflow decisions remain provisional.
 - Test workflows use each framework’s normal package/service test locations;
   no repository-root `test/` directory is used for authoritative cases.
 
@@ -63,7 +63,7 @@ services/<service-name>/
     ├── migrations/
     └── fixtures/
 
-services/ai/<agent-service>/
+services/agents/<agent-service>/
 ├── tests/                    pytest/unit/contract/safety/evaluation tests
 │   ├── unit/
 │   ├── integration/
@@ -77,10 +77,9 @@ A backend service may keep its `*.Tests.csproj` directly beside the service
 source when that is its package convention, but it must remain inside the
 owning `services/<service-name>` directory.
 
-`services/ai-agents/<agent-service>/tests` and
-`services/agents/<agent-service>/tests` are also supported if the selected AI
-architecture uses either of those service roots. The test workflow discovers
-all three approved AI roots. Backend integration tests belong in the owning
+`services/ai-agents/<agent-service>/tests` remains supported for legacy
+packages. The Agentic AI workflow discovers both supported roots. Backend
+integration tests belong in the owning
 service’s `tests/integration` project; cross-platform client workflows belong
 in the relevant client’s integration suite or the API service’s integration
 project. Shared fixtures should be kept in the owning package and reused only
@@ -335,7 +334,7 @@ A service is not complete when only its happy path is tested. Every endpoint
 must have at least one valid, invalid, unauthenticated and unauthorized case,
 unless the endpoint is explicitly public and the exception is documented.
 
-### 4.6 Agentic AI services (`services/ai/<agent-service>/tests`)
+### 4.6 Agentic AI services (`services/agents/<agent-service>/tests`)
 
 AI tests must validate observable behavior, structured outputs and safety
 properties. They must not assert hidden model reasoning or rely only on an

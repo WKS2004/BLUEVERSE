@@ -66,7 +66,39 @@ public record WorkflowStatusDto(
     string? ResultSummary,
     string? FailureReason,
     string AiDependencyStatus = "NOT_CONNECTED",
-    string AiExecutionStatus = "NOT_STARTED"
+    string AiExecutionStatus = "NOT_STARTED",
+    PlannerAgentExecutionSummaryDto? AiExecutionSummary = null
+);
+
+public record PlannerAgentExecutionSummaryDto(
+    string Status,
+    string ObjectiveSummary,
+    List<PlannerAgentStepDto> Steps,
+    PlannerSafetyProposalDto? SafetyProposal
+);
+
+public record PlannerAgentStepDto(
+    string AgentId,
+    string Status,
+    string? Summary,
+    int SourceCount,
+    List<string> Uncertainties,
+    List<string> SourceReferences,
+    List<string> UncertaintyNotes,
+    string? ErrorCode
+);
+
+public record PlannerSafetyProposalDto(
+    string AssessmentId,
+    string TargetId,
+    int TargetStateVersion,
+    string Recommendation,
+    string? ProposedAction,
+    string Summary,
+    List<string> EvidenceReferences,
+    List<string> Uncertainties,
+    string ReviewSuggestion,
+    DateTime ProducedAtUtc
 );
 
 public record ItineraryDto(

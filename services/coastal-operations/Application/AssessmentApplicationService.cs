@@ -294,7 +294,17 @@ public sealed class AssessmentApplicationService(
                     x.InspectionStatus, x.UploadedAt, x.ExpiresAt))
                 .ToListAsync(cancellationToken)
             : [];
-        return new AssessmentDetailResponse(ToResponse(assessment), decisions, evidence);
+        var proposals = await db.AssessmentProposals.AsNoTracking()
+            .Where(x => x.AssessmentId == assessmentId)
+            .OrderByDescending(x => x.ProposalVersion)
+            .Select(x => new AssessmentProposalResponse(
+                x.Id, x.ProposalVersion, x.ValidationStatus, x.TargetType, x.TargetId,
+                x.ProposedState, x.ExpectedTargetStateVersion, x.RequiresSeparateReviewer,
+                x.ExpiresAt, x.CreatedAt))
+            .ToListAsync(cancellationToken);
+        return new AssessmentDetailResponse(
+            ToResponse(assessment), decisions, evidence, proposals,
+            DeserializeAgentExecutionSummary(assessment.AgentExecutionSummaryJson));
     }
 
     public async Task<StoredOutcome<ReviewerDecisionResponse>> DecideAsync(
@@ -614,6 +624,19 @@ public sealed class AssessmentApplicationService(
         x.AiDependencyStatus, x.AiDispatchOutcome, x.AiDispatchRetryable,
         JsonSerializer.Deserialize<List<ComponentDependencyResult>>(x.ComponentDependenciesJson, OperationsValidation.JsonOptions) ?? [],
         x.Version, x.CreatedAt, x.UpdatedAt, x.CancelledBy, x.CancelledAt, x.Title, x.TimeZoneId, OperationsTimeZones.LocalValue(x.PeriodStartsAt, x.TimeZoneId), OperationsTimeZones.LocalValue(x.PeriodEndsAt, x.TimeZoneId));
+
+    private static AssessmentAgentExecutionSummaryResponse? DeserializeAgentExecutionSummary(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json) || json.Length > 32_768) return null;
+        try
+        {
+            return JsonSerializer.Deserialize<AssessmentAgentExecutionSummaryResponse>(json, OperationsValidation.JsonOptions);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
 
     private static void EnsureActor(Guid actorId)
     {

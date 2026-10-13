@@ -2,7 +2,7 @@
 contract_id: v1.agent.marine-conditions
 contract_type: agent_role
 release: v1
-implementation_status: target_not_implemented
+implementation_status: partial_implementation
 owner_label: member_2
 owner_full_name: "Sanuda Abeysinghe"
 owner_github_username: "sanudaabey"
@@ -14,9 +14,13 @@ business_component: "../components/member-2-marine-conditions-safety-intelligenc
 
 # Sanuda Abeysinghe (Member 2) — Marine Conditions Intelligence Agent
 
-**Target status:** the repository does not contain an executable v1 agent,
-runtime or allowlisted provider tools. This file defines its target role and
-hand-off; it does not claim that provider integration or AI inference exists.
+**Implementation status (2026-10-13):** A provisional Marine Conditions
+runtime, read-only tool handlers, deterministic validation, HTTP service
+endpoints (`GET /health`, `POST /invocations`), and a role-local suite are
+present under `services/agents/marine-conditions/`. The current local suite
+reports 54 passing tests; it does not establish cross-agent golden-workflow
+compatibility or live provider approval. Gemini uses a Marine-specific key
+and Google's `generateContent` REST endpoint, with live calls opt-in.
 
 **Assigned owner:** Sanuda Abeysinghe (`@sanudaabey`), requirement trace label
 Member 2. Component branch: `features/marine-safety`; actual agent branch,
@@ -24,15 +28,18 @@ after G07: `agentic-ai/marine-conditions`.
 
 **Owning business component:** [Marine Conditions & Safety Intelligence](../components/member-2-marine-conditions-safety-intelligence.md).
 
-**Implementation sequence:** do not implement an executable agent, model
-call or tool before all four business components pass G07. After that gate,
-follow the post-G07 sequence in the [member branch and integration workflow](../member-branch-workflow.md).
-The accepted 2026-09-27 Member 2 G00 decision defers the paired AI workflow
-contract and typed private adapter on `features/marine-safety`; that branch
-implements its marine domain workflows without claiming AI dispatch or
-availability behavior. Revisit this seam under the shared integration gates
-and accepted decisions. Implement this actual agent on an `agentic-ai/**`
-branch after G07.
+**Implementation sequence and status:** G00 and G07 acceptance are recorded
+per Adithya Gunawardana's 2026-10-13 team-owner report; meeting minutes and
+signatures are not in the repository. The current checkout contains a
+provisional agent source, but AI-00 provider, schema and data-handling
+decisions remain pending and live calls stay disabled unless explicitly
+enabled. The accepted 2026-09-27 Member 2 G00 decision defers the paired AI
+workflow contract and typed private adapter on `features/marine-safety`; that
+branch implements marine domain workflows without claiming AI dispatch or
+availability behavior. The assigned Agentic AI branch is
+`agentic-ai/marine-conditions`; source presence here does not establish branch
+acceptance or integrated compatibility. Follow the current status and gates
+in the [member branch and integration workflow](../member-branch-workflow.md).
 
 ## 1. Responsibility and role separation
 

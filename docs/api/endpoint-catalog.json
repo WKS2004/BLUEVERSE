@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "status": "active",
-  "auditedAt": "2026-10-12",
-  "purpose": "Fast, repository-local inventory of implemented frontend routes, gateway routes, public API endpoints, test-only routes, and Agentic AI endpoint status.",
+  "auditedAt": "2026-10-13",
+  "purpose": "Fast, repository-local inventory of implemented frontend routes, gateway routes, public API, private service, test-only, and Agentic AI endpoints.",
   "authority": {
     "uiWorkflowRegistry": "docs/contracts/ui-integration.json",
     "backendSources": [
@@ -11,8 +11,6 @@
       "services/coastal-planner",
       "services/marine-safety",
       "services/experience-biodiversity",
-      "services/api",
-      "services/auth",
       "services/coastal-operations"
     ],
     "gatewaySources": [
@@ -23,8 +21,6 @@
       "services/auth/Program.cs"
     ],
     "aiSources": [
-      "services/ai",
-      "services/ai-agents",
       "services/agents",
       "docs/agentic-ai"
     ]
@@ -2028,6 +2024,32 @@
       "source": "services/experience-biodiversity/Controllers/AgentSeamController.cs"
     },
     {
+      "id": "experience-agent-info",
+      "method": "GET",
+      "path": "/api/experiences/agent/info",
+      "ownerService": "experience-biodiversity",
+      "publicBoundary": "api",
+      "operationId": "GetExperienceAgentInfo",
+      "status": "implemented",
+      "auth": "permission:experiences.catalogue.read",
+      "description": "Inspects the Coastal Experience & Biodiversity Agent runtime status, Google AI Studio Gemini model configuration, and allowlisted read-only tools.",
+      "usage": "Namespaced under /api/experiences/agent/info so Member 1–4 agents have zero route collisions; returns live agent metadata when connected or safe not_connected fallback when offline.",
+      "source": "services/experience-biodiversity/Controllers/AgentSeamController.cs"
+    },
+    {
+      "id": "experience-agent-context-reports",
+      "method": "POST",
+      "path": "/api/experiences/agent/context-reports",
+      "ownerService": "experience-biodiversity",
+      "publicBoundary": "api",
+      "operationId": "GenerateExperienceAgentContextReport",
+      "status": "implemented",
+      "auth": "permission:experiences.catalogue.read",
+      "description": "Generates a validated, read-only Coastal Experience & Biodiversity Agent context report with optional Google AI Studio Gemini synthesis.",
+      "usage": "Validates workflowId, stepId, objective, and selectors, then invokes /api/experiences/agent/context-reports on the private agent runtime with safe not_connected/unavailable fallback.",
+      "source": "services/experience-biodiversity/Controllers/AgentSeamController.cs"
+    },
+    {
       "id": "experience-availability-evaluate",
       "method": "POST",
       "path": "/api/experiences/availability/evaluations",
@@ -2807,6 +2829,20 @@
       ]
     }
   ],
+  "internalServiceEndpoints": [
+    {
+      "id": "planner-agent-execution-state-write",
+      "method": "PUT",
+      "path": "/internal/agentic/executions/{workflowId:guid}",
+      "ownerService": "coastal-planner",
+      "auth": "service-key",
+      "publicBoundary": "internal-service",
+      "status": "implemented",
+      "description": "Stores minimized Agentic AI execution checkpoints in Planner-owned PostgreSQL state.",
+      "usage": "Called only by the private planning-coordination service. Requires the shared service key and an existing Planner workflow; clients and the public gateway must not call this route.",
+      "source": "services/coastal-planner/Controllers/AgentExecutionStateController.cs"
+    }
+  ],
   "testOnlyEndpoints": [
     {
       "id": "api-test-errors",
@@ -2854,18 +2890,305 @@
     }
   ],
   "aiEndpoints": {
-    "status": "none-implemented",
+    "status": "implemented",
     "clientAccess": "forbidden",
     "sourceDirectories": [
-      "services/ai",
-      "services/ai-agents",
       "services/agents"
     ],
     "documentationSources": [
       "docs/agentic-ai"
     ],
-    "entries": [],
-    "notes": "The repository contains Agentic AI architecture and workflow documentation plus runtime-only DHI Python image shells under the opt-in Compose profile; it has no executable AI service, agent or AI API endpoint. Do not invent or expose target routes. When an AI service is implemented, add each endpoint here and keep clients behind the public API boundary."
+    "entries": [
+      {
+        "id": "agent-experience-biodiversity-live",
+        "method": "GET",
+        "path": "/health",
+        "ownerService": "experience-biodiversity",
+        "auth": "anonymous",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Container liveness for the Experience & Biodiversity specialist.",
+        "usage": "Docker liveness probe; reports configuration state only and does not call Gemini.",
+        "source": "services/agents/experience-biodiversity/src/blueverse_experience_agent/server.py"
+      },
+      {
+        "id": "agent-experience-biodiversity-health",
+        "method": "GET",
+        "path": "/api/experiences/agent/health",
+        "ownerService": "experience-biodiversity",
+        "auth": "anonymous",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Namespaced specialist health and provider configuration status.",
+        "usage": "Private agent availability check; configuration status does not guarantee dispatch success.",
+        "source": "services/agents/experience-biodiversity/src/blueverse_experience_agent/server.py"
+      },
+      {
+        "id": "agent-experience-biodiversity-info",
+        "method": "GET",
+        "path": "/api/experiences/agent/info",
+        "ownerService": "experience-biodiversity",
+        "auth": "anonymous",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Returns specialist identity, bounded tool names and model configuration status.",
+        "usage": "Private runtime inspection only; never exposed through the public gateway.",
+        "source": "services/agents/experience-biodiversity/src/blueverse_experience_agent/server.py"
+      },
+      {
+        "id": "agent-experience-biodiversity-context-report",
+        "method": "POST",
+        "path": "/api/experiences/agent/context-reports",
+        "ownerService": "experience-biodiversity",
+        "auth": "bearer",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Validates a bounded input and returns a read-only experience and biodiversity context report.",
+        "usage": "Private specialist route; supports caller Bearer authentication and configured internal service-key authentication. Service-key requests read only the minimized published catalogue and do not impersonate a user.",
+        "source": "services/agents/experience-biodiversity/src/blueverse_experience_agent/server.py"
+      },
+      {
+        "id": "agent-experience-biodiversity-generate-alias",
+        "method": "POST",
+        "path": "/api/experiences/agent/generate",
+        "ownerService": "experience-biodiversity",
+        "auth": "bearer",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Compatibility alias for the read-only Experience & Biodiversity context report route.",
+        "usage": "Private route; same validation, Bearer or internal service-key auth, and response behavior as context-reports.",
+        "source": "services/agents/experience-biodiversity/src/blueverse_experience_agent/server.py"
+      },
+      {
+        "id": "marine-conditions-live",
+        "method": "GET",
+        "path": "/health",
+        "ownerService": "marine-conditions",
+        "auth": "anonymous",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Container liveness for the Marine Conditions specialist.",
+        "usage": "Docker liveness probe; the route does not call Gemini.",
+        "source": "services/agents/marine-conditions/app.py"
+      },
+      {
+        "id": "marine-conditions-dispatch",
+        "method": "POST",
+        "path": "/api/agents/marine-conditions/invocations",
+        "ownerService": "marine-conditions",
+        "auth": "anonymous",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Runs one validated marine conditions assessment and returns evidence with deterministic suitability.",
+        "usage": "Private Docker-network route. Current request/response contract is not yet compatible with Planning & Coordination’s typed specialist envelope. `/report` remains an alias.",
+        "source": "services/agents/marine-conditions/app.py"
+      },
+      {
+        "id": "safety-operations-live",
+        "method": "GET",
+        "path": "/health/live",
+        "ownerService": "safety-operations",
+        "auth": "anonymous",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Process liveness only.",
+        "usage": "Docker liveness probe. Does not indicate model configuration or dispatch readiness.",
+        "source": "services/agents/safety-operations/src/blueverse_safety_operations/server.py"
+      },
+      {
+        "id": "safety-operations-readiness",
+        "method": "GET",
+        "path": "/internal/agentic/agents/safety-operations/health",
+        "ownerService": "safety-operations",
+        "auth": "service-key",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Reports coarse private runtime and model availability.",
+        "usage": "Planner-to-agent availability check; calls remain disabled unless configured, enabled and approved.",
+        "source": "services/agents/safety-operations/src/blueverse_safety_operations/server.py"
+      },
+      {
+        "id": "safety-operations-dispatch",
+        "method": "POST",
+        "path": "/internal/agentic/agents/safety-operations/dispatch",
+        "ownerService": "safety-operations",
+        "auth": "service-key",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Validates a bounded assessment input and returns a proposal-only Safety & Operations recommendation.",
+        "usage": "Private route, disabled by default. Never authorizes, approves, executes or publishes a proposed action; model output is schema-validated.",
+        "source": "services/agents/safety-operations/src/blueverse_safety_operations/server.py"
+      },
+      {
+        "id": "planning-coordination-live",
+        "method": "GET",
+        "path": "/health/live",
+        "ownerService": "planning-coordination",
+        "auth": "anonymous",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Process liveness only.",
+        "usage": "Docker liveness probe. Does not indicate model, specialist, Planner database, or dispatch readiness.",
+        "source": "services/agents/planning-coordination/planning_coordination/service.py"
+      },
+      {
+        "id": "planning-coordination-readiness",
+        "method": "GET",
+        "path": "/internal/agentic/agents/planning-coordination/health",
+        "ownerService": "planning-coordination",
+        "auth": "service-key",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Reports coarse private model/runtime configuration readiness.",
+        "usage": "Planner-to-agent availability check. Does not guarantee a later dispatch succeeds.",
+        "source": "services/agents/planning-coordination/planning_coordination/service.py"
+      },
+      {
+        "id": "planning-coordination-dispatch",
+        "method": "POST",
+        "path": "/internal/agentic/agents/planning-coordination/dispatch",
+        "ownerService": "planning-coordination",
+        "auth": "service-key",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Validates and coordinates one bounded planner execution using configured specialist roles.",
+        "usage": "Called by Coastal Planner after deterministic recommendation generation. Model plans are allowlist-validated; specialist outputs are identity/schema checked; failures remain explicit and cannot alter deterministic eligibility or safety outcomes.",
+        "source": "services/agents/planning-coordination/planning_coordination/service.py"
+      },
+      {
+        "id": "marine-conditions-health-namespaced",
+        "method": "GET",
+        "path": "/api/agents/marine-conditions/health",
+        "ownerService": "marine-conditions",
+        "auth": "anonymous",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Private namespaced liveness alias for the Marine Conditions specialist.",
+        "usage": "Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route.",
+        "source": "services/agents/marine-conditions/app.py"
+      },
+      {
+        "id": "marine-conditions-health-legacy",
+        "method": "GET",
+        "path": "/agents/marine-conditions/health",
+        "ownerService": "marine-conditions",
+        "auth": "anonymous",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Private compatibility liveness alias for the Marine Conditions specialist.",
+        "usage": "Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route.",
+        "source": "services/agents/marine-conditions/app.py"
+      },
+      {
+        "id": "marine-conditions-health-api",
+        "method": "GET",
+        "path": "/api/health",
+        "ownerService": "marine-conditions",
+        "auth": "anonymous",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Private compatibility liveness alias for the Marine Conditions specialist.",
+        "usage": "Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route.",
+        "source": "services/agents/marine-conditions/app.py"
+      },
+      {
+        "id": "marine-conditions-health-root",
+        "method": "GET",
+        "path": "/",
+        "ownerService": "marine-conditions",
+        "auth": "anonymous",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Private compatibility liveness alias for the Marine Conditions specialist.",
+        "usage": "Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route.",
+        "source": "services/agents/marine-conditions/app.py"
+      },
+      {
+        "id": "marine-conditions-invocations-agent-alias",
+        "method": "POST",
+        "path": "/agents/marine-conditions/invocations",
+        "ownerService": "marine-conditions",
+        "auth": "anonymous",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Private compatibility alias for a validated marine conditions assessment.",
+        "usage": "Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route.",
+        "source": "services/agents/marine-conditions/app.py"
+      },
+      {
+        "id": "marine-conditions-report-api",
+        "method": "POST",
+        "path": "/api/agents/marine-conditions/report",
+        "ownerService": "marine-conditions",
+        "auth": "anonymous",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Private report alias for a validated marine conditions assessment.",
+        "usage": "Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route.",
+        "source": "services/agents/marine-conditions/app.py"
+      },
+      {
+        "id": "marine-conditions-report-agent-alias",
+        "method": "POST",
+        "path": "/agents/marine-conditions/report",
+        "ownerService": "marine-conditions",
+        "auth": "anonymous",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Private compatibility report alias for a validated marine conditions assessment.",
+        "usage": "Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route.",
+        "source": "services/agents/marine-conditions/app.py"
+      },
+      {
+        "id": "marine-conditions-invocations-short-alias",
+        "method": "POST",
+        "path": "/invocations",
+        "ownerService": "marine-conditions",
+        "auth": "anonymous",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Private compatibility alias for a validated marine conditions assessment.",
+        "usage": "Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route.",
+        "source": "services/agents/marine-conditions/app.py"
+      },
+      {
+        "id": "marine-conditions-report-short-alias",
+        "method": "POST",
+        "path": "/report",
+        "ownerService": "marine-conditions",
+        "auth": "anonymous",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Private compatibility alias for a validated marine conditions assessment.",
+        "usage": "Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route.",
+        "source": "services/agents/marine-conditions/app.py"
+      },
+      {
+        "id": "marine-conditions-invocations-api-alias",
+        "method": "POST",
+        "path": "/api/invocations",
+        "ownerService": "marine-conditions",
+        "auth": "anonymous",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Private compatibility invocation alias for a validated marine conditions assessment.",
+        "usage": "Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route.",
+        "source": "services/agents/marine-conditions/app.py"
+      },
+      {
+        "id": "marine-conditions-report-api-short-alias",
+        "method": "POST",
+        "path": "/api/report",
+        "ownerService": "marine-conditions",
+        "auth": "anonymous",
+        "publicBoundary": "internal-service",
+        "status": "implemented",
+        "description": "Private compatibility report alias for a validated marine conditions assessment.",
+        "usage": "Private Docker-network compatibility alias; same validation and response behavior as the canonical Marine Conditions route.",
+        "source": "services/agents/marine-conditions/app.py"
+      }
+    ],
+    "notes": "All four role runtimes are provisional source under services/agents with role-scoped Gemini API keys and enable flags; model calls and Planner dispatch are disabled by default. Planning & Coordination and Safety Operations expose service-key-protected private dispatch routes; Experience & Biodiversity and Marine Conditions retain specialist route contracts that are not yet compatible with the Planning typed envelope. Agents are internal-only, with a single Gemini egress proxy as the only service with outbound access; the proxy permits CONNECT only to generativelanguage.googleapis.com:443. Marine Conditions direct Open-Meteo sourcing is blocked pending Member 2 service mediation, with no bypass. No Agentic AI route is exposed through the public gateway. AI-00 provider, shared-schema, data-handling and integrated workflow decisions remain open."
   },
   "forbiddenPatterns": [
     "/api/v1",

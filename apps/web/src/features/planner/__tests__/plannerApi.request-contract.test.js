@@ -112,11 +112,33 @@ test('WEB-PLANNER-API-002 recommendation retrieval reads the public recommendati
 })
 
 test('WEB-PLANNER-API-003 workflow status retrieval reads the public workflow route and encodes identifiers', async () => {
-  const workflow = { workflowId: 'workflow-1', workflowType: 'Recommendation', status: 'COMPLETED', initiatorUserId: 'user-1', objective: 'Plan a coastal day', createdAt: '2026-09-27T10:00:00Z', completedAt: '2026-09-27T11:00:00Z', resultSummary: null, failureReason: null }
+  const workflow = { workflowId: 'workflow-1', workflowType: 'Recommendation', status: 'COMPLETED', initiatorUserId: 'user-1', objective: 'Plan a coastal day', createdAt: '2026-09-27T10:00:00Z', completedAt: '2026-09-27T11:00:00Z', resultSummary: null, failureReason: null, aiDependencyStatus: 'AVAILABLE', aiExecutionStatus: 'COMPLETED' }
   const getRequest = captureFetch(jsonResponse(workflow))
 
   assert.deepEqual(await getWorkflow('workflow/1'), workflow)
   assertJsonRequest(getRequest(), { path: '/api/planner/workflows/workflow%2F1' })
+})
+
+test('WEB-PLANNER-API-012 malformed workflow responses without coordination states are rejected', async () => {
+  const workflow = { workflowId: 'workflow-1', workflowType: 'Recommendation', status: 'COMPLETED', createdAt: '2026-09-27T10:00:00Z', resultSummary: null, failureReason: null, aiDependencyStatus: 'AVAILABLE' }
+  captureFetch(jsonResponse(workflow))
+
+  await assert.rejects(getWorkflow('workflow-1'), error => error instanceof PlannerApiError && error.status === 502)
+})
+
+test('WEB-PLANNER-API-013 malformed delegated agent summaries are rejected', async () => {
+  captureFetch(jsonResponse({
+    workflowId: 'workflow-1', workflowType: 'Recommendation', status: 'COMPLETED',
+    createdAt: '2026-09-27T10:00:00Z', resultSummary: null, failureReason: null,
+    aiDependencyStatus: 'AVAILABLE', aiExecutionStatus: 'COMPLETED',
+    aiExecutionSummary: {
+      status: 'COMPLETED', objectiveSummary: 'Collected checks.',
+      steps: [{ agentId: 'marine-safety', status: 'COMPLETED', summary: 'Checked.', sourceReferences: 'not-a-list', uncertaintyNotes: [] }],
+      safetyProposal: null,
+    },
+  }))
+
+  await assert.rejects(getWorkflow('workflow-1'), error => error instanceof PlannerApiError && error.status === 502)
 })
 
 test('WEB-PLANNER-API-004 biodiversity predictions request both the destination and the optional activity scope', async () => {

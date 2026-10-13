@@ -94,11 +94,102 @@ test('WEB-OPS-UI-002 current assessment response is shown without inventing a pr
 
   await screen.findByText(item.title)
   await userEvent.click(screen.getByText('Open review details'))
-  await screen.findByText('Coastal context was recorded, but automated proposals are not available yet. No operational change has been suggested or applied.')
+  await screen.findByText('No agent delivery attempt is recorded yet, so there is no agent result to show.')
+  assert.ok(screen.getByRole('heading', { name: 'Safety & Operations agent delivery' }))
+  assert.ok(screen.getByText('Safety & Operations agent availability'))
   assert.ok(screen.getByText('Coastal experience'))
   assert.ok(screen.getByText('Open'))
   assert.equal(screen.queryByRole('button', { name: /approve|apply decision/i }), null)
   assert.equal(calls.some((call) => call.method === 'POST' && call.path.includes('/decisions')), false)
+})
+
+test('WEB-OPS-UI-011 agent findings and validated recommendations are visible without applying them', async () => {
+  const item = assessment({ aiDependencyStatus: 'AVAILABLE', aiDispatchOutcome: 'SUCCEEDED', aiDispatchRetryable: false })
+  const detail = {
+    assessment: item, decisions: [], evidence: [],
+    agentExecutionSummary: {
+      status: 'COMPLETED', objectiveSummary: 'The coastal team reviewed the submitted access assessment.',
+      steps: [
+        { agentId: 'experience-biodiversity', status: 'COMPLETED', summary: 'The activity is published and available.', sourceReferences: ['experience-report'], uncertaintyNotes: [] },
+        { agentId: 'marine-safety', status: 'COMPLETED', summary: 'Marine conditions need a final check before travel.', sourceReferences: ['marine-report'], uncertaintyNotes: ['Conditions may change before the assessment period.'] },
+        { agentId: 'safety-operations', status: 'COMPLETED', summary: 'The assessment is ready for an authorized review.', sourceReferences: [], uncertaintyNotes: [] },
+      ],
+      safetyProposal: {
+        assessmentId, targetId, targetStateVersion: 1, recommendation: 'PROPOSE_ACTION',
+        proposedAction: 'TEMPORARILY_SUSPENDED', summary: 'Pause access while the rain damage is inspected.',
+        evidenceReferences: ['operations-report'], uncertainties: ['A field inspection has not yet confirmed the route condition.'],
+        reviewSuggestion: 'Have a separate authorized reviewer confirm the route before deciding.', producedAtUtc: '2030-01-01T00:00:00Z',
+      },
+    },
+    proposals: [{ proposalId: '00000000-0000-4000-8000-000000000005', proposalVersion: 1, validationStatus: 'VALIDATED',
+      targetType: 'DESTINATION', targetId, proposedState: 'TEMPORARILY_SUSPENDED', expectedTargetStateVersion: 1,
+      requiresSeparateReviewer: true, expiresAt: new Date(Date.now() + 86400000).toISOString(), createdAt: new Date().toISOString() }],
+  }
+  const calls = installFetch({
+    'GET /api/operations/assessments': () => jsonResponse({ items: [item], nextCursor: null }),
+    [`GET /api/operations/assessments/${assessmentId}`]: () => jsonResponse(detail),
+  })
+  renderOperations(['operations.assessment.read', 'operations.assessment.decide'])
+
+  await screen.findByText(item.title)
+  await userEvent.click(screen.getByText('Open review details'))
+  assert.ok(await screen.findByText('The coastal team reviewed the submitted access assessment.'))
+  assert.ok(screen.getByRole('heading', { name: 'Coastal experiences & wildlife' }))
+  assert.ok(screen.getByRole('heading', { name: 'Marine conditions' }))
+  assert.ok(screen.getByText('Pause access while the rain damage is inspected.'))
+  assert.ok(screen.getByText('Conditions may change before the assessment period.'))
+  assert.ok(screen.getByText('A separate authorized reviewer must make the decision.'))
+  assert.ok(screen.getByText(/ready for authorized human review/))
+  assert.equal(screen.queryByRole('button', { name: /approve|apply decision|execute/i }), null)
+  assert.equal(calls.some((call) => call.method === 'POST' || call.method === 'PATCH'), false)
+})
+
+for (const [caseId, outcome, dependency, retryable, expectedMessage] of [
+  ['005', 'NOT_REQUESTED', 'NOT_CONNECTED', false, 'No agent delivery is recorded for this assessment, so there is no agent result to show yet.'],
+  ['006', 'SUCCEEDED', 'AVAILABLE', false, 'Delivery to the Safety & Operations agent succeeded. This response contains delivery status, but no validated proposal or action.'],
+  ['007', 'UNAVAILABLE', 'UNAVAILABLE', true, 'Agent delivery is unavailable. The service marks it as retryable; refresh the assessment to check its current status.'],
+  ['008', 'UNAVAILABLE', 'UNAVAILABLE', false, 'Agent delivery is unavailable and is not marked as retryable. No agent result is available.'],
+  ['009', 'INVALID_RESULT', 'AVAILABLE', false, 'The returned agent result did not pass validation. No proposal or operational action is available.'],
+]) {
+  test(`WEB-OPS-UI-${caseId} ${outcome} delivery status is shown without inventing a proposal (ui-integration: coastal-operations-assessment)`, async () => {
+    const item = assessment({ aiDependencyStatus: dependency, aiDispatchOutcome: outcome, aiDispatchRetryable: retryable, componentDependencies: [] })
+    installFetch({
+      'GET /api/operations/assessments': () => jsonResponse({ items: [item], nextCursor: null }),
+      [`GET /api/operations/assessments/${assessmentId}`]: () => jsonResponse({ assessment: item, decisions: [], evidence: [] }),
+    })
+    renderOperations(['operations.assessment.read', 'operations.assessment.decide'])
+
+    await screen.findByText(item.title)
+    await userEvent.click(screen.getByText('Open review details'))
+    await screen.findByText(expectedMessage)
+    if (outcome === 'SUCCEEDED') assert.ok(screen.getByText(/no validated proposal or action/))
+    if (outcome === 'UNAVAILABLE') assert.ok(screen.getByText(`Retryable: ${retryable ? 'Yes' : 'No'}`))
+    assert.equal(screen.queryByRole('button', { name: /approve|apply decision/i }), null)
+  })
+}
+
+test('WEB-OPS-UI-010 assessment submission displays the returned dispatch status', async () => {
+  const draft = assessment({ workflowStatus: 'DRAFT', aiDispatchOutcome: 'NOT_REQUESTED' })
+  const submitted = assessment({ workflowStatus: 'SUBMITTED', version: 2, aiDependencyStatus: 'AVAILABLE', aiDispatchOutcome: 'SUCCEEDED', aiDispatchRetryable: false })
+  let hasSubmitted = false
+  const calls = installFetch({
+    'GET /api/operations/assessments': () => jsonResponse({ items: [hasSubmitted ? submitted : draft], nextCursor: null }),
+    [`GET /api/operations/assessments/${assessmentId}`]: () => jsonResponse({ assessment: hasSubmitted ? submitted : draft, decisions: [], evidence: [] }),
+    [`POST /api/operations/assessments/${assessmentId}/submit`]: () => { hasSubmitted = true; return jsonResponse(submitted) },
+  })
+  renderOperations(['operations.assessment.read', 'operations.assessment.submit'])
+
+  await screen.findByText(draft.title)
+  await userEvent.click(screen.getByText('Open review details'))
+  await screen.findByRole('button', { name: 'Submit for review' })
+  await userEvent.click(screen.getByRole('button', { name: 'Submit for review' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Submit assessment' }))
+
+  const notice = await screen.findByText(/Assessment submitted\. Delivery to the Safety & Operations agent succeeded\./)
+  assert.match(notice.textContent, /no validated proposal or action/)
+  await screen.findByRole('heading', { name: 'Safety & Operations agent delivery' })
+  assert.ok((await screen.findAllByText('Published for assessment')).length >= 2)
+  assert.equal(calls.filter((call) => call.method === 'POST' && call.path.endsWith('/submit')).length, 1)
 })
 
 test('WEB-OPS-UI-003 assessment creation selects named records and submits one zone with local dates (ui-integration: coastal-operations-assessment)', async () => {

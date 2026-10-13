@@ -64,6 +64,10 @@ namespace Blueverse.CoastalOperations.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("AgentExecutionSummaryJson")
+                        .HasMaxLength(32768)
+                        .HasColumnType("character varying(32768)");
+
                     b.Property<string>("AiDependencyStatus")
                         .IsRequired()
                         .HasMaxLength(24)

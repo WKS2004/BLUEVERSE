@@ -258,7 +258,7 @@ the minimum evidence expected as each component is introduced.
 | v1 Wanshaja Sooriyabandara (Member 4) | Branch-local assessment and alert CRUD/publication, reviewer decisions, target state/history, private evidence, scoped activity/search and durable publication delivery are present. The service suite's last recorded result was 322 default cases; five opt-in PostgreSQL cases require the dedicated test connection. React and Flutter expose dedicated Assessment/Alert pages with shared authorization and workflow capabilities. Shared G00 producer acceptance and post-G07 live agents remain pending. |
 | UI integration contract | Dependency-free registry/validator checks that every product workflow has both React and Flutter routes and that client API literals resolve to declared public `/api/...` endpoints; role coverage and platform parity are verified in workflow tests |
 | Integration | React/Flutter against the same public API, gateway routing and cross-platform workflow; no client-to-client or internal-service calls |
-| Agentic AI | Contract, tool, safety and evaluation evidence for all four [v1 agent roles](../v1/README.md), plus the complete assessed workflow under each owning AI service’s local `tests/` directory. No executable agents currently exist. |
+| Agentic AI | Safety Operations proposal-core and Gemini adapter tests are under `services/agents/tests`; `AI-NET-001` covers Gemini-only CONNECT, fixed proxy configuration, DNS/IP filtering and direct-egress denial. The Docker profile builds the private agent and egress proxy; model-call workflow and G07 integration remain separately gated. Other agent-role contracts and complete workflow evaluation remain outstanding. |
 | Security | Unauthorized/invalid-input/prompt-injection cases with complete assertions: expected HTTP outcomes across relevant `1xx`–`5xx` statuses plus body/schema, authorization, state and side-effect validation |
 | CI | Passing source, client, backend, AI and integration workflows; backend test discovery fails when a service source project has no matching local test project |
 | Deployment | Health + smoke-test evidence |
@@ -607,3 +607,80 @@ was nonfatal. Follow-up evidence: `cache-pub-get.log`, `android-d-cache-build.lo
 `d-cache-analysis.log`, `d-cache-tests.log`, `android-install.log`,
 `android-launch.log`, `android-runtime-errors.log` and `android-launch.png` under
 the same local evidence directory.
+
+## Agentic AI restoration and private Gemini egress — 2026-10-13
+
+The four private agent services now live under `services/agents`; the prior
+`services/ai` paths are removed. Each agent has a distinct Gemini API-key and
+model configuration. Environment-driven model generation remains disabled,
+and no generation request was made because shared AI-00 provider/data-handling
+approval is still pending. Role credentials stay in the ignored local `.env`;
+credential values are not recorded here.
+
+- Python role suites passed in read-only, network-disabled DHI Python
+  containers: Experience & Biodiversity 22, Marine Conditions 54 (10
+  subtests), Planning & Coordination 24, Safety & Operations 61 (31
+  subtests).
+- Backend suites passed: Experience & Biodiversity 103, Coastal Planner 132;
+  Public API 58, including `API-PROXY-004`, which verifies that the private
+  Marine agent has no public API route. `PLANNER-AI-SEAM-004` verifies the
+  planner sends its actual planning context to its private agent.
+- All four agent DHI images and the Gemini-only egress proxy image built.
+  Compose configuration passed; all five containers reached healthy status.
+  Runtime network inspection confirmed each agent is only on
+  `blueverse_internal`; only the proxy also joins `blueverse_agent_egress`.
+  The smoke-test containers were removed after validation.
+- No-generation credential checks retrieved model metadata for each agent: all four returned HTTP 200, matched the configured model and advertised `generateContent` support through the internal proxy. This does not verify model generation.
+- Endpoint catalog regeneration and both validators passed: 136 public
+  endpoints, 54 frontend routes and 24 documented Agentic AI endpoints. All
+  20 endpoint-catalog regression tests passed.
+
+- Marine Safety passed 183 tests; Coastal Operations passed 332 tests, with six opt-in PostgreSQL cases skipped.
+
+At the time of this restoration check, live backend dispatch for Marine and
+Safety remained deferred: Member 2's G00 scope had no AI seam, and the
+Operations service still used its disconnected proposal port. These local
+role suites and health checks did not establish live Gemini or cross-agent
+compatibility.
+
+## Full local suites and live workflow attempt — 2026-10-13
+
+Ten student-facing Bash and PowerShell runners now cover the complete React,
+Flutter, four backend and four agent test suites. The PowerShell runners were
+executed on this workstation; all ten PowerShell files and ten Bash files pass
+syntax parsing. The full results are:
+
+| Component | Passed | Failed | Skipped | Notes |
+| --- | ---: | ---: | ---: | --- |
+| React Web | 397 | 0 | 0 | Full `test:ci` suite |
+| Flutter Mobile | 295 | 0 | 0 | No `integration_test` directory is checked in |
+| Experience & Biodiversity backend | 106 | 0 | 0 | |
+| Marine Safety backend | 183 | 0 | 0 | |
+| Coastal Planner backend | 134 | 0 | 0 | Includes dispatch body framing coverage |
+| Coastal Operations backend | 339 | 0 | 6 | Optional PostgreSQL cases require a dedicated test connection |
+| Experience & Biodiversity agent | 24 | 0 | 0 | |
+| Marine Conditions agent | 54 | 0 | 0 | Plus 10 unittest subtests |
+| Planning & Coordination agent | 31 | 0 | 0 | Includes execution-state ownership coverage |
+| Safety & Operations agent | 61 | 0 | 0 | Plus 31 unittest subtests |
+
+Compose configuration, endpoint catalog validation and UI integration
+validation pass. The endpoint catalog contains 136 public endpoints, 54
+frontend routes and 24 documented Agentic AI endpoints. The local synthetic
+experience catalogue already held 24 records; the seeder confirmed there were
+no missing demo records to add. Coastal Planner and Planning Coordination were
+rebuilt and restarted before the final dispatch attempts.
+
+Three tourist recommendation workflows and three coastal-operator assessments
+were then submitted with synthetic records. The tourist requests returned 201
+and persisted `UNAVAILABLE` agent execution status. The operations dispatches
+also returned `UNAVAILABLE`; no proposal or reviewer decision was created.
+Filtered local logs showed Gemini `generateContent` requests returning HTTP
+503 at the Planning Coordination model call, before specialist delegation.
+The earlier per-key model-metadata checks returned HTTP 200, but they do not
+prove successful generation. Accordingly, these six attempts do not establish
+successful Gemini generation or four-agent coordination. All operation
+assessments remained unapproved and no operational state change was executed.
+
+`git diff --check` reports no whitespace errors; Git only prints its existing
+Windows line-ending notices. No credentials or model response bodies are
+recorded here.

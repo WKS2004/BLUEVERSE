@@ -14,7 +14,11 @@ test('WEB-PLANNER-SCHEMA-002 invalid review timestamps are rejected before date 
   await assert.rejects(getEvaluationHistory('trip'), error => error instanceof PlannerApiError && error.status === 502)
 })
 test('WEB-PLANNER-SCHEMA-003 malformed workflow summaries cannot become React children', async () => {
-  globalThis.fetch = async () => json({workflowId:'workflow', status:'COMPLETED', createdAt:new Date().toISOString(), resultSummary:{invalid:true}})
+  globalThis.fetch = async () => json({workflowId:'workflow', status:'COMPLETED', createdAt:new Date().toISOString(), resultSummary:{invalid:true}, aiDependencyStatus:'AVAILABLE', aiExecutionStatus:'COMPLETED'})
+  await assert.rejects(getWorkflow('workflow'), error => error instanceof PlannerApiError && error.status === 502)
+})
+test('WEB-PLANNER-SCHEMA-005 workflow response must include both coordinator availability and execution status', async () => {
+  globalThis.fetch = async () => json({workflowId:'workflow', status:'COMPLETED', createdAt:new Date().toISOString(), resultSummary:null, failureReason:null, aiDependencyStatus:'AVAILABLE'})
   await assert.rejects(getWorkflow('workflow'), error => error instanceof PlannerApiError && error.status === 502)
 })
 test('WEB-PLANNER-SCHEMA-004 deletion requires the declared empty response and keeps authorization failures', async () => {
